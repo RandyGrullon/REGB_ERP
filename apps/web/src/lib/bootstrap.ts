@@ -1,6 +1,6 @@
 import 'server-only'
 
-import postgres from 'postgres'
+import { asUser, db } from './db'
 import { hydrate, type ModuleManifest, type TenantModule } from '@regb/module-registry'
 import type { Role } from '@regb/permissions'
 import type { RegbSession } from '@regb/sdk'
@@ -21,15 +21,6 @@ import invoiceCaptureManifest from '@regb/mod-invoice-capture'
  * Ninguna regla de negocio vive aqui: solo lee y delega en el registry.
  */
 
-const DB_URL =
-  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
-
-let client: postgres.Sql | undefined
-function db(): postgres.Sql {
-  client ??= postgres(DB_URL, { max: 4, onnotice: () => {} })
-  return client
-}
-
 /**
  * Manifests disponibles en este bundle.
  *
@@ -47,30 +38,6 @@ export interface BootstrapResult {
   role: Role
   user: { id: string; name: string; initials: string; email: string }
   hydration: ReturnType<typeof hydrate>
-}
-
-/**
- * Ejecuta consultas con la identidad de un usuario concreto.
- *
- * Con Supabase configurado, estos claims son EXACTAMENTE los que emitio
- * `auth.custom_access_token_hook` — el tenant sale de `public.memberships`
- * y nadie puede falsificarlo. En modo demostracion los fabricamos aqui,
- * pero la forma es la misma: RLS decide, no la aplicacion (§10).
- */
-async function asUser<T>(
-  userId: string,
-  tenantId: string,
-  fn: (tx: postgres.TransactionSql) => Promise<T>,
-): Promise<T> {
-  const claims = JSON.stringify({
-    sub: userId,
-    app_metadata: { tenant_id: tenantId, is_provider: false },
-  })
-  return db().begin(async (tx) => {
-    await tx`select set_config('request.jwt.claims', ${claims}, true)`
-    await tx.unsafe('set local role authenticated')
-    return fn(tx)
-  }) as Promise<T>
 }
 
 interface BootstrapInput {

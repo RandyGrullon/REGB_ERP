@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import {
   Badge,
-  Button,
   Card,
   CardBody,
   CardHeader,
@@ -319,6 +318,30 @@ export function Shell({
                 </Card>
               </div>
 
+              {/* Accesos a las pantallas de plataforma ya construidas */}
+              <div className="mt-5 flex flex-wrap gap-2">
+                <a
+                  href={
+                    demoMode
+                      ? `/marketplace?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
+                      : '/marketplace'
+                  }
+                  className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  🧩 Ver el marketplace
+                </a>
+                <a
+                  href={
+                    demoMode
+                      ? `/roles?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
+                      : '/roles'
+                  }
+                  className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  🛡️ Roles y permisos
+                </a>
+              </div>
+
               <p className="mt-6 text-xs text-[var(--color-text-muted)]">
                 Nada de esto esta cableado en el codigo: sale de{' '}
                 <code className="font-[family-name:var(--font-mono)]">regb.tenant_modules</code> y
@@ -345,9 +368,16 @@ export function Shell({
             Empresa
           </p>
           <p className="text-xs text-[var(--color-text-secondary)]">{activeTenant?.name}</p>
-          <Button variant="secondary" size="sm" className="mt-3 w-full">
+          <a
+            href={
+              demoMode
+                ? `/marketplace?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
+                : '/marketplace'
+            }
+            className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
             🧩 Marketplace
-          </Button>
+          </a>
         </div>
       </aside>
 
