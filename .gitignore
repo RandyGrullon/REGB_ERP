@@ -1,0 +1,47 @@
+# dependencias
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# turbo
+.turbo/
+
+# entorno — NUNCA commitear
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# supabase
+supabase/.branches/
+supabase/.temp/
+
+# tests
+coverage/
+.vitest/
+
+# editor / SO
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# electron
+apps/desktop/release/
+
+# expo
+apps/mobile/.expo/

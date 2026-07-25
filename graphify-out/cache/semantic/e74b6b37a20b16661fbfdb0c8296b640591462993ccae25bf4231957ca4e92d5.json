@@ -1,0 +1,245 @@
+{
+  "nodes": [
+    {
+      "id": "agents_nexus_docs_agent",
+      "label": "Agente nexus-docs",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_three_audiences",
+      "label": "Tres voces: desarrollador, usuario final, cliente que compra",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_module_datasheet",
+      "label": "Plantilla obligatoria de ficha de m\u00f3dulo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_dominican_context",
+      "label": "Todo ejemplo en contexto dominicano (RNC, DOP, ITBIS, DGII, TSS)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_pricing_single_source",
+      "label": "Los precios salen siempre de nexus.module_pricing",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_keep_a_changelog",
+      "label": "Changelog Keep a Changelog con versi\u00f3n del m\u00f3dulo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_planned_marker",
+      "label": "Marca \ud83d\udea7 Planificado para lo que a\u00fan no existe",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_docs_commercial_proposals",
+      "label": "Propuestas comerciales con precio transparente",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_three_audiences",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_module_datasheet",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_dominican_context",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_pricing_single_source",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_keep_a_changelog",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_planned_marker",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_docs_commercial_proposals",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_module_datasheet",
+      "target": "agents_nexus_module_builder_manifest",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_pricing_single_source",
+      "target": "agents_nexus_module_builder_three_tier_pricing",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_pricing_single_source",
+      "target": "agents_nexus_billing_pricing_formula",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_dominican_context",
+      "target": "agents_nexus_module_builder_demo_seed",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_architect_adr",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_commercial_proposals",
+      "target": "docs_proyecto_nexus_erp_s6_precios",
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_docs_agent",
+      "target": "agents_nexus_tutorial_academia_nexus",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-docs.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

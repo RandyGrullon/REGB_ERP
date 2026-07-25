@@ -1,0 +1,404 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s9_modelo_datos",
+      "label": "\u00a79 Modelo de datos",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s10_seguridad",
+      "label": "\u00a710 Seguridad y RLS",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_agent",
+      "label": "Agente nexus-db",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_schema_public",
+      "label": "Esquema public (negocio de los tenants, RLS por tenant_id)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_schema_nexus",
+      "label": "Esquema nexus (proveedor: tenants, suscripciones, precios, facturas)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_schema_audit",
+      "label": "Esquema audit (log particionado por mes)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_tenant_isolation_policy",
+      "label": "Pol\u00edtica RLS tenant_isolation en toda tabla de negocio",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_tenant_id_index_rule",
+      "label": "Todo \u00edndice empieza por tenant_id",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_reversible_migrations",
+      "label": "Migraciones reversibles (NNN_up.sql / NNN_down.sql)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_no_service_role_client",
+      "label": "service_role nunca accesible desde el cliente",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_partitioning",
+      "label": "Particionado mensual de tablas calientes (audit.log, event_outbox)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_numeric_money_types",
+      "label": "Tipos num\u00e9ricos: dinero numeric(12,2), cantidades numeric(14,4)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_timestamptz_utc",
+      "label": "timestamptz en UTC, presentado en zona del tenant",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_soft_delete",
+      "label": "Soft delete por defecto (deleted_at)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_security_definer_rule",
+      "label": "Funciones security definer con set search_path = ''",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_query_performance_budget",
+      "label": "Presupuesto de rendimiento de queries (P95 < 150 ms)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db_isolation_test_suite",
+      "label": "Test de aislamiento por tabla (dos tenants)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "docs_proyecto_nexus_erp_s9_modelo_datos",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "docs_proyecto_nexus_erp_s10_seguridad",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_schema_public",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_schema_nexus",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_schema_audit",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_schema_public",
+      "target": "agents_nexus_db_tenant_isolation_policy",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_schema_audit",
+      "target": "agents_nexus_db_partitioning",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_tenant_id_index_rule",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_reversible_migrations",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_no_service_role_client",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_numeric_money_types",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_timestamptz_utc",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_soft_delete",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_security_definer_rule",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_query_performance_budget",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_agent",
+      "target": "agents_nexus_db_isolation_test_suite",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_isolation_test_suite",
+      "target": "agents_nexus_db_tenant_isolation_policy",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_tenant_isolation_policy",
+      "target": "agents_nexus_architect_single_postgres_rls",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_tenant_id_index_rule",
+      "target": "agents_nexus_db_query_performance_budget",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_soft_delete",
+      "target": "agents_nexus_architect_archive_not_delete",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db_no_service_role_client",
+      "target": "agents_nexus_security_secrets_edge_functions",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-db.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

@@ -1,0 +1,171 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s8_permisos",
+      "label": "\u00a78 Permisos",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_agent",
+      "label": "Agente nexus-security",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_threat_model",
+      "label": "Modelo de amenazas de Nexus ERP",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_tenant_id_from_jwt",
+      "label": "tenant_id solo desde el JWT (app_metadata)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_jwt_lifecycle",
+      "label": "JWT: expiraci\u00f3n corta, refresh rotativo, revocaci\u00f3n, MFA",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_export_control",
+      "label": "Permiso export separado, con l\u00edmite, auditor\u00eda y marca de agua",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_impersonation_controls",
+      "label": "Controles de impersonaci\u00f3n del proveedor (MFA, ticket, 60 min, banner)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_sql_injection",
+      "label": "Solo queries parametrizadas / SDK tipado",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_secrets_edge_functions",
+      "label": "Todo secreto en Edge Functions + escaneo del bundle en CI",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_explicit_deny_wins",
+      "label": "La denegaci\u00f3n expl\u00edcita siempre gana",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_pgsodium",
+      "label": "Cifrado con pgsodium de datos sensibles (salarios, c\u00e9dulas)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_audit_log_review",
+      "label": "Revisi\u00f3n del audit.log (antes/despu\u00e9s de acciones sensibles)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_audit_procedure",
+      "label": "Procedimiento de auditor\u00eda de seguridad (6 pasos)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_finding_format",
+      "label": "Formato de hallazgo ordenado por severidad",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_security_hiding_is_not_control",
+      "label": "Ocultar un m\u00f3dulo en el sidebar no es control de seguridad",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-security.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

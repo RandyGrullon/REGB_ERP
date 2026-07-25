@@ -1,0 +1,475 @@
+{
+  "nodes": [
+    {
+      "id": "rls_audit_skill",
+      "label": "Skill: rls-audit",
+      "file_type": "document",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "frontmatter",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_five_phase_audit",
+      "label": "Auditor\u00eda de RLS en 5 fases",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_leak_kills_product",
+      "label": "Una sola fuga entre tenants mata el producto",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_phase1_table_inventory",
+      "label": "Fase 1 \u2014 Inventario de tablas (pg_tables.rowsecurity)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Fase 1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_phase2_policies",
+      "label": "Fase 2 \u2014 Revisi\u00f3n de pol\u00edticas (pg_policies)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Fase 2",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_phase3_code_patterns",
+      "label": "Fase 3 \u2014 Patrones peligrosos en c\u00f3digo",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Fase 3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_phase4_live_test",
+      "label": "Fase 4 \u2014 Prueba viva de aislamiento (7 comprobaciones)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Fase 4",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_static_not_enough",
+      "label": "Un an\u00e1lisis est\u00e1tico no demuestra aislamiento",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 81",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_phase5_impersonation",
+      "label": "Fase 5 \u2014 Impersonaci\u00f3n del proveedor",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Fase 5",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_impersonation_log",
+      "label": "nexus.impersonation_log (reason, ended_at, ventana \u226460min, write_mode)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 67",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_auth_tenant_id",
+      "label": "auth.tenant_id()",
+      "file_type": "code",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 31",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_auth_module_active",
+      "label": "auth.module_active()",
+      "file_type": "code",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 32",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_auth_is_provider",
+      "label": "auth.is_provider() para nexus.*",
+      "file_type": "code",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 34",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_with_check_rule",
+      "label": "Regla: pol\u00edticas de escritura con with_check, no solo using",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 33",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_service_role_leak",
+      "label": "Hallazgo: service_role fuera de supabase/functions",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 44",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_tenant_id_from_jwt",
+      "label": "El tenant SOLO viene del JWT",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 45",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_search_path_escalation",
+      "label": "Escalada por search_path en security definer",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 46",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_hidden_button_not_security",
+      "label": "Ocultar el bot\u00f3n no es seguridad",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 48",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "rls_audit_skill_report_format",
+      "label": "Formato del reporte de auditor\u00eda (severidad, archivo, explotaci\u00f3n, correcci\u00f3n)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "\u00a7Formato del reporte",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "rls_audit_skill",
+      "target": "rls_audit_skill_five_phase_audit",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_leak_kills_product",
+      "target": "rls_audit_skill_five_phase_audit",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 8",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_five_phase_audit",
+      "target": "rls_audit_skill_phase1_table_inventory",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_five_phase_audit",
+      "target": "rls_audit_skill_phase2_policies",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_five_phase_audit",
+      "target": "rls_audit_skill_phase3_code_patterns",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_five_phase_audit",
+      "target": "rls_audit_skill_phase4_live_test",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_five_phase_audit",
+      "target": "rls_audit_skill_phase5_impersonation",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase2_policies",
+      "target": "rls_audit_skill_auth_tenant_id",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 31",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase2_policies",
+      "target": "rls_audit_skill_auth_module_active",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 32",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase2_policies",
+      "target": "rls_audit_skill_auth_is_provider",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 34",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase2_policies",
+      "target": "rls_audit_skill_with_check_rule",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 33",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase2_policies",
+      "target": "new_module_skill_tenant_isolation_policy",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase3_code_patterns",
+      "target": "rls_audit_skill_service_role_leak",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 44",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase3_code_patterns",
+      "target": "rls_audit_skill_tenant_id_from_jwt",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 45",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase3_code_patterns",
+      "target": "rls_audit_skill_search_path_escalation",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 46",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase3_code_patterns",
+      "target": "rls_audit_skill_hidden_button_not_security",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 48",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_tenant_id_from_jwt",
+      "target": "rls_audit_skill_auth_tenant_id",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_static_not_enough",
+      "target": "rls_audit_skill_phase4_live_test",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 81",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase4_live_test",
+      "target": "rls_audit_skill_auth_module_active",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 62",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_phase5_impersonation",
+      "target": "rls_audit_skill_impersonation_log",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 67",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_impersonation_log",
+      "target": "rls_audit_skill_auth_is_provider",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill",
+      "target": "rls_audit_skill_report_format",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_report_format",
+      "target": "new_module_skill_policies_sql",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": "line 74",
+      "weight": 1.0
+    },
+    {
+      "source": "rls_audit_skill_hidden_button_not_security",
+      "target": "tri_platform_skill_parity_checklist",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/skills/rls-audit/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "multi_tenant_isolation_defense",
+      "label": "Defensa en profundidad del aislamiento multi-tenant",
+      "nodes": [
+        "new_module_skill_tenant_isolation_policy",
+        "rls_audit_skill_auth_tenant_id",
+        "rls_audit_skill_auth_module_active",
+        "rls_audit_skill_with_check_rule",
+        "rls_audit_skill_phase4_live_test",
+        "rls_audit_skill_tenant_id_from_jwt",
+        "new_module_skill_tenant_isolation_test",
+        "rls_audit_skill_impersonation_log"
+      ],
+      "relation": "form",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".claude/skills/rls-audit/SKILL.md"
+    }
+  ]
+}

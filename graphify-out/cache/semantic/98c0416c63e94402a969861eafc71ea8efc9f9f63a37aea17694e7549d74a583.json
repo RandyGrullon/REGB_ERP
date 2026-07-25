@@ -1,0 +1,340 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp",
+      "label": "PROYECTO-NEXUS-ERP.md (documento maestro)",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_agent",
+      "label": "Agente nexus-architect",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_single_postgres_rls",
+      "label": "Un solo Postgres con RLS estricto",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_core_module_agnostic",
+      "label": "El core no conoce los m\u00f3dulos",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_module_registry",
+      "label": "Module registry con descubrimiento en runtime (nexus.tenant_modules)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_event_bus",
+      "label": "Bus de eventos entre m\u00f3dulos (sin imports)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_core_business_logic",
+      "label": "L\u00f3gica de negocio en packages/core",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_server_authority",
+      "label": "Servidor manda: precios y firma fiscal en Edge Functions",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_archive_not_delete",
+      "label": "Desinstalar = archivar, nunca borrar",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_graceful_degradation",
+      "label": "Degradaci\u00f3n elegante ante dependencias opcionales",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_adr",
+      "label": "ADRs en docs/adr/NNNN-titulo.md",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_platforms_declaration",
+      "label": "Declaraci\u00f3n expl\u00edcita de platforms por m\u00f3dulo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_architect_nexus_control",
+      "label": "Nexus Control (panel del propietario)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_single_postgres_rls",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_core_module_agnostic",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_module_registry",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_event_bus",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_core_business_logic",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_server_authority",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_archive_not_delete",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_graceful_degradation",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_adr",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_platforms_declaration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_architect_nexus_control",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_module_registry",
+      "target": "agents_nexus_architect_core_module_agnostic",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_event_bus",
+      "target": "agents_nexus_architect_core_module_agnostic",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_db_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_web_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_mobile_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_desktop_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_architect_agent",
+      "target": "agents_nexus_design_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-architect.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

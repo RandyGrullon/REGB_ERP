@@ -1,0 +1,97 @@
+{
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-architect.md": {
+    "size": 2701,
+    "mtime_ns": 1784692564749447900,
+    "hash": "98c0416c63e94402a969861eafc71ea8efc9f9f63a37aea17694e7549d74a583"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-billing.md": {
+    "size": 2922,
+    "mtime_ns": 1784692704585901400,
+    "hash": "8640e3458fad8dfd42052842dc45627ce0f45913d8f661aa661f00144a9ddced"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-db.md": {
+    "size": 2576,
+    "mtime_ns": 1784692599662435600,
+    "hash": "cb95e566051bc43d824896f4c4987c072449cd30468596d3ee10a6cb6863606d"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-design.md": {
+    "size": 2895,
+    "mtime_ns": 1784692636330587900,
+    "hash": "6a053b35034e13a68ab8bfec702be01c69bc8c459e1dbe33ea8a9dcae573bb1f"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-desktop.md": {
+    "size": 2440,
+    "mtime_ns": 1784692664865325300,
+    "hash": "0a17c3e641c09e57233067387fa267d2b4bf0b0d17f53afb65c62388fd2a842d"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-docs.md": {
+    "size": 2384,
+    "mtime_ns": 1784692751547460100,
+    "hash": "e74b6b37a20b16661fbfdb0c8296b640591462993ccae25bf4231957ca4e92d5"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-mobile.md": {
+    "size": 2403,
+    "mtime_ns": 1784692682162363700,
+    "hash": "3401d296f53a4122f8920d805517d356fcf27b533b36cb6f35974f7857140053"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-module-builder.md": {
+    "size": 3491,
+    "mtime_ns": 1784692583992181600,
+    "hash": "dcea3640e15d2cefffac21f724ff394dba28c7a42d423502b6b8e12bf29d655d"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-qa.md": {
+    "size": 2810,
+    "mtime_ns": 1784692737304954000,
+    "hash": "cbad97eab3bc33c63e1d3c38bf03cda92117a995e05532ef7735b74a578f6244"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-security.md": {
+    "size": 2766,
+    "mtime_ns": 1784692617309709700,
+    "hash": "8a0ddb597e1caecf26e841ad5e7fb7e5c9381d55d51d8fd341cdeae96f77bd89"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-tutorial.md": {
+    "size": 2668,
+    "mtime_ns": 1784692724098399200,
+    "hash": "db8ada57b17454207d864c0b1a68378bbde22ac95e68be9d90524692d36224bc"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-web.md": {
+    "size": 2319,
+    "mtime_ns": 1784692649661684300,
+    "hash": "8bd6ce5b46b50b45644f3c0f78f07392c8d56522c439bd893ea76cb2a4e523e9"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\aurora-ui\\SKILL.md": {
+    "size": 3269,
+    "mtime_ns": 1784692818977944900,
+    "hash": "b91ac404b1f29404df6605a56488be5d00a69cfaea049f1467d17abe239347bb"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\new-module\\SKILL.md": {
+    "size": 3917,
+    "mtime_ns": 1784692777338279000,
+    "hash": "0a078b27ce14d84a89f9cfaae77a211e0715313f7c136a66d2af3bb295e816eb"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\pricing-calc\\SKILL.md": {
+    "size": 3328,
+    "mtime_ns": 1784692797163082200,
+    "hash": "7aacd9b9c9f1f58d68abf528a9395aa4a8b8e27410b333c08305097f3a889bd7"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\rls-audit\\SKILL.md": {
+    "size": 3623,
+    "mtime_ns": 1784692838956732800,
+    "hash": "fc23d00227551f56c3f6529f41cc6d34d51873727e58c152cc9ad10041ae79f9"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\tour-writer\\SKILL.md": {
+    "size": 3624,
+    "mtime_ns": 1784692859961271700,
+    "hash": "bebb88e933440f6088ec7e39964a5ce96a509f1a52686099f6b925cdf9dc226f"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\tri-platform\\SKILL.md": {
+    "size": 3771,
+    "mtime_ns": 1784692880865195700,
+    "hash": "43f8cd37ab67152ce90ed7b8906c3b622164ff6b0d7081a40091587bfaab9da0"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\docs\\PROYECTO-NEXUS-ERP.md": {
+    "size": 111301,
+    "mtime_ns": 1784692541781722900,
+    "hash": "86650956afd4365ff30755ecbe5f7c3071b5d49c603483b182e23637f6e99927"
+  }
+}

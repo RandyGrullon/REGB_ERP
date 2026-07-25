@@ -1,0 +1,404 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s6_precios",
+      "label": "\u00a76 Precios",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s6_5_cotizaciones",
+      "label": "\u00a76.5 Ejemplos de cotizaci\u00f3n (Colmado, Distribuidora, Grupo Industrial)",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s7_nexus_control",
+      "label": "\u00a77 Nexus Control",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_agent",
+      "label": "Agente nexus-billing",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_pricing_formula",
+      "label": "F\u00f3rmula de mensualidad (base + m\u00f3dulos + extras + consumos \u2212 descuentos + ITBIS)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_tier_included_modules",
+      "label": "M\u00f3dulos incluidos por tier, descontando los m\u00e1s caros primero",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_server_only_calculation",
+      "label": "El c\u00e1lculo de precio vive solo en el servidor",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_numeric_money",
+      "label": "Dinero en numeric(12,2) con redondeo bancario",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_invoice_reproducibility",
+      "label": "Factura reproducible: desglose completo en invoices.lines",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_grandfathering",
+      "label": "Grandfathering de precios (aviso 60 d\u00edas, aplica en renovaci\u00f3n)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_price_override",
+      "label": "price_override en tenant_modules gana sobre el cat\u00e1logo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_proration",
+      "label": "Prorrateo al d\u00eda en altas y bajas a mitad de ciclo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_idempotent_charges",
+      "label": "Idempotencia total en cobros y webhooks",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_retry_schedule",
+      "label": "Reintentos de cobro fallido en d\u00edas 1, 3, 7 y 14",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_dunning_ladder",
+      "label": "Escalera de dunning por mora (d\u00eda 5 \u2192 90)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_no_data_deletion",
+      "label": "Ning\u00fan paso de dunning borra datos",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_billing_quotation_test_cases",
+      "label": "Casos de prueba obligatorios de cotizaci\u00f3n",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "docs_proyecto_nexus_erp_s6_precios",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "docs_proyecto_nexus_erp_s7_nexus_control",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_pricing_formula",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_pricing_formula",
+      "target": "agents_nexus_billing_tier_included_modules",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_server_only_calculation",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_numeric_money",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_invoice_reproducibility",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_grandfathering",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_price_override",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_proration",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_idempotent_charges",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_retry_schedule",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_dunning_ladder",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_retry_schedule",
+      "target": "agents_nexus_billing_dunning_ladder",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_dunning_ladder",
+      "target": "agents_nexus_billing_no_data_deletion",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_quotation_test_cases",
+      "target": "docs_proyecto_nexus_erp_s6_5_cotizaciones",
+      "relation": "cites",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_agent",
+      "target": "agents_nexus_billing_quotation_test_cases",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_server_only_calculation",
+      "target": "agents_nexus_architect_server_authority",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_numeric_money",
+      "target": "agents_nexus_db_numeric_money_types",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_no_data_deletion",
+      "target": "agents_nexus_architect_archive_not_delete",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_billing_price_override",
+      "target": "agents_nexus_db_schema_nexus",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-billing.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

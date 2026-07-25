@@ -1,0 +1,476 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s11_aurora",
+      "label": "\u00a711 Design system Aurora",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s12_mockups",
+      "label": "\u00a712 Mockups",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_agent",
+      "label": "Agente nexus-design",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_aurora",
+      "label": "Aurora (design system, est\u00e9tica Discord)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_tokens_file",
+      "label": "packages/config/tokens.json (fuente \u00fanica de tokens)",
+      "file_type": "code",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_color_tokens",
+      "label": "Tokens de color Aurora (superficies, marca, sem\u00e1nticos, texto)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_typography_tokens",
+      "label": "Tipograf\u00eda Aurora (Inter, tabular-nums, JetBrains Mono, base 14/20)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_dark_by_default",
+      "label": "Oscuro por defecto, claro de primera clase",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_four_column_layout",
+      "label": "Layout de 4 columnas (rail 72px \u00b7 sidebar 240px \u00b7 contenido \u00b7 miembros 240px)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_dense_but_breathable",
+      "label": "Denso pero respirable (filas de 40px)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_never_color_alone",
+      "label": "Nunca solo color: color + icono + texto",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_ctrl_k",
+      "label": "Ctrl+K como puerta a toda acci\u00f3n",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_contrast_aa",
+      "label": "Contraste AA 4.5:1 en ambos temas y foco visible",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_touch_targets",
+      "label": "Objetivos t\u00e1ctiles \u2265 44px en m\u00f3vil",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_empty_states",
+      "label": "Estados vac\u00edos con personalidad",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_useful_errors",
+      "label": "Errores \u00fatiles: qu\u00e9 pas\u00f3, por qu\u00e9, qu\u00e9 hacer",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_microcopy",
+      "label": "Microcopy en espa\u00f1ol dominicano neutro con tuteo",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_ui_packages",
+      "label": "packages/ui y packages/ui-native",
+      "file_type": "code",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design_accessibility_audit",
+      "label": "Auditor\u00eda de accesibilidad de UI existente",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "docs_proyecto_nexus_erp_s11_aurora",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "docs_proyecto_nexus_erp_s12_mockups",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "agents_nexus_design_aurora",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_tokens_file",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_tokens_file",
+      "target": "agents_nexus_design_color_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_tokens_file",
+      "target": "agents_nexus_design_typography_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_dark_by_default",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_four_column_layout",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_dense_but_breathable",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_never_color_alone",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_ctrl_k",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_contrast_aa",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_touch_targets",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_empty_states",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_aurora",
+      "target": "agents_nexus_design_useful_errors",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "agents_nexus_design_microcopy",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "agents_nexus_design_ui_packages",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_agent",
+      "target": "agents_nexus_design_accessibility_audit",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_accessibility_audit",
+      "target": "agents_nexus_design_contrast_aa",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_accessibility_audit",
+      "target": "agents_nexus_design_never_color_alone",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_ui_packages",
+      "target": "agents_nexus_design_tokens_file",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_microcopy",
+      "target": "agents_nexus_docs_dominican_context",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_useful_errors",
+      "target": "agents_nexus_tutorial_error_formula",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_empty_states",
+      "target": "agents_nexus_tutorial_empty_state_formula",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_touch_targets",
+      "target": "agents_nexus_mobile_thumb_design",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design_four_column_layout",
+      "target": "agents_nexus_web_responsive_breakpoints",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-design.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

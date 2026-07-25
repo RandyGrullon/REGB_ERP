@@ -1,0 +1,518 @@
+{
+  "nodes": [
+    {
+      "id": "pricing_calc_skill",
+      "label": "Skill: pricing-calc",
+      "file_type": "document",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "frontmatter",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_input_defaults",
+      "label": "Datos de entrada y defaults de cotizaci\u00f3n",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7Datos que necesitas",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_tier_thresholds",
+      "label": "Umbrales de tier por empleados (\u226425 pyme \u00b7 26-200 mediano \u00b7 >200 grande)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 15",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_base_table",
+      "label": "Tabla base de tiers (\u00a76.2)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7Tabla base",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_module_price_table",
+      "label": "Precio de m\u00f3dulos por categor\u00eda (\u00a76.3)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7Precio de m\u00f3dulos",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_pricing_formula",
+      "label": "F\u00f3rmula de precio de Nexus ERP",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7F\u00f3rmula",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_overage_terms",
+      "label": "Excedentes (usuarios, sucursales, empresas, storage, consumo medido)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "lines 53-57",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_included_modules_discount",
+      "label": "Descuento de m\u00f3dulos incluidos (los m\u00e1s caros primero)",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 58",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_cycle_discount",
+      "label": "Descuento por ciclo (anual \u221215% \u00b7 bianual \u221220% \u00b7 trianual \u221225%)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 59",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_itbis",
+      "label": "ITBIS 18% para tenants de RD",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 60",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_rounding_rule",
+      "label": "Redondeo a 2 decimales solo al final",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 63",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_proposal_format",
+      "label": "Formato de propuesta comercial en markdown",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7Formato de salida",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_cycle_comparison",
+      "label": "Comparativa de ciclos en la propuesta",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "lines 85-89",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_alternatives_section",
+      "label": "Secci\u00f3n de alternativas de tier (inferior/superior)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "lines 91-93",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_verification_cases",
+      "label": "Verificaci\u00f3n obligatoria contra los 3 casos de \u00a76.5",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "\u00a7Verificaci\u00f3n obligatoria",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_case_colmado_la_esperanza",
+      "label": "Caso Colmado La Esperanza (instalaci\u00f3n 950 \u00b7 mensual 123.25)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 98",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_case_distribuidora_caribe",
+      "label": "Caso Distribuidora Caribe (instalaci\u00f3n 8.300 \u00b7 mensual 906)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 99",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "pricing_calc_skill_case_grupo_quisqueya",
+      "label": "Caso Grupo Quisqueya (instalaci\u00f3n 74.400 \u00b7 mensual 3.946)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 100",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s6_2_tier_table",
+      "label": "\u00a76.2 Tabla base de tiers",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 22",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s6_3_module_pricing",
+      "label": "\u00a76.3 Precio de m\u00f3dulos por categor\u00eda",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 38",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s6_5_pricing_cases",
+      "label": "\u00a76.5 Casos de cotizaci\u00f3n de referencia",
+      "file_type": "concept",
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 97",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "docs_proyecto_nexus_erp_s6_2_tier_table",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s6_3_module_pricing",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s6_5_pricing_cases",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill",
+      "target": "pricing_calc_skill_pricing_formula",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill",
+      "target": "pricing_calc_skill_input_defaults",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_input_defaults",
+      "target": "pricing_calc_skill_tier_thresholds",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 15",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_base_table",
+      "target": "docs_proyecto_nexus_erp_s6_2_tier_table",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 22",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_module_price_table",
+      "target": "docs_proyecto_nexus_erp_s6_3_module_pricing",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 38",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_base_table",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_module_price_table",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_overage_terms",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_included_modules_discount",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 58",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_cycle_discount",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 59",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_pricing_formula",
+      "target": "pricing_calc_skill_itbis",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 60",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_rounding_rule",
+      "target": "pricing_calc_skill_pricing_formula",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 63",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill",
+      "target": "pricing_calc_skill_proposal_format",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_proposal_format",
+      "target": "pricing_calc_skill_cycle_comparison",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_cycle_comparison",
+      "target": "pricing_calc_skill_cycle_discount",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_proposal_format",
+      "target": "pricing_calc_skill_alternatives_section",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_verification_cases",
+      "target": "docs_proyecto_nexus_erp_s6_5_pricing_cases",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 97",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_verification_cases",
+      "target": "pricing_calc_skill_case_colmado_la_esperanza",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 98",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_verification_cases",
+      "target": "pricing_calc_skill_case_distribuidora_caribe",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 99",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_verification_cases",
+      "target": "pricing_calc_skill_case_grupo_quisqueya",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 100",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_case_colmado_la_esperanza",
+      "target": "pricing_calc_skill_pricing_formula",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 102",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_case_distribuidora_caribe",
+      "target": "pricing_calc_skill_pricing_formula",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 102",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_case_grupo_quisqueya",
+      "target": "pricing_calc_skill_pricing_formula",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": "line 102",
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_module_price_table",
+      "target": "new_module_skill_module_pricing_table",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "pricing_calc_skill_itbis",
+      "target": "new_module_skill_dominican_data_rule",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/skills/pricing-calc/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

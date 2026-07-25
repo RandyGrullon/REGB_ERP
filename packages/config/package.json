@@ -1,0 +1,29 @@
+{
+  "name": "@nexus/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fuente unica de tokens de diseno Aurora y configuracion compartida",
+  "exports": {
+    "./tokens": "./tokens.json",
+    "./tokens.css": "./dist/tokens.css",
+    ".": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "tokens.json"
+  ],
+  "scripts": {
+    "build": "node build-tokens.mjs && tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

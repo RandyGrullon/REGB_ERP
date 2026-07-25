@@ -1,0 +1,541 @@
+{
+  "nodes": [
+    {
+      "id": "aurora_ui_skill",
+      "label": "Skill: aurora-ui",
+      "file_type": "document",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "frontmatter",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_aurora_design_system",
+      "label": "Aurora Design System",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_discord_aesthetic",
+      "label": "Est\u00e9tica Discord (oscuro, denso, plano)",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_design_tokens",
+      "label": "Tokens Aurora (nunca hex sueltos)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Tokens",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_surface_tokens",
+      "label": "Tokens de superficie (bg-deepest\u2026bg-overlay, border)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 13-20",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_brand_tokens",
+      "label": "Tokens de marca (blurple #5865F2, fucsia, teal)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 22-24",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_semantic_tokens",
+      "label": "Tokens sem\u00e1nticos (success/warning/danger/info/neutral)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 26-28",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_text_tokens",
+      "label": "Tokens de texto (primary/secondary/muted/link, oscuro y claro)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 30-34",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_shape_tokens",
+      "label": "Tokens de forma (radios, espaciado \u00d74, sombras, foco)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 36-40",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_typography_scale",
+      "label": "Tipograf\u00eda Aurora (Inter, tabular-nums, JetBrains Mono)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Tipograf\u00eda",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_canonical_layout",
+      "label": "Layout can\u00f3nico (rail 72 \u00b7 sidebar 240 \u00b7 contenido \u00b7 members 240)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Layout can\u00f3nico",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_mobile_drawer_rule",
+      "label": "Regla responsive <768px (sidebar \u2192 drawer + nav inferior de 5)",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 49",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_component_deliverables",
+      "label": "Entregables por componente (web + native + estados + temas + tipos + a11y)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Qu\u00e9 entregas por componente",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_component_states",
+      "label": "Los 8 estados obligatorios de componente",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 55",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_design_laws",
+      "label": "Las leyes de Aurora (checklist previo a entrega)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Las leyes",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_no_hardcoded_hex",
+      "label": "Ley: cero hex hardcodeado",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 62",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_accessibility_aa",
+      "label": "Accesibilidad AA (contraste 4.5:1, foco visible, t\u00e1ctil 44px, reduced-motion)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "lines 63-67",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_color_plus_icon_rule",
+      "label": "Estado nunca solo por color (color + icono + texto)",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 65",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_empty_state_law",
+      "label": "Ley del estado vac\u00edo (ilustraci\u00f3n + humor + acci\u00f3n + enlace al tour)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 69",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_microcopy_rules",
+      "label": "Microcopy Aurora (espa\u00f1ol dominicano, error qu\u00e9 pas\u00f3 \u00b7 por qu\u00e9 \u00b7 qu\u00e9 hacer)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Microcopy",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_ascii_mockup",
+      "label": "Mockup ASCII antes de c\u00f3digo",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "\u00a7Mockups",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_packages_ui",
+      "label": "packages/ui (React + Tailwind + CVA)",
+      "file_type": "code",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 53",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "aurora_ui_skill_packages_ui_native",
+      "label": "packages/ui-native (React Native, tokens.json)",
+      "file_type": "code",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 54",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s12_mockups",
+      "label": "\u00a712 Mockups ASCII",
+      "file_type": "concept",
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 76",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "aurora_ui_skill",
+      "target": "aurora_ui_skill_aurora_design_system",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_aurora_design_system",
+      "target": "aurora_ui_skill_discord_aesthetic",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 8",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_discord_aesthetic",
+      "target": "aurora_ui_skill_surface_tokens",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_tokens",
+      "target": "aurora_ui_skill_surface_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_tokens",
+      "target": "aurora_ui_skill_brand_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_tokens",
+      "target": "aurora_ui_skill_semantic_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_tokens",
+      "target": "aurora_ui_skill_text_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_tokens",
+      "target": "aurora_ui_skill_shape_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_aurora_design_system",
+      "target": "aurora_ui_skill_typography_scale",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_aurora_design_system",
+      "target": "aurora_ui_skill_canonical_layout",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_canonical_layout",
+      "target": "aurora_ui_skill_mobile_drawer_rule",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 49",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill",
+      "target": "aurora_ui_skill_component_deliverables",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_component_deliverables",
+      "target": "aurora_ui_skill_packages_ui",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 53",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_component_deliverables",
+      "target": "aurora_ui_skill_packages_ui_native",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 54",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_component_deliverables",
+      "target": "aurora_ui_skill_component_states",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 55",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_component_deliverables",
+      "target": "aurora_ui_skill_accessibility_aa",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 58",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_laws",
+      "target": "aurora_ui_skill_no_hardcoded_hex",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 62",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_no_hardcoded_hex",
+      "target": "aurora_ui_skill_design_tokens",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 62",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_laws",
+      "target": "aurora_ui_skill_accessibility_aa",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_laws",
+      "target": "aurora_ui_skill_color_plus_icon_rule",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 65",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_design_laws",
+      "target": "aurora_ui_skill_empty_state_law",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 69",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill",
+      "target": "aurora_ui_skill_microcopy_rules",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_ascii_mockup",
+      "target": "docs_proyecto_nexus_erp_s12_mockups",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 76",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill",
+      "target": "aurora_ui_skill_ascii_mockup",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_packages_ui_native",
+      "target": "tri_platform_skill_tokens_json",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": "line 54",
+      "weight": 1.0
+    },
+    {
+      "source": "aurora_ui_skill_color_plus_icon_rule",
+      "target": "aurora_ui_skill_semantic_tokens",
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s12_mockups",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/aurora-ui/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}

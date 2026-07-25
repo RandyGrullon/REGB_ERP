@@ -1,0 +1,149 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s2_arquitectura",
+      "label": "\u00a72 Arquitectura",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_agent",
+      "label": "Agente nexus-web",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_server_components",
+      "label": "Server Components por defecto, 'use client' justificado",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_no_business_logic",
+      "label": "Cero l\u00f3gica de negocio en apps/web",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_dynamic_module_loading",
+      "label": "Carga din\u00e1mica de m\u00f3dulos desde el bootstrap (tenant_modules + permisos)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_server_permission_check",
+      "label": "Toda ruta valida permiso en servidor (403, no solo ocultar el enlace)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_aurora_strict",
+      "label": "Aurora estricto: solo tokens, nunca hex sueltos",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_responsive_breakpoints",
+      "label": "Responsive xs\u21922xl (sidebar drawer y nav inferior <768px)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_pwa",
+      "label": "PWA con service worker y cola de mutaciones offline b\u00e1sica",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_suspense_streaming",
+      "label": "Suspense + streaming para datos lentos",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_ctrl_k_root_layout",
+      "label": "Ctrl+K siempre montado en el layout ra\u00edz",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_performance_budget",
+      "label": "Presupuesto de rendimiento web (LCP <1.5s, bundle <200KB)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_web_browser_verification",
+      "label": "Verificaci\u00f3n en navegador con evidencia (preview, resize, captura)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-web.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

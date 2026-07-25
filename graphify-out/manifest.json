@@ -1,0 +1,97 @@
+{
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-architect.md": {
+    "mtime": 1784692564.7494478,
+    "ast_hash": "99be280a296610be5dca6a29f62d7fb8",
+    "semantic_hash": "99be280a296610be5dca6a29f62d7fb8"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-billing.md": {
+    "mtime": 1784692704.5859015,
+    "ast_hash": "faca319b5ddc1782cc1b49244c22e25a",
+    "semantic_hash": "faca319b5ddc1782cc1b49244c22e25a"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-db.md": {
+    "mtime": 1784692599.6624355,
+    "ast_hash": "60f85250ecdc6c3354030812e07a1896",
+    "semantic_hash": "60f85250ecdc6c3354030812e07a1896"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-design.md": {
+    "mtime": 1784692636.3305879,
+    "ast_hash": "b798d6cd671dca9442bbc3a76d82ed03",
+    "semantic_hash": "b798d6cd671dca9442bbc3a76d82ed03"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-desktop.md": {
+    "mtime": 1784692664.8653252,
+    "ast_hash": "1f0fc0fa5b67b438d6391c41c430b3a6",
+    "semantic_hash": "1f0fc0fa5b67b438d6391c41c430b3a6"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-docs.md": {
+    "mtime": 1784692751.54746,
+    "ast_hash": "aba856de37897c6568f9113c16671d63",
+    "semantic_hash": "aba856de37897c6568f9113c16671d63"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-mobile.md": {
+    "mtime": 1784692682.1623638,
+    "ast_hash": "24834df6d1db8702ba7e9cbcca003383",
+    "semantic_hash": "24834df6d1db8702ba7e9cbcca003383"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-module-builder.md": {
+    "mtime": 1784692583.9921815,
+    "ast_hash": "23a84d4f6167e3599ec443d61c486ad7",
+    "semantic_hash": "23a84d4f6167e3599ec443d61c486ad7"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-qa.md": {
+    "mtime": 1784692737.304954,
+    "ast_hash": "d2414270b650299c8a9554a3d080459b",
+    "semantic_hash": "d2414270b650299c8a9554a3d080459b"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-security.md": {
+    "mtime": 1784692617.3097098,
+    "ast_hash": "217f2bc40a6c6538e9afb8c9e09482cc",
+    "semantic_hash": "217f2bc40a6c6538e9afb8c9e09482cc"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-tutorial.md": {
+    "mtime": 1784692724.0983992,
+    "ast_hash": "dcc201fbe6fdd760837fa412c891d502",
+    "semantic_hash": "dcc201fbe6fdd760837fa412c891d502"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\agents\\nexus-web.md": {
+    "mtime": 1784692649.6616843,
+    "ast_hash": "ed9f881b36c54221be1dc484ad750c21",
+    "semantic_hash": "ed9f881b36c54221be1dc484ad750c21"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\aurora-ui\\SKILL.md": {
+    "mtime": 1784692818.9779449,
+    "ast_hash": "0d73846728bc99efb88ea6c088f1706a",
+    "semantic_hash": "0d73846728bc99efb88ea6c088f1706a"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\new-module\\SKILL.md": {
+    "mtime": 1784692777.338279,
+    "ast_hash": "0ef62660c18db7842d4245e9e37f3ed1",
+    "semantic_hash": "0ef62660c18db7842d4245e9e37f3ed1"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\pricing-calc\\SKILL.md": {
+    "mtime": 1784692797.1630821,
+    "ast_hash": "142f222379959dae3ba56bf5727441e1",
+    "semantic_hash": "142f222379959dae3ba56bf5727441e1"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\rls-audit\\SKILL.md": {
+    "mtime": 1784692838.9567327,
+    "ast_hash": "9f853e976de01c11a42e865b738aa290",
+    "semantic_hash": "9f853e976de01c11a42e865b738aa290"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\tour-writer\\SKILL.md": {
+    "mtime": 1784692859.9612718,
+    "ast_hash": "4b3ae6d3921c3b876c45d21363d16d23",
+    "semantic_hash": "4b3ae6d3921c3b876c45d21363d16d23"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\.claude\\skills\\tri-platform\\SKILL.md": {
+    "mtime": 1784692880.8651958,
+    "ast_hash": "18cacf4d2e7948d36c151fffd525ecd6",
+    "semantic_hash": "18cacf4d2e7948d36c151fffd525ecd6"
+  },
+  "C:\\Users\\randy\\code\\NexusERP\\docs\\PROYECTO-NEXUS-ERP.md": {
+    "mtime": 1784692541.7817228,
+    "ast_hash": "72e9a7d3a68196843387ac70d8fa1a8a",
+    "semantic_hash": "72e9a7d3a68196843387ac70d8fa1a8a"
+  }
+}

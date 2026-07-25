@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
+jobs:
+  # ──────────────────────────────────────────────────────────────
+  #  Puerta de arquitectura y seguridad.
+  #  Corre primero y es barata: si falla, no gastamos el resto.
+  # ──────────────────────────────────────────────────────────────
+  gates:
+    name: Puertas (secretos + registry)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ningun secreto ni service_role en codigo de cliente
+        run: pnpm audit:secrets
+      - name: El core no conoce los modulos
+        run: pnpm audit:registry
+
+  build:
+    name: Lint · Typecheck · Build · Test
+    runs-on: ubuntu-latest
+    needs: gates
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm test
+
+  # ──────────────────────────────────────────────────────────────
+  #  Aislamiento entre tenants — la puerta que no se negocia.
+  #  Levanta un Postgres real, aplica las migraciones y verifica
+  #  que el tenant A no pueda ver NADA del tenant B.
+  # ──────────────────────────────────────────────────────────────
+  isolation:
+    name: Aislamiento entre tenants (RLS)
+    runs-on: ubuntu-latest
+    needs: gates
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nexus_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/nexus_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Aplicar migraciones
+        run: pnpm --filter @nexus/db migrate
+      - name: Un tenant NO puede ver datos de otro
+        run: pnpm test:isolation

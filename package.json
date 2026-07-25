@@ -1,0 +1,41 @@
+{
+  "name": "nexus-erp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "ERP modular multi-tenant con estetica Discord",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:isolation": "vitest run --config supabase/tests/vitest.config.ts",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,sql}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,sql}\"",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:diff": "supabase db diff",
+    "audit:secrets": "node scripts/audit-secrets.mjs",
+    "audit:registry": "node scripts/audit-registry.mjs",
+    "gate:f0": "pnpm typecheck && pnpm lint && pnpm test && pnpm audit:secrets && pnpm audit:registry"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.2",
+    "supabase": "^2.2.1",
+    "tsx": "^4.19.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.1",
+    "vitest": "^2.1.8"
+  }
+}

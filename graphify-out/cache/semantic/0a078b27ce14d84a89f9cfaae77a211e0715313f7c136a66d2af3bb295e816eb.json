@@ -1,0 +1,843 @@
+{
+  "nodes": [
+    {
+      "id": "new_module_skill",
+      "label": "Skill: new-module",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "frontmatter",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_ten_step_procedure",
+      "label": "Procedimiento de 10 pasos para crear un m\u00f3dulo",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_step0_context",
+      "label": "Paso 0 \u2014 Contexto (leer \u00a74, \u00a75 y modules/_template)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 0",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_module_id_rule",
+      "label": "Regla: no inventar id fuera del cat\u00e1logo",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 16",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_module_categories",
+      "label": "Categor\u00edas de m\u00f3dulo (core/est\u00e1ndar/avanzado/vertical/enterprise)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_module_pricing_table",
+      "label": "Tabla de precios por categor\u00eda de m\u00f3dulo",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "lines 22-28",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_manifest_contract",
+      "label": "Contrato manifest.ts del m\u00f3dulo",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 2",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_manifest_first_rule",
+      "label": "El manifest es el contrato y va primero",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 30",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_migrations_init_up",
+      "label": "migrations/001_init_up.sql",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_migrations_init_down",
+      "label": "migrations/001_init_down.sql (rollback real)",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 44",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_table_conventions",
+      "label": "Convenciones de tabla (uuid, tenant_id, soft delete, numeric, \u00edndice, auditor\u00eda)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "lines 37-42",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_audit_log_trigger",
+      "label": "Trigger de auditor\u00eda hacia audit.log",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 42",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_policies_sql",
+      "label": "migrations/policies.sql",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 46",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_tenant_isolation_policy",
+      "label": "Patr\u00f3n de pol\u00edtica tenant_isolation (using + with check)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "lines 48-52",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_core_logic",
+      "label": "core/ \u2014 Zod y funciones puras, cero red",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 4",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_ui_web",
+      "label": "ui/ web del m\u00f3dulo (tokens Aurora, data-tour)",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 60",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_ui_native_mobilescope",
+      "label": "ui-native/ limitado a mobileScope",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 61",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_tour_index",
+      "label": "tour/index.ts (\u22656 pasos, \u22652 click, tip de experto)",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 6",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_seed_demo_sql",
+      "label": "seed/demo.sql con datos de Rep\u00fablica Dominicana",
+      "file_type": "code",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 7",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_dominican_data_rule",
+      "label": "Regla de datos dominicanos (RNC, DOP, ITBIS 18%, nunca Acme/John Doe)",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 69",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_catalog_registration",
+      "label": "Registro en nexus.module_catalog y nexus.module_pricing",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 8",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_tests",
+      "label": "Bater\u00eda de tests del m\u00f3dulo (unit \u226580%, aislamiento, 403, E2E)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_tenant_isolation_test",
+      "label": "Test de aislamiento entre tenants A y B",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 78",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_checklist_14",
+      "label": "Checklist de cierre de 14 puntos (\u00a715.4)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Paso 10",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "new_module_skill_delegation",
+      "label": "Delegaci\u00f3n a agentes especializados",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "\u00a7Delegaci\u00f3n",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp",
+      "label": "docs/PROYECTO-NEXUS-ERP.md (documento maestro)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 13",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s4_module_system",
+      "label": "\u00a74 Sistema de m\u00f3dulos",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 13",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s5_module_catalog",
+      "label": "\u00a75 Cat\u00e1logo de los 92 m\u00f3dulos",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 13",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s15_4_checklist",
+      "label": "\u00a715.4 Checklist de 14 puntos",
+      "file_type": "concept",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 84",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_db",
+      "label": "Agente nexus-db (SQL/RLS)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_design",
+      "label": "Agente nexus-design (Aurora)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile",
+      "label": "Agente nexus-mobile (React Native)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial",
+      "label": "Agente nexus-tutorial (tour)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa",
+      "label": "Agente nexus-qa (verificaci\u00f3n)",
+      "file_type": "document",
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "new_module_skill",
+      "target": "new_module_skill_ten_step_procedure",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ten_step_procedure",
+      "target": "new_module_skill_step0_context",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_step0_context",
+      "target": "docs_proyecto_nexus_erp_s4_module_system",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 13",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_step0_context",
+      "target": "docs_proyecto_nexus_erp_s5_module_catalog",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 13",
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s4_module_system",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s5_module_catalog",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "docs_proyecto_nexus_erp_s15_4_checklist",
+      "target": "docs_proyecto_nexus_erp",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_step0_context",
+      "target": "new_module_skill_module_id_rule",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 16",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_module_id_rule",
+      "target": "docs_proyecto_nexus_erp_s5_module_catalog",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 16",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_module_pricing_table",
+      "target": "docs_proyecto_nexus_erp_s6_3_module_pricing",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 20",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_module_pricing_table",
+      "target": "new_module_skill_module_categories",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ten_step_procedure",
+      "target": "new_module_skill_manifest_contract",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_manifest_first_rule",
+      "target": "new_module_skill_manifest_contract",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 30",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_manifest_contract",
+      "target": "new_module_skill_module_categories",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 32",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_manifest_contract",
+      "target": "tri_platform_skill_platform_scope_declaration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 32",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ten_step_procedure",
+      "target": "new_module_skill_migrations_init_up",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_migrations_init_up",
+      "target": "new_module_skill_table_conventions",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_table_conventions",
+      "target": "new_module_skill_audit_log_trigger",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 42",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_migrations_init_up",
+      "target": "new_module_skill_migrations_init_down",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_policies_sql",
+      "target": "new_module_skill_tenant_isolation_policy",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_tenant_isolation_policy",
+      "target": "rls_audit_skill_auth_tenant_id",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "lines 50-51",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_tenant_isolation_policy",
+      "target": "rls_audit_skill_auth_module_active",
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "lines 50-51",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ten_step_procedure",
+      "target": "new_module_skill_core_logic",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_core_logic",
+      "target": "tri_platform_skill_packages_core",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 56",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ui_web",
+      "target": "aurora_ui_skill_design_tokens",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 60",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ui_web",
+      "target": "tour_writer_skill_data_tour_attribute",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 60",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ui_native_mobilescope",
+      "target": "tri_platform_skill_platform_scope_declaration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 61",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_tour_index",
+      "target": "tour_writer_skill_define_tour",
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_seed_demo_sql",
+      "target": "new_module_skill_dominican_data_rule",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 69",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_ten_step_procedure",
+      "target": "new_module_skill_catalog_registration",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_catalog_registration",
+      "target": "new_module_skill_module_pricing_table",
+      "relation": "shares_data_with",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 73",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_tests",
+      "target": "new_module_skill_tenant_isolation_test",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 78",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_tenant_isolation_test",
+      "target": "rls_audit_skill_phase4_live_test",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_checklist_14",
+      "target": "docs_proyecto_nexus_erp_s15_4_checklist",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 84",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_delegation",
+      "target": "agents_nexus_db",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_delegation",
+      "target": "agents_nexus_design",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_delegation",
+      "target": "agents_nexus_mobile",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_delegation",
+      "target": "agents_nexus_tutorial",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "new_module_skill_delegation",
+      "target": "agents_nexus_qa",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_db",
+      "target": "new_module_skill_policies_sql",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_design",
+      "target": "aurora_ui_skill_aurora_design_system",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": "line 87",
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_mobile",
+      "target": "tri_platform_skill_apps_mobile",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_tutorial",
+      "target": "tour_writer_skill",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_qa",
+      "target": "new_module_skill_checklist_14",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": ".claude/skills/new-module/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "module_creation_pipeline",
+      "label": "Pipeline completo de creaci\u00f3n de un m\u00f3dulo",
+      "nodes": [
+        "new_module_skill_manifest_contract",
+        "new_module_skill_migrations_init_up",
+        "new_module_skill_policies_sql",
+        "new_module_skill_core_logic",
+        "new_module_skill_ui_web",
+        "new_module_skill_ui_native_mobilescope",
+        "new_module_skill_tour_index",
+        "new_module_skill_seed_demo_sql",
+        "new_module_skill_catalog_registration",
+        "new_module_skill_tests",
+        "new_module_skill_checklist_14"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/new-module/SKILL.md"
+    }
+  ]
+}

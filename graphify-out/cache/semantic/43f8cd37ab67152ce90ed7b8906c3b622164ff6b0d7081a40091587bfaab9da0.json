@@ -1,0 +1,568 @@
+{
+  "nodes": [
+    {
+      "id": "tri_platform_skill",
+      "label": "Skill: tri-platform",
+      "file_type": "document",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "frontmatter",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_one_brain_three_bodies",
+      "label": "Un cerebro, tres cuerpos \u2014 70% de c\u00f3digo compartido",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 9",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_code_split",
+      "label": "Reparto de c\u00f3digo packages/ vs apps/",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "\u00a7Paso 1",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_first_rule",
+      "label": "Regla: si puede vivir en packages/, vive en packages/",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 26",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_core",
+      "label": "packages/core (tipos, Zod, c\u00e1lculos, m\u00e1quinas de estado)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 16",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_sdk",
+      "label": "packages/sdk (queries, mutaciones, cola offline)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 17",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_permissions",
+      "label": "packages/permissions",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 18",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_tokens_json",
+      "label": "packages/config/tokens.json",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 19",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_ui",
+      "label": "packages/ui (componente web)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 20",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_packages_ui_native",
+      "label": "packages/ui-native (componente RN)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 21",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_apps_web",
+      "label": "apps/web (Next.js: rutas, layout, server actions, SEO)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 22",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_apps_desktop",
+      "label": "apps/desktop (Electron: IPC, impresi\u00f3n, SQLite offline)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 23",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_apps_mobile",
+      "label": "apps/mobile (React Native: navegaci\u00f3n, c\u00e1mara, GPS, push, biometr\u00eda)",
+      "file_type": "code",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 24",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_platform_scope_declaration",
+      "label": "platforms + mobileScope en el manifest",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "\u00a7Paso 2",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_scope_is_product_decision",
+      "label": "Lo que una plataforma NO har\u00e1 es decisi\u00f3n de producto, no deuda",
+      "file_type": "rationale",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 36",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_capability_matrix",
+      "label": "Matriz de capacidades por plataforma",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "lines 38-47",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_build_order",
+      "label": "Orden de construcci\u00f3n (core \u2192 sdk \u2192 web \u2192 desktop \u2192 m\u00f3vil \u2192 verificaci\u00f3n)",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "\u00a7Paso 3",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_parity_checklist",
+      "label": "Checklist de verificaci\u00f3n de paridad",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "\u00a7Paso 4",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_offline_sync_check",
+      "label": "Paridad offline: mutaci\u00f3n en m\u00f3vil se sincroniza y aparece en web",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 65",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "tri_platform_skill_classic_errors",
+      "label": "Errores cl\u00e1sicos multiplataforma y sus correcciones",
+      "file_type": "concept",
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "\u00a7Errores cl\u00e1sicos",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "tri_platform_skill",
+      "target": "tri_platform_skill_code_split",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_one_brain_three_bodies",
+      "target": "tri_platform_skill_code_split",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 9",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_packages_first_rule",
+      "target": "tri_platform_skill_code_split",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 26",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_packages_core",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_packages_sdk",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_packages_permissions",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_tokens_json",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_packages_ui",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_packages_ui_native",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_apps_web",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_apps_desktop",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_code_split",
+      "target": "tri_platform_skill_apps_mobile",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_apps_desktop",
+      "target": "tri_platform_skill_apps_web",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 54",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill",
+      "target": "tri_platform_skill_platform_scope_declaration",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_scope_is_product_decision",
+      "target": "tri_platform_skill_platform_scope_declaration",
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 36",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_platform_scope_declaration",
+      "target": "tri_platform_skill_capability_matrix",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill",
+      "target": "tri_platform_skill_build_order",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_build_order",
+      "target": "tri_platform_skill_packages_core",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 51",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_build_order",
+      "target": "tri_platform_skill_packages_sdk",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 52",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill",
+      "target": "tri_platform_skill_parity_checklist",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_parity_checklist",
+      "target": "tri_platform_skill_offline_sync_check",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 65",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_offline_sync_check",
+      "target": "tri_platform_skill_packages_sdk",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_parity_checklist",
+      "target": "tri_platform_skill_tokens_json",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 63",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_parity_checklist",
+      "target": "tour_writer_skill_define_tour",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 66",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill",
+      "target": "tri_platform_skill_classic_errors",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_classic_errors",
+      "target": "tri_platform_skill_tokens_json",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": "line 74",
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_classic_errors",
+      "target": "aurora_ui_skill_no_hardcoded_hex",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_packages_ui",
+      "target": "aurora_ui_skill_packages_ui",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_packages_ui_native",
+      "target": "aurora_ui_skill_packages_ui_native",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_packages_permissions",
+      "target": "rls_audit_skill_hidden_button_not_security",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_packages_core",
+      "target": "new_module_skill_core_logic",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "tri_platform_skill_capability_matrix",
+      "target": "new_module_skill_ui_native_mobilescope",
+      "relation": "references",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/skills/tri-platform/SKILL.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "shared_code_tri_platform",
+      "label": "Un cerebro, tres cuerpos: reparto packages/ vs apps/",
+      "nodes": [
+        "tri_platform_skill_packages_core",
+        "tri_platform_skill_packages_sdk",
+        "tri_platform_skill_packages_permissions",
+        "tri_platform_skill_tokens_json",
+        "tri_platform_skill_packages_ui",
+        "tri_platform_skill_packages_ui_native",
+        "tri_platform_skill_apps_web",
+        "tri_platform_skill_apps_desktop",
+        "tri_platform_skill_apps_mobile",
+        "tri_platform_skill_parity_checklist"
+      ],
+      "relation": "form",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/skills/tri-platform/SKILL.md"
+    }
+  ]
+}

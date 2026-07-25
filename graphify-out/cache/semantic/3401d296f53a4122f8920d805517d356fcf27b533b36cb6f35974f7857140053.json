@@ -1,0 +1,171 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s13_plataformas",
+      "label": "\u00a713 Responsive y plataformas",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_agent",
+      "label": "Agente nexus-mobile",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_mobile_scope",
+      "label": "mobileScope: el m\u00f3vil es un subconjunto declarado",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_first_modules",
+      "label": "M\u00f3dulos m\u00f3vil-primero (attendance, expenses, field-service, logistics\u2026)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_thumb_design",
+      "label": "Dise\u00f1o para el pulgar (acciones en el tercio inferior)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_bottom_nav",
+      "label": "Nav inferior de 5 elementos",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_offline_watermelondb",
+      "label": "Offline-first con WatermelonDB",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_camera_input",
+      "label": "C\u00e1mara como entrada principal (escanear, fotografiar, firmar)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_actionable_push",
+      "label": "Push accionable (aprobar desde la notificaci\u00f3n)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_biometrics",
+      "label": "Biometr\u00eda para desbloquear",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_aurora_native",
+      "label": "Aurora nativo v\u00eda packages/ui-native",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_no_business_logic",
+      "label": "Cero l\u00f3gica de negocio en m\u00f3vil (todo de @nexus/core)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_low_data_mode",
+      "label": "Modo de bajo consumo de datos (usuarios en 3G)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_ota_updates",
+      "label": "Actualizaciones OTA con Expo Updates",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_mobile_eas_publishing",
+      "label": "Publicaci\u00f3n con EAS Build y EAS Submit",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-mobile.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

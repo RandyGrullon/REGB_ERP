@@ -1,0 +1,149 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s15_4_dod",
+      "label": "\u00a715.4 Definici\u00f3n de Terminado",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "docs_proyecto_nexus_erp_s19_3_kpis",
+      "label": "\u00a719.3 KPIs t\u00e9cnicos",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_agent",
+      "label": "Agente nexus-qa",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_test_pyramid",
+      "label": "Pir\u00e1mide de tests (unit, integraci\u00f3n, E2E web/m\u00f3vil/desktop, visual)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_tenant_isolation_test",
+      "label": "Test de aislamiento de tenants por tabla",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_module_disabled_test",
+      "label": "Test de m\u00f3dulo desactivado (403, nunca datos)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_server_permission_test",
+      "label": "Test de permisos en servidor (endpoint directo \u2192 403)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_quotation_test",
+      "label": "Los 3 casos de cotizaci\u00f3n al centavo exacto",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_offline_sync_test",
+      "label": "Test offline \u2192 online (cola en orden, sin duplicar)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_responsive_test",
+      "label": "Test responsive (375/768/1440 px, tema oscuro y claro)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_dod_checklist",
+      "label": "Checklist de verificaci\u00f3n de m\u00f3dulo (14 \u00edtems)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_visual_regression",
+      "label": "Regresi\u00f3n visual de componentes Aurora",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_qa_evidence_reporting",
+      "label": "Reporte con evidencia cruda, nunca 'todo bien'",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-qa.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

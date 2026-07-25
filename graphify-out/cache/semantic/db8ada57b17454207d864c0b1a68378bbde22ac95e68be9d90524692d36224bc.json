@@ -1,0 +1,149 @@
+{
+  "nodes": [
+    {
+      "id": "docs_proyecto_nexus_erp_s14_tutorial",
+      "label": "\u00a714 Sistema de tutorial",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_agent",
+      "label": "Agente nexus-tutorial",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_four_layers",
+      "label": "Las 4 capas de aprendizaje",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_welcome_tour",
+      "label": "Tour de bienvenida (5 min, explica el layout)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_module_tour",
+      "label": "Tour por m\u00f3dulo (6-10 pasos, pr\u00e1ctico)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_onboarding_checklist",
+      "label": "Checklist de puesta en marcha gamificado (XP, niveles, recompensa)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_academia_nexus",
+      "label": "Academia Nexus (videos, art\u00edculos, certificaci\u00f3n)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_define_tour_api",
+      "label": "API defineTour({id, title, steps, reward, onComplete})",
+      "file_type": "code",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_writing_rules",
+      "label": "Reglas de escritura de tours (m\u00e1x 2 frases, ense\u00f1a el porqu\u00e9)",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_empty_state_formula",
+      "label": "F\u00f3rmula de estado vac\u00edo (ilustraci\u00f3n + humor + acciones + tour)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_error_formula",
+      "label": "F\u00f3rmula de error (qu\u00e9 pas\u00f3 \u00b7 por qu\u00e9 \u00b7 qu\u00e9 hacer)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_tour_progress",
+      "label": "tour_progress guardado por usuario, no por tenant",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_tutorial_no_consultant_goal",
+      "label": "Meta: que ning\u00fan cliente necesite un consultor",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-tutorial.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [],
+  "hyperedges": []
+}

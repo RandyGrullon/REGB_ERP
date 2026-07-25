@@ -1,0 +1,21 @@
+{
+  "name": "@nexus/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Migraciones, politicas RLS y tests de aislamiento",
+  "scripts": {
+    "migrate": "node scripts/migrate.mjs",
+    "test": "vitest run --config tests/vitest.config.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tests/tsconfig.json",
+    "build": "echo 'sin build'"
+  },
+  "dependencies": {
+    "postgres": "^3.4.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

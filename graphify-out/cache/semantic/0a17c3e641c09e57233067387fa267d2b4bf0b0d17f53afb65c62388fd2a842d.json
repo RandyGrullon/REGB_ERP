@@ -1,0 +1,361 @@
+{
+  "nodes": [
+    {
+      "id": "agents_nexus_desktop_agent",
+      "label": "Agente nexus-desktop",
+      "file_type": "document",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_raison_detre",
+      "label": "Las 6 razones de existir de Electron",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_ipc_security",
+      "label": "Seguridad Electron: contextIsolation, sandbox, sin nodeIntegration",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_context_bridge_api",
+      "label": "API m\u00ednima por contextBridge (nunca ipcRenderer completo)",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_zod_payload_validation",
+      "label": "Validaci\u00f3n Zod de cada payload del renderer",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_safestorage_tokens",
+      "label": "Tokens en safeStorage del SO, nunca en localStorage",
+      "file_type": "rationale",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_sqlite_replica",
+      "label": "R\u00e9plica local en SQLite para offline real",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_mutation_queue",
+      "label": "Cola de mutaciones con last-write-wins y folio al sincronizar",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_sync_indicator",
+      "label": "Indicador visible de estado de sincronizaci\u00f3n",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_pos_offline_8h",
+      "label": "El POS vende 8 horas sin internet y cuadra al reconectar",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_printers",
+      "label": "Impresoras t\u00e9rmicas ESC/POS y fiscales por pa\u00eds",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_barcode_input",
+      "label": "Lectores de c\u00f3digo de barras como entrada de teclado",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_distribution",
+      "label": "Distribuci\u00f3n con electron-builder (NSIS/DMG/AppImage) y firma",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    },
+    {
+      "id": "agents_nexus_desktop_auto_update",
+      "label": "Auto-update silencioso con canales stable/beta, rollback y delta",
+      "file_type": "concept",
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null
+    }
+  ],
+  "edges": [
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "docs_proyecto_nexus_erp_s13_plataformas",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_raison_detre",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_web_agent",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_ipc_security",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_ipc_security",
+      "target": "agents_nexus_desktop_context_bridge_api",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_ipc_security",
+      "target": "agents_nexus_desktop_zod_payload_validation",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_ipc_security",
+      "target": "agents_nexus_desktop_safestorage_tokens",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_sqlite_replica",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_sqlite_replica",
+      "target": "agents_nexus_desktop_mutation_queue",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_mutation_queue",
+      "target": "agents_nexus_desktop_sync_indicator",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_pos_offline_8h",
+      "target": "agents_nexus_desktop_mutation_queue",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_printers",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_barcode_input",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_agent",
+      "target": "agents_nexus_desktop_distribution",
+      "relation": "implements",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_distribution",
+      "target": "agents_nexus_desktop_auto_update",
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_raison_detre",
+      "target": "agents_nexus_desktop_printers",
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_mutation_queue",
+      "target": "agents_nexus_mobile_offline_watermelondb",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_mutation_queue",
+      "target": "agents_nexus_web_pwa",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_auto_update",
+      "target": "agents_nexus_mobile_ota_updates",
+      "relation": "semantically_similar_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "agents_nexus_desktop_zod_payload_validation",
+      "target": "agents_nexus_security_threat_model",
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.75,
+      "source_file": ".claude/agents/nexus-desktop.md",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": []
+}
