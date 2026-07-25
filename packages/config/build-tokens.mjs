@@ -19,6 +19,7 @@ function colorVars(theme) {
   const out = []
   for (const [group, entries] of Object.entries(tokens.color)) {
     for (const [name, val] of Object.entries(entries)) {
+      if (name.startsWith('$')) continue // notas para humanos, no tokens
       const suffix = name === 'default' ? '' : `-${kebab(name)}`
       out.push(`  --color-${kebab(group)}${suffix}: ${val[theme]};`)
     }
@@ -106,9 +107,11 @@ ${colorVars('light')}
   }
 }
 
-/* El foco SIEMPRE es visible. Nunca outline:none sin reemplazo. */
+/* El foco SIEMPRE es visible. Nunca outline:none sin reemplazo.
+   Usa brand-bright, no brand: el blurple puro da 2.74:1 sobre el fondo
+   oscuro y el anillo literalmente no se ve. */
 :focus-visible {
-  outline: 2px solid var(--color-brand);
+  outline: 2px solid var(--color-brand-bright);
   outline-offset: 2px;
   box-shadow: var(--shadow-focus);
 }

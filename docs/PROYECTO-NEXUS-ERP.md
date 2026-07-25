@@ -1200,20 +1200,47 @@ Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, 
   brand       hover       active      fuchsia      teal
 ```
 
-#### Semánticos
+#### Semánticos — relleno vs. texto
 
-| Token       | Hex       | Uso                               |
-| ----------- | --------- | --------------------------------- |
-| `--success` | `#23A559` | Pagado, aprobado, en línea        |
-| `--warning` | `#F0B232` | Por vencer, stock bajo, pendiente |
-| `--danger`  | `#F23F43` | Vencido, error, eliminar          |
-| `--info`    | `#00A8FC` | Informativo, tips                 |
-| `--neutral` | `#80848E` | Deshabilitado, borrador           |
+> ⚠️ **Un color de relleno no sirve como color de texto.** La paleta de Discord es bonita pero no cumple AA sobre fondo oscuro: el rojo puro da **2.66:1** y el verde **3.15:1**, muy por debajo del 4.5:1 exigido. Por eso hay dos juegos. Los valores de texto están **calculados**, no elegidos a ojo, y los verifica `packages/config/src/contrast.test.ts` en cada build.
+
+**Relleno** — badges, barras, puntos de estado. Umbral de componente (3:1).
+
+| Token                      | Oscuro    | Claro     | Uso                        |
+| -------------------------- | --------- | --------- | -------------------------- |
+| `--color-semantic-success` | `#23A559` | `#1A8245` | Pagado, aprobado, en línea |
+| `--color-semantic-warning` | `#F0B232` | `#B8860B` | Por vencer, stock bajo     |
+| `--color-semantic-danger`  | `#F23F43` | `#D02B2F` | Vencido, error, eliminar   |
+| `--color-semantic-info`    | `#00A8FC` | `#0068E0` | Informativo, tips          |
+| `--color-semantic-neutral` | `#80848E` | `#6D6F78` | Deshabilitado, borrador    |
 
 ```
 ■ #23A559   ■ #F0B232   ■ #F23F43   ■ #00A8FC   ■ #80848E
   success     warning     danger       info       neutral
 ```
+
+**Texto** — "Vencido", "Stock bajo", mensajes de error. AA 4.5:1 verificado sobre contenido, tarjeta y modal.
+
+| Token                           | Oscuro    | Claro     |
+| ------------------------------- | --------- | --------- |
+| `--color-semantic-text-success` | `#65C08B` | `#1A8245` |
+| `--color-semantic-text-warning` | `#F0B232` | `#936B09` |
+| `--color-semantic-text-danger`  | `#F89294` | `#D02B2F` |
+| `--color-semantic-text-info`    | `#30B9FD` | `#0068E0` |
+| `--color-semantic-text-neutral` | `#ABAEB4` | `#6D6F78` |
+
+```
+■ #65C08B   ■ #F0B232   ■ #F89294   ■ #30B9FD   ■ #ABAEB4
+  success     warning     danger       info       neutral
+```
+
+#### Foco
+
+| Token                  | Oscuro    | Claro     | Uso                          |
+| ---------------------- | --------- | --------- | ---------------------------- |
+| `--color-brand-bright` | `#7983F5` | `#4752C4` | Anillo de foco e indicadores |
+
+El blurple puro (`#5865F2`) solo alcanza **2.74:1** sobre `#313338`: un anillo de foco con ese color es invisible. `brand-bright` da 3.84:1.
 
 #### Texto
 

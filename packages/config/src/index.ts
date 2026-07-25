@@ -33,12 +33,15 @@ export function paletteFor(theme: Theme): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [group, entries] of Object.entries(tokensJson.color)) {
     for (const [name, val] of Object.entries(entries as Record<string, Record<Theme, string>>)) {
+      if (name.startsWith('$')) continue // notas para humanos, no tokens
       const key = name === 'default' ? group : `${group}.${name}`
       out[key] = val[theme]
     }
   }
   return out
 }
+
+export * from './contrast.js'
 
 export const space = tokensJson.space
 export const radius = tokensJson.radius
