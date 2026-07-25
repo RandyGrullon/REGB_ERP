@@ -1,0 +1,28 @@
+{
+  "name": "@nexus/module-registry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Contrato de modulo y descubrimiento dinamico en runtime",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@nexus/core": "workspace:*",
+    "@nexus/permissions": "workspace:*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
