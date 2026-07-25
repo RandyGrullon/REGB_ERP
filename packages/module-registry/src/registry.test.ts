@@ -184,6 +184,52 @@ describe('Dependencias', () => {
 })
 
 // ═══════════════════════════════════════════════════════════════════════
+describe('Licencia frente a renderizado — dos fronteras distintas', () => {
+  /**
+   * `activeModules` = lo que puede PINTARSE.
+   * `licensedModules` = lo que el cliente PAGA, la misma frontera que
+   * `auth.module_active()` en SQL.
+   *
+   * Confundirlas convierte un hueco de implementacion en un 403
+   * inexplicable: el cliente compro el modulo, la UI aun no existe, y el
+   * servidor le niega permisos que si tiene.
+   */
+  it('un modulo licenciado sin manifest cuenta como licenciado', () => {
+    const r = hydrate({ ...base, tenantModules: [live('products'), live('rbac')] })
+    expect(r.licensedModules.has('rbac')).toBe(true)
+    expect(r.activeModules.has('rbac')).toBe(false)
+  })
+
+  it('un modulo que no corre en esta plataforma sigue estando licenciado', () => {
+    const r = hydrate({ ...base, platform: 'mobile', tenantModules: [live('payroll')] })
+    expect(r.licensedModules.has('payroll')).toBe(true)
+    expect(r.activeModules.has('payroll')).toBe(false)
+  })
+
+  it('un modulo APAGADO no esta en ninguna de las dos', () => {
+    const r = hydrate({
+      ...base,
+      tenantModules: [{ moduleId: 'products', status: 'active', enabled: false }],
+    })
+    expect(r.licensedModules.has('products')).toBe(false)
+    expect(r.activeModules.has('products')).toBe(false)
+  })
+
+  it('un modulo suspendido por mora tampoco', () => {
+    const r = hydrate({
+      ...base,
+      tenantModules: [{ moduleId: 'products', status: 'suspended', enabled: true }],
+    })
+    expect(r.licensedModules.has('products')).toBe(false)
+  })
+
+  it('las rutas siguen usando activeModules: sin manifest no hay que abrir', () => {
+    const r = hydrate({ ...base, tenantModules: [live('products'), live('rbac')] })
+    expect(canOpenRoute('/rbac', r, { role: owner, userId: USER })).toBe(false)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════
 describe('Plataformas', () => {
   it('nomina no aparece en movil aunque este licenciada', () => {
     const r = hydrate({ ...base, platform: 'mobile', tenantModules: [live('payroll')] })

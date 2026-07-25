@@ -1,8 +1,16 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Badge, Card, cn } from '@regb/ui'
+import { useMemo, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { Badge, Button, Card, cn } from '@regb/ui'
 import { matchingPatterns } from '@regb/permissions'
+import {
+  createRole,
+  deleteRole,
+  setPermission,
+  setScope,
+  toggleModuleVisibility,
+} from '@/app/roles/actions'
 
 /**
  * Editor de roles y permisos (§8.4).
@@ -118,14 +126,45 @@ export function RolesEditor({
   modules,
   tenantName,
   backHref,
+  demo,
+  canEdit,
 }: {
   roles: RoleRow[]
   modules: ModuleOption[]
   tenantName: string
   backHref: string
+  /** Contexto de la demostracion. En produccion va undefined. */
+  demo?: { tenantSlug: string; roleName: string } | undefined
+  /** El rol de quien mira, ¿puede editar? La UI lo respeta; el servidor
+   *  lo vuelve a comprobar de todos modos (§8.3). */
+  canEdit: boolean
 }) {
   const [activo, setActivo] = useState(roles[0]?.id ?? '')
+  const [error, setError] = useState<string | null>(null)
+  const [guardando, empezar] = useTransition()
+  const [nuevoNombre, setNuevoNombre] = useState('')
+  const [creando, setCreando] = useState(false)
+  const router = useRouter()
+
   const rol = useMemo(() => roles.find((r) => r.id === activo), [roles, activo])
+
+  /** Envuelve una accion: limpia el error, refresca y reporta si fallo. */
+  const ejecutar = (accion: () => Promise<{ ok: boolean; error?: string }>) => {
+    setError(null)
+    empezar(async () => {
+      const r = await accion()
+      if (!r.ok) setError(r.error ?? 'No se pudo guardar.')
+      else router.refresh()
+    })
+  }
+
+  /** Ciclo del chip: sin definir → concedido → denegado → sin definir. */
+  const ciclar = (perm: string, estado: Estado) => {
+    if (!canEdit || !rol) return
+    const siguiente: boolean | null =
+      estado === 'concedido' ? false : estado === 'denegado' ? null : true
+    ejecutar(() => setPermission({ roleId: rol.id, permission: perm, value: siguiente, demo }))
+  }
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -168,6 +207,59 @@ export function RolesEditor({
         </div>
 
         <div className="shrink-0 border-t border-[var(--color-border)] p-2">
+          {canEdit && (
+            <>
+              {creando ? (
+                <div className="mb-2 space-y-1.5">
+                  <input
+                    autoFocus
+                    value={nuevoNombre}
+                    onChange={(e) => setNuevoNombre(e.target.value)}
+                    placeholder="Nombre del rol"
+                    className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  />
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      className="flex-1"
+                      loading={guardando}
+                      onClick={() =>
+                        ejecutar(async () => {
+                          const r = await createRole({
+                            name: nuevoNombre,
+                            copyFrom: activo,
+                            demo,
+                          })
+                          if (r.ok) {
+                            setCreando(false)
+                            setNuevoNombre('')
+                          }
+                          return r
+                        })
+                      }
+                    >
+                      Crear
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setCreando(false)}>
+                      Cancelar
+                    </Button>
+                  </div>
+                  <p className="text-[10px] text-[var(--color-text-muted)]">
+                    Copia los permisos de {rol?.name ?? 'el rol actual'} como punto de partida.
+                  </p>
+                </div>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mb-2 w-full"
+                  onClick={() => setCreando(true)}
+                >
+                  + Nuevo rol
+                </Button>
+              )}
+            </>
+          )}
           <p className="px-2 py-1 text-[11px] text-[var(--color-text-muted)]">{tenantName}</p>
         </div>
       </aside>
@@ -186,9 +278,31 @@ export function RolesEditor({
               <Badge tone="brand" dot={false}>
                 {rol.memberCount} usuario{rol.memberCount === 1 ? '' : 's'}
               </Badge>
+              <div className="flex-1" />
+              {guardando && (
+                <span className="text-xs text-[var(--color-text-muted)]">Guardando…</span>
+              )}
+              {canEdit && !rol.isSystem && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => ejecutar(() => deleteRole({ roleId: rol.id, demo }))}
+                >
+                  Borrar rol
+                </Button>
+              )}
             </div>
             {rol.description && (
               <p className="mb-4 text-sm text-[var(--color-text-secondary)]">{rol.description}</p>
+            )}
+
+            {error && (
+              <p
+                role="alert"
+                className="mb-4 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_15%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-danger)]"
+              >
+                {error}
+              </p>
             )}
 
             {/* El aviso de §8.3, permanente y no descartable */}
@@ -214,17 +328,33 @@ export function RolesEditor({
                   {modules.map((m) => {
                     const visible = rol.visibleModules.includes(m.id)
                     return (
-                      <span
+                      <button
                         key={m.id}
+                        type="button"
+                        disabled={!canEdit || guardando}
+                        aria-pressed={visible}
+                        onClick={() =>
+                          ejecutar(() =>
+                            toggleModuleVisibility({
+                              roleId: rol.id,
+                              moduleId: m.id,
+                              visible: !visible,
+                              demo,
+                            }),
+                          )
+                        }
                         className={cn(
-                          'rounded-[var(--radius-md)] px-2 py-1 text-xs',
+                          'rounded-[var(--radius-md)] px-2 py-1 text-xs transition-colors duration-100',
+                          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
+                          canEdit && 'cursor-pointer hover:brightness-110',
+                          !canEdit && 'cursor-default',
                           visible
                             ? 'bg-[var(--color-brand-soft)] font-medium text-[var(--color-brand-bright)]'
                             : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] line-through',
                         )}
                       >
                         {m.name}
-                      </span>
+                      </button>
                     )
                   })}
                   {modules.length === 0 && (
@@ -239,7 +369,11 @@ export function RolesEditor({
             {/* ── 2. Permisos por modulo ───────────────────────────── */}
             <Section
               titulo="Que puede hacer"
-              ayuda="Rojo tachado = denegado explicitamente. Una denegacion gana sobre cualquier permiso mas general."
+              ayuda={
+                canEdit
+                  ? 'Toca un permiso para ciclarlo: sin definir → concedido → denegado. Una denegacion gana sobre cualquier permiso mas general.'
+                  : 'Rojo tachado = denegado explicitamente. Una denegacion gana sobre cualquier permiso mas general.'
+              }
             >
               <div className="space-y-3">
                 {modules.map((m) => (
@@ -253,7 +387,16 @@ export function RolesEditor({
                     <div className="flex flex-wrap gap-1.5">
                       {m.permissions.map((p) => {
                         const { estado, via } = estadoDe(p, rol.permissions)
-                        return <PermChip key={p} label={etiqueta(p)} estado={estado} via={via} />
+                        return (
+                          <PermChip
+                            key={p}
+                            label={etiqueta(p)}
+                            estado={estado}
+                            via={via}
+                            editable={canEdit && !guardando}
+                            onClick={() => ciclar(p, estado)}
+                          />
+                        )
                       })}
                     </div>
                   </div>
@@ -271,13 +414,21 @@ export function RolesEditor({
               titulo="Sobre que datos"
               ayuda="El alcance no dice que ACCIONES puede hacer, sino sobre QUE FILAS."
             >
-              <ScopeView scope={rol.scope} />
+              <ScopeEditor
+                scope={rol.scope}
+                editable={canEdit && !guardando}
+                onChange={(key, value) =>
+                  ejecutar(() => setScope({ roleId: rol.id, key, value, demo }))
+                }
+              />
             </Section>
 
-            <p className="mt-6 text-xs text-[var(--color-text-muted)]">
-              🚧 Esta pantalla es de solo lectura por ahora. La edicion llega con el modulo{' '}
-              <code className="font-[family-name:var(--font-mono)]">rbac</code> completo.
-            </p>
+            {!canEdit && (
+              <p className="mt-6 text-xs text-[var(--color-text-muted)]">
+                🔒 Estas viendo esto como <strong>{tenantName}</strong> con un rol que no puede
+                editar permisos. Cambia a Owner o Admin para modificarlos.
+              </p>
+            )}
           </>
         )}
       </div>
@@ -303,7 +454,19 @@ function Section({
   )
 }
 
-function PermChip({ label, estado, via }: { label: string; estado: Estado; via: string }) {
+function PermChip({
+  label,
+  estado,
+  via,
+  editable,
+  onClick,
+}: {
+  label: string
+  estado: Estado
+  via: string
+  editable: boolean
+  onClick: () => void
+}) {
   const estilo: Record<Estado, string> = {
     concedido:
       'bg-[color-mix(in_srgb,var(--color-semantic-success)_18%,transparent)] text-[var(--color-semantic-text-success)]',
@@ -313,64 +476,178 @@ function PermChip({ label, estado, via }: { label: string; estado: Estado; via: 
     'sin-definir': 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]',
   }
 
-  const titulo =
-    estado === 'heredado'
-      ? `Heredado de "${via}"`
-      : estado === 'denegado'
-        ? `Denegado por "${via}"`
-        : estado === 'concedido'
-          ? 'Concedido explicitamente'
-          : 'Sin conceder'
+  const explicacion: Record<Estado, string> = {
+    heredado: `Heredado de "${via}"`,
+    denegado: `Denegado por "${via}"`,
+    concedido: 'Concedido explicitamente',
+    'sin-definir': 'Sin conceder',
+  }
+
+  const siguiente: Record<Estado, string> = {
+    'sin-definir': 'conceder',
+    heredado: 'conceder explicitamente',
+    concedido: 'denegar',
+    denegado: 'dejar sin definir',
+  }
+
+  const titulo = editable
+    ? `${explicacion[estado]} · toca para ${siguiente[estado]}`
+    : explicacion[estado]
 
   return (
-    <span
+    <button
+      type="button"
+      disabled={!editable}
+      onClick={onClick}
       title={titulo}
-      className={cn('rounded-[var(--radius-sm)] px-2 py-1 text-xs', estilo[estado])}
+      className={cn(
+        'rounded-[var(--radius-sm)] px-2 py-1 text-xs transition-all duration-100',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
+        editable ? 'cursor-pointer hover:brightness-110 active:translate-y-px' : 'cursor-default',
+        estilo[estado],
+      )}
     >
       {estado === 'heredado' && '↳ '}
       {label}
-    </span>
+    </button>
   )
 }
 
-function ScopeView({ scope }: { scope: Record<string, unknown> }) {
-  const entradas: { label: string; valor: string }[] = []
+type ScopeKey = 'own_only' | 'read_only' | 'max_amount' | 'hours'
 
-  if (scope.read_only) entradas.push({ label: 'Solo lectura', valor: 'No puede escribir nada' })
-  if (scope.own_only)
-    entradas.push({ label: 'Solo lo propio', valor: 'Unicamente los registros que creo' })
-  if (scope.own_branches_only)
-    entradas.push({ label: 'Su sucursal', valor: 'Solo las sucursales que tiene asignadas' })
-  if (scope.own_warehouses_only)
-    entradas.push({ label: 'Su almacen', valor: 'Solo los almacenes que tiene asignados' })
-  if (scope.own_register_only)
-    entradas.push({ label: 'Su caja', valor: 'Solo la caja y el turno donde esta' })
-  if (typeof scope.max_amount === 'number')
-    entradas.push({
-      label: 'Tope de monto',
-      valor: `Hasta ${scope.max_amount.toLocaleString('es-DO')} por operacion`,
-    })
-  if (typeof scope.hours === 'string')
-    entradas.push({ label: 'Horario', valor: `Solo opera entre ${scope.hours}` })
-
-  if (entradas.length === 0) {
-    return (
-      <p className="text-sm text-[var(--color-text-secondary)]">
-        Sin restricciones: alcanza todos los datos del cliente.
-      </p>
-    )
-  }
+function ScopeEditor({
+  scope,
+  editable,
+  onChange,
+}: {
+  scope: Record<string, unknown>
+  editable: boolean
+  onChange: (key: ScopeKey, value: boolean | number | string | null) => void
+}) {
+  // Alcances que se derivan de la asignacion del usuario (sus sucursales,
+  // sus almacenes) y no se editan aqui: solo se informan.
+  const derivados: string[] = []
+  if (scope.own_branches_only) derivados.push('Solo las sucursales que tenga asignadas')
+  if (scope.own_warehouses_only) derivados.push('Solo los almacenes que tenga asignados')
+  if (scope.own_register_only) derivados.push('Solo la caja y el turno donde este')
 
   return (
-    <ul className="space-y-1.5">
-      {entradas.map((e) => (
-        <li key={e.label} className="flex gap-2 text-sm">
-          <span className="w-32 shrink-0 font-medium text-[var(--color-text-primary)]">
-            {e.label}
-          </span>
-          <span className="text-[var(--color-text-secondary)]">{e.valor}</span>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-3">
+      <Interruptor
+        label="Solo lectura"
+        ayuda="Lee y exporta, pero no escribe nada. Es lo que hace a un Auditor."
+        activo={Boolean(scope.read_only)}
+        editable={editable}
+        onToggle={(v) => onChange('read_only', v ? true : null)}
+      />
+      <Interruptor
+        label="Solo lo propio"
+        ayuda="Unicamente los registros que esa persona creo."
+        activo={Boolean(scope.own_only)}
+        editable={editable}
+        onToggle={(v) => onChange('own_only', v ? true : null)}
+      />
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="w-40 shrink-0 text-sm font-medium text-[var(--color-text-primary)]">
+          Tope de monto
+        </label>
+        <input
+          type="number"
+          min={0}
+          step={1000}
+          disabled={!editable}
+          defaultValue={typeof scope.max_amount === 'number' ? scope.max_amount : ''}
+          placeholder="sin tope"
+          onBlur={(e) => {
+            const v = e.target.value.trim()
+            onChange('max_amount', v === '' ? null : Number(v))
+          }}
+          className="tabular h-9 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-60"
+        />
+        <span className="text-xs text-[var(--color-text-muted)]">
+          por operacion. Vacio = sin limite.
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <label className="w-40 shrink-0 text-sm font-medium text-[var(--color-text-primary)]">
+          Horario
+        </label>
+        <input
+          type="text"
+          disabled={!editable}
+          defaultValue={typeof scope.hours === 'string' ? scope.hours : ''}
+          placeholder="07:00-19:00"
+          onBlur={(e) => {
+            const v = e.target.value.trim()
+            onChange('hours', v === '' ? null : v)
+          }}
+          className="h-9 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-60"
+        />
+        <span className="text-xs text-[var(--color-text-muted)]">
+          Un turno nocturno como 22:00-06:00 cruza la medianoche.
+        </span>
+      </div>
+
+      {derivados.length > 0 && (
+        <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Derivado de la asignacion
+          </p>
+          <ul className="mt-1 space-y-0.5">
+            {derivados.map((d) => (
+              <li key={d} className="text-xs text-[var(--color-text-secondary)]">
+                · {d}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Interruptor({
+  label,
+  ayuda,
+  activo,
+  editable,
+  onToggle,
+}: {
+  label: string
+  ayuda: string
+  activo: boolean
+  editable: boolean
+  onToggle: (v: boolean) => void
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <label className="w-40 shrink-0 text-sm font-medium text-[var(--color-text-primary)]">
+        {label}
+      </label>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={activo}
+        aria-label={label}
+        disabled={!editable}
+        onClick={() => onToggle(!activo)}
+        className={cn(
+          'relative h-6 w-11 shrink-0 rounded-full transition-colors duration-100',
+          'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
+          activo ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-surface-overlay)]',
+          !editable && 'opacity-60',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-100',
+            activo ? 'translate-x-[22px]' : 'translate-x-0.5',
+          )}
+        />
+      </button>
+      <span className="text-xs text-[var(--color-text-muted)]">{ayuda}</span>
+    </div>
   )
 }

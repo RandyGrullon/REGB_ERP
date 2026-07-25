@@ -40,8 +40,22 @@ export interface HydrationResult {
   sidebar: SidebarEntry[]
   /** path → permiso necesario. Lo consume el guard de rutas del servidor. */
   routePermissions: Map<string, string>
-  /** Ids activos y encendidos — alimenta el evaluador de permisos. */
+  /**
+   * Modulos que pueden RENDERIZAR: licenciados, con manifest en este bundle
+   * y compatibles con la plataforma. Es la frontera de presentacion.
+   *
+   * Para comprobar PERMISOS usa `licensedModules`. Un modulo licenciado
+   * cuyo manifest aun no existe sigue siendo del cliente: negarle permisos
+   * por eso convierte un hueco de implementacion en un 403 inexplicable.
+   */
   activeModules: Set<string>
+  /**
+   * Modulos licenciados y encendidos, tenga o no manifest.
+   *
+   * Es la MISMA frontera que `auth.module_active()` en SQL, y por tanto la
+   * que debe alimentar al evaluador de permisos.
+   */
+  licensedModules: Set<string>
   widgets: string[]
   /** Modulos licenciados que NO pudieron cargar, y por que. */
   unavailable: Array<{ moduleId: string; reason: string }>
@@ -164,7 +178,14 @@ export function hydrate(opts: HydrateOptions): HydrationResult {
     return ca !== cb ? ca - cb : a.label.localeCompare(b.label, 'es')
   })
 
-  return { sidebar, routePermissions, activeModules: runnable, widgets, unavailable }
+  return {
+    sidebar,
+    routePermissions,
+    activeModules: runnable,
+    licensedModules: licensed,
+    widgets,
+    unavailable,
+  }
 }
 
 /**
@@ -179,6 +200,8 @@ export function canOpenRoute(
   ctx: Omit<EvaluationContext, 'activeModules'>,
 ): boolean {
   const perm = result.routePermissions.get(path)
+  // Aqui SI se usa activeModules: una ruta de un modulo sin manifest no
+  // existe en este bundle, asi que no hay nada que abrir.
   if (perm === undefined) return false
   return hasPermission(perm, { ...ctx, activeModules: result.activeModules })
 }

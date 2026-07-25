@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { checkAccess } from '@regb/sdk'
+import { can } from '@regb/permissions'
 import { bootstrap, listTenants } from '@/lib/bootstrap'
 import { loadModuleOptions, loadRoles } from '@/lib/roles'
 import { authConfigured, currentSession } from '@/lib/supabase'
@@ -25,6 +26,8 @@ export default async function RolesPage({
   let userId: string
   let tenantName: string
   let backHref: string
+  let canEdit: boolean
+  let demo: { tenantSlug: string; roleName: string } | undefined
 
   if (authConfigured) {
     const session = await currentSession()
@@ -36,18 +39,28 @@ export default async function RolesPage({
     userId = data.user.id
     tenantName = data.tenant.name
     backHref = '/'
+    canEdit = can(
+      'rbac.role.edit',
+      { module: 'rbac' },
+      { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
+    ).allowed
   } else {
     const tenants = await listTenants()
     if (tenants.length === 0) redirect('/')
     const slug = params.tenant ?? tenants[0]!.slug
-    const data = await bootstrap({
-      demo: { tenantSlug: slug, roleName: params.rol ?? 'Owner' },
-    })
+    const roleName = params.rol ?? 'Owner'
+    demo = { tenantSlug: slug, roleName }
+    const data = await bootstrap({ demo })
     if (!data) redirect('/')
     tenantId = data.tenant.id
     userId = data.user.id
     tenantName = data.tenant.name
-    backHref = `/?tenant=${slug}&rol=${encodeURIComponent(params.rol ?? 'Owner')}`
+    backHref = `/?tenant=${slug}&rol=${encodeURIComponent(roleName)}`
+    canEdit = can(
+      'rbac.role.edit',
+      { module: 'rbac' },
+      { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
+    ).allowed
   }
 
   const [roles, modules] = await Promise.all([
@@ -55,5 +68,14 @@ export default async function RolesPage({
     loadModuleOptions(tenantId),
   ])
 
-  return <RolesEditor roles={roles} modules={modules} tenantName={tenantName} backHref={backHref} />
+  return (
+    <RolesEditor
+      roles={roles}
+      modules={modules}
+      tenantName={tenantName}
+      backHref={backHref}
+      demo={demo}
+      canEdit={canEdit}
+    />
+  )
 }

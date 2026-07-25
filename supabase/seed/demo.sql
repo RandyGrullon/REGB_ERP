@@ -4,62 +4,13 @@
 --  Dos clientes reales de República Dominicana con perfiles distintos, para
 --  ver el registry resolver cosas diferentes segun quien mira.
 --
+--  El CATALOGO no vive aqui: es dato de producto y va en migraciones
+--  (0009 y 0012). Este archivo solo crea clientes y les activa modulos.
+--  Mezclarlos fue un error: el seed corre despues de las migraciones, asi
+--  que un modulo definido aqui nunca recibia los permisos que 0010 asigna.
+--
 --  Idempotente: se puede correr las veces que haga falta.
 -- ═══════════════════════════════════════════════════════════════════════
-
--- ── Catalogo de modulos ────────────────────────────────────────────────
-insert into regb.module_catalog (id, name, category, description, icon, version, requires, recommends, platforms, is_published)
-values
-  ('products', 'Productos', 'core',
-   'Catalogo con variantes, unidades, atributos, imagenes y kits.', 'Box', '0.1.0',
-   '{}', '{}', '{"web":true,"desktop":true,"mobile":true}', true),
-
-  ('inventory', 'Inventario', 'standard',
-   'Existencias multi-almacen, kardex, costo promedio y valorizacion.', 'Package', '0.1.0',
-   '{products}', '{purchase-orders}', '{"web":true,"desktop":true,"mobile":true}', true),
-
-  ('pos', 'Punto de venta', 'standard',
-   'Tactil, offline, cajas, turnos, arqueo e impresora termica.', 'CreditCard', '0.1.0',
-   '{products}', '{inventory}', '{"web":true,"desktop":true,"mobile":true}', true),
-
-  ('payroll', 'Nomina', 'advanced',
-   'Calculo con TSS, AFP, ARS e ISR; prestaciones, regalia y volantes.', 'Users', '0.1.0',
-   '{}', '{accounting}', '{"web":true,"desktop":true,"mobile":false}', true),
-
-  ('invoice-capture', 'Captura de facturas', 'advanced',
-   'Fotografia la factura del proveedor y extrae RNC, NCF, fecha, ITBIS y lineas.', 'ScanLine', '0.1.0',
-   '{}', '{ap,taxes,files}', '{"web":true,"desktop":true,"mobile":true}', true)
-on conflict (id) do update
-  set name = excluded.name,
-      category = excluded.category,
-      description = excluded.description,
-      requires = excluded.requires,
-      recommends = excluded.recommends,
-      platforms = excluded.platforms,
-      is_published = excluded.is_published;
-
--- ── Precios por tier (§6.3) ────────────────────────────────────────────
-insert into regb.module_pricing (module_id, tier, install_price, monthly_price, per_user)
-values
-  ('products',  'pyme',    0,    0, 0),
-  ('products',  'mediano', 0,    0, 0),
-  ('products',  'grande',  0,    0, 0),
-  ('inventory', 'pyme',    150,  19, 0),
-  ('inventory', 'mediano', 600,  69, 0),
-  ('inventory', 'grande',  1800, 190, 0),
-  ('pos',       'pyme',    150,  19, 0),
-  ('pos',       'mediano', 600,  69, 0),
-  ('pos',       'grande',  1800, 190, 0),
-  ('payroll',   'pyme',    400,  45, 0),
-  ('payroll',   'mediano', 1500, 160, 2),
-  ('payroll',   'grande',  4000, 420, 2),
-  ('invoice-capture', 'pyme',    400,  45, 0),
-  ('invoice-capture', 'mediano', 1500, 160, 0),
-  ('invoice-capture', 'grande',  4000, 420, 0)
-on conflict (module_id, tier) do update
-  set install_price = excluded.install_price,
-      monthly_price = excluded.monthly_price,
-      per_user = excluded.per_user;
 
 -- ── Cliente 1: PYME ────────────────────────────────────────────────────
 insert into regb.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
@@ -73,7 +24,7 @@ values ('distribuidora-caribe', 'Distribuidora Caribe SRL', 'Caribe',
         '131-45678-9', 'mediano', 'active', now() - interval '6 months', now() - interval '5 months', 94)
 on conflict (slug) do nothing;
 
--- ── Empresas y sucursales ──────────────────────────────────────────────
+-- ── Empresas, sucursales y modulos ─────────────────────────────────────
 do $$
 declare
   v_pyme uuid;
@@ -84,11 +35,13 @@ begin
   select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
   select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
 
+  -- Los modulos core los activa el trigger al crear el cliente. Aqui solo
+  -- se agregan los de pago, que es lo que diferencia a un cliente de otro.
+
   insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
   values (v_pyme, 'Colmado La Esperanza SRL', '130-11111-1', 'DOP', true)
   on conflict do nothing
   returning id into v_c1;
-
   if v_c1 is null then
     select id into v_c1 from public.companies where tenant_id = v_pyme limit 1;
   end if;
@@ -97,7 +50,6 @@ begin
   values (v_med, 'Distribuidora Caribe SRL', '131-45678-9', 'DOP', true)
   on conflict do nothing
   returning id into v_c2;
-
   if v_c2 is null then
     select id into v_c2 from public.companies where tenant_id = v_med limit 1;
   end if;
@@ -110,10 +62,9 @@ begin
   values (v_med, v_c2, 'Santo Domingo', 'SD'), (v_med, v_c2, 'Santiago', 'STI')
   on conflict do nothing;
 
-  -- ── Modulos del colmado: lo minimo para dejar Excel ──────────────────
+  -- ── El colmado: lo minimo para dejar Excel ───────────────────────────
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
-  values (v_pyme, 'products', 'active', true),
-         (v_pyme, 'pos', 'active', true)
+  values (v_pyme, 'pos', 'active', true)
   on conflict do nothing;
 
   -- Inventario en prueba: vence en 9 dias.
@@ -121,18 +72,12 @@ begin
   values (v_pyme, 'inventory', 'trial', true, (current_date + 9))
   on conflict do nothing;
 
-  -- La distribuidora tiene captura de facturas: es la que recibe mercancia
-  -- de 40 proveedores y arma el 606 todos los meses.
+  -- ── La distribuidora: recibe de 40 proveedores y arma el 606 ─────────
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
-  values (v_med, 'invoice-capture', 'active', true)
-  on conflict do nothing;
-
-  -- ── Modulos de la distribuidora ──────────────────────────────────────
-  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
-  values (v_med, 'products', 'active', true),
-         (v_med, 'inventory', 'active', true),
+  values (v_med, 'inventory', 'active', true),
          (v_med, 'pos', 'active', true),
-         (v_med, 'payroll', 'active', true)
+         (v_med, 'payroll', 'active', true),
+         (v_med, 'invoice-capture', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
