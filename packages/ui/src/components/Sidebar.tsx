@@ -8,7 +8,7 @@ import { Badge } from './Badge'
  * Sidebar de modulos — 240px.
  *
  * IMPORTANTE: este componente NO decide que se ve. Recibe lo que el
- * module-registry ya resolvio a partir de `nexus.tenant_modules` y el rol
+ * module-registry ya resolvio a partir de `regb.tenant_modules` y el rol
  * del usuario. No conoce ni un solo id de modulo (§2.2).
  */
 

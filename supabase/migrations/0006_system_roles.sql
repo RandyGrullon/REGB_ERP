@@ -5,7 +5,7 @@
 --  para que nadie arranque con una pantalla de permisos en blanco.
 -- ═══════════════════════════════════════════════════════════════════════
 
-create or replace function nexus.provision_system_roles(p_tenant uuid)
+create or replace function regb.provision_system_roles(p_tenant uuid)
 returns void
 language plpgsql
 security definer
@@ -17,7 +17,7 @@ begin
     (p_tenant, 'Owner', 'Dueno del negocio. Acceso total, incluida la suscripcion.',
      true, array['*'], '{"*": true}'::jsonb, '{}'::jsonb),
 
-    (p_tenant, 'Admin', 'Administra todo menos la facturacion de Nexus.',
+    (p_tenant, 'Admin', 'Administra todo menos la facturacion de REGB.',
      true, array['*'],
      '{"*": true, "subscription.manage": false, "tenant.delete": false}'::jsonb, '{}'::jsonb),
 
@@ -95,24 +95,24 @@ begin
 end;
 $$;
 
-comment on function nexus.provision_system_roles(uuid) is
+comment on function regb.provision_system_roles(uuid) is
   'Crea los 14 roles de §8.2 para un tenant nuevo. Idempotente.';
 
 -- Al crear un tenant, sus roles se provisionan solos.
-create or replace function nexus.on_tenant_created()
+create or replace function regb.on_tenant_created()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  perform nexus.provision_system_roles(new.id);
-  insert into nexus.onboarding (tenant_id, stage) values (new.id, 'sold')
+  perform regb.provision_system_roles(new.id);
+  insert into regb.onboarding (tenant_id, stage) values (new.id, 'sold')
     on conflict (tenant_id) do nothing;
   return new;
 end;
 $$;
 
 create trigger provision_defaults
-  after insert on nexus.tenants
-  for each row execute function nexus.on_tenant_created();
+  after insert on regb.tenants
+  for each row execute function regb.on_tenant_created();

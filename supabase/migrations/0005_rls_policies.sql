@@ -9,7 +9,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ═══════════════════════════════════════════════════════════════════════
---  ESQUEMA nexus — SOLO el proveedor. Ningun cliente, jamas.
+--  ESQUEMA regb — SOLO el proveedor. Ningun cliente, jamas.
 -- ═══════════════════════════════════════════════════════════════════════
 do $$
 declare t text;
@@ -18,33 +18,33 @@ begin
     'tenants','subscriptions','module_catalog','module_pricing',
     'tenant_modules','usage_meters','invoices','onboarding','impersonation_log'
   ] loop
-    execute format('alter table nexus.%I enable row level security', t);
-    execute format('alter table nexus.%I force row level security', t);
+    execute format('alter table regb.%I enable row level security', t);
+    execute format('alter table regb.%I force row level security', t);
     execute format(
-      'create policy provider_only on nexus.%I for all
+      'create policy provider_only on regb.%I for all
          using (auth.is_provider()) with check (auth.is_provider())', t);
   end loop;
 end $$;
 
 -- Excepcion controlada: el cliente necesita ver SU catalogo y SUS modulos
 -- para que el marketplace y el registry funcionen. Solo lectura, solo lo suyo.
-create policy tenant_reads_own_modules on nexus.tenant_modules
+create policy tenant_reads_own_modules on regb.tenant_modules
   for select
   using (tenant_id = auth.tenant_id());
 
-create policy anyone_reads_published_catalog on nexus.module_catalog
+create policy anyone_reads_published_catalog on regb.module_catalog
   for select
   using (is_published);
 
-create policy anyone_reads_pricing on nexus.module_pricing
+create policy anyone_reads_pricing on regb.module_pricing
   for select
   using (exists (
-    select 1 from nexus.module_catalog mc
+    select 1 from regb.module_catalog mc
     where mc.id = module_pricing.module_id and mc.is_published
   ));
 
 -- El cliente ve sus propias facturas (portal de suscripcion). Nada mas.
-create policy tenant_reads_own_invoices on nexus.invoices
+create policy tenant_reads_own_invoices on regb.invoices
   for select
   using (tenant_id = auth.tenant_id());
 
@@ -87,9 +87,9 @@ set search_path = ''
 as $$
   select auth.is_provider() and exists (
     select 1
-    from nexus.impersonation_log il
+    from regb.impersonation_log il
     where il.tenant_id = p_tenant
-      and il.provider_user = auth.nexus_uid()
+      and il.provider_user = auth.regb_uid()
       and il.ended_at is null
       and il.started_at > now() - interval '60 minutes'
   )
@@ -130,9 +130,9 @@ create policy tenant_reads_own_audit on audit.log
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
 
-grant select on nexus.tenant_modules, nexus.module_catalog,
-                nexus.module_pricing, nexus.invoices to authenticated;
-grant select, insert, update, delete on all tables in schema nexus to authenticated;
+grant select on regb.tenant_modules, regb.module_catalog,
+                regb.module_pricing, regb.invoices to authenticated;
+grant select, insert, update, delete on all tables in schema regb to authenticated;
 
 grant select on audit.log to authenticated;
 
@@ -145,7 +145,7 @@ alter default privileges in schema public
 --  Detecta tablas de negocio sin RLS. La usa /rls-audit (Fase 1 de la
 --  skill) y el job de CI. Si devuelve una sola fila, la puerta no pasa.
 -- ═══════════════════════════════════════════════════════════════════════
-create or replace view nexus.rls_coverage as
+create or replace view regb.rls_coverage as
 select
   n.nspname                                as schema_name,
   c.relname                                as table_name,
@@ -158,8 +158,8 @@ from pg_class c
 join pg_namespace n on n.oid = c.relnamespace
 left join pg_policy p on p.polrelid = c.oid
 where c.relkind = 'r'
-  and n.nspname in ('public', 'nexus', 'audit')
+  and n.nspname in ('public', 'regb', 'audit')
 group by 1, 2, 3, 4;
 
-comment on view nexus.rls_coverage is
+comment on view regb.rls_coverage is
   'Cobertura de RLS por tabla. Toda fila con rls_enabled=false o policy_count=0 es un hallazgo CRITICO.';

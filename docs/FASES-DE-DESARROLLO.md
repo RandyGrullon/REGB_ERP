@@ -1,6 +1,6 @@
-# 🗓️ NEXUS ERP — Plan de Fases de Desarrollo
+# 🗓️ REGB ERP — Plan de Fases de Desarrollo
 
-> Documento operativo. El [documento maestro](PROYECTO-NEXUS-ERP.md) dice **qué** se construye.
+> Documento operativo. El [documento maestro](PROYECTO-REGB-ERP.md) dice **qué** se construye.
 > Este dice **en qué orden, con qué esfuerzo y cuándo se puede vender**.
 
 |                       |                                                                |
@@ -66,12 +66,12 @@ Cada fase termina en una **puerta**. Si la puerta no pasa, **no se avanza a la s
 
 ```mermaid
 timeline
-    title Nexus ERP — 11 fases
+    title REGB ERP — 11 fases
     section Cimientos (no vendible)
       F0 : Monorepo, Supabase, Auth, RLS, Aurora
       F1 : Máquina de módulos (registry + manifest)
       F2 : 15 módulos core + app web
-      F3 : Nexus Control + motor de precios
+      F3 : REGB Control + motor de precios
     section Vendible
       F4 : MVP comercial - 5 módulos → PRIMER CLIENTE
       F5 : Electron + React Native
@@ -92,7 +92,7 @@ timeline
 | **F0**  | Cimientos               |       8 sp |       0 | ❌                                     |
 | **F1**  | La máquina de módulos   |       6 sp |       0 | ❌                                     |
 | **F2**  | Core + app web          |      12 sp |      15 | ❌ (falta cobrar)                      |
-| **F3**  | Nexus Control + dinero  |       8 sp |       0 | ⚠️ Técnicamente sí, sin nada que hacer |
+| **F3**  | REGB Control + dinero  |       8 sp |       0 | ⚠️ Técnicamente sí, sin nada que hacer |
 | **F4**  | **MVP comercial**       |      10 sp |       5 | ✅ **Primer cliente PYME**             |
 | **F5**  | Desktop + móvil         |      10 sp |       0 | ✅ POS y campo                         |
 | **F6**  | Finanzas + fiscalidad   |      12 sp |      11 | ✅ **Cliente Mediano**                 |
@@ -109,14 +109,14 @@ timeline
 
 > **Objetivo:** que exista un esqueleto donde dos tenants distintos no puedan verse, y un botón azul que se vea igual en las tres plataformas.
 
-**Esfuerzo:** 8 sprint-persona · **Módulos:** 0 · **Agentes:** `nexus-architect`, `nexus-db`, `nexus-security`, `nexus-design`
+**Esfuerzo:** 8 sprint-persona · **Módulos:** 0 · **Agentes:** `regb-architect`, `regb-db`, `regb-security`, `regb-design`
 
 ### 2.1 Sprints
 
 | Sprint | Entregable                                                                                                                                                                                                                |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **S1** | Monorepo Turborepo + pnpm. Paquetes vacíos pero cableados: `core`, `sdk`, `ui`, `ui-native`, `config`, `permissions`. ESLint/TS/Prettier compartidos. CI que construye y prueba en <6 min.                                |
-| **S2** | Proyecto Supabase. Esquemas `public`, `nexus`, `audit`. Migraciones versionadas con `up`/`down`. Helpers `auth.tenant_id()`, `auth.is_provider()`, `auth.module_active()`.                                                |
+| **S2** | Proyecto Supabase. Esquemas `public`, `regb`, `audit`. Migraciones versionadas con `up`/`down`. Helpers `auth.tenant_id()`, `auth.is_provider()`, `auth.module_active()`.                                                |
 | **S3** | Auth completo: login, magic link, MFA, JWT con `app_metadata` (tenant_id, role_id, is_provider, branches). Tablas `companies`, `branches`, `roles`, `memberships`. RLS en todas.                                          |
 | **S4** | Design System Aurora: `tokens.json` como fuente única, tema oscuro y claro, 12 componentes base en `packages/ui` (Button, Input, Table, Modal, Toast, Badge, Avatar, Sidebar, Card, Tabs, Select, EmptyState). Storybook. |
 
@@ -137,14 +137,14 @@ timeline
 
 > **Objetivo:** activar un módulo desde una tabla y que aparezca solo en el sidebar de quien debe verlo, sin tocar el código del core.
 
-**Esfuerzo:** 6 sp · **Módulos:** 0 · **Agentes:** `nexus-architect`, `nexus-module-builder`
+**Esfuerzo:** 6 sp · **Módulos:** 0 · **Agentes:** `regb-architect`, `regb-module-builder`
 
 ### 3.1 Sprints
 
 | Sprint | Entregable                                                                                                                                                                               |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S5** | `packages/module-registry`: `defineModule()`, descubrimiento en runtime desde `nexus.tenant_modules`, carga dinámica por `import()`, construcción de rutas y sidebar.                    |
-| **S6** | Contrato `manifest.ts` cerrado y validado por Zod. Tablas `nexus.module_catalog` y `nexus.module_pricing`. Ciclo de vida: install → activo → suspendido → archivado (**nunca borrado**). |
+| **S5** | `packages/module-registry`: `defineModule()`, descubrimiento en runtime desde `regb.tenant_modules`, carga dinámica por `import()`, construcción de rutas y sidebar.                    |
+| **S6** | Contrato `manifest.ts` cerrado y validado por Zod. Tablas `regb.module_catalog` y `regb.module_pricing`. Ciclo de vida: install → activo → suspendido → archivado (**nunca borrado**). |
 | **S7** | Bus de eventos: `event_outbox` + LISTEN/NOTIFY + Edge Function despachadora. Entrega _at-least-once_ con `correlation_id`. Dos módulos de juguete que se comuniquen solo por eventos.    |
 
 ### 3.2 🚪 Puerta F1
@@ -163,7 +163,7 @@ timeline
 
 > **Objetivo:** un ERP vacío pero completo: se entra, se navega, se configura, se busca, se aprende. Sin nada de negocio todavía.
 
-**Esfuerzo:** 12 sp · **Módulos:** 15 · **Agentes:** `nexus-web`, `nexus-module-builder`, `nexus-tutorial`
+**Esfuerzo:** 12 sp · **Módulos:** 15 · **Agentes:** `regb-web`, `regb-module-builder`, `regb-tutorial`
 
 ### 4.1 Sprints
 
@@ -191,18 +191,18 @@ Layout Aurora de 4 columnas, responsive `xs`→`2xl`, PWA con service worker, `C
 
 ---
 
-## 5. FASE 3 — Nexus Control y el dinero
+## 5. FASE 3 — REGB Control y el dinero
 
 > **Objetivo:** poder cobrar. Sin esto no hay negocio, solo software.
 
-**Esfuerzo:** 8 sp · **Módulos:** 0 (es tu panel, no del catálogo) · **Agentes:** `nexus-billing`, `nexus-security`
+**Esfuerzo:** 8 sp · **Módulos:** 0 (es tu panel, no del catálogo) · **Agentes:** `regb-billing`, `regb-security`
 
 ### 5.1 Sprints
 
 | Sprint  | Entregable                                                                                                                             |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **S14** | `packages/billing`: la fórmula de §6.4 completa, con prorrateo, grandfathering y `price_override`. **Los 3 casos de §6.5 al centavo.** |
-| **S15** | Nexus Control v1: Overview (MRR, ARR, churn), Clientes, Ficha 360 del cliente, health score.                                           |
+| **S15** | REGB Control v1: Overview (MRR, ARR, churn), Clientes, Ficha 360 del cliente, health score.                                           |
 | **S16** | Facturación: generación, `invoices.lines` reproducible, pasarelas (Stripe + Azul), idempotencia, reintentos días 1/3/7/14.             |
 | **S17** | Dunning (5→10→15→30→90), impersonación segura con MFA + razón + ticket + 60 min + banner + doble auditoría, onboarding kanban.         |
 
@@ -213,7 +213,7 @@ Layout Aurora de 4 columnas, responsive `xs`→`2xl`, PWA con service worker, `C
 - [ ] Un webhook de pago duplicado **no cobra dos veces**
 - [ ] La impersonación exige MFA + razón, expira a los 60 min y queda en el log de **ambos** lados
 - [ ] Ningún paso de dunning borra datos — verificado con test
-- [ ] Un tenant no-proveedor recibe 0 filas de todo el esquema `nexus`
+- [ ] Un tenant no-proveedor recibe 0 filas de todo el esquema `regb`
 
 > 💡 Ejecuta `/pricing-calc` contra los 3 casos como test de aceptación de la puerta.
 
@@ -223,7 +223,7 @@ Layout Aurora de 4 columnas, responsive `xs`→`2xl`, PWA con service worker, `C
 
 > **Objetivo:** el primer cliente real paga y opera 30 días sin volver a Excel.
 
-**Esfuerzo:** 10 sp · **Módulos:** 5 (total acumulado: 20) · **Agentes:** `nexus-module-builder`, `nexus-qa`
+**Esfuerzo:** 10 sp · **Módulos:** 5 (total acumulado: 20) · **Agentes:** `regb-module-builder`, `regb-qa`
 
 ### 6.1 Por qué estos 5 módulos
 
@@ -248,7 +248,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 - [ ] **Un negocio real operó 30 días corridos** sin volver a Excel
 - [ ] Facturó, cobró, ajustó inventario y cerró caja **sin llamar a soporte** más de 1 vez por semana
-- [ ] La primera factura de Nexus se cobró automáticamente y el cliente **no la disputó**
+- [ ] La primera factura de REGB se cobró automáticamente y el cliente **no la disputó**
 - [ ] Tiempo hasta la primera transacción real del cliente: **< 48 h**
 - [ ] Los 5 módulos pasan los 14 puntos de la Definición de Terminado
 
@@ -260,7 +260,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 > **Objetivo:** que el POS venda sin internet y que el vendedor facture desde el celular.
 
-**Esfuerzo:** 10 sp · **Módulos:** 0 (shells) · **Agentes:** `nexus-desktop`, `nexus-mobile`, `nexus-qa`
+**Esfuerzo:** 10 sp · **Módulos:** 0 (shells) · **Agentes:** `regb-desktop`, `regb-mobile`, `regb-qa`
 
 ### 7.1 Sprints
 
@@ -287,9 +287,9 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 ## 8. FASE 6 — Finanzas completas y fiscalidad
 
-> **Objetivo:** que un contador dominicano pueda cerrar el mes y presentar a la DGII desde Nexus.
+> **Objetivo:** que un contador dominicano pueda cerrar el mes y presentar a la DGII desde REGB.
 
-**Esfuerzo:** 12 sp · **Módulos:** 11 (acumulado: 31) · **Agentes:** `nexus-module-builder`, `nexus-db`
+**Esfuerzo:** 12 sp · **Módulos:** 11 (acumulado: 31) · **Agentes:** `regb-module-builder`, `regb-db`
 
 | Sprint     | Módulos                                                               |
 | ---------- | --------------------------------------------------------------------- |
@@ -316,7 +316,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 > **Objetivo:** pagar la quincena con TSS, AFP, ARS e ISR correctos.
 
-**Esfuerzo:** 11 sp · **Módulos:** 10 (acumulado: 41) · **Agentes:** `nexus-module-builder`, `nexus-security`
+**Esfuerzo:** 11 sp · **Módulos:** 10 (acumulado: 41) · **Agentes:** `regb-module-builder`, `regb-security`
 
 | Sprint     | Módulos                                                              |
 | ---------- | -------------------------------------------------------------------- |
@@ -341,7 +341,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 > **Objetivo:** el cliente Grande. Es la fase más larga y la que más margen genera.
 
-**Esfuerzo:** 18 sp · **Módulos:** 18 (acumulado: 59) · **Agentes:** `nexus-module-builder`, `nexus-mobile`
+**Esfuerzo:** 18 sp · **Módulos:** 18 (acumulado: 59) · **Agentes:** `regb-module-builder`, `regb-mobile`
 
 | Sprint     | Módulos                                            |
 | ---------- | -------------------------------------------------- |
@@ -373,7 +373,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 > **Objetivo:** dejar de competir por precio. Estos módulos son los que Odoo no hace bien.
 
-**Esfuerzo:** 14 sp · **Módulos:** 16 (acumulado: 75) · **Agentes:** `nexus-module-builder`, `nexus-web`
+**Esfuerzo:** 14 sp · **Módulos:** 16 (acumulado: 75) · **Agentes:** `regb-module-builder`, `regb-web`
 
 | Sprint     | Módulos                                                |
 | ---------- | ------------------------------------------------------ |
@@ -396,7 +396,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 - [ ] El copiloto **nunca** devuelve datos de otro tenant — probado adversarialmente
 - [ ] La API pública respeta rate limit por tenant y no filtra entre tenants
 
-> ⚠️ El copiloto IA es el mayor riesgo de fuga entre tenants del proyecto: consulta datos en lenguaje natural. Que `nexus-security` lo audite específicamente antes de publicarlo.
+> ⚠️ El copiloto IA es el mayor riesgo de fuga entre tenants del proyecto: consulta datos en lenguaje natural. Que `regb-security` lo audite específicamente antes de publicarlo.
 
 ---
 
@@ -404,7 +404,7 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 > **Objetivo:** abrir nichos nuevos sin construir un producto nuevo.
 
-**Esfuerzo:** 16 sp · **Módulos:** 16 (acumulado: 91) · **Agentes:** `nexus-module-builder`, `nexus-docs`
+**Esfuerzo:** 16 sp · **Módulos:** 16 (acumulado: 91) · **Agentes:** `regb-module-builder`, `regb-docs`
 
 | Sprint     | Módulos                                             |
 | ---------- | --------------------------------------------------- |
@@ -439,7 +439,7 @@ Reordena esta fase según quién aparezca primero. El orden de arriba es una hip
 
 > **Objetivo:** poder decir que sí a un grupo empresarial.
 
-**Esfuerzo:** 5 sp · **Módulos:** 1 (acumulado: **92** ✅) · **Agentes:** `nexus-architect`, `nexus-security`
+**Esfuerzo:** 5 sp · **Módulos:** 1 (acumulado: **92** ✅) · **Agentes:** `regb-architect`, `regb-security`
 
 | Sprint  | Entregable                                                                |
 | ------- | ------------------------------------------------------------------------- |
@@ -478,11 +478,11 @@ Reordena esta fase según quién aparezca primero. El orden de arriba es una hip
 
 ```
 1. /new-module <id>              → scaffold completo
-2. nexus-db revisa migraciones y RLS
-3. nexus-design revisa la UI contra Aurora
+2. regb-db revisa migraciones y RLS
+3. regb-design revisa la UI contra Aurora
 4. /tour-writer <id>             → tutorial
 5. /pricing-calc                 → cargar precio en los 3 tiers
-6. nexus-qa ejecuta los 14 puntos
+6. regb-qa ejecuta los 14 puntos
 7. /rls-audit                    → antes de publicar
 ```
 
@@ -532,7 +532,7 @@ CIMIENTOS
 [ ] F0  Monorepo, Supabase, Auth, RLS, Aurora          8 sp
 [ ] F1  Máquina de módulos (registry + eventos)        6 sp
 [ ] F2  15 módulos core + app web                     12 sp
-[ ] F3  Nexus Control + motor de precios               8 sp
+[ ] F3  REGB Control + motor de precios               8 sp
         └─ 34 sp invertidos, 0 ingresos. Es normal.
 
 VENDIBLE
@@ -564,4 +564,4 @@ DIFERENCIACIÓN
 
 ---
 
-_Documento generado el 2026-07-22 · Complemento operativo de [PROYECTO-NEXUS-ERP.md](PROYECTO-NEXUS-ERP.md)_
+_Documento generado el 2026-07-22 · Complemento operativo de [PROYECTO-REGB-ERP.md](PROYECTO-REGB-ERP.md)_

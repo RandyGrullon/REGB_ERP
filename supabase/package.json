@@ -1,5 +1,5 @@
 {
-  "name": "@nexus/db",
+  "name": "@regb/db",
   "version": "0.1.0",
   "private": true,
   "type": "module",

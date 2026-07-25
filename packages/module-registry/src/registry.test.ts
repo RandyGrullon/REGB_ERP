@@ -10,7 +10,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { describe, expect, it } from 'vitest'
-import type { Role } from '@nexus/permissions'
+import type { Role } from '@regb/permissions'
 import { defineModule, priceFor, type ModuleManifest } from './manifest.js'
 import { canOpenRoute, hydrate, type TenantModule } from './registry.js'
 

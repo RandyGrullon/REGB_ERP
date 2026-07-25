@@ -1,6 +1,6 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════
- *  Evaluador de permisos de Nexus ERP — RBAC + ABAC
+ *  Evaluador de permisos de REGB ERP — RBAC + ABAC
  *
  *  Documento maestro §8.1:
  *

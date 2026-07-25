@@ -46,9 +46,9 @@ const flat = (prefix, obj, unit = '') =>
     .join('\n')
 
 const css = `/* ────────────────────────────────────────────────────────────────
-   Aurora — tokens de Nexus ERP
+   Aurora — tokens de REGB ERP
    GENERADO AUTOMATICAMENTE desde tokens.json. No editar a mano.
-   Regenerar con: pnpm --filter @nexus/config build
+   Regenerar con: pnpm --filter @regb/config build
    ──────────────────────────────────────────────────────────────── */
 
 :root {

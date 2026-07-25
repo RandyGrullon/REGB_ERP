@@ -28,9 +28,9 @@ export default async function Page({
             Levanta la base de datos y aplica las migraciones y el seed de demostracion:
           </p>
           <pre className="mt-4 rounded-lg bg-[var(--color-surface-raised)] p-4 text-left text-xs">
-            docker start nexus-test-db{'\n'}
-            pnpm --filter @nexus/db migrate{'\n'}
-            pnpm --filter @nexus/db seed:demo
+            docker start regb-test-db{'\n'}
+            pnpm --filter @regb/db migrate{'\n'}
+            pnpm --filter @regb/db seed:demo
           </pre>
         </div>
       </main>

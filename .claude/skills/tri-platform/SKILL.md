@@ -1,9 +1,9 @@
 ---
 name: tri-platform
-description: Implementa una feature de Nexus ERP coordinadamente en las tres plataformas — web (Next.js), desktop (Electron) y móvil (React Native) — colocando la lógica compartida en packages/ y solo lo específico en cada app. Úsalo cuando una feature deba existir en más de una plataforma o cuando haya que verificar paridad entre las tres.
+description: Implementa una feature de REGB ERP coordinadamente en las tres plataformas — web (Next.js), desktop (Electron) y móvil (React Native) — colocando la lógica compartida en packages/ y solo lo específico en cada app. Úsalo cuando una feature deba existir en más de una plataforma o cuando haya que verificar paridad entre las tres.
 ---
 
-# Implementar en las 3 plataformas — Nexus ERP
+# Implementar en las 3 plataformas — REGB ERP
 
 Un cerebro, tres cuerpos. **70% del código es compartido.** Si escribes la misma regla dos veces, algo está mal.
 

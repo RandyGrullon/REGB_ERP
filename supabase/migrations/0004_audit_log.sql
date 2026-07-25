@@ -115,7 +115,7 @@ begin
   end if;
 
   insert into audit.log (tenant_id, user_id, module_id, entity, entity_id, action, before, after)
-  values (v_tenant, auth.nexus_uid(), v_module, tg_table_name, v_entity, v_action, v_before, v_after);
+  values (v_tenant, auth.regb_uid(), v_module, tg_table_name, v_entity, v_action, v_before, v_after);
 
   return coalesce(new, old);
 end;

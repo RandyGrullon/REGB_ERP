@@ -1,4 +1,4 @@
-import { defineModule } from '@nexus/module-registry'
+import { defineModule } from '@regb/module-registry'
 
 /**
  * Inventario — modulo 48 del catalogo (§5.4).

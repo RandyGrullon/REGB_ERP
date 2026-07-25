@@ -2,14 +2,14 @@
  * Tests del bus de eventos contra Postgres real.
  *
  * La politica de reintentos se prueba sin base de datos en
- * @nexus/core/events.test.ts. Aqui verificamos lo que solo se puede
+ * @regb/core/events.test.ts. Aqui verificamos lo que solo se puede
  * verificar con un motor de verdad: aislamiento por tenant, el reclamo
  * concurrente y que emitir dentro de una transaccion fallida no deje rastro.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 
-const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/nexus_test'
+const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/regb_test'
 const sql = postgres(URL, { max: 4, onnotice: () => {} })
 
 let tenantA: string
@@ -33,10 +33,10 @@ const RUN = crypto.randomUUID().slice(0, 8)
 
 beforeAll(async () => {
   const [a] = await sql`
-    insert into nexus.tenants (slug, legal_name, tier, status)
+    insert into regb.tenants (slug, legal_name, tier, status)
     values (${`ev-a-${RUN}`}, 'Ferreteria El Martillo SRL', 'pyme', 'active') returning id`
   const [b] = await sql`
-    insert into nexus.tenants (slug, legal_name, tier, status)
+    insert into regb.tenants (slug, legal_name, tier, status)
     values (${`ev-b-${RUN}`}, 'Textiles Duarte SRL', 'mediano', 'active') returning id`
   tenantA = a!.id
   tenantB = b!.id
@@ -44,7 +44,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await sql`delete from public.event_outbox where tenant_id in (${tenantA}, ${tenantB})`
-  await sql`delete from nexus.tenants where id in (${tenantA}, ${tenantB})`
+  await sql`delete from regb.tenants where id in (${tenantA}, ${tenantB})`
   await sql.end()
 })
 

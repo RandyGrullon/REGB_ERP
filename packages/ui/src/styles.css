@@ -1,12 +1,12 @@
 /* ────────────────────────────────────────────────────────────────
    Aurora — hoja base
-   Los tokens vienen de @nexus/config, generados desde tokens.json.
+   Los tokens vienen de @regb/config, generados desde tokens.json.
    Aqui solo se mapean a utilidades de Tailwind y se fijan los
    comportamientos globales.
    ──────────────────────────────────────────────────────────────── */
 
 @import 'tailwindcss';
-@import '@nexus/config/tokens.css';
+@import '@regb/config/tokens.css';
 
 /* Tailwind v4 solo escanea el proyecto que lo importa. Sin esta linea, las
    clases que existen UNICAMENTE en los componentes de este paquete —como el

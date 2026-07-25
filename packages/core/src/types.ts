@@ -1,5 +1,5 @@
 /**
- * Tipos base de Nexus ERP.
+ * Tipos base de REGB ERP.
  *
  * Este paquete es logica pura: no importa React, no habla con la red,
  * no conoce Supabase. Es lo que comparten web, desktop y movil (§15.2).
@@ -66,7 +66,7 @@ export type Session = z.infer<typeof sessionSchema>
  * Un modulo nunca importa otro modulo. Se hablan por aqui (§4.3, §4.4).
  * El tipo sigue el patron `<modulo>.<entidad>.<accion>`.
  */
-export const nexusEventSchema = z.object({
+export const regbEventSchema = z.object({
   id: z.union([z.string(), z.number()]),
   tenantId: z.string().uuid(),
   type: z.string().regex(/^[a-z0-9-]+\.[a-z0-9-]+\.[a-z0-9-]+$/, {
@@ -77,14 +77,14 @@ export const nexusEventSchema = z.object({
   correlationId: z.string().uuid(),
   emittedAt: z.string().datetime(),
 })
-export type NexusEvent = z.infer<typeof nexusEventSchema>
+export type RegbEvent = z.infer<typeof regbEventSchema>
 
 // ── Dinero ─────────────────────────────────────────────────────────────
 
 /**
  * El dinero se maneja en centavos enteros dentro de la logica y se
  * presenta con 2 decimales. `numeric(12,2)` en la base; nunca `float`.
- * Ver §9 y el agente nexus-billing.
+ * Ver §9 y el agente regb-billing.
  */
 export type Cents = number & { readonly __brand: 'Cents' }
 

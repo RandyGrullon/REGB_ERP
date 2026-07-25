@@ -8,7 +8,7 @@
 -- ── Empresas (razones sociales dentro de un mismo cliente) ─────────────
 create table public.companies (
   id         uuid primary key default gen_random_uuid(),
-  tenant_id  uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id  uuid not null references regb.tenants(id) on delete cascade,
   legal_name text not null,
   trade_name text,
   tax_id     text,
@@ -29,7 +29,7 @@ create unique index on public.companies (tenant_id) where is_default and deleted
 -- ── Sucursales ─────────────────────────────────────────────────────────
 create table public.branches (
   id          uuid primary key default gen_random_uuid(),
-  tenant_id   uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id   uuid not null references regb.tenants(id) on delete cascade,
   company_id  uuid not null references public.companies(id),
   name        text not null,
   code        text,
@@ -49,12 +49,12 @@ create unique index on public.branches (tenant_id, code) where code is not null 
 
 -- ── Roles ──────────────────────────────────────────────────────────────
 --  Documento maestro §8. Tres niveles de ocultamiento:
---   1. licencia   → nexus.tenant_modules  (lo controlas tu)
+--   1. licencia   → regb.tenant_modules  (lo controlas tu)
 --   2. config     → tenant_modules.enabled (lo controla el cliente)
 --   3. rol        → roles.visible_modules  (lo controla el admin del cliente)
 create table public.roles (
   id              uuid primary key default gen_random_uuid(),
-  tenant_id       uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id       uuid not null references regb.tenants(id) on delete cascade,
   name            text not null,
   description     text,
   is_system       boolean not null default false,   -- roles predefinidos, no borrables
@@ -76,7 +76,7 @@ create index on public.roles (tenant_id);
 -- ── Membresias (usuario ↔ tenant ↔ rol) ────────────────────────────────
 create table public.memberships (
   id          uuid primary key default gen_random_uuid(),
-  tenant_id   uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id   uuid not null references regb.tenants(id) on delete cascade,
   user_id     uuid not null,
   role_id     uuid not null references public.roles(id),
   branch_ids  uuid[] not null default '{}',
@@ -95,7 +95,7 @@ create index on public.memberships (user_id);
 -- ── Progreso del tutorial ──────────────────────────────────────────────
 --  Por USUARIO, no por tenant: cada persona aprende a su ritmo (§14).
 create table public.tour_progress (
-  tenant_id  uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id  uuid not null references regb.tenants(id) on delete cascade,
   user_id    uuid not null,
   tour_id    text not null,                          -- 'inventory.intro'
   step       smallint not null default 0,
@@ -112,7 +112,7 @@ create index on public.tour_progress (tenant_id, user_id) where not completed;
 --  Documento maestro §4.4. Entrega at-least-once con trazabilidad.
 create table public.event_outbox (
   id             bigserial primary key,
-  tenant_id      uuid not null references nexus.tenants(id) on delete cascade,
+  tenant_id      uuid not null references regb.tenants(id) on delete cascade,
   type           text not null,                      -- 'sales.order.confirmed'
   payload        jsonb not null,
   emitted_by     text not null,                      -- module id

@@ -1,13 +1,13 @@
 import 'server-only'
 
 import postgres from 'postgres'
-import { hydrate, type ModuleManifest, type TenantModule } from '@nexus/module-registry'
-import type { Role } from '@nexus/permissions'
+import { hydrate, type ModuleManifest, type TenantModule } from '@regb/module-registry'
+import type { Role } from '@regb/permissions'
 
-import productsManifest from '@nexus/mod-products'
-import inventoryManifest from '@nexus/mod-inventory'
-import posManifest from '@nexus/mod-pos'
-import payrollManifest from '@nexus/mod-payroll'
+import productsManifest from '@regb/mod-products'
+import inventoryManifest from '@regb/mod-inventory'
+import posManifest from '@regb/mod-pos'
+import payrollManifest from '@regb/mod-payroll'
 
 /**
  * Bootstrap del shell.
@@ -20,7 +20,7 @@ import payrollManifest from '@nexus/mod-payroll'
  */
 
 const DB_URL =
-  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/nexus_test'
+  process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
 
 let client: postgres.Sql | undefined
 function db(): postgres.Sql {
@@ -78,7 +78,7 @@ export async function bootstrap(
   // El tenant y el rol se resuelven fuera de RLS: es el equivalente al
   // login, que ocurre antes de que exista una sesion.
   const [tenant] = await sql<{ id: string; legal_name: string; tier: string; status: string }[]>`
-    select id, legal_name, tier, status from nexus.tenants where slug = ${tenantSlug}`
+    select id, legal_name, tier, status from regb.tenants where slug = ${tenantSlug}`
   if (!tenant) return null
 
   const [role] = await sql<
@@ -103,7 +103,7 @@ export async function bootstrap(
       { module_id: string; status: string; enabled: boolean; trial_ends_at: string | null }[]
     >`
       select module_id, status, enabled, trial_ends_at
-      from nexus.tenant_modules
+      from regb.tenant_modules
       where tenant_id = ${tenant.id}`,
   )
 
@@ -147,7 +147,7 @@ export async function listTenants(): Promise<
   { id: string; slug: string; name: string; initials: string }[]
 > {
   const rows = await db()<{ id: string; slug: string; legal_name: string }[]>`
-    select id, slug, legal_name from nexus.tenants order by legal_name`
+    select id, slug, legal_name from regb.tenants order by legal_name`
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,

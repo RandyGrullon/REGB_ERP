@@ -1,5 +1,5 @@
 {
-  "name": "@nexus/module-registry",
+  "name": "@regb/module-registry",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,8 +17,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nexus/core": "workspace:*",
-    "@nexus/permissions": "workspace:*",
+    "@regb/core": "workspace:*",
+    "@regb/permissions": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {

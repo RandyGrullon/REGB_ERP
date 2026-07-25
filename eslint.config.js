@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 /**
- * ESLint de Nexus ERP.
+ * ESLint de REGB ERP.
  *
  * Ademas del estilo, aqui viven las reglas que hacen cumplir la arquitectura.
  * Si una de estas falla, no es un detalle de formato: es un principio roto.
@@ -61,7 +61,7 @@ export default tseslint.config(
             {
               group: ['**/modules/*/core/*'],
               message:
-                'Las apps no importan la logica interna de un modulo. Usa la API publica de @nexus/core.',
+                'Las apps no importan la logica interna de un modulo. Usa la API publica de @regb/core.',
             },
           ],
         },
@@ -81,9 +81,9 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['**/modules/*/**', '@nexus/mod-*'],
+              group: ['**/modules/*/**', '@regb/mod-*'],
               message:
-                'Un modulo nunca importa otro modulo. Declaralo en `requires` y usa @nexus/core, o escucha su evento. Ver §4.3.',
+                'Un modulo nunca importa otro modulo. Declaralo en `requires` y usa @regb/core, o escucha su evento. Ver §4.3.',
             },
           ],
         },

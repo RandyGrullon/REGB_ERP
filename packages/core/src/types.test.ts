@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   fromCents,
-  nexusEventSchema,
+  regbEventSchema,
   roundBankers,
   sessionSchema,
   toCents,
@@ -88,7 +88,7 @@ describe('Sesion', () => {
   it('un usuario del proveedor no necesita tenant', () => {
     const s = sessionSchema.parse({
       userId: '11111111-1111-1111-1111-111111111111',
-      email: 'randy@nexus.do',
+      email: 'randy@regb.do',
       tenantId: null,
       roleId: null,
       isProvider: true,
@@ -119,15 +119,15 @@ describe('Eventos entre modulos', () => {
   }
 
   it('acepta el patron <modulo>.<entidad>.<accion>', () => {
-    expect(nexusEventSchema.parse({ ...base, type: 'sales.order.confirmed' }).type).toBe(
+    expect(regbEventSchema.parse({ ...base, type: 'sales.order.confirmed' }).type).toBe(
       'sales.order.confirmed',
     )
-    expect(nexusEventSchema.parse({ ...base, type: 'sales-orders.line.added' }).type).toBeTruthy()
+    expect(regbEventSchema.parse({ ...base, type: 'sales-orders.line.added' }).type).toBeTruthy()
   })
 
   it('rechaza un tipo sin las tres partes', () => {
-    expect(() => nexusEventSchema.parse({ ...base, type: 'order.confirmed' })).toThrow()
-    expect(() => nexusEventSchema.parse({ ...base, type: 'SalesOrderConfirmed' })).toThrow()
+    expect(() => regbEventSchema.parse({ ...base, type: 'order.confirmed' })).toThrow()
+    expect(() => regbEventSchema.parse({ ...base, type: 'SalesOrderConfirmed' })).toThrow()
   })
 })
 

@@ -1,9 +1,9 @@
-project_id = "nexus-erp"
+project_id = "regb-erp"
 
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "nexus", "audit"]
+schemas = ["public", "regb", "audit"]
 extra_search_path = ["public"]
 max_rows = 1000
 
@@ -19,11 +19,11 @@ port = 54323
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000", "nexus://auth"]
+additional_redirect_urls = ["http://localhost:3000", "regb://auth"]
 jwt_expiry = 3600
 enable_refresh_token_rotation = true
 refresh_token_reuse_interval = 10
-enable_signup = false          # solo por invitacion; el alta la hace Nexus Control
+enable_signup = false          # solo por invitacion; el alta la hace REGB Control
 
 [auth.email]
 enable_signup = false

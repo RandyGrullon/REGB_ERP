@@ -41,31 +41,31 @@ importers:
 
   apps/web:
     dependencies:
-      '@nexus/config':
+      '@regb/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@nexus/core':
+      '@regb/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@nexus/mod-inventory':
+      '@regb/mod-inventory':
         specifier: workspace:*
         version: link:../../modules/inventory
-      '@nexus/mod-payroll':
+      '@regb/mod-payroll':
         specifier: workspace:*
         version: link:../../modules/payroll
-      '@nexus/mod-pos':
+      '@regb/mod-pos':
         specifier: workspace:*
         version: link:../../modules/pos
-      '@nexus/mod-products':
+      '@regb/mod-products':
         specifier: workspace:*
         version: link:../../modules/products
-      '@nexus/module-registry':
+      '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
-      '@nexus/permissions':
+      '@regb/permissions':
         specifier: workspace:*
         version: link:../../packages/permissions
-      '@nexus/ui':
+      '@regb/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       next:
@@ -105,7 +105,7 @@ importers:
 
   modules/inventory:
     dependencies:
-      '@nexus/module-registry':
+      '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
     devDependencies:
@@ -118,7 +118,7 @@ importers:
 
   modules/payroll:
     dependencies:
-      '@nexus/module-registry':
+      '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
     devDependencies:
@@ -131,7 +131,7 @@ importers:
 
   modules/pos:
     dependencies:
-      '@nexus/module-registry':
+      '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
     devDependencies:
@@ -144,7 +144,7 @@ importers:
 
   modules/products:
     dependencies:
-      '@nexus/module-registry':
+      '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
     devDependencies:
@@ -179,10 +179,10 @@ importers:
 
   packages/module-registry:
     dependencies:
-      '@nexus/core':
+      '@regb/core':
         specifier: workspace:*
         version: link:../core
-      '@nexus/permissions':
+      '@regb/permissions':
         specifier: workspace:*
         version: link:../permissions
       zod:
@@ -198,7 +198,7 @@ importers:
 
   packages/permissions:
     dependencies:
-      '@nexus/core':
+      '@regb/core':
         specifier: workspace:*
         version: link:../core
       zod:
@@ -214,7 +214,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@nexus/config':
+      '@regb/config':
         specifier: workspace:*
         version: link:../config
       class-variance-authority:

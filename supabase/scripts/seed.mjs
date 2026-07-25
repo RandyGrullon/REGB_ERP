@@ -21,8 +21,8 @@ try {
 
   const tenants = await sql`
     select t.slug, t.tier, count(tm.module_id) as modulos
-    from nexus.tenants t
-    left join nexus.tenant_modules tm on tm.tenant_id = t.id
+    from regb.tenants t
+    left join regb.tenant_modules tm on tm.tenant_id = t.id
     group by t.slug, t.tier order by t.slug`
 
   console.log('Seed aplicado:')

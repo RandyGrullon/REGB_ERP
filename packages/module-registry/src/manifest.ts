@@ -8,7 +8,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  */
 import { z } from 'zod'
-import { moduleCategorySchema, type tenantTierSchema } from '@nexus/core'
+import { moduleCategorySchema, type tenantTierSchema } from '@regb/core'
 
 // ── Precios ────────────────────────────────────────────────────────────
 

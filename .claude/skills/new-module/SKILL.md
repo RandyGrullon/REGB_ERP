@@ -1,9 +1,9 @@
 ---
 name: new-module
-description: Crea un módulo completo de Nexus ERP desde cero — manifest, migraciones SQL con RLS, lógica en core, UI web, UI móvil, tour de tutorial, seed demo, tests y registro en el catálogo de precios. Úsalo cuando el usuario pida agregar, crear o construir un módulo nuevo del ERP (ej. "/new-module inventory", "agrega el módulo de nómina").
+description: Crea un módulo completo de REGB ERP desde cero — manifest, migraciones SQL con RLS, lógica en core, UI web, UI móvil, tour de tutorial, seed demo, tests y registro en el catálogo de precios. Úsalo cuando el usuario pida agregar, crear o construir un módulo nuevo del ERP (ej. "/new-module inventory", "agrega el módulo de nómina").
 ---
 
-# Crear un módulo de Nexus ERP
+# Crear un módulo de REGB ERP
 
 Construyes un módulo completo y verificable. No un esqueleto: un módulo que se puede activar y vender.
 
@@ -11,7 +11,7 @@ Construyes un módulo completo y verificable. No un esqueleto: un módulo que se
 
 Lee siempre primero:
 
-- `docs/PROYECTO-NEXUS-ERP.md` §4 (sistema de módulos) y §5 (catálogo de los 92)
+- `docs/PROYECTO-REGB-ERP.md` §4 (sistema de módulos) y §5 (catálogo de los 92)
 - `modules/_template/` si existe
 
 Del catálogo §5 saca: **id exacto, nombre, categoría (core/estándar/avanzado/vertical/enterprise), descripción y dependencias**. No inventes un id que no esté en el catálogo; si el usuario pide uno nuevo, añádelo primero al catálogo del documento maestro.
@@ -56,7 +56,7 @@ create policy tenant_isolation on public.<t> for all
 
 ## Paso 4 — Lógica
 
-`core/` con esquemas Zod y funciones puras. **Cero acceso a red aquí.** Se re-exporta desde `@nexus/core`.
+`core/` con esquemas Zod y funciones puras. **Cero acceso a red aquí.** Se re-exporta desde `@regb/core`.
 
 ## Paso 5 — UI
 
@@ -73,7 +73,7 @@ create policy tenant_isolation on public.<t> for all
 
 ## Paso 8 — Registro
 
-Inserta en `nexus.module_catalog` y `nexus.module_pricing` (3 filas, una por tier).
+Inserta en `regb.module_catalog` y `regb.module_pricing` (3 filas, una por tier).
 
 ## Paso 9 — Tests
 
@@ -88,4 +88,4 @@ Ejecuta el checklist de 14 puntos de §15.4 y reporta el resultado punto por pun
 
 ## Delegación
 
-Para trabajo pesado en un área concreta, usa los agentes: `nexus-db` (SQL/RLS), `nexus-design` (Aurora), `nexus-mobile` (RN), `nexus-tutorial` (tour), `nexus-qa` (verificación).
+Para trabajo pesado en un área concreta, usa los agentes: `regb-db` (SQL/RLS), `regb-design` (Aurora), `regb-mobile` (RN), `regb-tutorial` (tour), `regb-qa` (verificación).

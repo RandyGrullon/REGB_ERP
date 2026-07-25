@@ -1,9 +1,9 @@
 ---
 name: rls-audit
-description: Audita el aislamiento multi-tenant de Nexus ERP — verifica que cada tabla tenga RLS activo, política de tenant, validación de módulo activo, y que ninguna ruta o query permita fugas entre clientes. Úsalo antes de cada despliegue o cuando se pida revisar seguridad, permisos o aislamiento de datos.
+description: Audita el aislamiento multi-tenant de REGB ERP — verifica que cada tabla tenga RLS activo, política de tenant, validación de módulo activo, y que ninguna ruta o query permita fugas entre clientes. Úsalo antes de cada despliegue o cuando se pida revisar seguridad, permisos o aislamiento de datos.
 ---
 
-# Auditoría de RLS y aislamiento — Nexus ERP
+# Auditoría de RLS y aislamiento — REGB ERP
 
 Una sola fuga entre tenants mata el producto. Esta auditoría es obligatoria antes de cada despliegue.
 
@@ -12,7 +12,7 @@ Una sola fuga entre tenants mata el producto. Esta auditoría es obligatoria ant
 ```sql
 select schemaname, tablename, rowsecurity
 from pg_tables
-where schemaname in ('public','nexus','audit')
+where schemaname in ('public','regb','audit')
 order by rowsecurity, tablename;
 ```
 
@@ -23,7 +23,7 @@ order by rowsecurity, tablename;
 ```sql
 select schemaname, tablename, policyname, cmd, qual, with_check
 from pg_policies
-where schemaname in ('public','nexus')
+where schemaname in ('public','regb')
 order by tablename;
 ```
 
@@ -33,7 +33,7 @@ Por cada tabla de `public` verifica que exista una política que contenga **amba
 - `auth.module_active('<módulo>')`
 
 Y que las políticas de escritura tengan `with_check`, no solo `using`.
-Para `nexus.*`: la política debe ser `auth.is_provider()`.
+Para `regb.*`: la política debe ser `auth.is_provider()`.
 
 **Hallazgo CRÍTICO:** tabla con RLS activo pero sin ninguna política (bloquea todo o, peor, si hay `force row level security` mal configurado, no bloquea nada al owner).
 
@@ -66,7 +66,7 @@ Por cada tabla, ejecuta y verifica:
 
 ## Fase 5 — Impersonación
 
-Verifica que `nexus.impersonation_log` exija: `reason` no nulo, `ended_at` se cierra, ventana ≤60 min, `write_mode` false por defecto, y que la política de acceso del proveedor dependa de una sesión de impersonación **abierta y reciente**.
+Verifica que `regb.impersonation_log` exija: `reason` no nulo, `ended_at` se cierra, ventana ≤60 min, `write_mode` false por defecto, y que la política de acceso del proveedor dependa de una sesión de impersonación **abierta y reciente**.
 
 ## Formato del reporte
 

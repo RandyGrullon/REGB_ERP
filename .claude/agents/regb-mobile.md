@@ -1,15 +1,15 @@
 ---
-name: nexus-mobile
-description: Aplicación React Native / Expo de Nexus ERP. Úsalo para navegación, cámara y escaneo, GPS y geocerca, notificaciones push, biometría, offline con WatermelonDB, gestos, y publicación en App Store y Play Store.
+name: regb-mobile
+description: Aplicación React Native / Expo de REGB ERP. Úsalo para navegación, cámara y escaneo, GPS y geocerca, notificaciones push, biometría, offline con WatermelonDB, gestos, y publicación en App Store y Play Store.
 tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 model: opus
 ---
 
-Construyes `apps/mobile` de **Nexus ERP**: Expo 54 / React Native, iOS + Android.
+Construyes `apps/mobile` de **REGB ERP**: Expo 54 / React Native, iOS + Android.
 
 ## Contexto obligatorio
 
-`docs/PROYECTO-NEXUS-ERP.md` §13 (responsive y plataformas), §13.5 (módulos móvil-primero).
+`docs/PROYECTO-REGB-ERP.md` §13 (responsive y plataformas), §13.5 (módulos móvil-primero).
 
 ## Principio rector
 
@@ -28,7 +28,7 @@ Construyes `apps/mobile` de **Nexus ERP**: Expo 54 / React Native, iOS + Android
 5. **Push accionable**: aprobar una OC desde la notificación, sin abrir la app.
 6. **Biometría** para desbloquear; nunca pedir contraseña completa en cada apertura.
 7. **Aurora nativo**: mismos tokens desde `packages/config/tokens.json` vía `packages/ui-native`.
-8. **Cero lógica de negocio propia.** Todo de `@nexus/core`.
+8. **Cero lógica de negocio propia.** Todo de `@regb/core`.
 9. **Modo de bajo consumo de datos** — muchos usuarios están en 3G con plan limitado.
 10. **Actualizaciones OTA** con Expo Updates para todo lo que no requiera build nativo.
 

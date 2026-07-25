@@ -1,26 +1,26 @@
 -- ═══════════════════════════════════════════════════════════════════════
---  0002 — Esquema `nexus`: el negocio del proveedor
+--  0002 — Esquema `regb`: el negocio del proveedor
 --
 --  Aqui viven tus clientes, sus suscripciones y sus facturas.
 --  NINGUN cliente puede leer nada de este esquema.
 --  Documento maestro §7 y §9.2.
 -- ═══════════════════════════════════════════════════════════════════════
 
-create type nexus.tenant_tier   as enum ('pyme', 'mediano', 'grande');
-create type nexus.tenant_status as enum ('trial', 'active', 'past_due', 'readonly', 'suspended', 'archived');
-create type nexus.module_status as enum ('trial', 'active', 'suspended', 'archived');
-create type nexus.invoice_status as enum ('draft', 'sent', 'paid', 'overdue', 'void');
+create type regb.tenant_tier   as enum ('pyme', 'mediano', 'grande');
+create type regb.tenant_status as enum ('trial', 'active', 'past_due', 'readonly', 'suspended', 'archived');
+create type regb.module_status as enum ('trial', 'active', 'suspended', 'archived');
+create type regb.invoice_status as enum ('draft', 'sent', 'paid', 'overdue', 'void');
 
 -- ── Clientes ───────────────────────────────────────────────────────────
-create table nexus.tenants (
+create table regb.tenants (
   id             uuid primary key default gen_random_uuid(),
   slug           text not null unique,
   legal_name     text not null,
   trade_name     text,
   tax_id         text,                                   -- RNC / RFC / NIT
   country        char(2) not null default 'DO',
-  tier           nexus.tenant_tier not null,
-  status         nexus.tenant_status not null default 'trial',
+  tier           regb.tenant_tier not null,
+  status         regb.tenant_status not null default 'trial',
   timezone       text not null default 'America/Santo_Domingo',
   currency       char(3) not null default 'DOP',
   logo_url       text,
@@ -34,16 +34,16 @@ create table nexus.tenants (
   updated_at     timestamptz not null default now()
 );
 
-create index on nexus.tenants (status, tier);
-create index on nexus.tenants (health_score) where status = 'active';
+create index on regb.tenants (status, tier);
+create index on regb.tenants (health_score) where status = 'active';
 
-comment on table nexus.tenants is 'Cada fila es un cliente que paga Nexus ERP.';
+comment on table regb.tenants is 'Cada fila es un cliente que paga REGB ERP.';
 
 -- ── Suscripciones ──────────────────────────────────────────────────────
-create table nexus.subscriptions (
+create table regb.subscriptions (
   id                  uuid primary key default gen_random_uuid(),
-  tenant_id           uuid not null references nexus.tenants(id) on delete cascade,
-  tier                nexus.tenant_tier not null,
+  tenant_id           uuid not null references regb.tenants(id) on delete cascade,
+  tier                regb.tenant_tier not null,
   billing_cycle       text not null default 'monthly'
                         check (billing_cycle in ('monthly', 'annual', 'biennial', 'triennial')),
   base_price          numeric(12,2) not null check (base_price >= 0),
@@ -64,10 +64,10 @@ create table nexus.subscriptions (
   updated_at          timestamptz not null default now()
 );
 
-create unique index on nexus.subscriptions (tenant_id) where cancel_at is null;
+create unique index on regb.subscriptions (tenant_id) where cancel_at is null;
 
 -- ── Catalogo de modulos ────────────────────────────────────────────────
-create table nexus.module_catalog (
+create table regb.module_catalog (
   id           text primary key,                          -- 'inventory'
   name         text not null,
   category     text not null
@@ -85,13 +85,13 @@ create table nexus.module_catalog (
   created_at   timestamptz not null default now()
 );
 
-comment on table nexus.module_catalog is
+comment on table regb.module_catalog is
   'Los 92 modulos de §5. Un modulo sin precio en los 3 tiers no se publica.';
 
 -- ── Precios por tier ───────────────────────────────────────────────────
-create table nexus.module_pricing (
-  module_id     text not null references nexus.module_catalog(id) on delete cascade,
-  tier          nexus.tenant_tier not null,
+create table regb.module_pricing (
+  module_id     text not null references regb.module_catalog(id) on delete cascade,
+  tier          regb.tenant_tier not null,
   install_price numeric(12,2) not null check (install_price >= 0),
   monthly_price numeric(12,2) not null check (monthly_price >= 0),
   per_user      numeric(12,2) not null default 0 check (per_user >= 0),
@@ -100,10 +100,10 @@ create table nexus.module_pricing (
 
 -- ── Modulos activos por cliente ────────────────────────────────────────
 --  Esta tabla es el corazon del producto: define que ve cada cliente.
-create table nexus.tenant_modules (
-  tenant_id      uuid not null references nexus.tenants(id) on delete cascade,
-  module_id      text not null references nexus.module_catalog(id),
-  status         nexus.module_status not null default 'active',
+create table regb.tenant_modules (
+  tenant_id      uuid not null references regb.tenants(id) on delete cascade,
+  module_id      text not null references regb.module_catalog(id),
+  status         regb.module_status not null default 'active',
   enabled        boolean not null default true,           -- el cliente puede apagarlo sin perderlo
   trial_ends_at  date,
   activated_at   timestamptz not null default now(),
@@ -115,15 +115,15 @@ create table nexus.tenant_modules (
 -- El helper auth.module_active() consulta por (tenant, modulo, status, enabled)
 -- en cada evaluacion de politica RLS. Sin este indice, cada query paga un scan.
 create index tenant_modules_active_idx
-  on nexus.tenant_modules (tenant_id, module_id)
+  on regb.tenant_modules (tenant_id, module_id)
   where status in ('trial', 'active') and enabled;
 
-comment on column nexus.tenant_modules.enabled is
+comment on column regb.tenant_modules.enabled is
   'Apagado por el cliente. Los datos permanecen intactos; desinstalar nunca borra (§4.3).';
 
 -- ── Consumo medido ─────────────────────────────────────────────────────
-create table nexus.usage_meters (
-  tenant_id uuid not null references nexus.tenants(id) on delete cascade,
+create table regb.usage_meters (
+  tenant_id uuid not null references regb.tenants(id) on delete cascade,
   period    date not null,                                -- primer dia del mes
   metric    text not null
               check (metric in ('users','storage_gb','transactions','ecf','sms','whatsapp','api_calls','sku')),
@@ -132,12 +132,12 @@ create table nexus.usage_meters (
 );
 
 -- ── Facturas ───────────────────────────────────────────────────────────
-create table nexus.invoices (
+create table regb.invoices (
   id           uuid primary key default gen_random_uuid(),
   -- `restrict` a proposito, no `cascade`: una factura es un registro
   -- contable y fiscal. Un tenant con facturas emitidas no se borra —
   -- se archiva (status = 'archived'). Ver §6.6 y la regla "nunca borrar".
-  tenant_id    uuid not null references nexus.tenants(id) on delete restrict,
+  tenant_id    uuid not null references regb.tenants(id) on delete restrict,
   number       text not null unique,
   period_start date not null,
   period_end   date not null,
@@ -147,7 +147,7 @@ create table nexus.invoices (
   total        numeric(12,2) not null,
   currency     char(3) not null default 'USD',
   fx_rate      numeric(12,4),
-  status       nexus.invoice_status not null default 'draft',
+  status       regb.invoice_status not null default 'draft',
   due_at       date not null,
   paid_at      timestamptz,
   -- Desglose completo: que modulo, que precio, que descuento.
@@ -157,12 +157,12 @@ create table nexus.invoices (
   check (period_end >= period_start)
 );
 
-create index on nexus.invoices (tenant_id, period_start desc);
-create index on nexus.invoices (status, due_at) where status in ('sent', 'overdue');
+create index on regb.invoices (tenant_id, period_start desc);
+create index on regb.invoices (status, due_at) where status in ('sent', 'overdue');
 
 -- ── Onboarding ─────────────────────────────────────────────────────────
-create table nexus.onboarding (
-  tenant_id      uuid primary key references nexus.tenants(id) on delete cascade,
+create table regb.onboarding (
+  tenant_id      uuid primary key references regb.tenants(id) on delete cascade,
   stage          text not null default 'sold'
                    check (stage in ('sold','migration','config','training','live')),
   owner_user_id  uuid,
@@ -174,13 +174,13 @@ create table nexus.onboarding (
 
 -- ── Impersonacion ──────────────────────────────────────────────────────
 --  Documento maestro §7.4: MFA + razon + ticket + 60 min + banner + doble auditoria.
-create table nexus.impersonation_log (
+create table regb.impersonation_log (
   id            uuid primary key default gen_random_uuid(),
   provider_user uuid not null,
   -- `restrict`, igual que las facturas: este log es la evidencia de cada vez
   -- que el proveedor entro a los datos de un cliente. Debe sobrevivir al
   -- cliente, o la auditoria no vale nada.
-  tenant_id     uuid not null references nexus.tenants(id) on delete restrict,
+  tenant_id     uuid not null references regb.tenants(id) on delete restrict,
   reason        text not null check (length(trim(reason)) >= 10),
   ticket_ref    text,
   write_mode    boolean not null default false,
@@ -189,16 +189,16 @@ create table nexus.impersonation_log (
 );
 
 -- Solo una sesion de impersonacion abierta por usuario del proveedor.
-create unique index on nexus.impersonation_log (provider_user) where ended_at is null;
-create index on nexus.impersonation_log (tenant_id, started_at desc);
+create unique index on regb.impersonation_log (provider_user) where ended_at is null;
+create index on regb.impersonation_log (tenant_id, started_at desc);
 
-comment on column nexus.impersonation_log.reason is
+comment on column regb.impersonation_log.reason is
   'Obligatoria y de minimo 10 caracteres. Sin razon escrita no hay impersonacion.';
 
 -- ── updated_at automatico ──────────────────────────────────────────────
-create trigger touch before update on nexus.tenants
+create trigger touch before update on regb.tenants
   for each row execute function public.touch_updated_at();
-create trigger touch before update on nexus.subscriptions
+create trigger touch before update on regb.subscriptions
   for each row execute function public.touch_updated_at();
-create trigger touch before update on nexus.onboarding
+create trigger touch before update on regb.onboarding
   for each row execute function public.touch_updated_at();

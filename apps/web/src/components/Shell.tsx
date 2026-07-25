@@ -16,10 +16,10 @@ import {
   UserBar,
   type SidebarGroup,
   type SidebarModule,
-} from '@nexus/ui'
+} from '@regb/ui'
 
 /**
- * Shell de Nexus — el layout de 4 columnas de §12.1.
+ * Shell de REGB — el layout de 4 columnas de §12.1.
  *
  * rail 72px · sidebar 240px · contenido flex · miembros 240px
  *
@@ -220,7 +220,7 @@ export function Shell({
                 Buenos dias, {data.user.name.split(' ')[0]}
               </h2>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Estas viendo Nexus como <strong>{data.roleName}</strong> en{' '}
+                Estas viendo REGB como <strong>{data.roleName}</strong> en{' '}
                 <strong>{activePlatform}</strong>.
               </p>
 
@@ -303,9 +303,9 @@ export function Shell({
 
               <p className="mt-6 text-xs text-[var(--color-text-muted)]">
                 Nada de esto esta cableado en el codigo: sale de{' '}
-                <code className="font-[family-name:var(--font-mono)]">nexus.tenant_modules</code> y
+                <code className="font-[family-name:var(--font-mono)]">regb.tenant_modules</code> y
                 del rol, resuelto por{' '}
-                <code className="font-[family-name:var(--font-mono)]">@nexus/module-registry</code>.
+                <code className="font-[family-name:var(--font-mono)]">@regb/module-registry</code>.
               </p>
             </>
           )}

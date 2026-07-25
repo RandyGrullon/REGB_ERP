@@ -1,4 +1,4 @@
-import { defineModule } from '@nexus/module-registry'
+import { defineModule } from '@regb/module-registry'
 
 /**
  * Nomina — modulo 62 del catalogo (§5.6).

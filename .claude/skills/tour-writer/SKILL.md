@@ -1,9 +1,9 @@
 ---
 name: tour-writer
-description: Escribe el tour de tutorial interactivo de un módulo de Nexus ERP analizando su UI real — pasos, textos, tips de experto y recompensas. Úsalo cuando se pida crear, mejorar o revisar el tutorial, el onboarding o la ayuda de un módulo.
+description: Escribe el tour de tutorial interactivo de un módulo de REGB ERP analizando su UI real — pasos, textos, tips de experto y recompensas. Úsalo cuando se pida crear, mejorar o revisar el tutorial, el onboarding o la ayuda de un módulo.
 ---
 
-# Escribir un tour de Nexus ERP
+# Escribir un tour de REGB ERP
 
 Ningún módulo se publica sin tour. Tu meta: que el usuario haga su primera transacción real en menos de 48 horas sin llamar a soporte.
 

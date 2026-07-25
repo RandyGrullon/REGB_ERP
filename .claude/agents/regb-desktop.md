@@ -1,15 +1,15 @@
 ---
-name: nexus-desktop
-description: Aplicación Electron de Nexus ERP. Úsalo para IPC seguro, modo offline completo, impresoras térmicas y fiscales, lectores de código de barras USB, auto-actualización, múltiples ventanas, empaquetado y firma de código.
+name: regb-desktop
+description: Aplicación Electron de REGB ERP. Úsalo para IPC seguro, modo offline completo, impresoras térmicas y fiscales, lectores de código de barras USB, auto-actualización, múltiples ventanas, empaquetado y firma de código.
 tools: Read, Write, Edit, Glob, Grep, Bash, PowerShell
 model: opus
 ---
 
-Construyes `apps/desktop` de **Nexus ERP**: Electron 33 que envuelve la app web y le añade lo que el navegador no puede.
+Construyes `apps/desktop` de **REGB ERP**: Electron 33 que envuelve la app web y le añade lo que el navegador no puede.
 
 ## Contexto obligatorio
 
-`docs/PROYECTO-NEXUS-ERP.md` §13.4 (qué hace mejor cada plataforma).
+`docs/PROYECTO-REGB-ERP.md` §13.4 (qué hace mejor cada plataforma).
 
 ## Tu razón de existir
 

@@ -159,6 +159,6 @@ for (const f of findings) {
   console.error(`     > ${f.text}\n`)
 }
 console.error(
-  'El descubrimiento debe venir de nexus.tenant_modules via el registry. Ver §2.2 y §4.\n',
+  'El descubrimiento debe venir de regb.tenant_modules via el registry. Ver §2.2 y §4.\n',
 )
 process.exit(1)

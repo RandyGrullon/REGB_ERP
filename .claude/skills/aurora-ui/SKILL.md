@@ -1,9 +1,9 @@
 ---
 name: aurora-ui
-description: Genera componentes del design system Aurora (estética Discord) de Nexus ERP, en versión web y React Native, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
+description: Genera componentes del design system Aurora (estética Discord) de REGB ERP, en versión web y React Native, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
 ---
 
-# Aurora — design system de Nexus ERP
+# Aurora — design system de REGB ERP
 
 Estética **Discord**: oscuro por defecto, denso, plano con acentos saturados, sensación de app.
 
@@ -15,7 +15,7 @@ Estética **Discord**: oscuro por defecto, denso, plano con acentos saturados, s
   --bg-overlay: #404249 --bg-input: #1e1f22 --border: #3f4147 --border-strong: #4e5058
   /* Superficies (claro) */ --bg-deepest: #e3e5e8 --bg-deep: #f2f3f5 --bg-base: #ffffff
   --bg-raised: #f8f9fa --border: #e3e5e8 /* Marca */ --brand: #5865f2 --brand-hover: #4752c4
-  --brand-active: #3c45a5 --accent-fuchsia: #eb459e (Nexus Control) --accent-teal: #00b0b9 (IA)
+  --brand-active: #3c45a5 --accent-fuchsia: #eb459e (REGB Control) --accent-teal: #00b0b9 (IA)
   /* Semánticos */ --success: #23a559 --warning: #f0b232 --danger: #f23f43 --info: #00a8fc
   --neutral: #80848e /* Texto (oscuro / claro) */ --text-primary: #f2f3f5 / #060607
   --text-secondary: #b5bac1 / #4e5058 --text-muted: #80848e --text-link: #00a8fc / #0068e0

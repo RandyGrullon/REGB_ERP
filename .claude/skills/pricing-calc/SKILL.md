@@ -1,9 +1,9 @@
 ---
 name: pricing-calc
-description: Calcula y simula el precio de un cliente de Nexus ERP — tier, módulos, usuarios, sucursales, consumo y descuentos — y genera la propuesta comercial en markdown. Úsalo cuando se pida cotizar un cliente, simular un cambio de plan, comparar tiers o calcular cuánto costaría activar módulos.
+description: Calcula y simula el precio de un cliente de REGB ERP — tier, módulos, usuarios, sucursales, consumo y descuentos — y genera la propuesta comercial en markdown. Úsalo cuando se pida cotizar un cliente, simular un cambio de plan, comparar tiers o calcular cuánto costaría activar módulos.
 ---
 
-# Calculadora de precios de Nexus ERP
+# Calculadora de precios de REGB ERP
 
 ## Datos que necesitas (si faltan, asume y dilo)
 

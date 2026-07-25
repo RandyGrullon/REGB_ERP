@@ -2,9 +2,9 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "nexus-web",
+      "name": "regb-web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@nexus/web", "dev"],
+      "runtimeArgs": ["--filter", "@regb/web", "dev"],
       "port": 3100
     }
   ]

@@ -1,11 +1,11 @@
-# 🛰️ Nexus ERP
+# 🛰️ REGB ERP
 
 > ERP modular multi-tenant con estética Discord.
 > Web · Desktop · Móvil · 92 módulos activables · Supabase
 
 | Documento                                                  | Para qué                                                     |
 | ---------------------------------------------------------- | ------------------------------------------------------------ |
-| [docs/PROYECTO-NEXUS-ERP.md](docs/PROYECTO-NEXUS-ERP.md)   | **Qué** se construye: módulos, precios, diseño, mockups      |
+| [docs/PROYECTO-REGB-ERP.md](docs/PROYECTO-REGB-ERP.md)   | **Qué** se construye: módulos, precios, diseño, mockups      |
 | [docs/FASES-DE-DESARROLLO.md](docs/FASES-DE-DESARROLLO.md) | **En qué orden**: 11 fases, 84 sprints, puertas de no-avance |
 
 ---
@@ -21,13 +21,13 @@ pnpm install
 Necesitas Docker corriendo.
 
 ```bash
-docker run -d --name nexus-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=nexus_test -p 55432:5432 postgres:16
+docker run -d --name regb-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=regb_test -p 55432:5432 postgres:16
 ```
 
-Luego, con `DATABASE_URL=postgresql://postgres:postgres@localhost:55432/nexus_test`:
+Luego, con `DATABASE_URL=postgresql://postgres:postgres@localhost:55432/regb_test`:
 
 ```bash
-pnpm --filter @nexus/db migrate
+pnpm --filter @regb/db migrate
 ```
 
 Para el entorno Supabase completo (auth, storage, realtime) usa `pnpm db:start`.
@@ -42,10 +42,10 @@ pnpm test
 
 | Suite                    | Casos | Qué prueba                                                         |
 | ------------------------ | ----: | ------------------------------------------------------------------ |
-| `@nexus/db`              |    24 | Aislamiento entre tenants, licencia de módulos, impersonación, RLS |
-| `@nexus/module-registry` |    26 | Puerta F1: activar un módulo es un dato, no un despliegue          |
-| `@nexus/permissions`     |    23 | RBAC + ABAC: la denegación siempre gana                            |
-| `@nexus/core`            |    13 | Dinero, redondeo bancario, contratos de sesión y eventos           |
+| `@regb/db`              |    24 | Aislamiento entre tenants, licencia de módulos, impersonación, RLS |
+| `@regb/module-registry` |    26 | Puerta F1: activar un módulo es un dato, no un despliegue          |
+| `@regb/permissions`     |    23 | RBAC + ABAC: la denegación siempre gana                            |
+| `@regb/core`            |    13 | Dinero, redondeo bancario, contratos de sesión y eventos           |
 
 ---
 
@@ -87,7 +87,7 @@ Flujo de Supabase Auth (F0 S3), el despachador de eventos como Edge Function
 ## Verlo funcionando
 
 ```bash
-docker start nexus-test-db && pnpm --filter @nexus/web dev
+docker start regb-test-db && pnpm --filter @regb/web dev
 ```
 
 En [localhost:3100](http://localhost:3100) puedes cambiar de **cliente**, **rol**
@@ -96,7 +96,7 @@ y **plataforma** desde la cabecera y ver cómo el sidebar se reconstruye solo.
 Para comprobar que activar un módulo es un dato y no un despliegue:
 
 ```bash
-docker exec nexus-test-db psql -U postgres -d nexus_test -c "update nexus.tenant_modules set enabled=false where module_id='pos';"
+docker exec regb-test-db psql -U postgres -d regb_test -c "update regb.tenant_modules set enabled=false where module_id='pos';"
 ```
 
 Recarga y el POS desapareció. Vuelve a ponerlo en `true` y regresa.
@@ -106,7 +106,7 @@ Recarga y el POS desapareció. Vuelve a ponerlo en `true` y regresa.
 ## Estructura
 
 ```
-NexusERP/
+REGB-ERP/
 ├── apps/                 web · desktop · mobile      (F2, F5)
 ├── packages/
 │   ├── config/           ✅ tokens Aurora — fuente única
@@ -137,7 +137,7 @@ Estas no son convenciones: **fallan el build**.
 | `service_role` solo en Edge Functions             | `pnpm audit:secrets`              |
 | El core no ramifica por id de módulo              | `pnpm audit:registry`             |
 | Ningún tenant ve datos de otro                    | `pnpm test:isolation` (24 casos)  |
-| Toda tabla tiene RLS **forzado** y política       | vista `nexus.rls_coverage` + test |
+| Toda tabla tiene RLS **forzado** y política       | vista `regb.rls_coverage` + test |
 
 ```bash
 pnpm gate:f0   # corre todas

@@ -5,7 +5,7 @@
 --  procesado. Le faltaba lo que hace falta en produccion: CUANDO reintentar
 --  y donde acaba un evento que no hay forma de entregar.
 --
---  Ver @nexus/core/events.ts — la politica de reintentos vive alli, probada
+--  Ver @regb/core/events.ts — la politica de reintentos vive alli, probada
 --  sin base de datos. Esto es solo el almacenamiento.
 -- ═══════════════════════════════════════════════════════════════════════
 

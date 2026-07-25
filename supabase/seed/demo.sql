@@ -8,7 +8,7 @@
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ── Catalogo de modulos ────────────────────────────────────────────────
-insert into nexus.module_catalog (id, name, category, description, icon, version, requires, recommends, platforms, is_published)
+insert into regb.module_catalog (id, name, category, description, icon, version, requires, recommends, platforms, is_published)
 values
   ('products', 'Productos', 'core',
    'Catalogo con variantes, unidades, atributos, imagenes y kits.', 'Box', '0.1.0',
@@ -35,7 +35,7 @@ on conflict (id) do update
       is_published = excluded.is_published;
 
 -- ── Precios por tier (§6.3) ────────────────────────────────────────────
-insert into nexus.module_pricing (module_id, tier, install_price, monthly_price, per_user)
+insert into regb.module_pricing (module_id, tier, install_price, monthly_price, per_user)
 values
   ('products',  'pyme',    0,    0, 0),
   ('products',  'mediano', 0,    0, 0),
@@ -55,13 +55,13 @@ on conflict (module_id, tier) do update
       per_user = excluded.per_user;
 
 -- ── Cliente 1: PYME ────────────────────────────────────────────────────
-insert into nexus.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
+insert into regb.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
 values ('colmado-esperanza', 'Colmado La Esperanza SRL', 'La Esperanza',
         '130-11111-1', 'pyme', 'active', now() - interval '4 months', now() - interval '3 months', 88)
 on conflict (slug) do nothing;
 
 -- ── Cliente 2: MEDIANO ─────────────────────────────────────────────────
-insert into nexus.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
+insert into regb.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
 values ('distribuidora-caribe', 'Distribuidora Caribe SRL', 'Caribe',
         '131-45678-9', 'mediano', 'active', now() - interval '6 months', now() - interval '5 months', 94)
 on conflict (slug) do nothing;
@@ -74,8 +74,8 @@ declare
   v_c1   uuid;
   v_c2   uuid;
 begin
-  select id into v_pyme from nexus.tenants where slug = 'colmado-esperanza';
-  select id into v_med  from nexus.tenants where slug = 'distribuidora-caribe';
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
 
   insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
   values (v_pyme, 'Colmado La Esperanza SRL', '130-11111-1', 'DOP', true)
@@ -104,18 +104,18 @@ begin
   on conflict do nothing;
 
   -- ── Modulos del colmado: lo minimo para dejar Excel ──────────────────
-  insert into nexus.tenant_modules (tenant_id, module_id, status, enabled)
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
   values (v_pyme, 'products', 'active', true),
          (v_pyme, 'pos', 'active', true)
   on conflict do nothing;
 
   -- Inventario en prueba: vence en 9 dias.
-  insert into nexus.tenant_modules (tenant_id, module_id, status, enabled, trial_ends_at)
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled, trial_ends_at)
   values (v_pyme, 'inventory', 'trial', true, (current_date + 9))
   on conflict do nothing;
 
   -- ── Modulos de la distribuidora ──────────────────────────────────────
-  insert into nexus.tenant_modules (tenant_id, module_id, status, enabled)
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
   values (v_med, 'products', 'active', true),
          (v_med, 'inventory', 'active', true),
          (v_med, 'pos', 'active', true),
@@ -123,7 +123,7 @@ begin
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
-  insert into nexus.subscriptions
+  insert into regb.subscriptions
     (tenant_id, tier, billing_cycle, base_price, install_price, install_paid,
      included_users, included_branches, included_companies, included_storage_gb,
      included_modules, started_at, renews_at)

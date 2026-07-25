@@ -1,16 +1,16 @@
 -- ═══════════════════════════════════════════════════════════════════════
 --  0001 — Esquemas, roles y funciones helper de aislamiento
 --
---  Todo el aislamiento multi-tenant de Nexus descansa en las tres
+--  Todo el aislamiento multi-tenant de REGB descansa en las tres
 --  funciones de este archivo. Si una de ellas es incorrecta, TODOS los
 --  tenants quedan expuestos. Ver documento maestro §10.
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- ── Esquemas ───────────────────────────────────────────────────────────
-create schema if not exists nexus;   -- proveedor: tenants, precios, facturas
+create schema if not exists regb;   -- proveedor: tenants, precios, facturas
 create schema if not exists audit;   -- log particionado por mes
 
-comment on schema nexus is
+comment on schema regb is
   'Datos del proveedor (Randy). Invisible para los clientes: toda tabla exige auth.is_provider().';
 comment on schema audit is
   'Bitacora de auditoria particionada por mes. Escritura solo por trigger.';
@@ -33,7 +33,7 @@ end $$;
 create schema if not exists auth;
 
 grant usage on schema public to anon, authenticated;
-grant usage on schema nexus to authenticated;
+grant usage on schema regb to authenticated;
 grant usage on schema audit to authenticated;
 -- Sin esto, las politicas RLS no pueden invocar auth.tenant_id() ni
 -- auth.module_active() y toda consulta muere con "permission denied for
@@ -66,7 +66,7 @@ $$;
 comment on function auth.tenant_id() is
   'Tenant del usuario actual, leido del JWT. Unica fuente valida de tenant_id.';
 
--- ¿Es un usuario del proveedor (Nexus Control)?
+-- ¿Es un usuario del proveedor (REGB Control)?
 create or replace function auth.is_provider()
 returns boolean
 language sql
@@ -82,10 +82,10 @@ as $$
 $$;
 
 comment on function auth.is_provider() is
-  'True solo para usuarios de Nexus Control. Puerta de entrada al esquema nexus.';
+  'True solo para usuarios de REGB Control. Puerta de entrada al esquema regb.';
 
 -- Id del usuario actual (en CI, donde no existe el auth.uid() de Supabase).
-create or replace function auth.nexus_uid()
+create or replace function auth.regb_uid()
 returns uuid
 language sql
 stable
@@ -101,7 +101,7 @@ $$;
 -- si el cliente no paga el modulo, la fila no existe para el, aunque
 -- adivine la URL o llame al API directamente.
 --
--- Referencia nexus.tenant_modules, que se crea en 0002. Postgres valida el
+-- Referencia regb.tenant_modules, que se crea en 0002. Postgres valida el
 -- cuerpo de las funciones SQL al crearlas, asi que diferimos la comprobacion
 -- (mismo idioma que usa pg_dump para restaurar en orden arbitrario).
 set local check_function_bodies = off;
@@ -115,7 +115,7 @@ set search_path = ''
 as $$
   select exists (
     select 1
-    from nexus.tenant_modules tm
+    from regb.tenant_modules tm
     where tm.tenant_id = auth.tenant_id()
       and tm.module_id = p_module
       and tm.status in ('trial', 'active')
@@ -131,7 +131,7 @@ set local check_function_bodies = on;
 -- Las funciones helper las invoca cada politica RLS, en cada query.
 grant execute on function auth.tenant_id()          to anon, authenticated;
 grant execute on function auth.is_provider()        to anon, authenticated;
-grant execute on function auth.nexus_uid()          to anon, authenticated;
+grant execute on function auth.regb_uid()          to anon, authenticated;
 grant execute on function auth.module_active(text)  to anon, authenticated;
 
 -- ── Utilidad: updated_at automatico ────────────────────────────────────

@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Nexus ERP',
+  title: 'REGB ERP',
   description: 'ERP modular multi-tenant',
 }
 

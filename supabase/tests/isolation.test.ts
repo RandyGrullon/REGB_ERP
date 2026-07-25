@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  *  PUERTA F0 — Aislamiento entre tenants
  *
- *  El test mas importante de Nexus ERP. Si uno solo de estos casos falla,
+ *  El test mas importante de REGB ERP. Si uno solo de estos casos falla,
  *  un cliente puede ver los datos de otro y el producto esta muerto.
  *
  *  Documento maestro §10. Corre en CI en cada push.
@@ -11,7 +11,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 
-const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/nexus_test'
+const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/regb_test'
 
 const sql = postgres(URL, { max: 4, onnotice: () => {} })
 
@@ -26,7 +26,7 @@ let companyB: string
 const claims = (userId: string, tenantId: string) =>
   JSON.stringify({ sub: userId, app_metadata: { tenant_id: tenantId, is_provider: false } })
 
-/** JWT de un usuario de Nexus Control. */
+/** JWT de un usuario de REGB Control. */
 const providerClaims = (userId: string) =>
   JSON.stringify({ sub: userId, app_metadata: { is_provider: true } })
 
@@ -57,11 +57,11 @@ const RUN = crypto.randomUUID().slice(0, 8)
 beforeAll(async () => {
   // Dos clientes reales y distintos.
   const [a] = await sql`
-    insert into nexus.tenants (slug, legal_name, tier, status, tax_id)
+    insert into regb.tenants (slug, legal_name, tier, status, tax_id)
     values (${`iso-a-${RUN}`}, 'Colmado La Esperanza SRL', 'pyme', 'active', '130-11111-1')
     returning id`
   const [b] = await sql`
-    insert into nexus.tenants (slug, legal_name, tier, status, tax_id)
+    insert into regb.tenants (slug, legal_name, tier, status, tax_id)
     values (${`iso-b-${RUN}`}, 'Distribuidora Caribe SRL', 'mediano', 'active', '131-45678-9')
     returning id`
 
@@ -83,11 +83,11 @@ beforeAll(async () => {
 
   // Un modulo de catalogo, activo solo para B.
   await sql`
-    insert into nexus.module_catalog (id, name, category, is_published)
+    insert into regb.module_catalog (id, name, category, is_published)
     values ('inventory', 'Inventario', 'standard', true)
     on conflict (id) do nothing`
   await sql`
-    insert into nexus.tenant_modules (tenant_id, module_id, status, enabled)
+    insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
     values (${tenantB}, 'inventory', 'active', true)
     on conflict do nothing`
 
@@ -108,9 +108,9 @@ afterAll(async () => {
   // Facturas y log de impersonacion son `on delete restrict` a proposito:
   // un registro fiscal y una evidencia de auditoria no desaparecen con el
   // cliente. En el test los retiramos explicitamente.
-  await sql`delete from nexus.invoices          where tenant_id in (${tenantA}, ${tenantB})`
-  await sql`delete from nexus.impersonation_log where tenant_id in (${tenantA}, ${tenantB})`
-  await sql`delete from nexus.tenants           where id        in (${tenantA}, ${tenantB})`
+  await sql`delete from regb.invoices          where tenant_id in (${tenantA}, ${tenantB})`
+  await sql`delete from regb.impersonation_log where tenant_id in (${tenantA}, ${tenantB})`
+  await sql`delete from regb.tenants           where id        in (${tenantA}, ${tenantB})`
   await sql.end()
 })
 
@@ -219,7 +219,7 @@ describe('Licencia de modulos', () => {
   })
 
   it('apagar el modulo lo desactiva sin borrar la licencia', async () => {
-    await sql`update nexus.tenant_modules set enabled = false
+    await sql`update regb.tenant_modules set enabled = false
               where tenant_id = ${tenantB} and module_id = 'inventory'`
 
     const [r] = await as(
@@ -229,54 +229,54 @@ describe('Licencia de modulos', () => {
     expect(r!.active).toBe(false)
 
     // La fila sigue ahi: desinstalar es archivar, nunca borrar (§4.3).
-    const [row] = await sql`select status from nexus.tenant_modules
+    const [row] = await sql`select status from regb.tenant_modules
                             where tenant_id = ${tenantB} and module_id = 'inventory'`
     expect(row!.status).toBe('active')
 
-    await sql`update nexus.tenant_modules set enabled = true
+    await sql`update regb.tenant_modules set enabled = true
               where tenant_id = ${tenantB} and module_id = 'inventory'`
   })
 
   it('el tenant solo ve SUS modulos activos, no los de otros', async () => {
     const rows = await as(
       claims(userA, tenantA),
-      (tx) => tx`select module_id from nexus.tenant_modules where tenant_id = ${tenantB}`,
+      (tx) => tx`select module_id from regb.tenant_modules where tenant_id = ${tenantB}`,
     )
     expect(rows).toHaveLength(0)
   })
 })
 
 // ═══════════════════════════════════════════════════════════════════════
-describe('Esquema nexus — solo el proveedor', () => {
+describe('Esquema regb — solo el proveedor', () => {
   it('un cliente no puede listar los tenants del proveedor', async () => {
-    const rows = await as(claims(userA, tenantA), (tx) => tx`select id from nexus.tenants`)
+    const rows = await as(claims(userA, tenantA), (tx) => tx`select id from regb.tenants`)
     expect(rows).toHaveLength(0)
   })
 
   it('un cliente no ve las suscripciones de nadie, ni la suya', async () => {
-    const rows = await as(claims(userA, tenantA), (tx) => tx`select id from nexus.subscriptions`)
+    const rows = await as(claims(userA, tenantA), (tx) => tx`select id from regb.subscriptions`)
     expect(rows).toHaveLength(0)
   })
 
   it('un cliente ve SUS facturas pero no las de otro', async () => {
     await sql`
-      insert into nexus.invoices (tenant_id, number, period_start, period_end,
+      insert into regb.invoices (tenant_id, number, period_start, period_end,
                                   subtotal, total, due_at, lines)
       values (${tenantB}, ${`NX-${RUN}`}, '2026-07-01', '2026-07-31',
               906.00, 906.00, '2026-08-12', '[]'::jsonb)`
 
     const ajenas = await as(
       claims(userA, tenantA),
-      (tx) => tx`select id from nexus.invoices where tenant_id = ${tenantB}`,
+      (tx) => tx`select id from regb.invoices where tenant_id = ${tenantB}`,
     )
     expect(ajenas).toHaveLength(0)
 
-    const propias = await as(claims(userB, tenantB), (tx) => tx`select number from nexus.invoices`)
+    const propias = await as(claims(userB, tenantB), (tx) => tx`select number from regb.invoices`)
     expect(propias).toHaveLength(1)
   })
 
   it('el proveedor SI ve todos los tenants', async () => {
-    const rows = await as(providerClaims(providerUser), (tx) => tx`select id from nexus.tenants`)
+    const rows = await as(providerClaims(providerUser), (tx) => tx`select id from regb.tenants`)
     expect(rows.length).toBeGreaterThanOrEqual(2)
   })
 })
@@ -293,7 +293,7 @@ describe('Impersonacion del proveedor', () => {
 
   it('con sesion abierta y vigente, si los ve', async () => {
     await sql`
-      insert into nexus.impersonation_log (provider_user, tenant_id, reason, ticket_ref)
+      insert into regb.impersonation_log (provider_user, tenant_id, reason, ticket_ref)
       values (${providerUser}, ${tenantB}, 'Soporte: la factura 284 no imprime', 'TCK-1042')`
 
     const rows = await as(
@@ -304,7 +304,7 @@ describe('Impersonacion del proveedor', () => {
   })
 
   it('la impersonacion expira sola a los 60 minutos', async () => {
-    await sql`update nexus.impersonation_log
+    await sql`update regb.impersonation_log
               set started_at = now() - interval '61 minutes'
               where provider_user = ${providerUser} and ended_at is null`
 
@@ -317,7 +317,7 @@ describe('Impersonacion del proveedor', () => {
 
   it('exige una razon escrita de al menos 10 caracteres', async () => {
     await expect(
-      sql`insert into nexus.impersonation_log (provider_user, tenant_id, reason)
+      sql`insert into regb.impersonation_log (provider_user, tenant_id, reason)
           values (${crypto.randomUUID()}, ${tenantA}, 'ver')`,
     ).rejects.toThrow()
   })
@@ -325,7 +325,7 @@ describe('Impersonacion del proveedor', () => {
   it('impersonar es SOLO LECTURA: no puede escribir en el cliente', async () => {
     const other = crypto.randomUUID()
     await sql`
-      insert into nexus.impersonation_log (provider_user, tenant_id, reason)
+      insert into regb.impersonation_log (provider_user, tenant_id, reason)
       values (${other}, ${tenantB}, 'Revision de datos con consentimiento')`
 
     const rows = await as(
@@ -343,7 +343,7 @@ describe('Cobertura de RLS — red de seguridad', () => {
   it('NINGUNA tabla de negocio esta sin RLS', async () => {
     const rows = await sql<{ schema_name: string; table_name: string }[]>`
       select schema_name, table_name
-      from nexus.rls_coverage
+      from regb.rls_coverage
       where not rls_enabled
         and table_name <> 'schema_migrations'`
     expect(
@@ -355,7 +355,7 @@ describe('Cobertura de RLS — red de seguridad', () => {
   it('NINGUNA tabla con RLS se quedo sin politica', async () => {
     const rows = await sql<{ schema_name: string; table_name: string }[]>`
       select schema_name, table_name
-      from nexus.rls_coverage
+      from regb.rls_coverage
       where rls_enabled and policy_count = 0`
     expect(
       rows,
@@ -367,7 +367,7 @@ describe('Cobertura de RLS — red de seguridad', () => {
     // Sin FORCE, el dueno de la tabla ignora las politicas y este test
     // completo pasaria en falso.
     const rows = await sql<{ table_name: string }[]>`
-      select table_name from nexus.rls_coverage
+      select table_name from regb.rls_coverage
       where schema_name = 'public'
         and rls_enabled
         and not rls_forced`

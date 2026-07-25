@@ -3,18 +3,18 @@
  *  El registry
  *
  *  Recibe (a) los modulos licenciados del tenant, que salen de
- *  nexus.tenant_modules, y (b) el rol del usuario. Devuelve las rutas y el
+ *  regb.tenant_modules, y (b) el rol del usuario. Devuelve las rutas y el
  *  sidebar que corresponden.
  *
  *  EL CORE NO CONOCE NINGUN MODULO. Aqui no hay ni un `if (moduleId === ...)`.
  *  Si aparece uno, `pnpm audit:registry` falla el build (§2.2).
  * ═══════════════════════════════════════════════════════════════════════
  */
-import type { ModuleStatus } from '@nexus/core'
-import { moduleVisible, type EvaluationContext } from '@nexus/permissions'
+import type { ModuleStatus } from '@regb/core'
+import { moduleVisible, type EvaluationContext } from '@regb/permissions'
 import type { ModuleManifest, ModuleRoute } from './manifest.js'
 
-/** Una fila de nexus.tenant_modules. */
+/** Una fila de regb.tenant_modules. */
 export interface TenantModule {
   moduleId: string
   status: ModuleStatus
@@ -52,7 +52,7 @@ const isLive = (tm: TenantModule): boolean =>
   (tm.status === 'active' || tm.status === 'trial') && tm.enabled
 
 export interface HydrateOptions {
-  /** Filas de nexus.tenant_modules del cliente. */
+  /** Filas de regb.tenant_modules del cliente. */
   tenantModules: TenantModule[]
   /** Manifests disponibles, por id. */
   manifests: Map<string, ModuleManifest>

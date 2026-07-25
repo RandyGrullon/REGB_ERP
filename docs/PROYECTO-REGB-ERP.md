@@ -1,4 +1,4 @@
-# 🛰️ NEXUS ERP — Documento Maestro del Proyecto
+# 🛰️ REGB ERP — Documento Maestro del Proyecto
 
 > **ERP modular multi-tenant con estética Discord.**
 > Web (Next.js) · Desktop (Electron) · Móvil (React Native) · Backend (Supabase)
@@ -6,13 +6,13 @@
 
 |                                             |                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Nombre del producto**                     | Nexus ERP                                                                               |
-| **Nombre interno del panel de propietario** | Nexus Control (`owner-console`)                                                         |
+| **Nombre del producto**                     | REGB ERP                                                                               |
+| **Nombre interno del panel de propietario** | REGB Control (`owner-console`)                                                         |
 | **Versión del documento**                   | 1.0                                                                                     |
 | **Fecha**                                   | 2026-07-21                                                                              |
 | **Autor**                                   | Randy Grullón                                                                           |
 | **Stack**                                   | Next.js 15 · Electron 33 · React Native (Expo 54) · Supabase (Postgres 16) · TypeScript |
-| **Repos**                                   | Monorepo `NexusERP/` (Turborepo + pnpm)                                                 |
+| **Repos**                                   | Monorepo `REGB-ERP/` (Turborepo + pnpm)                                                 |
 
 ---
 
@@ -24,7 +24,7 @@
 4. [Sistema de módulos (el corazón)](#4-sistema-de-módulos-el-corazón)
 5. [Catálogo completo de 80 módulos](#5-catálogo-completo-de-80-módulos)
 6. [Tipos de cliente y modelo de precios](#6-tipos-de-cliente-y-modelo-de-precios)
-7. [Nexus Control — el panel del propietario](#7-nexus-control--el-panel-del-propietario)
+7. [REGB Control — el panel del propietario](#7-regb-control--el-panel-del-propietario)
 8. [Roles, permisos y visibilidad de módulos](#8-roles-permisos-y-visibilidad-de-módulos)
 9. [Modelo de datos (Supabase)](#9-modelo-de-datos-supabase)
 10. [Seguridad y multi-tenancy (RLS)](#10-seguridad-y-multi-tenancy-rls)
@@ -55,7 +55,7 @@ Las empresas de LATAM (especialmente RD y Centroamérica) viven atrapadas entre 
 
 ### 1.2 La solución
 
-**Nexus ERP** = un ERP donde **todo** se hace desde adentro, pero donde el cliente **solo paga por lo que enciende**.
+**REGB ERP** = un ERP donde **todo** se hace desde adentro, pero donde el cliente **solo paga por lo que enciende**.
 
 ```mermaid
 graph LR
@@ -64,7 +64,7 @@ graph LR
     C --> D[Marketplace de módulos]
     D --> E[Enciende lo que necesita]
     E --> F[Mensualidad = base + módulos + usuarios]
-    F --> G[Nexus Control factura automático]
+    F --> G[REGB Control factura automático]
 ```
 
 ### 1.3 Los 5 diferenciadores
@@ -96,16 +96,16 @@ graph TB
     end
 
     subgraph "Núcleo compartido"
-        UI["@nexus/ui<br/>Design System Aurora"]
-        CORE["@nexus/core<br/>tipos, hooks, stores"]
-        SDK["@nexus/sdk<br/>cliente Supabase tipado"]
-        REG["@nexus/module-registry<br/>carga dinámica"]
+        UI["@regb/ui<br/>Design System Aurora"]
+        CORE["@regb/core<br/>tipos, hooks, stores"]
+        SDK["@regb/sdk<br/>cliente Supabase tipado"]
+        REG["@regb/module-registry<br/>carga dinámica"]
     end
 
     subgraph "Módulos (80)"
-        MOD1["@nexus/mod-accounting"]
-        MOD2["@nexus/mod-inventory"]
-        MOD3["@nexus/mod-hr"]
+        MOD1["@regb/mod-accounting"]
+        MOD2["@regb/mod-inventory"]
+        MOD3["@regb/mod-hr"]
         MODN["... 77 más"]
     end
 
@@ -171,12 +171,12 @@ sequenceDiagram
 ## 3. Monorepo y estructura de carpetas
 
 ```
-NexusERP/
+REGB-ERP/
 ├── apps/
 │   ├── web/                  # Next.js 15 (App Router) — cliente principal + PWA
 │   ├── desktop/              # Electron 33 — envuelve web/ + capacidades nativas
 │   ├── mobile/               # Expo 54 / React Native — app iOS + Android
-│   └── owner-console/        # Nexus Control (puede vivir dentro de web/ bajo /nexus)
+│   └── owner-console/        # REGB Control (puede vivir dentro de web/ bajo /regb)
 │
 ├── packages/
 │   ├── core/                 # tipos, zod schemas, stores zustand, lógica de negocio pura
@@ -208,7 +208,7 @@ NexusERP/
 │   └── seed.sql
 │
 ├── docs/                     # este documento y anexos
-│   ├── PROYECTO-NEXUS-ERP.md
+│   ├── PROYECTO-REGB-ERP.md
 │   ├── MODULOS.md
 │   ├── DESIGN-SYSTEM.md
 │   └── API.md
@@ -232,7 +232,7 @@ Cada módulo es **autocontenido** y declara todo lo que necesita:
 
 ```typescript
 // modules/inventory/manifest.ts
-import { defineModule } from '@nexus/module-registry'
+import { defineModule } from '@regb/module-registry'
 
 export default defineModule({
   id: 'inventory',
@@ -330,7 +330,7 @@ stateDiagram-v2
 
 ```typescript
 // packages/core/events.ts
-type NexusEvent = {
+type RegbEvent = {
   id: string
   tenant_id: string
   type: string // 'sales.order.confirmed'
@@ -652,15 +652,15 @@ MENSUALIDAD =
 
 ---
 
-## 7. Nexus Control — el panel del propietario
+## 7. REGB Control — el panel del propietario
 
-> Tu módulo. **Invisible para todos los clientes.** Vive en el mismo ERP pero bajo un tenant especial `NEXUS_ROOT` con `is_provider = true`.
+> Tu módulo. **Invisible para todos los clientes.** Vive en el mismo ERP pero bajo un tenant especial `REGB_ROOT` con `is_provider = true`.
 
 ### 7.1 Qué ves ahí
 
 ```mermaid
 mindmap
-  root((Nexus Control))
+  root((REGB Control))
     Clientes
       Directorio de tenants
       Ficha 360 del cliente
@@ -694,7 +694,7 @@ mindmap
       Anuncios globales
 ```
 
-### 7.2 Pantallas de Nexus Control
+### 7.2 Pantallas de REGB Control
 
 | Pantalla              | Contenido                                                                                                                                           |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -787,7 +787,7 @@ La **denegación siempre gana** sobre cualquier concesión.
 
 | Nivel                 | Quién controla          | Efecto                                                                                        |
 | --------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
-| **1. Licencia**       | Tú (Nexus Control)      | El módulo no existe para el tenant. Ni rutas, ni tablas expuestas, ni API.                    |
+| **1. Licencia**       | Tú (REGB Control)      | El módulo no existe para el tenant. Ni rutas, ni tablas expuestas, ni API.                    |
 | **2. Configuración**  | Owner/Admin del cliente | Módulo comprado pero desactivado en su empresa. Datos intactos.                               |
 | **3. Permiso de rol** | Admin del cliente       | Módulo activo pero invisible para ciertos roles. No aparece en sidebar, la ruta devuelve 403. |
 
@@ -834,22 +834,22 @@ La **denegación siempre gana** sobre cualquier concesión.
 | Esquema   | Contenido                                                                                 |
 | --------- | ----------------------------------------------------------------------------------------- |
 | `public`  | Entidades de negocio de los tenants (con `tenant_id` + RLS)                               |
-| `nexus`   | Tablas del proveedor: tenants, suscripciones, facturas, precios. **Solo rol `provider`.** |
+| `regb`   | Tablas del proveedor: tenants, suscripciones, facturas, precios. **Solo rol `provider`.** |
 | `auth`    | Gestionado por Supabase                                                                   |
 | `audit`   | Log particionado por mes                                                                  |
 | `storage` | Gestionado por Supabase                                                                   |
 
-### 9.2 Tablas del proveedor (`nexus`)
+### 9.2 Tablas del proveedor (`regb`)
 
 ```sql
 -- ═══════════════════════════════════════════════════════════
---  NEXUS — esquema del proveedor (invisible para clientes)
+--  REGB — esquema del proveedor (invisible para clientes)
 -- ═══════════════════════════════════════════════════════════
 
 create type tenant_tier   as enum ('pyme','mediano','grande');
 create type tenant_status as enum ('trial','active','past_due','readonly','suspended','archived');
 
-create table nexus.tenants (
+create table regb.tenants (
   id                uuid primary key default gen_random_uuid(),
   slug              text unique not null,
   legal_name        text not null,
@@ -870,9 +870,9 @@ create table nexus.tenants (
   created_at        timestamptz default now()
 );
 
-create table nexus.subscriptions (
+create table regb.subscriptions (
   id                   uuid primary key default gen_random_uuid(),
-  tenant_id            uuid not null references nexus.tenants on delete cascade,
+  tenant_id            uuid not null references regb.tenants on delete cascade,
   tier                 tenant_tier not null,
   billing_cycle        text not null default 'monthly',  -- monthly|annual|biennial
   base_price           numeric(12,2) not null,
@@ -891,7 +891,7 @@ create table nexus.subscriptions (
   created_at           timestamptz default now()
 );
 
-create table nexus.module_catalog (
+create table regb.module_catalog (
   id            text primary key,               -- 'inventory'
   name          text not null,
   category      text not null,                  -- core|standard|advanced|vertical|enterprise
@@ -905,8 +905,8 @@ create table nexus.module_catalog (
   released_at   date
 );
 
-create table nexus.module_pricing (
-  module_id     text references nexus.module_catalog,
+create table regb.module_pricing (
+  module_id     text references regb.module_catalog,
   tier          tenant_tier,
   install_price numeric(12,2) not null,
   monthly_price numeric(12,2) not null,
@@ -914,9 +914,9 @@ create table nexus.module_pricing (
   primary key (module_id, tier)
 );
 
-create table nexus.tenant_modules (
-  tenant_id       uuid references nexus.tenants on delete cascade,
-  module_id       text references nexus.module_catalog,
+create table regb.tenant_modules (
+  tenant_id       uuid references regb.tenants on delete cascade,
+  module_id       text references regb.module_catalog,
   status          text not null default 'active',   -- trial|active|suspended|archived
   enabled         boolean default true,             -- el cliente puede apagarlo sin perderlo
   trial_ends_at   date,
@@ -926,17 +926,17 @@ create table nexus.tenant_modules (
   primary key (tenant_id, module_id)
 );
 
-create table nexus.usage_meters (
-  tenant_id   uuid references nexus.tenants on delete cascade,
+create table regb.usage_meters (
+  tenant_id   uuid references regb.tenants on delete cascade,
   period      date not null,                    -- primer día del mes
   metric      text not null,                    -- users|storage_gb|transactions|ecf|sms|whatsapp|api_calls
   quantity    numeric(14,2) not null default 0,
   primary key (tenant_id, period, metric)
 );
 
-create table nexus.invoices (
+create table regb.invoices (
   id             uuid primary key default gen_random_uuid(),
-  tenant_id      uuid references nexus.tenants,
+  tenant_id      uuid references regb.tenants,
   number         text unique not null,
   period_start   date not null,
   period_end     date not null,
@@ -953,8 +953,8 @@ create table nexus.invoices (
   created_at     timestamptz default now()
 );
 
-create table nexus.onboarding (
-  tenant_id     uuid primary key references nexus.tenants on delete cascade,
+create table regb.onboarding (
+  tenant_id     uuid primary key references regb.tenants on delete cascade,
   stage         text not null default 'sold',   -- sold|migration|config|training|live
   owner_user_id uuid,
   checklist     jsonb default '[]',
@@ -962,10 +962,10 @@ create table nexus.onboarding (
   blockers      text
 );
 
-create table nexus.impersonation_log (
+create table regb.impersonation_log (
   id           uuid primary key default gen_random_uuid(),
   provider_user uuid not null,
-  tenant_id    uuid not null references nexus.tenants,
+  tenant_id    uuid not null references regb.tenants,
   reason       text not null,
   ticket_ref   text,
   write_mode   boolean default false,
@@ -1098,7 +1098,7 @@ $$;
 create or replace function auth.module_active(p_module text) returns boolean
 language sql stable as $$
   select exists (
-    select 1 from nexus.tenant_modules
+    select 1 from regb.tenant_modules
     where tenant_id = auth.tenant_id()
       and module_id = p_module
       and status in ('trial','active')
@@ -1118,23 +1118,23 @@ create policy tenant_isolation on public.products
 create policy provider_impersonation on public.products
   for select
   using (auth.is_provider() and exists (
-    select 1 from nexus.impersonation_log
+    select 1 from regb.impersonation_log
     where tenant_id = products.tenant_id
       and provider_user = auth.uid()
       and ended_at is null
       and started_at > now() - interval '60 minutes'
   ));
 
--- Esquema nexus: SOLO proveedor
-alter table nexus.tenants enable row level security;
-create policy provider_only on nexus.tenants for all using (auth.is_provider());
+-- Esquema regb: SOLO proveedor
+alter table regb.tenants enable row level security;
+create policy provider_only on regb.tenants for all using (auth.is_provider());
 ```
 
 ### 10.3 Controles adicionales
 
 | Control               | Implementación                                                              |
 | --------------------- | --------------------------------------------------------------------------- |
-| **MFA**               | Obligatorio para Owner, Admin, Contador y todo usuario de Nexus Control     |
+| **MFA**               | Obligatorio para Owner, Admin, Contador y todo usuario de REGB Control     |
 | **Cifrado en reposo** | `pgsodium` para columnas sensibles (cuentas bancarias, salarios, cédulas)   |
 | **Rate limiting**     | Por tenant y por endpoint en el API Gateway                                 |
 | **Secretos**          | Nunca en el cliente. Todo en Edge Functions con secrets de Supabase         |
@@ -1192,7 +1192,7 @@ Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, 
 | `--brand-hover`    | `#4752C4`       | Hover del primario                           |
 | `--brand-active`   | `#3C45A5`       | Pressed                                      |
 | `--brand-soft`     | `#5865F2` @ 15% | Fondo de estado seleccionado                 |
-| `--accent-fuchsia` | `#EB459E`       | Nexus Control, features premium              |
+| `--accent-fuchsia` | `#EB459E`       | REGB Control, features premium              |
 | `--accent-teal`    | `#00B0B9`       | IA / Copiloto                                |
 
 ```
@@ -1261,7 +1261,7 @@ El blurple puro (`#5865F2`) solo alcanza **2.74:1** sobre `#313338`: un anillo d
 | 🟣 Avanzado      | Púrpura | `#9B59F6` |
 | 🟠 Vertical      | Naranja | `#F0883E` |
 | 🔴 Enterprise    | Rojo    | `#F23F43` |
-| 🩷 Nexus Control | Fucsia  | `#EB459E` |
+| 🩷 REGB Control | Fucsia  | `#EB459E` |
 
 ### 11.3 Tipografía
 
@@ -1395,7 +1395,7 @@ Sombras:
 │    │                  │  👋 Buenos días, María            Lunes 21 de julio · 8:14 AM    │
 │ 🏢 │  ▾ FINANZAS      │                                                                   │
 │    │  ▾ INVENTARIO    │  ╔═══════════════════════════════════════════════════════════╗   │
-│ 🏭 │  ▾ VENTAS        │  ║ 🎓 Te faltan 3 pasos para dominar Nexus       [Continuar] ║   │
+│ 🏭 │  ▾ VENTAS        │  ║ 🎓 Te faltan 3 pasos para dominar REGB       [Continuar] ║   │
 │    │  ▸ COMPRAS       │  ║ ████████████████████░░░░░░░░  68%                         ║   │
 │ 🏪 │                  │  ╚═══════════════════════════════════════════════════════════╝   │
 │    │                  │                                                                   │
@@ -1464,11 +1464,11 @@ Sombras:
 └──────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 12.4 Nexus Control — Overview (tu panel)
+### 12.4 REGB Control — Overview (tu panel)
 
 ```
 ┌────┬──────────────────┬──────────────────────────────────────────────────────────────┐
-│ 🩷 │ NEXUS CONTROL    │  Panel del propietario                     Julio 2026     ⌘K │
+│ 🩷 │ REGB CONTROL    │  Panel del propietario                     Julio 2026     ⌘K │
 │    │ ════════════════ │                                                               │
 │    │                  │  ┌──────────┬──────────┬──────────┬──────────┬──────────┐   │
 │    │ ▾ NEGOCIO        │  │ MRR      │ ARR      │ CLIENTES │ CHURN    │ POR COBRAR│  │
@@ -1503,7 +1503,7 @@ Sombras:
 └────┴──────────────────┴──────────────────────────────────────────────────────────────┘
 ```
 
-### 12.5 Nexus Control — Ficha del cliente
+### 12.5 REGB Control — Ficha del cliente
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────┐
@@ -1584,7 +1584,7 @@ Sombras:
                     │  Ajustar existencias                        │
                     │                                              │
                     │  Cuando el conteo físico no coincide con el │
-                    │  sistema, haces un **ajuste**. Nexus guarda │
+                    │  sistema, haces un **ajuste**. REGB guarda │
                     │  quién, cuándo y por qué — y contabiliza el │
                     │  efecto automáticamente.                    │
                     │                                              │
@@ -1623,7 +1623,7 @@ Sombras:
 ```
 DESKTOP (≥1440)                TABLET (768–1023)           MÓVIL (<768)
 ┌──┬────┬─────────┬────┐      ┌──┬─────────────────┐      ┌────────────────┐
-│  │    │         │    │      │≡ │                 │      │  ☰  Nexus   🔔 │
+│  │    │         │    │      │≡ │                 │      │  ☰  REGB   🔔 │
 │Ra│Side│Contenido│Memb│      │  │   Contenido     │      ├────────────────┤
 │il│bar │         │ers │      │  │                 │      │                │
 │  │    │         │    │      │  │  (sidebar sale  │      │   Contenido    │
@@ -1639,7 +1639,7 @@ DESKTOP (≥1440)                TABLET (768–1023)           MÓVIL (<768)
 
 ```
         ┌─────────────────────┐        ┌─────────────────────┐
-        │ ☰   Nexus      🔔3 │        │ ←  Inventario    🔍 │
+        │ ☰   REGB      🔔3 │        │ ←  Inventario    🔍 │
         ├─────────────────────┤        ├─────────────────────┤
         │ 🏭 Distrib. Caribe ▾│        │ [Todos][Bajos][Venc]│
         ├─────────────────────┤        ├─────────────────────┤
@@ -1711,7 +1711,7 @@ graph TB
     A["1️⃣ Tour de bienvenida<br/>5 min · primera vez · el layout"] --> B
     B["2️⃣ Tour por módulo<br/>al activar cada módulo · 6-10 pasos"] --> C
     C["3️⃣ Checklist de puesta en marcha<br/>gamificado · barra de progreso"] --> D
-    D["4️⃣ Academia Nexus<br/>videos, artículos, certificación"]
+    D["4️⃣ Academia REGB<br/>videos, artículos, certificación"]
 
     E["💡 Ayuda contextual<br/>tooltip ? en cada campo"] -.-> B
     F["🤖 Copiloto<br/>'¿cómo hago X?' en lenguaje natural"] -.-> D
@@ -1768,7 +1768,7 @@ export default defineTour({
 
 ```
 ╔══════════════════════════════════════════════════════════════════════╗
-║  🎓 Tu camino en Nexus                                    68% ▓▓▓▓▓░ ║
+║  🎓 Tu camino en REGB                                    68% ▓▓▓▓▓░ ║
 ║                                                                       ║
 ║  ✅ Configurar los datos de tu empresa               +50 XP           ║
 ║  ✅ Invitar a tu equipo (4/5 aceptaron)              +100 XP          ║
@@ -1804,11 +1804,11 @@ export default defineTour({
 ```mermaid
 graph TB
     subgraph "Compartido — 70% del código"
-        C1["@nexus/core — lógica de negocio, tipos, validaciones"]
-        C2["@nexus/sdk — acceso a datos, cola offline"]
-        C3["@nexus/permissions — evaluador de permisos"]
-        C4["@nexus/billing — cálculo de precios"]
-        C5["@nexus/tour — motor de tutoriales"]
+        C1["@regb/core — lógica de negocio, tipos, validaciones"]
+        C2["@regb/sdk — acceso a datos, cola offline"]
+        C3["@regb/permissions — evaluador de permisos"]
+        C4["@regb/billing — cálculo de precios"]
+        C5["@regb/tour — motor de tutoriales"]
         C6["tokens de diseño Aurora — colores, tipografía, espaciado"]
     end
 
@@ -1847,7 +1847,7 @@ gantt
 
     section Núcleo
     Migraciones + RLS             :b1, after a1, 2d
-    Lógica en @nexus/core         :b2, after b1, 3d
+    Lógica en @regb/core         :b2, after b1, 3d
     Tests de la lógica            :b3, after b2, 1d
 
     section Plataformas (paralelo)
@@ -1866,7 +1866,7 @@ gantt
 
 - [ ] `manifest.ts` completo (precios, permisos, deps, eventos, plataformas)
 - [ ] Migraciones `up` + `down` + políticas RLS probadas
-- [ ] Lógica en `@nexus/core` con ≥80% de cobertura
+- [ ] Lógica en `@regb/core` con ≥80% de cobertura
 - [ ] UI web responsive (xs → 2xl)
 - [ ] UI móvil para el alcance declarado en `mobileScope`
 - [ ] Desktop verificado (impresión, offline, atajos)
@@ -1874,7 +1874,7 @@ gantt
 - [ ] Datos demo (`seed/`)
 - [ ] Al menos 2 widgets de dashboard
 - [ ] Eventos emitidos y escuchados documentados
-- [ ] Precio cargado en `nexus.module_pricing` para los 3 tiers
+- [ ] Precio cargado en `regb.module_pricing` para los 3 tiers
 - [ ] E2E verde en las 3 plataformas
 - [ ] Documentación en `docs/modules/<id>.md`
 - [ ] Accesibilidad AA verificada
@@ -1887,18 +1887,18 @@ Definidos en `.claude/agents/`. Cada uno tiene un dominio estricto.
 
 | Agente                 | Rol                    | Dominio                                                                |
 | ---------------------- | ---------------------- | ---------------------------------------------------------------------- |
-| `nexus-architect`      | Arquitecto             | Decisiones de estructura, límites entre paquetes, contratos, ADRs      |
-| `nexus-module-builder` | Constructor de módulos | Genera módulos completos desde el template: manifest, SQL, UI ×3, tour |
-| `nexus-db`             | Ingeniero de datos     | Esquemas, migraciones, índices, RLS, rendimiento de queries            |
-| `nexus-security`       | Seguridad              | RLS, permisos, aislamiento de tenants, secretos, auditoría             |
-| `nexus-design`         | Diseño                 | Design System Aurora, tokens, componentes, mockups, accesibilidad      |
-| `nexus-web`            | Frontend web           | Next.js 15, RSC, App Router, PWA, rendimiento                          |
-| `nexus-desktop`        | Electron               | IPC, offline, impresoras, auto-update, empaquetado, firma              |
-| `nexus-mobile`         | React Native           | Expo, navegación, cámara, GPS, push, offline, tiendas                  |
-| `nexus-billing`        | Facturación            | Motor de precios, medición de consumo, facturas, dunning               |
-| `nexus-tutorial`       | Tutoriales             | Tours, checklists, textos de ayuda, academia                           |
-| `nexus-qa`             | Calidad                | Tests unitarios, E2E en 3 plataformas, regresión visual                |
-| `nexus-docs`           | Documentación          | Docs técnicas, manual de usuario, changelog, API                       |
+| `regb-architect`      | Arquitecto             | Decisiones de estructura, límites entre paquetes, contratos, ADRs      |
+| `regb-module-builder` | Constructor de módulos | Genera módulos completos desde el template: manifest, SQL, UI ×3, tour |
+| `regb-db`             | Ingeniero de datos     | Esquemas, migraciones, índices, RLS, rendimiento de queries            |
+| `regb-security`       | Seguridad              | RLS, permisos, aislamiento de tenants, secretos, auditoría             |
+| `regb-design`         | Diseño                 | Design System Aurora, tokens, componentes, mockups, accesibilidad      |
+| `regb-web`            | Frontend web           | Next.js 15, RSC, App Router, PWA, rendimiento                          |
+| `regb-desktop`        | Electron               | IPC, offline, impresoras, auto-update, empaquetado, firma              |
+| `regb-mobile`         | React Native           | Expo, navegación, cámara, GPS, push, offline, tiendas                  |
+| `regb-billing`        | Facturación            | Motor de precios, medición de consumo, facturas, dunning               |
+| `regb-tutorial`       | Tutoriales             | Tours, checklists, textos de ayuda, academia                           |
+| `regb-qa`             | Calidad                | Tests unitarios, E2E en 3 plataformas, regresión visual                |
+| `regb-docs`           | Documentación          | Docs técnicas, manual de usuario, changelog, API                       |
 
 Ver los archivos en [`.claude/agents/`](../.claude/agents/).
 
@@ -1925,13 +1925,13 @@ Ver los archivos en [`.claude/skills/`](../.claude/skills/).
 
 ```mermaid
 timeline
-    title Nexus ERP — 12 meses
+    title REGB ERP — 12 meses
     section Q1 · Fundación
       M1 : Monorepo + Supabase + Auth + RLS
          : Design System Aurora
          : Module registry funcionando
       M2 : 15 módulos core
-         : Nexus Control v1 (clientes + facturación)
+         : REGB Control v1 (clientes + facturación)
       M3 : App web completa
          : Motor de tutoriales
     section Q2 · Producto vendible
@@ -1958,7 +1958,7 @@ timeline
 
 | Hito                             | Cuándo | Criterio de éxito                                                                       |
 | -------------------------------- | ------ | --------------------------------------------------------------------------------------- |
-| **Registry vivo**                | Mes 1  | Activar un módulo desde Nexus Control lo hace aparecer en el sidebar del cliente en <5s |
+| **Registry vivo**                | Mes 1  | Activar un módulo desde REGB Control lo hace aparecer en el sidebar del cliente en <5s |
 | **Aislamiento probado**          | Mes 1  | Pentest: ningún tenant puede leer datos de otro por ninguna vía                         |
 | **Primera factura automática**   | Mes 2  | El motor calcula, emite y cobra sin intervención                                        |
 | **Cliente piloto en producción** | Mes 6  | Un negocio real opera 30 días sin volver a Excel                                        |
@@ -1973,7 +1973,7 @@ timeline
 
 | KPI                            | Meta año 1    | Cómo se mide                  |
 | ------------------------------ | ------------- | ----------------------------- |
-| MRR                            | US$ 47.000    | Nexus Control › Overview      |
+| MRR                            | US$ 47.000    | REGB Control › Overview      |
 | Clientes activos               | 38            | tenants con `status='active'` |
 | Ticket promedio                | US$ 1.244/mes | MRR / clientes                |
 | Churn mensual                  | < 2%          | cancelaciones / clientes      |
@@ -2044,11 +2044,11 @@ timeline
 
 ## ✅ Resumen ejecutivo en 10 líneas
 
-1. **Nexus ERP** es un ERP modular multi-tenant con estética Discord.
+1. **REGB ERP** es un ERP modular multi-tenant con estética Discord.
 2. **92 módulos**: 15 core gratis + 77 activables desde un marketplace interno.
 3. **3 tiers de cliente**: PYME (US$500 + $79/mes), Mediano (US$3.500 + $399/mes), Grande (US$15.000 + $1.500/mes).
 4. El precio **varía** por tier × módulos × usuarios × sucursales × consumo, con fórmula transparente.
-5. **Nexus Control** es tu panel privado: todos tus clientes, MRR, cobros, salud, impersonación auditada.
+5. **REGB Control** es tu panel privado: todos tus clientes, MRR, cobros, salud, impersonación auditada.
 6. **Roles y permisos** en 3 niveles: licencia (tú), configuración (cliente), rol (admin del cliente).
 7. **Tres apps en paralelo**: Next.js, Electron y React Native sobre un 70% de código compartido.
 8. **Supabase** como backend único, con RLS estricto por tenant en cada tabla.
@@ -2057,4 +2057,4 @@ timeline
 
 ---
 
-_Documento generado el 2026-07-21 · Nexus ERP v1.0 · Randy Grullón_
+_Documento generado el 2026-07-21 · REGB ERP v1.0 · Randy Grullón_

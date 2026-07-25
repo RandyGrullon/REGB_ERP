@@ -15,7 +15,7 @@ const url = process.env.DATABASE_URL
 
 if (!url) {
   console.error('Falta DATABASE_URL.')
-  console.error('  ejemplo: postgresql://postgres:postgres@localhost:5432/nexus_test')
+  console.error('  ejemplo: postgresql://postgres:postgres@localhost:5432/regb_test')
   process.exit(1)
 }
 
