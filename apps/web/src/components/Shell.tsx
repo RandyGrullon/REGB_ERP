@@ -44,6 +44,8 @@ export interface ShellProps {
   roles: string[]
   activeRole: string
   activePlatform: 'web' | 'desktop' | 'mobile'
+  /** Sin Supabase configurado: se puede cambiar de tenant y rol por URL. */
+  demoMode: boolean
   data: ShellData
 }
 
@@ -68,6 +70,7 @@ export function Shell({
   roles,
   activeRole,
   activePlatform,
+  demoMode,
   data,
 }: ShellProps) {
   const [activePath, setActivePath] = useState('/')
@@ -178,33 +181,48 @@ export function Shell({
 
           {/* Controles de la demo: cambiar de rol y de plataforma en vivo.
               En movil no caben junto al titulo: se ocultan. */}
-          <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] sm:flex">
-            Rol
-            <select
-              value={activeRole}
-              onChange={(e) => go({ rol: e.target.value })}
-              className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-            >
-              {roles.map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
-          </label>
+          {demoMode && (
+            <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] sm:flex">
+              Rol
+              <select
+                value={activeRole}
+                onChange={(e) => go({ rol: e.target.value })}
+                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+              >
+                {roles.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
-          <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] lg:flex">
-            Plataforma
-            <select
-              value={activePlatform}
-              onChange={(e) => go({ plataforma: e.target.value })}
-              className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-            >
-              <option value="web">Web</option>
-              <option value="desktop">Escritorio</option>
-              <option value="mobile">Movil</option>
-            </select>
-          </label>
+          {demoMode && (
+            <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] lg:flex">
+              Plataforma
+              <select
+                value={activePlatform}
+                onChange={(e) => go({ plataforma: e.target.value })}
+                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+              >
+                <option value="web">Web</option>
+                <option value="desktop">Escritorio</option>
+                <option value="mobile">Movil</option>
+              </select>
+            </label>
+          )}
+
+          {!demoMode && (
+            <form action="/auth/salir" method="post">
+              <button
+                type="submit"
+                className="h-8 rounded-[var(--radius-md)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                Salir
+              </button>
+            </form>
+          )}
         </header>
 
         <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">

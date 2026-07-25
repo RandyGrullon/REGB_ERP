@@ -9,6 +9,7 @@ const config: NextConfig = {
     '@regb/core',
     '@regb/config',
     '@regb/permissions',
+    '@regb/sdk',
     '@regb/module-registry',
     '@regb/mod-products',
     '@regb/mod-inventory',

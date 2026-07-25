@@ -3,6 +3,7 @@ import 'server-only'
 import postgres from 'postgres'
 import { hydrate, type ModuleManifest, type TenantModule } from '@regb/module-registry'
 import type { Role } from '@regb/permissions'
+import type { RegbSession } from '@regb/sdk'
 
 import productsManifest from '@regb/mod-products'
 import inventoryManifest from '@regb/mod-inventory'
@@ -44,16 +45,17 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
 export interface BootstrapResult {
   tenant: { id: string; name: string; tier: string; status: string }
   role: Role
-  user: { id: string; name: string; initials: string }
+  user: { id: string; name: string; initials: string; email: string }
   hydration: ReturnType<typeof hydrate>
 }
 
 /**
- * Ejecuta una consulta con la identidad de un usuario concreto.
+ * Ejecuta consultas con la identidad de un usuario concreto.
  *
- * El `tenant_id` sale del JWT y de ningun otro sitio. Aqui simulamos ese
- * JWT porque el flujo de Supabase Auth aun no esta cableado (F0 S3), pero
- * la forma es la definitiva: RLS decide, no la aplicacion.
+ * Con Supabase configurado, estos claims son EXACTAMENTE los que emitio
+ * `auth.custom_access_token_hook` — el tenant sale de `public.memberships`
+ * y nadie puede falsificarlo. En modo demostracion los fabricamos aqui,
+ * pero la forma es la misma: RLS decide, no la aplicacion (§10).
  */
 async function asUser<T>(
   userId: string,
@@ -71,17 +73,49 @@ async function asUser<T>(
   }) as Promise<T>
 }
 
-export async function bootstrap(
-  tenantSlug: string,
-  roleName: string,
-  platform: 'web' | 'desktop' | 'mobile' = 'web',
-): Promise<BootstrapResult | null> {
+interface BootstrapInput {
+  /** Sesion real. Si viene, manda ella: el tenant sale del JWT. */
+  session?: RegbSession | null
+  /** Modo demostracion: tenant y rol por URL. Ignorado si hay sesion. */
+  demo?: { tenantSlug: string; roleName: string }
+  platform?: 'web' | 'desktop' | 'mobile'
+}
+
+export async function bootstrap({
+  session,
+  demo,
+  platform = 'web',
+}: BootstrapInput): Promise<BootstrapResult | null> {
   const sql = db()
 
-  // El tenant y el rol se resuelven fuera de RLS: es el equivalente al
-  // login, que ocurre antes de que exista una sesion.
+  let tenantId: string
+  let roleId: string
+  let userId: string
+  let email: string
+
+  if (session?.tenantId && session.roleId) {
+    // Camino real: todo sale del JWT que emitio el hook.
+    tenantId = session.tenantId
+    roleId = session.roleId
+    userId = session.userId
+    email = session.email
+  } else if (demo) {
+    const [t] = await sql<{ id: string }[]>`
+      select id from regb.tenants where slug = ${demo.tenantSlug}`
+    if (!t) return null
+    const [r] = await sql<{ id: string }[]>`
+      select id from public.roles where tenant_id = ${t.id} and name = ${demo.roleName}`
+    if (!r) return null
+    tenantId = t.id
+    roleId = r.id
+    userId = '00000000-0000-0000-0000-000000000001'
+    email = 'maria.rosario@demo.do'
+  } else {
+    return null
+  }
+
   const [tenant] = await sql<{ id: string; legal_name: string; tier: string; status: string }[]>`
-    select id, legal_name, tier, status from regb.tenants where slug = ${tenantSlug}`
+    select id, legal_name, tier, status from regb.tenants where id = ${tenantId}`
   if (!tenant) return null
 
   const [role] = await sql<
@@ -93,12 +127,10 @@ export async function bootstrap(
       scope: Record<string, unknown>
     }[]
   >`select id, name, visible_modules, permissions, scope
-      from public.roles where tenant_id = ${tenant.id} and name = ${roleName}`
+      from public.roles where id = ${roleId}`
   if (!role) return null
 
-  const userId = '00000000-0000-0000-0000-000000000001'
-
-  // A partir de aqui, TODO pasa por RLS.
+  // ── A partir de aqui, TODO pasa por RLS ──────────────────────────────
   const tenantModules = await asUser(
     userId,
     tenant.id,
@@ -110,6 +142,14 @@ export async function bootstrap(
       where tenant_id = ${tenant.id}`,
   )
 
+  const roleObj: Role = {
+    id: role.id,
+    name: role.name,
+    visibleModules: role.visible_modules,
+    permissions: role.permissions,
+    scope: role.scope,
+  }
+
   const hydration = hydrate({
     tenantModules: tenantModules.map((r): TenantModule => ({
       moduleId: r.module_id,
@@ -118,34 +158,31 @@ export async function bootstrap(
       trialEndsAt: r.trial_ends_at,
     })),
     manifests: MANIFESTS,
-    ctx: {
-      userId,
-      role: {
-        id: role.id,
-        name: role.name,
-        visibleModules: role.visible_modules,
-        permissions: role.permissions,
-        scope: role.scope,
-      },
-    },
+    ctx: { userId, role: roleObj },
     platform,
   })
 
+  const nombre = (email.split('@')[0] ?? 'usuario').replace(/[._-]/g, ' ')
+  const display = nombre.replace(/\b\w/g, (c) => c.toUpperCase())
+
   return {
     tenant: { id: tenant.id, name: tenant.legal_name, tier: tenant.tier, status: tenant.status },
-    role: {
-      id: role.id,
-      name: role.name,
-      visibleModules: role.visible_modules,
-      permissions: role.permissions,
-      scope: role.scope,
+    role: roleObj,
+    user: {
+      id: userId,
+      email,
+      name: display,
+      initials: display
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase() ?? '')
+        .join(''),
     },
-    user: { id: userId, name: 'Maria Rosario', initials: 'MR' },
     hydration,
   }
 }
 
-/** Empresas del tenant, para el rail. */
+/** Empresas disponibles, para el rail. Solo en modo demostracion. */
 export async function listTenants(): Promise<
   { id: string; slug: string; name: string; initials: string }[]
 > {
@@ -164,7 +201,7 @@ export async function listTenants(): Promise<
   }))
 }
 
-/** Roles del tenant, para poder cambiar de perspectiva en la demo. */
+/** Roles del tenant, para cambiar de perspectiva en la demostracion. */
 export async function listRoles(tenantId: string): Promise<string[]> {
   const rows = await db()<{ name: string }[]>`
     select name from public.roles where tenant_id = ${tenantId} order by name`
