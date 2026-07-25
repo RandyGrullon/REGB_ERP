@@ -45,15 +45,24 @@ async function as<T>(jwt: string, fn: (tx: postgres.TransactionSql) => Promise<T
   }) as Promise<T>
 }
 
+/**
+ * Slugs unicos por corrida.
+ *
+ * El test crea sus propios clientes y no puede chocar con el seed de
+ * demostracion ni con otra corrida en paralelo: un test que depende del
+ * estado previo de la base deja de ser una prueba y pasa a ser una loteria.
+ */
+const RUN = crypto.randomUUID().slice(0, 8)
+
 beforeAll(async () => {
   // Dos clientes reales y distintos.
   const [a] = await sql`
     insert into nexus.tenants (slug, legal_name, tier, status, tax_id)
-    values ('colmado-esperanza', 'Colmado La Esperanza SRL', 'pyme', 'active', '130-11111-1')
+    values (${`iso-a-${RUN}`}, 'Colmado La Esperanza SRL', 'pyme', 'active', '130-11111-1')
     returning id`
   const [b] = await sql`
     insert into nexus.tenants (slug, legal_name, tier, status, tax_id)
-    values ('distribuidora-caribe', 'Distribuidora Caribe SRL', 'mediano', 'active', '131-45678-9')
+    values (${`iso-b-${RUN}`}, 'Distribuidora Caribe SRL', 'mediano', 'active', '131-45678-9')
     returning id`
 
   tenantA = a!.id
@@ -253,7 +262,7 @@ describe('Esquema nexus — solo el proveedor', () => {
     await sql`
       insert into nexus.invoices (tenant_id, number, period_start, period_end,
                                   subtotal, total, due_at, lines)
-      values (${tenantB}, 'NX-TEST-001', '2026-07-01', '2026-07-31',
+      values (${tenantB}, ${`NX-${RUN}`}, '2026-07-01', '2026-07-31',
               906.00, 906.00, '2026-08-12', '[]'::jsonb)`
 
     const ajenas = await as(

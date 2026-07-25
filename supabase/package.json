@@ -6,6 +6,7 @@
   "description": "Migraciones, politicas RLS y tests de aislamiento",
   "scripts": {
     "migrate": "node scripts/migrate.mjs",
+    "seed:demo": "node scripts/seed.mjs",
     "test": "vitest run --config tests/vitest.config.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tests/tsconfig.json",

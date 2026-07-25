@@ -28,13 +28,16 @@ async function as<T>(jwt: string, fn: (tx: postgres.TransactionSql) => Promise<T
   }) as Promise<T>
 }
 
+/** Slugs unicos por corrida: el test no depende del estado previo. */
+const RUN = crypto.randomUUID().slice(0, 8)
+
 beforeAll(async () => {
   const [a] = await sql`
     insert into nexus.tenants (slug, legal_name, tier, status)
-    values ('ev-tenant-a', 'Ferreteria El Martillo SRL', 'pyme', 'active') returning id`
+    values (${`ev-a-${RUN}`}, 'Ferreteria El Martillo SRL', 'pyme', 'active') returning id`
   const [b] = await sql`
     insert into nexus.tenants (slug, legal_name, tier, status)
-    values ('ev-tenant-b', 'Textiles Duarte SRL', 'mediano', 'active') returning id`
+    values (${`ev-b-${RUN}`}, 'Textiles Duarte SRL', 'mediano', 'active') returning id`
   tenantA = a!.id
   tenantB = b!.id
 })

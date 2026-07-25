@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "nexus-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@nexus/web", "dev"],
+      "port": 3100
+    }
+  ]
+}

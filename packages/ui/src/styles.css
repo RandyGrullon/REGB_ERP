@@ -1,0 +1,98 @@
+/* ────────────────────────────────────────────────────────────────
+   Aurora — hoja base
+   Los tokens vienen de @nexus/config, generados desde tokens.json.
+   Aqui solo se mapean a utilidades de Tailwind y se fijan los
+   comportamientos globales.
+   ──────────────────────────────────────────────────────────────── */
+
+@import 'tailwindcss';
+@import '@nexus/config/tokens.css';
+
+/* Tailwind v4 solo escanea el proyecto que lo importa. Sin esta linea, las
+   clases que existen UNICAMENTE en los componentes de este paquete —como el
+   `w-[72px]` del rail de empresas— no se generan nunca y el layout se rompe
+   en silencio: se ve casi bien, pero no lo esta. */
+@source "./";
+
+@theme inline {
+  --color-surface-deepest: var(--color-surface-deepest);
+  --color-surface-deep: var(--color-surface-deep);
+  --color-surface-base: var(--color-surface-base);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-overlay: var(--color-surface-overlay);
+  --color-surface-input: var(--color-surface-input);
+
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-brand: var(--color-brand);
+  --color-brand-hover: var(--color-brand-hover);
+  --color-brand-active: var(--color-brand-active);
+  --color-brand-bright: var(--color-brand-bright);
+  --color-brand-soft: var(--color-brand-soft);
+
+  --color-accent-fuchsia: var(--color-accent-fuchsia);
+  --color-accent-teal: var(--color-accent-teal);
+
+  --color-success: var(--color-semantic-success);
+  --color-warning: var(--color-semantic-warning);
+  --color-danger: var(--color-semantic-danger);
+  --color-info: var(--color-semantic-info);
+  --color-neutral: var(--color-semantic-neutral);
+
+  --color-success-text: var(--color-semantic-text-success);
+  --color-warning-text: var(--color-semantic-text-warning);
+  --color-danger-text: var(--color-semantic-text-danger);
+  --color-info-text: var(--color-semantic-text-info);
+  --color-neutral-text: var(--color-semantic-text-neutral);
+
+  --color-fg: var(--color-text-primary);
+  --color-fg-secondary: var(--color-text-secondary);
+  --color-fg-muted: var(--color-text-muted);
+  --color-fg-link: var(--color-text-link);
+  --color-fg-on-brand: var(--color-text-on-brand);
+
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--color-surface-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--font-body-size);
+  line-height: var(--font-body-line);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Los numeros de una tabla se alinean en columna o no se pueden comparar. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Scrollbar al estilo Discord: presente pero discreta. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-deepest) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--color-surface-deepest);
+  border-radius: var(--radius-full);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
