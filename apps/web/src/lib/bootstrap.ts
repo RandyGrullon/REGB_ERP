@@ -8,6 +8,7 @@ import productsManifest from '@regb/mod-products'
 import inventoryManifest from '@regb/mod-inventory'
 import posManifest from '@regb/mod-pos'
 import payrollManifest from '@regb/mod-payroll'
+import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 
 /**
  * Bootstrap del shell.
@@ -35,7 +36,9 @@ function db(): postgres.Sql {
  * nada: si el tenant no los tiene licenciados, no se cargan.
  */
 export const MANIFESTS = new Map<string, ModuleManifest>(
-  [productsManifest, inventoryManifest, posManifest, payrollManifest].map((m) => [m.id, m]),
+  [productsManifest, inventoryManifest, posManifest, payrollManifest, invoiceCaptureManifest].map(
+    (m) => [m.id, m],
+  ),
 )
 
 export interface BootstrapResult {

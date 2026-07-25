@@ -14,6 +14,7 @@ const config: NextConfig = {
     '@regb/mod-inventory',
     '@regb/mod-pos',
     '@regb/mod-payroll',
+    '@regb/mod-invoice-capture',
   ],
   typedRoutes: false,
 }

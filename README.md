@@ -1,11 +1,11 @@
 # 🛰️ REGB ERP
 
 > ERP modular multi-tenant con estética Discord.
-> Web · Desktop · Móvil · 92 módulos activables · Supabase
+> Web · Desktop · Móvil · 93 módulos activables · Supabase
 
 | Documento                                                  | Para qué                                                     |
 | ---------------------------------------------------------- | ------------------------------------------------------------ |
-| [docs/PROYECTO-REGB-ERP.md](docs/PROYECTO-REGB-ERP.md)   | **Qué** se construye: módulos, precios, diseño, mockups      |
+| [docs/PROYECTO-REGB-ERP.md](docs/PROYECTO-REGB-ERP.md)     | **Qué** se construye: módulos, precios, diseño, mockups      |
 | [docs/FASES-DE-DESARROLLO.md](docs/FASES-DE-DESARROLLO.md) | **En qué orden**: 11 fases, 84 sprints, puertas de no-avance |
 
 ---
@@ -40,8 +40,8 @@ pnpm test
 
 **86 casos.** Los 24 de aislamiento verifican que **ningún tenant puede ver los datos de otro**. Si uno solo falla, no se despliega nada.
 
-| Suite                    | Casos | Qué prueba                                                         |
-| ------------------------ | ----: | ------------------------------------------------------------------ |
+| Suite                   | Casos | Qué prueba                                                         |
+| ----------------------- | ----: | ------------------------------------------------------------------ |
 | `@regb/db`              |    24 | Aislamiento entre tenants, licencia de módulos, impersonación, RLS |
 | `@regb/module-registry` |    26 | Puerta F1: activar un módulo es un dato, no un despliegue          |
 | `@regb/permissions`     |    23 | RBAC + ABAC: la denegación siempre gana                            |
@@ -70,12 +70,12 @@ pnpm test
 
 ### 🟡 Fase 2 — Core + app web (en curso)
 
-| Sprint                                       | Estado                                                |
-| -------------------------------------------- | ----------------------------------------------------- |
-| App web con layout Aurora y sidebar dinámico | ✅ verificado en navegador                            |
-| Responsive xs→2xl con drawer y nav inferior  | ✅ 375 / 768 / 1440 px sin desbordar                  |
-| 4 manifests de módulo reales                 | ✅ products · inventory · pos · payroll               |
-| Los 15 módulos core                          | 🚧 solo manifests; falta la funcionalidad de cada uno |
+| Sprint                                       | Estado                                                    |
+| -------------------------------------------- | --------------------------------------------------------- |
+| App web con layout Aurora y sidebar dinámico | ✅ verificado en navegador                                |
+| Responsive xs→2xl con drawer y nav inferior  | ✅ 375 / 768 / 1440 px sin desbordar                      |
+| 5 manifests de módulo reales                 | ✅ products · inventory · pos · payroll · invoice-capture |
+| Los 15 módulos core                          | 🚧 solo manifests; falta la funcionalidad de cada uno     |
 
 ### 🚧 Siguiente
 
@@ -115,7 +115,7 @@ REGB-ERP/
 │   ├── module-registry/  ✅ contrato + carga dinámica
 │   ├── sdk/              acceso a datos               (F2)
 │   └── ui/               componentes Aurora           (F0 S4)
-├── modules/              los 92 módulos               (F2+)
+├── modules/              los 93 módulos               (F2+)
 ├── supabase/
 │   ├── migrations/       ✅ 6 migraciones con RLS
 │   └── tests/            ✅ 24 tests de aislamiento
@@ -129,14 +129,15 @@ REGB-ERP/
 
 Estas no son convenciones: **fallan el build**.
 
-| Regla                                             | Quién la aplica                   |
-| ------------------------------------------------- | --------------------------------- |
-| `tenant_id` solo viene del JWT, nunca del request | ESLint (`no-restricted-syntax`)   |
-| Un módulo nunca importa otro módulo               | ESLint (`no-restricted-imports`)  |
-| Cero lógica de negocio en `apps/`                 | ESLint                            |
-| `service_role` solo en Edge Functions             | `pnpm audit:secrets`              |
-| El core no ramifica por id de módulo              | `pnpm audit:registry`             |
-| Ningún tenant ve datos de otro                    | `pnpm test:isolation` (24 casos)  |
+| Regla                                             | Quién la aplica                  |
+| ------------------------------------------------- | -------------------------------- |
+| `tenant_id` solo viene del JWT, nunca del request | ESLint (`no-restricted-syntax`)  |
+| Un módulo nunca importa otro módulo               | ESLint (`no-restricted-imports`) |
+| Cero lógica de negocio en `apps/`                 | ESLint                           |
+| `service_role` solo en Edge Functions             | `pnpm audit:secrets`             |
+| El core no ramifica por id de módulo              | `pnpm audit:registry`            |
+| Todo manifest cobra lo que su categoría define    | `pnpm audit:manifests`           |
+| Ningún tenant ve datos de otro                    | `pnpm test:isolation` (24 casos) |
 | Toda tabla tiene RLS **forzado** y política       | vista `regb.rls_coverage` + test |
 
 ```bash

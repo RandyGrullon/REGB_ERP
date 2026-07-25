@@ -17,7 +17,7 @@
 
 ### 0.1 La regla que ordena todo
 
-> **No construyes 92 módulos. Construyes la máquina que fabrica módulos, y luego fabricas los que el cliente paga.**
+> **No construyes 93 módulos. Construyes la máquina que fabrica módulos, y luego fabricas los que el cliente paga.**
 
 Por eso las fases 0 a 3 no entregan casi ningún módulo de negocio: entregan el **registry**, el **contrato de módulo**, el **motor de precios** y el **aislamiento por tenant**. Después de eso, cada módulo cuesta 1–2 sprints en vez de 6.
 
@@ -92,7 +92,7 @@ timeline
 | **F0**  | Cimientos               |       8 sp |       0 | ❌                                     |
 | **F1**  | La máquina de módulos   |       6 sp |       0 | ❌                                     |
 | **F2**  | Core + app web          |      12 sp |      15 | ❌ (falta cobrar)                      |
-| **F3**  | REGB Control + dinero  |       8 sp |       0 | ⚠️ Técnicamente sí, sin nada que hacer |
+| **F3**  | REGB Control + dinero   |       8 sp |       0 | ⚠️ Técnicamente sí, sin nada que hacer |
 | **F4**  | **MVP comercial**       |      10 sp |       5 | ✅ **Primer cliente PYME**             |
 | **F5**  | Desktop + móvil         |      10 sp |       0 | ✅ POS y campo                         |
 | **F6**  | Finanzas + fiscalidad   |      12 sp |      11 | ✅ **Cliente Mediano**                 |
@@ -116,7 +116,7 @@ timeline
 | Sprint | Entregable                                                                                                                                                                                                                |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **S1** | Monorepo Turborepo + pnpm. Paquetes vacíos pero cableados: `core`, `sdk`, `ui`, `ui-native`, `config`, `permissions`. ESLint/TS/Prettier compartidos. CI que construye y prueba en <6 min.                                |
-| **S2** | Proyecto Supabase. Esquemas `public`, `regb`, `audit`. Migraciones versionadas con `up`/`down`. Helpers `auth.tenant_id()`, `auth.is_provider()`, `auth.module_active()`.                                                |
+| **S2** | Proyecto Supabase. Esquemas `public`, `regb`, `audit`. Migraciones versionadas con `up`/`down`. Helpers `auth.tenant_id()`, `auth.is_provider()`, `auth.module_active()`.                                                 |
 | **S3** | Auth completo: login, magic link, MFA, JWT con `app_metadata` (tenant_id, role_id, is_provider, branches). Tablas `companies`, `branches`, `roles`, `memberships`. RLS en todas.                                          |
 | **S4** | Design System Aurora: `tokens.json` como fuente única, tema oscuro y claro, 12 componentes base en `packages/ui` (Button, Input, Table, Modal, Toast, Badge, Avatar, Sidebar, Card, Tabs, Select, EmptyState). Storybook. |
 
@@ -141,11 +141,11 @@ timeline
 
 ### 3.1 Sprints
 
-| Sprint | Entregable                                                                                                                                                                               |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **S5** | `packages/module-registry`: `defineModule()`, descubrimiento en runtime desde `regb.tenant_modules`, carga dinámica por `import()`, construcción de rutas y sidebar.                    |
+| Sprint | Entregable                                                                                                                                                                             |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **S5** | `packages/module-registry`: `defineModule()`, descubrimiento en runtime desde `regb.tenant_modules`, carga dinámica por `import()`, construcción de rutas y sidebar.                   |
 | **S6** | Contrato `manifest.ts` cerrado y validado por Zod. Tablas `regb.module_catalog` y `regb.module_pricing`. Ciclo de vida: install → activo → suspendido → archivado (**nunca borrado**). |
-| **S7** | Bus de eventos: `event_outbox` + LISTEN/NOTIFY + Edge Function despachadora. Entrega _at-least-once_ con `correlation_id`. Dos módulos de juguete que se comuniquen solo por eventos.    |
+| **S7** | Bus de eventos: `event_outbox` + LISTEN/NOTIFY + Edge Function despachadora. Entrega _at-least-once_ con `correlation_id`. Dos módulos de juguete que se comuniquen solo por eventos.  |
 
 ### 3.2 🚪 Puerta F1
 
@@ -155,7 +155,7 @@ timeline
 - [ ] Los dos módulos de juguete no se importan entre sí — solo eventos (verificado por lint)
 - [ ] Cero `if (moduleX)` fuera de `module-registry` (grep en CI)
 
-> ⚠️ Esta es la puerta más importante del proyecto. Si el registry no es realmente dinámico aquí, cada uno de los 92 módulos costará el triple.
+> ⚠️ Esta es la puerta más importante del proyecto. Si el registry no es realmente dinámico aquí, cada uno de los 93 módulos costará el triple.
 
 ---
 
@@ -202,7 +202,7 @@ Layout Aurora de 4 columnas, responsive `xs`→`2xl`, PWA con service worker, `C
 | Sprint  | Entregable                                                                                                                             |
 | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **S14** | `packages/billing`: la fórmula de §6.4 completa, con prorrateo, grandfathering y `price_override`. **Los 3 casos de §6.5 al centavo.** |
-| **S15** | REGB Control v1: Overview (MRR, ARR, churn), Clientes, Ficha 360 del cliente, health score.                                           |
+| **S15** | REGB Control v1: Overview (MRR, ARR, churn), Clientes, Ficha 360 del cliente, health score.                                            |
 | **S16** | Facturación: generación, `invoices.lines` reproducible, pasarelas (Stripe + Azul), idempotencia, reintentos días 1/3/7/14.             |
 | **S17** | Dunning (5→10→15→30→90), impersonación segura con MFA + razón + ticket + 60 min + banner + doble auditoría, onboarding kanban.         |
 
@@ -550,7 +550,7 @@ DIFERENCIACIÓN
 [ ] F9  Ventas avanzado + BI + IA (16 módulos)        14 sp
 [ ] F10 Proyectos y verticales (16 módulos)           16 sp
 [ ] F11 Enterprise (1 módulo)                          5 sp
-        └─ 130 sp · 92 módulos ✅
+        └─ 130 sp · 93 módulos ✅
 ```
 
 ---
@@ -559,7 +559,7 @@ DIFERENCIACIÓN
 
 1. **Fase 0, Sprint 1.** Monorepo y CI. Nada más. Un día.
 2. **Sprint 2–3 sin saltarse el RLS.** Es la única parte del proyecto que no se puede arreglar después.
-3. **No mirar los 92 módulos.** Mirar los 15 de F2 y los 5 de F4. Los otros 72 son ruido hasta que tengas un cliente pagando.
+3. **No mirar los 93 módulos.** Mirar los 15 de F2 y los 5 de F4. Los otros 73 son ruido hasta que tengas un cliente pagando.
 4. **Buscar el cliente piloto ahora**, no en F4. Que vea el avance y ajuste el rumbo. Un cliente comprometido en el mes 1 vale más que diez interesados en el mes 8.
 
 ---

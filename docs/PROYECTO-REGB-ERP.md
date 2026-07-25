@@ -6,8 +6,8 @@
 
 |                                             |                                                                                         |
 | ------------------------------------------- | --------------------------------------------------------------------------------------- |
-| **Nombre del producto**                     | REGB ERP                                                                               |
-| **Nombre interno del panel de propietario** | REGB Control (`owner-console`)                                                         |
+| **Nombre del producto**                     | REGB ERP                                                                                |
+| **Nombre interno del panel de propietario** | REGB Control (`owner-console`)                                                          |
 | **Versión del documento**                   | 1.0                                                                                     |
 | **Fecha**                                   | 2026-07-21                                                                              |
 | **Autor**                                   | Randy Grullón                                                                           |
@@ -371,21 +371,50 @@ Se implementa con **Postgres LISTEN/NOTIFY + tabla `event_outbox`** procesada po
 
 ### 5.2 Finanzas & Contabilidad (16–28) 🔵🟣
 
-| #   | ID              | Módulo                      | Qué hace                                                                    |
-| --- | --------------- | --------------------------- | --------------------------------------------------------------------------- |
-| 16  | `accounting`    | **Contabilidad general**    | Catálogo de cuentas, asientos, mayor, balanza, cierres                      |
-| 17  | `ar`            | **Cuentas por cobrar**      | Facturas, antigüedad de saldos, recordatorios automáticos, notas de crédito |
-| 18  | `ap`            | **Cuentas por pagar**       | Facturas de proveedor, programación de pagos, retenciones                   |
-| 19  | `treasury`      | **Tesorería & Bancos**      | Cuentas bancarias, flujo de caja proyectado, transferencias                 |
-| 20  | `bank-rec`      | **Conciliación bancaria**   | Import de estados, matching automático con IA, partidas pendientes          |
-| 21  | `fixed-assets`  | **Activos fijos**           | Alta, depreciación (línea recta/acelerada), revalúo, baja                   |
-| 22  | `budgets`       | **Presupuestos**            | Por cuenta/centro/proyecto, comparativo real vs. presupuesto, alertas       |
-| 23  | `cost-centers`  | **Centros de costo**        | Distribución, prorrateo, rentabilidad por centro                            |
-| 24  | `taxes`         | **Impuestos**               | ITBIS/IVA, retenciones, formatos 606/607/608, calendario fiscal             |
-| 25  | `e-invoice`     | **Facturación electrónica** | e-CF DGII (RD), CFDI (MX), FE (CO/CR); firma digital, contingencia          |
-| 26  | `multicurrency` | **Multimoneda**             | Tasas automáticas (BCRD/API), diferencia cambiaria, reexpresión             |
-| 27  | `payments`      | **Pasarelas de cobro**      | Stripe, Azul, CardNet, PayPal; links de pago, cobro recurrente              |
-| 28  | `consolidation` | **Consolidación** 🔴        | Estados consolidados multi-empresa, eliminaciones inter-compañía            |
+| #   | ID                | Módulo                      | Qué hace                                                                                |
+| --- | ----------------- | --------------------------- | --------------------------------------------------------------------------------------- |
+| 16  | `accounting`      | **Contabilidad general**    | Catálogo de cuentas, asientos, mayor, balanza, cierres                                  |
+| 17  | `ar`              | **Cuentas por cobrar**      | Facturas, antigüedad de saldos, recordatorios automáticos, notas de crédito             |
+| 18  | `ap`              | **Cuentas por pagar**       | Facturas de proveedor, programación de pagos, retenciones                               |
+| 19  | `treasury`        | **Tesorería & Bancos**      | Cuentas bancarias, flujo de caja proyectado, transferencias                             |
+| 20  | `bank-rec`        | **Conciliación bancaria**   | Import de estados, matching automático con IA, partidas pendientes                      |
+| 21  | `fixed-assets`    | **Activos fijos**           | Alta, depreciación (línea recta/acelerada), revalúo, baja                               |
+| 22  | `budgets`         | **Presupuestos**            | Por cuenta/centro/proyecto, comparativo real vs. presupuesto, alertas                   |
+| 23  | `cost-centers`    | **Centros de costo**        | Distribución, prorrateo, rentabilidad por centro                                        |
+| 24  | `taxes`           | **Impuestos**               | ITBIS/IVA, retenciones, formatos 606/607/608, calendario fiscal                         |
+| 25  | `e-invoice`       | **Facturación electrónica** | e-CF DGII (RD), CFDI (MX), FE (CO/CR); firma digital, contingencia                      |
+| 26  | `multicurrency`   | **Multimoneda**             | Tasas automáticas (BCRD/API), diferencia cambiaria, reexpresión                         |
+| 27  | `payments`        | **Pasarelas de cobro**      | Stripe, Azul, CardNet, PayPal; links de pago, cobro recurrente                          |
+| 28  | `consolidation`   | **Consolidación** 🔴        | Estados consolidados multi-empresa, eliminaciones inter-compañía                        |
+| 93  | `invoice-capture` | **Captura de facturas** 🟣  | Fotografía la factura del proveedor y el sistema extrae RNC, NCF, fecha, ITBIS y líneas |
+
+<details>
+<summary><b>📸 Por qué <code>invoice-capture</code> es un módulo aparte y no una función de <code>ap</code></b></summary>
+
+En República Dominicana, el **606** se arma con las facturas que te dan tus proveedores. Teclearlas una por una es donde una contabilidad pierde más horas y comete más errores: un NCF mal digitado es un rechazo de la DGII.
+
+`invoice-capture` recibe una foto —del celular, del escáner o de un correo— y devuelve un borrador de factura con RNC, NCF, fecha, subtotal, ITBIS y líneas ya separadas. El contador **revisa y aprueba**, no teclea.
+
+**Es módulo propio por dos razones concretas:**
+
+1. **Cuesta dinero cada vez.** Cada documento procesado consume OCR y un modelo de visión. Necesita su propio consumo medido, igual que los e-CF, o el margen se lo come el cliente que sube 3.000 facturas al mes.
+2. **Se vende solo.** Un contador externo que lleva 15 empresas pequeñas quiere esto sin comprar contabilidad completa. Si vive dentro de `ap`, no se lo puedes vender.
+
+|                    |                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------- |
+| **Categoría**      | 🟣 Avanzado                                                                             |
+| **Instalación**    | $400 PYME · $1.500 Mediano · $4.000 Grande                                              |
+| **Mensual**        | $45 · $160 · $420                                                                       |
+| **Consumo medido** | 100 documentos incluidos; luego **US$0.04** por documento                               |
+| **Recomienda**     | `ap`, `taxes`, `files` — funciona sin ellos, pero con `ap` crea la factura directamente |
+| **Móvil**          | ✔️ **Móvil-primero.** El caso real es fotografiar la factura al recibir la mercancía    |
+| **Emite**          | `invoice-capture.document.extracted`, `invoice-capture.document.rejected`               |
+
+**Regla de diseño:** el módulo **nunca contabiliza solo**. Siempre genera un borrador que una persona aprueba. Una extracción con 94% de confianza sigue siendo un 6% de facturas mal contabilizadas, y eso en fiscalidad no se perdona. La confianza por campo se muestra en la UI: lo dudoso va resaltado en ámbar.
+
+**Riesgo a vigilar:** las fotos de facturas contienen RNC y montos de terceros. Se guardan cifradas con `pgsodium` y se purgan a los 90 días de aprobada la factura — el dato que importa ya vive en `ap`.
+
+</details>
 
 ### 5.3 Ventas & CRM (29–41) 🔵🟣
 
@@ -486,7 +515,7 @@ Se implementa con **Postgres LISTEN/NOTIFY + tabla `event_outbox`** procesada po
 | 91  | `e-sign`       | **Firma electrónica** | Firma de contratos y cotizaciones con validez legal y trazabilidad    |
 | 92  | `chat`         | **Chat interno**      | Canales por módulo/proyecto/sucursal, hilos, menciones — muy Discord  |
 
-> **Total: 92 módulos** (superamos el mínimo de 50 solicitado). Los 15 primeros son core gratuito.
+> **Total: 93 módulos** (superamos el mínimo de 50 solicitado). Los 15 primeros son core gratuito.
 
 ### 5.10 Mapa de dependencias (extracto)
 
@@ -787,7 +816,7 @@ La **denegación siempre gana** sobre cualquier concesión.
 
 | Nivel                 | Quién controla          | Efecto                                                                                        |
 | --------------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
-| **1. Licencia**       | Tú (REGB Control)      | El módulo no existe para el tenant. Ni rutas, ni tablas expuestas, ni API.                    |
+| **1. Licencia**       | Tú (REGB Control)       | El módulo no existe para el tenant. Ni rutas, ni tablas expuestas, ni API.                    |
 | **2. Configuración**  | Owner/Admin del cliente | Módulo comprado pero desactivado en su empresa. Datos intactos.                               |
 | **3. Permiso de rol** | Admin del cliente       | Módulo activo pero invisible para ciertos roles. No aparece en sidebar, la ruta devuelve 403. |
 
@@ -834,7 +863,7 @@ La **denegación siempre gana** sobre cualquier concesión.
 | Esquema   | Contenido                                                                                 |
 | --------- | ----------------------------------------------------------------------------------------- |
 | `public`  | Entidades de negocio de los tenants (con `tenant_id` + RLS)                               |
-| `regb`   | Tablas del proveedor: tenants, suscripciones, facturas, precios. **Solo rol `provider`.** |
+| `regb`    | Tablas del proveedor: tenants, suscripciones, facturas, precios. **Solo rol `provider`.** |
 | `auth`    | Gestionado por Supabase                                                                   |
 | `audit`   | Log particionado por mes                                                                  |
 | `storage` | Gestionado por Supabase                                                                   |
@@ -1134,7 +1163,7 @@ create policy provider_only on regb.tenants for all using (auth.is_provider());
 
 | Control               | Implementación                                                              |
 | --------------------- | --------------------------------------------------------------------------- |
-| **MFA**               | Obligatorio para Owner, Admin, Contador y todo usuario de REGB Control     |
+| **MFA**               | Obligatorio para Owner, Admin, Contador y todo usuario de REGB Control      |
 | **Cifrado en reposo** | `pgsodium` para columnas sensibles (cuentas bancarias, salarios, cédulas)   |
 | **Rate limiting**     | Por tenant y por endpoint en el API Gateway                                 |
 | **Secretos**          | Nunca en el cliente. Todo en Edge Functions con secrets de Supabase         |
@@ -1192,7 +1221,7 @@ Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, 
 | `--brand-hover`    | `#4752C4`       | Hover del primario                           |
 | `--brand-active`   | `#3C45A5`       | Pressed                                      |
 | `--brand-soft`     | `#5865F2` @ 15% | Fondo de estado seleccionado                 |
-| `--accent-fuchsia` | `#EB459E`       | REGB Control, features premium              |
+| `--accent-fuchsia` | `#EB459E`       | REGB Control, features premium               |
 | `--accent-teal`    | `#00B0B9`       | IA / Copiloto                                |
 
 ```
@@ -1254,13 +1283,13 @@ El blurple puro (`#5865F2`) solo alcanza **2.74:1** sobre `#313338`: un anillo d
 
 #### Colores por categoría de módulo
 
-| Categoría        | Color   | Hex       |
-| ---------------- | ------- | --------- |
-| 🟢 Core          | Verde   | `#23A559` |
-| 🔵 Estándar      | Blurple | `#5865F2` |
-| 🟣 Avanzado      | Púrpura | `#9B59F6` |
-| 🟠 Vertical      | Naranja | `#F0883E` |
-| 🔴 Enterprise    | Rojo    | `#F23F43` |
+| Categoría       | Color   | Hex       |
+| --------------- | ------- | --------- |
+| 🟢 Core         | Verde   | `#23A559` |
+| 🔵 Estándar     | Blurple | `#5865F2` |
+| 🟣 Avanzado     | Púrpura | `#9B59F6` |
+| 🟠 Vertical     | Naranja | `#F0883E` |
+| 🔴 Enterprise   | Rojo    | `#F23F43` |
 | 🩷 REGB Control | Fucsia  | `#EB459E` |
 
 ### 11.3 Tipografía
@@ -1885,8 +1914,8 @@ gantt
 
 Definidos en `.claude/agents/`. Cada uno tiene un dominio estricto.
 
-| Agente                 | Rol                    | Dominio                                                                |
-| ---------------------- | ---------------------- | ---------------------------------------------------------------------- |
+| Agente                | Rol                    | Dominio                                                                |
+| --------------------- | ---------------------- | ---------------------------------------------------------------------- |
 | `regb-architect`      | Arquitecto             | Decisiones de estructura, límites entre paquetes, contratos, ADRs      |
 | `regb-module-builder` | Constructor de módulos | Genera módulos completos desde el template: manifest, SQL, UI ×3, tour |
 | `regb-db`             | Ingeniero de datos     | Esquemas, migraciones, índices, RLS, rendimiento de queries            |
@@ -1956,14 +1985,14 @@ timeline
 
 ### 18.1 Hitos críticos
 
-| Hito                             | Cuándo | Criterio de éxito                                                                       |
-| -------------------------------- | ------ | --------------------------------------------------------------------------------------- |
+| Hito                             | Cuándo | Criterio de éxito                                                                      |
+| -------------------------------- | ------ | -------------------------------------------------------------------------------------- |
 | **Registry vivo**                | Mes 1  | Activar un módulo desde REGB Control lo hace aparecer en el sidebar del cliente en <5s |
-| **Aislamiento probado**          | Mes 1  | Pentest: ningún tenant puede leer datos de otro por ninguna vía                         |
-| **Primera factura automática**   | Mes 2  | El motor calcula, emite y cobra sin intervención                                        |
-| **Cliente piloto en producción** | Mes 6  | Un negocio real opera 30 días sin volver a Excel                                        |
-| **3 plataformas paridad**        | Mes 6  | El mismo módulo funciona en web, desktop y móvil                                        |
-| **Rentabilidad unitaria**        | Mes 9  | Costo de infraestructura por cliente < 8% de su MRR                                     |
+| **Aislamiento probado**          | Mes 1  | Pentest: ningún tenant puede leer datos de otro por ninguna vía                        |
+| **Primera factura automática**   | Mes 2  | El motor calcula, emite y cobra sin intervención                                       |
+| **Cliente piloto en producción** | Mes 6  | Un negocio real opera 30 días sin volver a Excel                                       |
+| **3 plataformas paridad**        | Mes 6  | El mismo módulo funciona en web, desktop y móvil                                       |
+| **Rentabilidad unitaria**        | Mes 9  | Costo de infraestructura por cliente < 8% de su MRR                                    |
 
 ---
 
@@ -1973,7 +2002,7 @@ timeline
 
 | KPI                            | Meta año 1    | Cómo se mide                  |
 | ------------------------------ | ------------- | ----------------------------- |
-| MRR                            | US$ 47.000    | REGB Control › Overview      |
+| MRR                            | US$ 47.000    | REGB Control › Overview       |
 | Clientes activos               | 38            | tenants con `status='active'` |
 | Ticket promedio                | US$ 1.244/mes | MRR / clientes                |
 | Churn mensual                  | < 2%          | cancelaciones / clientes      |
@@ -2013,7 +2042,7 @@ timeline
 | #   | Riesgo                                       | Prob. |     Impacto     | Mitigación                                                                                                         |
 | --- | -------------------------------------------- | :---: | :-------------: | ------------------------------------------------------------------------------------------------------------------ |
 | 1   | **Fuga entre tenants**                       | Baja  | 🔴 Catastrófico | RLS en toda tabla + tests automáticos de aislamiento en CI + pentest anual + nunca `service_role` en el cliente    |
-| 2   | **92 módulos = alcance imposible**           | Alta  |     🟠 Alto     | Priorizar por demanda real; 15 core + 20 más ya son vendibles. El resto se construye contra clientes pagando       |
+| 2   | **93 módulos = alcance imposible**           | Alta  |     🟠 Alto     | Priorizar por demanda real; 15 core + 20 más ya son vendibles. El resto se construye contra clientes pagando       |
 | 3   | **Postgres se satura**                       | Media |     🟠 Alto     | Índices por `tenant_id`, particionado de tablas calientes, réplicas de lectura, plan de sharding por tenant grande |
 | 4   | **Paridad de 3 plataformas ahoga el equipo** | Alta  |     🟠 Alto     | `mobileScope` explícito: el móvil NO tiene que hacer todo. Electron reutiliza la web al 95%                        |
 | 5   | **Cambios fiscales DGII**                    | Alta  |    🟡 Medio     | Módulo `e-invoice` aislado y versionado; adaptadores por país                                                      |
@@ -2032,7 +2061,7 @@ timeline
 | Documento                                               | Contenido                                                      |
 | ------------------------------------------------------- | -------------------------------------------------------------- |
 | [`docs/FASES-DE-DESARROLLO.md`](FASES-DE-DESARROLLO.md) | **Plan operativo: 11 fases, 84 sprints, puertas de no-avance** |
-| `docs/MODULOS.md`                                       | Ficha detallada de los 92 módulos                              |
+| `docs/MODULOS.md`                                       | Ficha detallada de los 93 módulos                              |
 | `docs/DESIGN-SYSTEM.md`                                 | Aurora completo: tokens, componentes, ejemplos                 |
 | `docs/API.md`                                           | Referencia del API público                                     |
 | `docs/SEGURIDAD.md`                                     | Modelo de amenazas y controles                                 |
@@ -2045,7 +2074,7 @@ timeline
 ## ✅ Resumen ejecutivo en 10 líneas
 
 1. **REGB ERP** es un ERP modular multi-tenant con estética Discord.
-2. **92 módulos**: 15 core gratis + 77 activables desde un marketplace interno.
+2. **93 módulos**: 15 core gratis + 78 activables desde un marketplace interno.
 3. **3 tiers de cliente**: PYME (US$500 + $79/mes), Mediano (US$3.500 + $399/mes), Grande (US$15.000 + $1.500/mes).
 4. El precio **varía** por tier × módulos × usuarios × sucursales × consumo, con fórmula transparente.
 5. **REGB Control** es tu panel privado: todos tus clientes, MRR, cobros, salud, impersonación auditada.

@@ -24,7 +24,11 @@ values
 
   ('payroll', 'Nomina', 'advanced',
    'Calculo con TSS, AFP, ARS e ISR; prestaciones, regalia y volantes.', 'Users', '0.1.0',
-   '{}', '{accounting}', '{"web":true,"desktop":true,"mobile":false}', true)
+   '{}', '{accounting}', '{"web":true,"desktop":true,"mobile":false}', true),
+
+  ('invoice-capture', 'Captura de facturas', 'advanced',
+   'Fotografia la factura del proveedor y extrae RNC, NCF, fecha, ITBIS y lineas.', 'ScanLine', '0.1.0',
+   '{}', '{ap,taxes,files}', '{"web":true,"desktop":true,"mobile":true}', true)
 on conflict (id) do update
   set name = excluded.name,
       category = excluded.category,
@@ -48,7 +52,10 @@ values
   ('pos',       'grande',  1800, 190, 0),
   ('payroll',   'pyme',    400,  45, 0),
   ('payroll',   'mediano', 1500, 160, 2),
-  ('payroll',   'grande',  4000, 420, 2)
+  ('payroll',   'grande',  4000, 420, 2),
+  ('invoice-capture', 'pyme',    400,  45, 0),
+  ('invoice-capture', 'mediano', 1500, 160, 0),
+  ('invoice-capture', 'grande',  4000, 420, 0)
 on conflict (module_id, tier) do update
   set install_price = excluded.install_price,
       monthly_price = excluded.monthly_price,
@@ -112,6 +119,12 @@ begin
   -- Inventario en prueba: vence en 9 dias.
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled, trial_ends_at)
   values (v_pyme, 'inventory', 'trial', true, (current_date + 9))
+  on conflict do nothing;
+
+  -- La distribuidora tiene captura de facturas: es la que recibe mercancia
+  -- de 40 proveedores y arma el 606 todos los meses.
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
+  values (v_med, 'invoice-capture', 'active', true)
   on conflict do nothing;
 
   -- ── Modulos de la distribuidora ──────────────────────────────────────

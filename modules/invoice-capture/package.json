@@ -1,5 +1,5 @@
 {
-  "name": "@regb/mod-products",
+  "name": "@regb/mod-invoice-capture",
   "version": "0.1.0",
   "private": true,
   "type": "module",

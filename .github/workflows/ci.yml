@@ -33,6 +33,8 @@ jobs:
         run: pnpm audit:secrets
       - name: El core no conoce los modulos
         run: pnpm audit:registry
+      - name: Todo manifest es valido y coherente con su categoria
+        run: pnpm audit:manifests
 
   build:
     name: Lint · Typecheck · Build · Test

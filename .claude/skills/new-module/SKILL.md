@@ -11,7 +11,7 @@ Construyes un módulo completo y verificable. No un esqueleto: un módulo que se
 
 Lee siempre primero:
 
-- `docs/PROYECTO-REGB-ERP.md` §4 (sistema de módulos) y §5 (catálogo de los 92)
+- `docs/PROYECTO-REGB-ERP.md` §4 (sistema de módulos) y §5 (catálogo de los 93)
 - `modules/_template/` si existe
 
 Del catálogo §5 saca: **id exacto, nombre, categoría (core/estándar/avanzado/vertical/enterprise), descripción y dependencias**. No inventes un id que no esté en el catálogo; si el usuario pide uno nuevo, añádelo primero al catálogo del documento maestro.

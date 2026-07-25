@@ -15,6 +15,7 @@
     "@regb/config": "workspace:*",
     "@regb/core": "workspace:*",
     "@regb/mod-inventory": "workspace:*",
+    "@regb/mod-invoice-capture": "workspace:*",
     "@regb/mod-payroll": "workspace:*",
     "@regb/mod-pos": "workspace:*",
     "@regb/mod-products": "workspace:*",
