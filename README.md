@@ -68,9 +68,38 @@ pnpm test
 | S6 · Contrato `manifest.ts` + ciclo de vida        | ✅                                                  |
 | S7 · Bus de eventos                                | 🚧 tabla lista; falta la Edge Function despachadora |
 
+### 🟡 Fase 2 — Core + app web (en curso)
+
+| Sprint                                       | Estado                                                |
+| -------------------------------------------- | ----------------------------------------------------- |
+| App web con layout Aurora y sidebar dinámico | ✅ verificado en navegador                            |
+| Responsive xs→2xl con drawer y nav inferior  | ✅ 375 / 768 / 1440 px sin desbordar                  |
+| 4 manifests de módulo reales                 | ✅ products · inventory · pos · payroll               |
+| Los 15 módulos core                          | 🚧 solo manifests; falta la funcionalidad de cada uno |
+
 ### 🚧 Siguiente
 
-Componentes Aurora (F0 S4), flujo de Supabase Auth, y el despachador de eventos (F1 S7).
+Flujo de Supabase Auth (F0 S3), el despachador de eventos como Edge Function
+(F1 S7), y los módulos core de la Fase 2.
+
+---
+
+## Verlo funcionando
+
+```bash
+docker start nexus-test-db && pnpm --filter @nexus/web dev
+```
+
+En [localhost:3100](http://localhost:3100) puedes cambiar de **cliente**, **rol**
+y **plataforma** desde la cabecera y ver cómo el sidebar se reconstruye solo.
+
+Para comprobar que activar un módulo es un dato y no un despliegue:
+
+```bash
+docker exec nexus-test-db psql -U postgres -d nexus_test -c "update nexus.tenant_modules set enabled=false where module_id='pos';"
+```
+
+Recarga y el POS desapareció. Vuelve a ponerlo en `true` y regresa.
 
 ---
 
