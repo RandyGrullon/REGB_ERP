@@ -3,11 +3,13 @@
 import { cn } from '../utils'
 
 /**
- * Rail de empresas — 72px, la columna mas oscura.
+ * Rail de empresas — 60px, la columna mas profunda.
  *
- * Una empresa (RNC) por icono, como los servidores de Discord. La activa
- * lleva una pildora blanca a la izquierda y esquinas cuadradas; el resto
- * son circulos que se redondean menos al pasar el raton.
+ * Una empresa (RNC) por ficha. Las fichas son CUADRADAS con esquinas
+ * discretas, no circulos que se deforman al pasar el raton: un ERP donde
+ * cada empresa es una razon social distinta se lee mejor con formas
+ * estables. El activo se marca con una barra en color de marca a la
+ * izquierda, y el resto baja de opacidad.
  */
 export interface RailItem {
   id: string
@@ -32,8 +34,9 @@ export function ServerRail({ items, activeId, onSelect, onAdd, className }: Serv
     <nav
       aria-label="Empresas"
       className={cn(
-        'flex w-[72px] shrink-0 flex-col items-center gap-2 py-3',
+        'flex w-[60px] shrink-0 flex-col items-center gap-1.5 py-2',
         'bg-[var(--color-surface-deepest)]',
+        'border-r border-[var(--color-border)]',
         className,
       )}
     >
@@ -41,13 +44,13 @@ export function ServerRail({ items, activeId, onSelect, onAdd, className }: Serv
         const active = item.id === activeId
         return (
           <div key={item.id} className="relative flex w-full justify-center">
-            {/* La pildora del activo — el detalle mas reconocible de Discord */}
+            {/* Barra del activo, en color de marca */}
             <span
               aria-hidden
               className={cn(
-                'absolute left-0 top-1/2 w-1 -translate-y-1/2 rounded-r-full bg-white',
-                'transition-all duration-150',
-                active ? 'h-10' : 'h-0 group-hover:h-5',
+                'absolute left-0 top-1/2 w-[3px] -translate-y-1/2 rounded-r-sm',
+                'bg-[var(--color-brand-bright)] transition-all duration-100',
+                active ? 'h-8' : 'h-0',
               )}
             />
             <button
@@ -56,13 +59,14 @@ export function ServerRail({ items, activeId, onSelect, onAdd, className }: Serv
               aria-current={active ? 'true' : undefined}
               title={item.name}
               className={cn(
-                'group relative grid h-12 w-12 place-items-center overflow-hidden',
-                'text-sm font-semibold transition-all duration-150 ease-out',
+                'grid h-10 w-10 place-items-center overflow-hidden',
+                'rounded-[var(--radius-md)] text-[13px] font-semibold',
+                'transition-colors duration-100',
                 'focus-visible:outline-2 focus-visible:outline-offset-2',
                 'focus-visible:outline-[var(--color-brand-bright)]',
                 active
-                  ? 'rounded-[var(--radius-lg)] bg-[var(--color-brand)] text-white'
-                  : 'rounded-[var(--radius-full)] bg-[var(--color-surface-deep)] text-[var(--color-text-secondary)] hover:rounded-[var(--radius-lg)] hover:bg-[var(--color-brand)] hover:text-white',
+                  ? 'bg-[var(--color-brand)] text-[var(--color-text-on-brand)]'
+                  : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)]',
               )}
             >
               {item.logoUrl ? (
@@ -79,8 +83,9 @@ export function ServerRail({ items, activeId, onSelect, onAdd, className }: Serv
             {item.badge ? (
               <span
                 className={cn(
-                  'absolute -bottom-0.5 right-3 grid min-w-4 place-items-center rounded-full',
-                  'bg-[var(--color-semantic-danger)] px-1 text-[10px] font-bold text-white',
+                  'absolute -top-0.5 right-2 grid min-w-4 place-items-center',
+                  'rounded-[var(--radius-sm)] px-1 text-[10px] font-bold',
+                  'bg-[var(--color-semantic-danger)] text-white',
                   'ring-2 ring-[var(--color-surface-deepest)]',
                 )}
               >
@@ -94,16 +99,17 @@ export function ServerRail({ items, activeId, onSelect, onAdd, className }: Serv
 
       {onAdd && (
         <>
-          <span className="my-1 h-px w-8 bg-[var(--color-border)]" aria-hidden />
+          <span className="my-1 h-px w-7 bg-[var(--color-border)]" aria-hidden />
           <button
             type="button"
             onClick={onAdd}
             title="Agregar empresa"
             className={cn(
-              'grid h-12 w-12 place-items-center rounded-[var(--radius-full)]',
-              'bg-[var(--color-surface-deep)] text-xl text-[var(--color-semantic-success)]',
-              'transition-all duration-150 hover:rounded-[var(--radius-lg)]',
-              'hover:bg-[var(--color-semantic-success)] hover:text-white',
+              'grid h-10 w-10 place-items-center rounded-[var(--radius-md)]',
+              'border border-dashed border-[var(--color-border-strong)]',
+              'text-lg text-[var(--color-text-muted)]',
+              'transition-colors duration-100',
+              'hover:border-[var(--color-brand-bright)] hover:text-[var(--color-brand-bright)]',
               'focus-visible:outline-2 focus-visible:outline-offset-2',
               'focus-visible:outline-[var(--color-brand-bright)]',
             )}

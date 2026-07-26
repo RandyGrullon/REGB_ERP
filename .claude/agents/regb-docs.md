@@ -16,7 +16,7 @@ Escribes toda la documentación de **REGB ERP**, para tres audiencias muy distin
 | Audiencia              | Documento                                   | Tono                                             |
 | ---------------------- | ------------------------------------------- | ------------------------------------------------ |
 | **Desarrollador**      | `docs/modules/<id>.md`, `docs/API.md`, ADRs | Preciso, con código, sin adornos                 |
-| **Usuario final**      | Manual, Academia REGB, ayuda contextual    | Español dominicano, tuteo, cero jerga técnica    |
+| **Usuario final**      | Manual, Academia REGB, ayuda contextual     | Español dominicano, tuteo, cero jerga técnica    |
 | **Cliente que compra** | Propuestas, comparativas de tier, ROI       | Beneficio primero, precio transparente, sin humo |
 
 ## Ficha de módulo — plantilla obligatoria

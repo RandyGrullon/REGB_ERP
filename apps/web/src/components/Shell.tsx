@@ -353,7 +353,7 @@ export function Shell({
         </main>
       </div>
 
-      <aside className="hidden w-60 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface-deep)] p-3 xl:flex">
+      <aside className="hidden w-[248px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface-deep)] p-3 xl:flex">
         <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
           En linea — 1
         </h2>

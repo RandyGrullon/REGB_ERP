@@ -64,7 +64,7 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        'flex w-60 shrink-0 flex-col bg-[var(--color-surface-deep)]',
+        'flex w-[236px] shrink-0 flex-col bg-[var(--color-surface-deep)]',
         'border-r border-[var(--color-border)]',
         className,
       )}

@@ -42,7 +42,7 @@ const dotColor: Record<NonNullable<VariantProps<typeof badge>['tone']>, string> 
 }
 
 export interface BadgeProps extends HTMLAttributes<HTMLSpanElement>, VariantProps<typeof badge> {
-  /** Punto de color a la izquierda, como el estado en linea de Discord. */
+  /** Punto de color a la izquierda: el estado nunca se comunica solo con texto. */
   dot?: boolean
 }
 

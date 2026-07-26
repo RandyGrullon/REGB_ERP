@@ -1,6 +1,6 @@
 # 🛰️ REGB ERP
 
-> ERP modular multi-tenant con estética Discord.
+> ERP modular multi-tenant con identidad propia.
 > Web · Desktop · Móvil · 93 módulos activables · Supabase
 
 | Documento                                                  | Para qué                                                     |

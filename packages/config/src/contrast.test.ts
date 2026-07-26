@@ -139,10 +139,26 @@ describe('Anillo de foco', () => {
     }
   })
 
-  it('el blurple puro NO sirve como foco en oscuro — por eso existe brand.bright', () => {
-    const puro = colorOf('brand', 'default', 'dark')
-    const bg = colorOf('surface', 'base', 'dark')
-    expect(contrastRatio(puro, bg)).toBeLessThan(WCAG.AA_UI)
+  it('brand.bright da mas margen que el primario como indicador', () => {
+    // El primario carga texto BLANCO encima (4.5:1), lo que lo obliga a ser
+    // oscuro; brand.bright existe para lo contrario, verse SOBRE lo oscuro.
+    // Son requisitos opuestos, por eso son dos tokens y no uno.
+    const fondo = colorOf('surface', 'base', 'dark')
+    const primario = contrastRatio(colorOf('brand', 'default', 'dark'), fondo)
+    const brillante = contrastRatio(colorOf('brand', 'bright', 'dark'), fondo)
+
+    expect(brillante).toBeGreaterThan(primario)
+    // Margen holgado, no al filo: un anillo de foco al 3.0 exacto se pierde
+    // en cuanto alguien baja el brillo de la pantalla.
+    expect(brillante).toBeGreaterThanOrEqual(4)
+  })
+
+  it('el texto blanco sobre el primario cumple AA — el requisito opuesto', () => {
+    for (const theme of THEMES) {
+      const fg = colorOf('text', 'onBrand', theme)
+      const bg = colorOf('brand', 'default', theme)
+      expect(meetsAA(fg, bg), report(fg, bg, WCAG.AA_NORMAL)).toBe(true)
+    }
   })
 })
 

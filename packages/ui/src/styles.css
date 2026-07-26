@@ -80,7 +80,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Scrollbar al estilo Discord: presente pero discreta. */
+/* Scrollbar discreta: presente pero discreta. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--color-surface-deepest) transparent;

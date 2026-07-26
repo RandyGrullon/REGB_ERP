@@ -151,6 +151,7 @@ export function MarketplaceView({
                 mod={m}
                 selected={seleccion.has(m.id)}
                 onToggle={() => toggle(m.id)}
+                detailHref={`/marketplace/${m.id}${backHref.includes('?') ? backHref.slice(backHref.indexOf('?')) : ''}`}
               />
             ))}
           </div>
@@ -270,10 +271,12 @@ function ModuleCard({
   mod,
   selected,
   onToggle,
+  detailHref,
 }: {
   mod: CatalogEntry
   selected: boolean
   onToggle: () => void
+  detailHref: string
 }) {
   const activo = mod.status === 'active' || mod.status === 'trial'
   const esCore = mod.category === 'core'
@@ -292,17 +295,27 @@ function ModuleCard({
       )}
     >
       <div className="mb-2 flex items-start gap-2">
-        <h3 className="flex-1 text-sm font-semibold text-[var(--color-text-primary)]">
+        <a
+          href={detailHref}
+          className="flex-1 text-sm font-semibold text-[var(--color-text-primary)] underline-offset-2 hover:text-[var(--color-brand-bright)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
           {mod.name}
-        </h3>
+        </a>
         <Badge tone={CATEGORY_TONE[mod.category]} dot={false}>
           {CATEGORIES.find((c) => c.id === mod.category)?.label ?? mod.category}
         </Badge>
       </div>
 
-      <p className="mb-3 flex-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
+      <p className="mb-2 flex-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
         {mod.description}
       </p>
+
+      <a
+        href={detailHref}
+        className="mb-3 text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+      >
+        Ver que incluye →
+      </a>
 
       {/* Plataformas donde corre */}
       <p className="mb-2 text-[10px] text-[var(--color-text-muted)]">

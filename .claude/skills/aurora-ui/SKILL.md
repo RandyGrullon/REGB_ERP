@@ -1,11 +1,11 @@
 ---
 name: aurora-ui
-description: Genera componentes del design system Aurora (estética Discord) de REGB ERP, en versión web y React Native, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
+description: Genera componentes del design system Aurora (estética Aurora) de REGB ERP, en versión web y React Native, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
 ---
 
 # Aurora — design system de REGB ERP
 
-Estética **Discord**: oscuro por defecto, denso, plano con acentos saturados, sensación de app.
+Identidad propia: oscuro por defecto, denso, plano, con teal profundo como marca. Sensación de herramienta de trabajo, no de app de consumo.
 
 ## Tokens — úsalos siempre, nunca hex sueltos
 

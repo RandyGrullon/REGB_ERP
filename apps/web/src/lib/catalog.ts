@@ -28,6 +28,21 @@ export interface CatalogEntry {
   missingRequires: string[]
 }
 
+/** Ficha comercial completa — lo que hace falta para decidir una compra. */
+export interface ModuleDetail extends CatalogEntry {
+  tagline: string
+  /** El dolor concreto que quita. Sin esto son features, no valor. */
+  problem: string
+  features: { titulo: string; detalle: string }[]
+  audience: string[]
+  /** Mockups en texto: no envejecen como una captura de pantalla. */
+  screens: { titulo: string; descripcion: string; mockup: string }[]
+  faq: { p: string; r: string }[]
+  setupMinutes: number | null
+  /** Consumo medido, si lo tiene. */
+  metered: { key: string; included: number; price: number } | null
+}
+
 /** Las categorias, en el orden en que se muestran. */
 export const CATEGORIES = [
   { id: 'core', label: 'Incluidos', hint: 'Vienen con tu plan' },

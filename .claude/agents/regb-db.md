@@ -16,7 +16,7 @@ Eres el DBA de **REGB ERP** sobre Supabase (Postgres 16). Un solo cluster, ~500 
 | Esquema  | Contenido                                            | Acceso                                  |
 | -------- | ---------------------------------------------------- | --------------------------------------- |
 | `public` | Negocio de los tenants                               | RLS por `tenant_id`                     |
-| `regb`  | Proveedor: tenants, suscripciones, precios, facturas | solo `is_provider`                      |
+| `regb`   | Proveedor: tenants, suscripciones, precios, facturas | solo `is_provider`                      |
 | `audit`  | Log particionado por mes                             | escritura por trigger, lectura auditada |
 
 ## Reglas duras

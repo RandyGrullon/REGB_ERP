@@ -1,6 +1,6 @@
 # 🛰️ REGB ERP — Documento Maestro del Proyecto
 
-> **ERP modular multi-tenant con estética Discord.**
+> **ERP modular multi-tenant con identidad propia.**
 > Web (Next.js) · Desktop (Electron) · Móvil (React Native) · Backend (Supabase)
 > **80 módulos** activables por cliente · Licenciamiento variable · Panel de propietario integrado
 
@@ -28,7 +28,7 @@
 8. [Roles, permisos y visibilidad de módulos](#8-roles-permisos-y-visibilidad-de-módulos)
 9. [Modelo de datos (Supabase)](#9-modelo-de-datos-supabase)
 10. [Seguridad y multi-tenancy (RLS)](#10-seguridad-y-multi-tenancy-rls)
-11. [Design System "Aurora" — estética Discord](#11-design-system-aurora--estética-discord)
+11. [Design System "Aurora" — identidad propia](#11-design-system-aurora--identidad-propia)
 12. [Mockups de pantallas](#12-mockups-de-pantallas)
 13. [Responsive: desktop, tablet y celular](#13-responsive-desktop-tablet-y-celular)
 14. [Sistema de tutorial y onboarding](#14-sistema-de-tutorial-y-onboarding)
@@ -71,7 +71,7 @@ graph LR
 
 | #   | Diferenciador               | Por qué gana                                                                                           |
 | --- | --------------------------- | ------------------------------------------------------------------------------------------------------ |
-| 1   | **Estética Discord**        | La gente ya sabe usarlo. Cero fricción cognitiva. Sidebar de servidores = empresas, canales = módulos. |
+| 1   | **Estética propia**         | La gente ya sabe usarlo. Cero fricción cognitiva. Sidebar de servidores = empresas, canales = módulos. |
 | 2   | **Modularidad real**        | Cada módulo es un paquete npm + migración SQL + registro. Encender = 1 click, no un proyecto.          |
 | 3   | **Precio variable honesto** | PYME de 5 personas no paga lo de una empresa de 500. Cálculo transparente y visible.                   |
 | 4   | **Tri-plataforma nativa**   | Mismo core, 3 shells. El vendedor factura desde el celular, contabilidad desde Electron offline.       |
@@ -79,7 +79,7 @@ graph LR
 
 ### 1.4 Pitch de una línea
 
-> _"El ERP que se siente como Discord, cuesta como Netflix y hace lo que hace SAP."_
+> _"El ERP que se aprende en una tarde, cuesta como Netflix y hace lo que hace SAP."_
 
 ---
 
@@ -360,7 +360,7 @@ Se implementa con **Postgres LISTEN/NOTIFY + tabla `event_outbox`** procesada po
 | 5   | `branches`      | **Sucursales & Ubicaciones** | Jerarquía de sucursales, horarios, geocerca                                             |
 | 6   | `dashboard`     | **Dashboard & Widgets**      | Home configurable por rol, widgets arrastrables de cada módulo                          |
 | 7   | `search`        | **Búsqueda global**          | `Ctrl+K` sobre todas las entidades, full-text + fuzzy                                   |
-| 8   | `notifications` | **Notificaciones**           | In-app, push, email, WhatsApp; centro de notificaciones estilo Discord                  |
+| 8   | `notifications` | **Notificaciones**           | In-app, push, email, WhatsApp; centro de notificaciones propio                          |
 | 9   | `audit`         | **Auditoría**                | Quién hizo qué, cuándo, desde dónde; diff antes/después; export firmado                 |
 | 10  | `settings`      | **Configuración**            | Ajustes por tenant, empresa, sucursal y usuario, con herencia                           |
 | 11  | `files`         | **Gestor documental**        | Carpetas, versiones, OCR, previsualización, adjuntos polimórficos                       |
@@ -506,14 +506,14 @@ En República Dominicana, el **606** se arma con las facturas que te dan tus pro
 
 ### 5.9 Inteligencia & Plataforma avanzada (87–92) 🟣🔴
 
-| #   | ID             | Módulo                | Qué hace                                                              |
-| --- | -------------- | --------------------- | --------------------------------------------------------------------- |
-| 87  | `bi`           | **BI & Reportes**     | Constructor visual de reportes, dashboards, export programado         |
-| 88  | `automations`  | **Automatizaciones**  | Reglas _si esto → entonces aquello_, sin código, entre módulos        |
-| 89  | `api-webhooks` | **API & Webhooks**    | API REST/GraphQL por tenant, keys, rate limit, webhooks salientes     |
-| 90  | `ai-copilot`   | **Copiloto IA**       | Preguntas en lenguaje natural sobre tus datos, resúmenes, sugerencias |
-| 91  | `e-sign`       | **Firma electrónica** | Firma de contratos y cotizaciones con validez legal y trazabilidad    |
-| 92  | `chat`         | **Chat interno**      | Canales por módulo/proyecto/sucursal, hilos, menciones — muy Discord  |
+| #   | ID             | Módulo                | Qué hace                                                                       |
+| --- | -------------- | --------------------- | ------------------------------------------------------------------------------ |
+| 87  | `bi`           | **BI & Reportes**     | Constructor visual de reportes, dashboards, export programado                  |
+| 88  | `automations`  | **Automatizaciones**  | Reglas _si esto → entonces aquello_, sin código, entre módulos                 |
+| 89  | `api-webhooks` | **API & Webhooks**    | API REST/GraphQL por tenant, keys, rate limit, webhooks salientes              |
+| 90  | `ai-copilot`   | **Copiloto IA**       | Preguntas en lenguaje natural sobre tus datos, resúmenes, sugerencias          |
+| 91  | `e-sign`       | **Firma electrónica** | Firma de contratos y cotizaciones con validez legal y trazabilidad             |
+| 92  | `chat`         | **Chat interno**      | Canales por módulo/proyecto/sucursal, hilos, menciones — con hilos y menciones |
 
 > **Total: 93 módulos** (superamos el mínimo de 50 solicitado). Los 15 primeros son core gratuito.
 
@@ -890,7 +890,7 @@ create table regb.tenants (
   timezone          text not null default 'America/Santo_Domingo',
   currency          char(3) not null default 'DOP',
   logo_url          text,
-  primary_color     text default '#5865F2',
+  primary_color     text default '#0D847C',
   installed_at      timestamptz,
   go_live_at        timestamptz,
   health_score      int default 100,
@@ -1174,13 +1174,15 @@ create policy provider_only on regb.tenants for all using (auth.is_provider());
 
 ---
 
-## 11. Design System "Aurora" — estética Discord
+## 11. Design System "Aurora" — identidad propia
 
 ### 11.1 Filosofía
 
 > **Oscuro por defecto. Denso pero respirable. Todo a un `Ctrl+K` de distancia.**
 
-Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, los avatares circulares con estado, las píldoras de badge, la tipografía compacta, la sensación de _app_ y no de _sitio web_.
+Aurora toma de las aplicaciones de trabajo modernas lo que funciona —doble navegación lateral, colores planos, tipografía compacta, sensación de _app_ y no de _sitio web_— y le pone identidad propia: **teal profundo** en vez de los violetas de las apps de consumo, fichas cuadradas en vez de círculos, y radios contenidos porque un ERP con esquinas muy redondeadas se lee como juguete.
+
+> **Sobre parecerse a otros productos.** Los colores no son propiedad de nadie y los patrones de navegación son funcionales y comunes. Aun así REGB no copia la identidad de nadie: "se parece a X" describe, no diferencia. Cada valor de esta sección está **calculado** para cumplir AA y verificado en cada build.
 
 ### 11.2 Paleta de colores
 
@@ -1215,23 +1217,23 @@ Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, 
 
 #### Marca y acentos
 
-| Token              | Hex             | Uso                                          |
-| ------------------ | --------------- | -------------------------------------------- |
-| `--brand`          | `#5865F2`       | **Blurple.** Botón primario, activo, enlaces |
-| `--brand-hover`    | `#4752C4`       | Hover del primario                           |
-| `--brand-active`   | `#3C45A5`       | Pressed                                      |
-| `--brand-soft`     | `#5865F2` @ 15% | Fondo de estado seleccionado                 |
-| `--accent-fuchsia` | `#EB459E`       | REGB Control, features premium               |
-| `--accent-teal`    | `#00B0B9`       | IA / Copiloto                                |
+| Token              | Hex             | Uso                                                |
+| ------------------ | --------------- | -------------------------------------------------- |
+| `--brand`          | `#0D847C`       | **Teal profundo.** Botón primario, activo, enlaces |
+| `--brand-hover`    | `#0B7069`       | Hover del primario                                 |
+| `--brand-active`   | `#095C57`       | Pressed                                            |
+| `--brand-soft`     | `#0D847C` @ 15% | Fondo de estado seleccionado                       |
+| `--accent-fuchsia` | `#9B4DBF`       | REGB Control, features premium                     |
+| `--accent-teal`    | `#C2872B`       | IA / Copiloto                                      |
 
 ```
-■ #5865F2   ■ #4752C4   ■ #3C45A5   ■ #EB459E   ■ #00B0B9
+■ #0D847C   ■ #0B7069   ■ #095C57   ■ #9B4DBF   ■ #C2872B
   brand       hover       active      fuchsia      teal
 ```
 
 #### Semánticos — relleno vs. texto
 
-> ⚠️ **Un color de relleno no sirve como color de texto.** La paleta de Discord es bonita pero no cumple AA sobre fondo oscuro: el rojo puro da **2.66:1** y el verde **3.15:1**, muy por debajo del 4.5:1 exigido. Por eso hay dos juegos. Los valores de texto están **calculados**, no elegidos a ojo, y los verifica `packages/config/src/contrast.test.ts` en cada build.
+> ⚠️ **Un color de relleno no sirve como color de texto.** Un color vistoso rara vez cumple AA sobre fondo oscuro: el rojo puro da **2.66:1** y el verde **3.15:1**, muy por debajo del 4.5:1 exigido. Por eso hay dos juegos. Los valores de texto están **calculados**, no elegidos a ojo, y los verifica `packages/config/src/contrast.test.ts` en cada build.
 
 **Relleno** — badges, barras, puntos de estado. Umbral de componente (3:1).
 
@@ -1267,9 +1269,9 @@ Tomamos de Discord: la doble sidebar, los colores planos con acentos saturados, 
 
 | Token                  | Oscuro    | Claro     | Uso                          |
 | ---------------------- | --------- | --------- | ---------------------------- |
-| `--color-brand-bright` | `#7983F5` | `#4752C4` | Anillo de foco e indicadores |
+| `--color-brand-bright` | `#7983F5` | `#0B7069` | Anillo de foco e indicadores |
 
-El blurple puro (`#5865F2`) solo alcanza **2.74:1** sobre `#313338`: un anillo de foco con ese color es invisible. `brand-bright` da 3.84:1.
+El teal puro (`#0D847C`) solo alcanza **2.74:1** sobre `#313338`: un anillo de foco con ese color es invisible. `brand-bright` da 3.84:1.
 
 #### Texto
 
@@ -1279,18 +1281,18 @@ El blurple puro (`#5865F2`) solo alcanza **2.74:1** sobre `#313338`: un anillo d
 | `--text-secondary` | `#B5BAC1` | `#4E5058` | Cuerpo, etiquetas          |
 | `--text-muted`     | `#80848E` | `#80848E` | Metadatos, placeholders    |
 | `--text-link`      | `#00A8FC` | `#0068E0` | Enlaces                    |
-| `--text-on-brand`  | `#FFFFFF` | `#FFFFFF` | Texto sobre blurple        |
+| `--text-on-brand`  | `#FFFFFF` | `#FFFFFF` | Texto sobre teal           |
 
 #### Colores por categoría de módulo
 
 | Categoría       | Color   | Hex       |
 | --------------- | ------- | --------- |
 | 🟢 Core         | Verde   | `#23A559` |
-| 🔵 Estándar     | Blurple | `#5865F2` |
+| 🔵 Estándar     | Teal    | `#0D847C` |
 | 🟣 Avanzado     | Púrpura | `#9B59F6` |
 | 🟠 Vertical     | Naranja | `#F0883E` |
 | 🔴 Enterprise   | Rojo    | `#F23F43` |
-| 🩷 REGB Control | Fucsia  | `#EB459E` |
+| 🩷 REGB Control | Fucsia  | `#9B4DBF` |
 
 ### 11.3 Tipografía
 
@@ -1332,12 +1334,12 @@ Sombras:
 
 ### 11.5 Componentes clave
 
-| Componente          | Detalle Discord-esque                                                                                                      |
+| Componente          | Detalle de Aurora                                                                                                          |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Server rail**     | Barra izquierda de 72px con iconos redondeados de cada empresa. Activa = píldora blanca a la izquierda + esquina cuadrada. |
 | **Channel sidebar** | 240px. Grupos colapsables en `overline` MAYÚSCULAS, ítems con icono + nombre, badge de conteo a la derecha.                |
-| **Miembros**        | Panel derecho opcional (240px) con usuarios en línea por rol — como la lista de miembros de Discord.                       |
-| **Botón primario**  | Blurple, radio 8, peso 500, `active:translate-y-[1px]`                                                                     |
+| **Miembros**        | Panel derecho opcional (240px) con usuarios en línea por rol con estado de conexion.                                       |
+| **Botón primario**  | Teal, radio 8, peso 500, `active:translate-y-[1px]`                                                                        |
 | **Toast**           | Esquina inferior derecha, fondo `--bg-overlay`, barra de color a la izquierda según semántica                              |
 | **Modal**           | Fondo `--bg-base`, overlay negro 70%, radio 16, animación scale 0.95→1 en 150ms                                            |
 | **Tabla**           | Filas de 40px, hover `--bg-raised`, encabezado sticky, selección con checkbox, acciones al hover                           |
@@ -1411,7 +1413,7 @@ Sombras:
 
 **Anatomía:**
 
-1. **Server rail (72px)** — una empresa/RNC por icono, como los servidores de Discord.
+1. **Rail de empresas (60px)** — una empresa/RNC por ficha cuadrada, con barra de marca en la activa.
 2. **Channel sidebar (240px)** — módulos agrupados por categoría, colapsables, con badges.
 3. **Contenido (flex)** — header con breadcrumb + `⌘K` + notificaciones; luego KPIs y datos.
 4. **Members (240px, opcional)** — quién está conectado, por departamento. Colapsable.
@@ -1628,7 +1630,7 @@ Sombras:
                     │  [Saltar tutorial]        [◀ Atrás] [Siguiente ▶]│
                     └─────────────────────────────────────────────┘
                               ▲ el elemento real de la página queda
-                                resaltado con halo blurple y el resto
+                                resaltado con halo en color de marca y el resto
                                 de la pantalla con overlay al 60%
 ```
 
@@ -2073,7 +2075,7 @@ timeline
 
 ## ✅ Resumen ejecutivo en 10 líneas
 
-1. **REGB ERP** es un ERP modular multi-tenant con estética Discord.
+1. **REGB ERP** es un ERP modular multi-tenant con identidad propia.
 2. **93 módulos**: 15 core gratis + 78 activables desde un marketplace interno.
 3. **3 tiers de cliente**: PYME (US$500 + $79/mes), Mediano (US$3.500 + $399/mes), Grande (US$15.000 + $1.500/mes).
 4. El precio **varía** por tier × módulos × usuarios × sucursales × consumo, con fórmula transparente.
@@ -2081,7 +2083,7 @@ timeline
 6. **Roles y permisos** en 3 niveles: licencia (tú), configuración (cliente), rol (admin del cliente).
 7. **Tres apps en paralelo**: Next.js, Electron y React Native sobre un 70% de código compartido.
 8. **Supabase** como backend único, con RLS estricto por tenant en cada tabla.
-9. **Design System Aurora**: oscuro por defecto, blurple `#5865F2`, denso, rápido, accesible AA.
+9. **Design System Aurora**: oscuro por defecto, teal `#0D847C`, denso, rápido, accesible AA.
 10. **Tutorial en 4 capas** para que nadie necesite consultores: tours, checklist gamificado, ayuda contextual y copiloto IA.
 
 ---
