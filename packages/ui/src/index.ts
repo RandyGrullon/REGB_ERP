@@ -10,10 +10,9 @@ export {
   StatCard,
   type StatCardProps,
 } from './components/Card'
-export { ServerRail, type RailItem, type ServerRailProps } from './components/ServerRail'
+export { TopBar, type TopBarProps, type Company } from './components/TopBar'
 export {
   Sidebar,
-  UserBar,
   type SidebarProps,
   type SidebarGroup,
   type SidebarModule,

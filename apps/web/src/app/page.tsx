@@ -40,6 +40,7 @@ export default async function Page({
             slug: data.tenant.id,
             name: data.tenant.name,
             initials: data.user.initials,
+            tier: data.tenant.tier,
           },
         ]}
         activeSlug={data.tenant.id}

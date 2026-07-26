@@ -9,26 +9,27 @@ import {
   CardTitle,
   cn,
   EmptyState,
-  ServerRail,
   Sidebar,
   StatCard,
-  UserBar,
+  TopBar,
   type SidebarGroup,
   type SidebarModule,
 } from '@regb/ui'
 
 /**
- * Shell de REGB — el layout de 4 columnas de §12.1.
+ * Shell de REGB — barra superior + navegacion lateral + contenido.
  *
- * rail 72px · sidebar 240px · contenido flex · miembros 240px
+ * El patron estandar de una aplicacion de gestion. La empresa y el usuario
+ * viven arriba, que es donde la gente los busca; la navegacion a la
+ * izquierda; el trabajo en el centro.
  *
  * Todo lo que pinta viene del bootstrap del servidor. El shell no sabe que
- * modulos existen; recibe una lista ya resuelta.
+ * modulos existen; recibe una lista ya resuelta (§2.2).
  */
 
 interface ShellData {
   tenant: { id: string; name: string; tier: string; status: string }
-  user: { id: string; name: string; initials: string }
+  user: { id: string; name: string; initials: string; email?: string }
   roleName: string
   sidebar: SidebarModule[]
   activeModules: string[]
@@ -38,7 +39,7 @@ interface ShellData {
 }
 
 export interface ShellProps {
-  tenants: { id: string; slug: string; name: string; initials: string }[]
+  tenants: { id: string; slug: string; name: string; initials: string; tier: string }[]
   activeSlug: string
   roles: string[]
   activeRole: string
@@ -48,7 +49,7 @@ export interface ShellProps {
   data: ShellData
 }
 
-/** Titulo del grupo del sidebar segun la categoria comercial. */
+/** Titulo de la seccion del sidebar segun la categoria comercial. */
 const GROUP_TITLES: Record<string, string> = {
   core: 'Plataforma',
   standard: 'Operacion',
@@ -73,7 +74,7 @@ export function Shell({
   data,
 }: ShellProps) {
   const [activePath, setActivePath] = useState('/')
-  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [menuAbierto, setMenuAbierto] = useState(false)
 
   // Agrupa por categoria conservando el orden que ya trae el registry.
   const groups: SidebarGroup[] = []
@@ -87,144 +88,136 @@ export function Shell({
     g.modules.push(mod)
   }
 
-  const activeTenant = tenants.find((t) => t.slug === activeSlug)
   const go = (patch: Record<string, string>) => {
     const url = new URL(window.location.href)
     for (const [k, v] of Object.entries(patch)) url.searchParams.set(k, v)
     window.location.href = url.toString()
   }
 
+  const qs = demoMode ? `?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}` : ''
+
+  const enlacesPie = (
+    <div className="space-y-0.5">
+      <a
+        href={`/marketplace${qs}`}
+        className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+      >
+        Marketplace
+      </a>
+      <a
+        href={`/roles${qs}`}
+        className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+      >
+        Roles y permisos
+      </a>
+    </div>
+  )
+
   return (
-    <div className="flex h-full">
-      {/* ── Rail y sidebar: columnas fijas desde `md` ──────────────────
-          En <768px se esconden y viven dentro del drawer (§13.2). */}
-      <ServerRail
-        items={tenants.map((t) => ({ id: t.slug, name: t.name, initials: t.initials }))}
-        activeId={activeSlug}
-        onSelect={(slug) => go({ tenant: slug, rol: 'Owner' })}
-        className="hidden md:flex"
-      />
-
-      <Sidebar
-        tenantName={data.tenant.name}
-        groups={groups}
-        activePath={activePath}
-        onNavigate={setActivePath}
-        className="hidden md:flex"
-        footer={
-          <UserBar
-            name={data.user.name}
-            role={data.roleName}
-            initials={data.user.initials}
-            status="online"
-          />
-        }
-      />
-
-      {/* ── Drawer movil ───────────────────────────────────────────── */}
-      {drawerOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar menu"
-            onClick={() => setDrawerOpen(false)}
-            className="absolute inset-0 bg-black/70"
-          />
-          <div className="relative flex">
-            <ServerRail
-              items={tenants.map((t) => ({ id: t.slug, name: t.name, initials: t.initials }))}
-              activeId={activeSlug}
-              onSelect={(slug) => go({ tenant: slug, rol: 'Owner' })}
-            />
-            <Sidebar
-              tenantName={data.tenant.name}
-              groups={groups}
-              activePath={activePath}
-              onNavigate={(p) => {
-                setActivePath(p)
-                setDrawerOpen(false)
-              }}
-              footer={
-                <UserBar
-                  name={data.user.name}
-                  role={data.roleName}
-                  initials={data.user.initials}
-                  status="online"
-                />
-              }
-            />
+    <div className="flex h-full flex-col">
+      <TopBar
+        productName="REGB"
+        companies={tenants.map((t) => ({
+          id: t.slug,
+          name: t.name,
+          // El tier de CADA empresa, no el de la activa.
+          hint: TIER_LABEL[t.tier] ?? t.tier,
+        }))}
+        activeCompanyId={activeSlug}
+        onSelectCompany={(slug) => go({ tenant: slug, rol: 'Owner' })}
+        user={{
+          name: data.user.name,
+          ...(data.user.email ? { email: data.user.email } : {}),
+          role: data.roleName,
+        }}
+        {...(demoMode ? {} : { onSignOut: () => document.forms.namedItem('salir')?.submit() })}
+        center={
+          <div className="flex items-center gap-2">
+            {/* Controles de la demostracion */}
+            {demoMode && (
+              <>
+                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] sm:flex">
+                  Rol
+                  <select
+                    value={activeRole}
+                    onChange={(e) => go({ rol: e.target.value })}
+                    className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  >
+                    {roles.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] lg:flex">
+                  Plataforma
+                  <select
+                    value={activePlatform}
+                    onChange={(e) => go({ plataforma: e.target.value })}
+                    className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  >
+                    <option value="web">Web</option>
+                    <option value="desktop">Escritorio</option>
+                    <option value="mobile">Movil</option>
+                  </select>
+                </label>
+              </>
+            )}
           </div>
-        </div>
-      )}
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--color-border)] px-4">
+        }
+        actions={
           <button
             type="button"
-            aria-label="Abrir menu"
-            aria-expanded={drawerOpen}
-            onClick={() => setDrawerOpen(true)}
-            className="-ml-1 grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
+            aria-label="Abrir navegacion"
+            aria-expanded={menuAbierto}
+            onClick={() => setMenuAbierto((v) => !v)}
+            className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
           >
             <span aria-hidden className="text-lg">
               ☰
             </span>
           </button>
-          <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
-            {activePath === '/' ? 'Inicio' : activePath}
-          </span>
-          <Badge tone={data.tenant.status === 'active' ? 'success' : 'warning'}>
-            {TIER_LABEL[data.tenant.tier] ?? data.tenant.tier}
-          </Badge>
-          <div className="flex-1" />
+        }
+      />
 
-          {/* Controles de la demo: cambiar de rol y de plataforma en vivo.
-              En movil no caben junto al titulo: se ocultan. */}
-          {demoMode && (
-            <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] sm:flex">
-              Rol
-              <select
-                value={activeRole}
-                onChange={(e) => go({ rol: e.target.value })}
-                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-              >
-                {roles.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+      {!demoMode && (
+        <form id="salir" name="salir" action="/auth/salir" method="post" className="hidden" />
+      )}
 
-          {demoMode && (
-            <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] lg:flex">
-              Plataforma
-              <select
-                value={activePlatform}
-                onChange={(e) => go({ plataforma: e.target.value })}
-                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-              >
-                <option value="web">Web</option>
-                <option value="desktop">Escritorio</option>
-                <option value="mobile">Movil</option>
-              </select>
-            </label>
-          )}
+      <div className="flex min-h-0 flex-1">
+        <Sidebar
+          groups={groups}
+          activePath={activePath}
+          onNavigate={setActivePath}
+          footer={enlacesPie}
+          className="hidden md:flex"
+        />
 
-          {!demoMode && (
-            <form action="/auth/salir" method="post">
-              <button
-                type="submit"
-                className="h-8 rounded-[var(--radius-md)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-              >
-                Salir
-              </button>
-            </form>
-          )}
-        </header>
+        {/* Navegacion movil: panel deslizante desde la izquierda */}
+        {menuAbierto && (
+          <div className="fixed inset-0 top-14 z-40 flex md:hidden">
+            <button
+              type="button"
+              aria-label="Cerrar navegacion"
+              onClick={() => setMenuAbierto(false)}
+              className="absolute inset-0 bg-black/60"
+            />
+            <div className="relative">
+              <Sidebar
+                groups={groups}
+                activePath={activePath}
+                onNavigate={(p) => {
+                  setActivePath(p)
+                  setMenuAbierto(false)
+                }}
+                footer={enlacesPie}
+              />
+            </div>
+          </div>
+        )}
 
-        <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
           {data.sidebar.length === 0 ? (
             <EmptyState
               icon="🔒"
@@ -233,9 +226,14 @@ export function Shell({
             />
           ) : (
             <>
-              <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
-                Buenos dias, {data.user.name.split(' ')[0]}
-              </h2>
+              <div className="flex flex-wrap items-baseline gap-2">
+                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
+                  Buenos dias, {data.user.name.split(' ')[0]}
+                </h1>
+                <Badge tone={data.tenant.status === 'active' ? 'success' : 'warning'}>
+                  {TIER_LABEL[data.tenant.tier] ?? data.tenant.tier}
+                </Badge>
+              </div>
               <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
                 Estas viendo REGB como <strong>{data.roleName}</strong> en{' '}
                 <strong>{activePlatform}</strong>.
@@ -318,27 +316,30 @@ export function Shell({
                 </Card>
               </div>
 
-              {/* Accesos a las pantallas de plataforma ya construidas */}
               <div className="mt-5 flex flex-wrap gap-2">
                 <a
-                  href={
-                    demoMode
-                      ? `/marketplace?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
-                      : '/marketplace'
-                  }
-                  className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  href={`/marketplace${qs}`}
+                  className={cn(
+                    'flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4',
+                    'bg-[var(--color-brand)] text-sm font-medium text-[var(--color-text-on-brand)]',
+                    'transition-colors duration-100 hover:bg-[var(--color-brand-hover)]',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2',
+                    'focus-visible:outline-[var(--color-brand-bright)]',
+                  )}
                 >
-                  🧩 Ver el marketplace
+                  Ver el marketplace
                 </a>
                 <a
-                  href={
-                    demoMode
-                      ? `/roles?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
-                      : '/roles'
-                  }
-                  className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  href={`/roles${qs}`}
+                  className={cn(
+                    'flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4',
+                    'bg-[var(--color-surface-raised)] text-sm font-medium text-[var(--color-text-primary)]',
+                    'transition-colors duration-100 hover:bg-[var(--color-surface-overlay)]',
+                    'focus-visible:outline-2 focus-visible:outline-offset-2',
+                    'focus-visible:outline-[var(--color-brand-bright)]',
+                  )}
                 >
-                  🛡️ Roles y permisos
+                  Roles y permisos
                 </a>
               </div>
 
@@ -352,86 +353,6 @@ export function Shell({
           )}
         </main>
       </div>
-
-      <aside className="hidden w-[248px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface-deep)] p-3 xl:flex">
-        <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
-          En linea — 1
-        </h2>
-        <UserBar
-          name={data.user.name}
-          role={data.roleName}
-          initials={data.user.initials}
-          status="online"
-        />
-        <div className="mt-auto">
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Empresa
-          </p>
-          <p className="text-xs text-[var(--color-text-secondary)]">{activeTenant?.name}</p>
-          <a
-            href={
-              demoMode
-                ? `/marketplace?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}`
-                : '/marketplace'
-            }
-            className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            🧩 Marketplace
-          </a>
-        </div>
-      </aside>
-
-      {/* ── Nav inferior: 5 elementos, disenada para el pulgar (§13.3) ── */}
-      <nav
-        aria-label="Navegacion principal"
-        className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-stretch border-t border-[var(--color-border)] bg-[var(--color-surface-deep)] md:hidden"
-      >
-        {bottomNav(data.sidebar).map((item) => {
-          const active = item.path === activePath
-          return (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => item.path && setActivePath(item.path)}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex flex-1 flex-col items-center justify-center gap-0.5',
-                'focus-visible:outline-2 focus-visible:-outline-offset-2',
-                'focus-visible:outline-[var(--color-brand-bright)]',
-                active ? 'text-[var(--color-brand-bright)]' : 'text-[var(--color-text-muted)]',
-              )}
-            >
-              <span aria-hidden className="text-lg leading-none">
-                {item.icon}
-              </span>
-              <span className="text-[10px] leading-none">{item.label}</span>
-            </button>
-          )
-        })}
-      </nav>
     </div>
   )
-}
-
-/**
- * Los 5 elementos de la nav inferior.
- *
- * El del medio es la accion rapida. Los dos de los lados salen de los
- * modulos que el usuario tiene de verdad: si no tiene POS, no ve "Caja".
- */
-function bottomNav(
-  modules: SidebarModule[],
-): { key: string; icon: string; label: string; path: string | undefined }[] {
-  const principales = modules.slice(0, 2)
-  return [
-    { key: 'home', icon: '🏠', label: 'Inicio', path: '/' },
-    ...principales.map((m) => ({
-      key: m.moduleId,
-      icon: '📦',
-      label: m.label.split(' ')[0] ?? m.label,
-      path: m.routes[0]?.path,
-    })),
-    { key: 'add', icon: '➕', label: 'Nuevo', path: undefined },
-    { key: 'me', icon: '👤', label: 'Perfil', path: undefined },
-  ].slice(0, 5)
 }

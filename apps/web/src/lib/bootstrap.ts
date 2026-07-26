@@ -149,16 +149,17 @@ export async function bootstrap({
   }
 }
 
-/** Empresas disponibles, para el rail. Solo en modo demostracion. */
+/** Empresas disponibles, para el selector. Solo en modo demostracion. */
 export async function listTenants(): Promise<
-  { id: string; slug: string; name: string; initials: string }[]
+  { id: string; slug: string; name: string; initials: string; tier: string }[]
 > {
-  const rows = await db()<{ id: string; slug: string; legal_name: string }[]>`
-    select id, slug, legal_name from regb.tenants order by legal_name`
+  const rows = await db()<{ id: string; slug: string; legal_name: string; tier: string }[]>`
+    select id, slug, legal_name, tier from regb.tenants order by legal_name`
   return rows.map((r) => ({
     id: r.id,
     slug: r.slug,
     name: r.legal_name,
+    tier: r.tier,
     initials: r.legal_name
       .split(/\s+/)
       .filter((w) => w.length > 2)
