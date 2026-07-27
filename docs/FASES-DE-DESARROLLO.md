@@ -208,7 +208,7 @@ Layout Aurora de 4 columnas, responsive `xs`→`2xl`, PWA con service worker, `C
 
 ### 5.2 🚪 Puerta F3
 
-- [ ] Los 3 casos de cotización de §6.5 salen **exactos**: US$123.25 · US$906 · US$3,946
+- [ ] Los 3 casos de cotización de §6.5 salen **exactos**: US$123.25 · US$815 · US$2,985
 - [ ] Alta y baja de módulo a mitad de ciclo prorratean correctamente
 - [ ] Un webhook de pago duplicado **no cobra dos veces**
 - [ ] La impersonación exige MFA + razón, expira a los 60 min y queda en el log de **ambos** lados

@@ -104,7 +104,7 @@ Redondeo a 2 decimales solo al final. Muestra siempre el desglose línea por lí
 Antes de entregar, comprueba tu motor contra los 3 casos de §6.5 del documento maestro:
 
 - Colmado La Esperanza → instalación **US$ 950**, mensual **US$ 123.25**
-- Distribuidora Caribe → instalación **US$ 8.300**, mensual **US$ 906**
-- Grupo Quisqueya → instalación **US$ 74.400**, mensual **US$ 3.946**
+- Distribuidora Caribe → instalación **US$ 5.900**, mensual **US$ 815**
+- Grupo Quisqueya → instalación **US$ 39.600**, mensual **US$ 2.985**
 
 Si tu cálculo no reproduce esos números, revisa la fórmula antes de cotizar.

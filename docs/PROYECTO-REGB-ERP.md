@@ -631,40 +631,41 @@ MENSUALIDAD =
 <details>
 <summary><b>🔵 Ejemplo 2 — "Distribuidora Caribe SRL" (MEDIANO, 85 empleados)</b></summary>
 
-| Concepto                                     | Detalle                                                           |           USD |
-| -------------------------------------------- | ----------------------------------------------------------------- | ------------: |
-| Instalación                                  | Tier MEDIANO                                                      |         3.500 |
-| + Instalación módulos                        | 9 módulos: 6 estándar (3.600) + 3 avanzados (4.500) − 5 incluidos |         4.800 |
-| **Total instalación**                        |                                                                   | **US$ 8.300** |
-|                                              |                                                                   |               |
-| Base mensual                                 | MEDIANO                                                           |           399 |
-| 6 estándar × $69                             | inventory, sales-orders, purchase-orders, crm, ar, ap             |           414 |
-| 3 avanzados × $160                           | accounting, payroll, bi                                           |           480 |
-| (5 módulos incluidos en el tier descontados) | −69×3 −160×2                                                      |          −527 |
-| Usuarios extra                               | 40 usuarios, 25 incluidos → 15 × $7                               |           105 |
-| Sucursales                                   | 4, incluidas 5                                                    |             0 |
-| e-CF medidos                                 | 3.500 comprobantes × $0.01                                        |            35 |
-| **Total mensual**                            |                                                                   |   **US$ 906** |
+> Corregido tras implementar `packages/billing`: "los más caros primero" (regla del agente `regb-billing`) descuenta los **3 avanzados + 2 estándar** más caros de los 9 módulos activos, no una mezcla arbitraria. La versión anterior de este ejemplo no reproducía la fórmula; esta sí, al centavo (`formula.test.ts`).
+
+| Concepto              | Detalle                                                                                                                   |           USD |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------: |
+| Instalación           | Tier MEDIANO                                                                                                              |         3.500 |
+| + Instalación módulos | 9 módulos, 4 facturables tras descontar los 5 incluidos (más caros primero: 3 avanzados + 2 estándar) → 4 estándar × $600 |         2.400 |
+| **Total instalación** |                                                                                                                           | **US$ 5.900** |
+|                       |                                                                                                                           |               |
+| Base mensual          | MEDIANO                                                                                                                   |           399 |
+| Módulos activos       | 4 estándar facturables (5 de 9 incluidos en el tier) × $69                                                                |           276 |
+| Usuarios extra        | 40 usuarios, 25 incluidos → 15 × $7                                                                                       |           105 |
+| Sucursales            | 4, incluidas 5                                                                                                            |             0 |
+| e-CF medidos          | 3.500 comprobantes × $0.01                                                                                                |            35 |
+| **Total mensual**     |                                                                                                                           |   **US$ 815** |
 
 </details>
 
 <details>
 <summary><b>🟣 Ejemplo 3 — "Grupo Industrial Quisqueya" (GRANDE, 640 empleados)</b></summary>
 
-| Concepto                   | Detalle                                                                            |            USD |
-| -------------------------- | ---------------------------------------------------------------------------------- | -------------: |
-| Instalación                | Tier GRANDE                                                                        |         15.000 |
-| + 22 módulos               | 10 estándar (18.000) + 9 avanzados (36.000) + 3 verticales (18.000) − 15 incluidos |         47.400 |
-| Integraciones a medida     | SAP legacy + banco + DGII                                                          |         12.000 |
-| **Total instalación**      |                                                                                    | **US$ 74.400** |
-|                            |                                                                                    |                |
-| Base mensual               | GRANDE                                                                             |          1.500 |
-| 22 módulos activos         | mix estándar/avanzado/vertical                                                     |          6.180 |
-| (15 incluidos descontados) |                                                                                    |         −3.900 |
-| Usuarios extra             | 260 usuarios, 100 incluidos → 160 × $5                                             |            800 |
-| Storage                    | 2.4 TB, 1 TB incluido → 1.400 GB × $0.25                                           |            350 |
-| Descuento contrato 3 años  | −20%                                                                               |           −984 |
-| **Total mensual**          |                                                                                    |  **US$ 3.946** |
+> Corregido junto con el ejemplo 2: los 15 módulos incluidos toman los 3 verticales + 9 avanzados + 3 estándar más caros, dejando 7 estándar facturables. El "contrato de 3 años" corresponde al descuento **trianual −25 %** de §6.6, no −20 %.
+
+| Concepto                    | Detalle                                                                                                                   |            USD |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------: |
+| Instalación                 | Tier GRANDE                                                                                                               |         15.000 |
+| + Instalación módulos       | 22 módulos, 7 facturables tras descontar los 15 incluidos (3 verticales + 9 avanzados + 3 estándar) → 7 estándar × $1.800 |         12.600 |
+| Integraciones a medida      | SAP legacy + banco + DGII                                                                                                 |         12.000 |
+| **Total instalación**       |                                                                                                                           | **US$ 39.600** |
+|                             |                                                                                                                           |                |
+| Base mensual                | GRANDE                                                                                                                    |          1.500 |
+| Módulos activos             | 7 estándar facturables (15 de 22 incluidos en el tier) × $190                                                             |          1.330 |
+| Usuarios extra              | 260 usuarios, 100 incluidos → 160 × $5                                                                                    |            800 |
+| Storage                     | 2.4 TB, 1 TB incluido → 1.400 GB × $0.25                                                                                  |            350 |
+| Descuento contrato trianual | −25 %                                                                                                                     |           −995 |
+| **Total mensual**           |                                                                                                                           |  **US$ 2.985** |
 
 </details>
 
@@ -1487,8 +1488,8 @@ Sombras:
 │  ╔═════════════════════════════════════════════════════════════════════════════╗ │
 │  ║  💵 SIMULADOR DE COSTO                                                       ║ │
 │  ║  Módulos seleccionados: 9 activos + Nómina + Producción                     ║ │
-│  ║  Mensualidad actual  US$   906.00                                            ║ │
-│  ║  Con lo seleccionado US$ 1,226.00   (+ US$ 320.00)                          ║ │
+│  ║  Mensualidad actual  US$   815.00                                            ║ │
+│  ║  Con lo seleccionado US$ 1,135.00   (+ US$ 320.00)                          ║ │
 │  ║  Instalación única   US$ 3,000.00                                            ║ │
 │  ║                                            [Ver desglose]  [Solicitar]       ║ │
 │  ╚═════════════════════════════════════════════════════════════════════════════╝ │
@@ -1547,7 +1548,7 @@ Sombras:
 │  ─────────                                                                            │
 │  ┌────────────────┬────────────────┬────────────────┬────────────────┐               │
 │  │ MRR            │ LTV acumulado  │ Usuarios       │ Última actividad│              │
-│  │ US$ 906.00     │ US$ 11,924     │ 40 / 25 incl.  │ hace 6 minutos │               │
+│  │ US$ 815.00     │ US$ 8,284      │ 40 / 25 incl.  │ hace 6 minutos │               │
 │  └────────────────┴────────────────┴────────────────┴────────────────┘               │
 │                                                                                       │
 │  DESGLOSE DE LA MENSUALIDAD                    MÓDULOS ACTIVOS (9)                   │
@@ -1562,19 +1563,19 @@ Sombras:
 │  │ Contabilidad           $  160.00 │          │ ✅ Facturación e-CF 20 mar 🔥 alto│  │
 │  │ Facturación e-CF       $  160.00 │          │ 🔥 Copiloto IA  PRUEBA · 9 días   │  │
 │  │ BI & Reportes          $  160.00 │          │ ✅ BI & Reportes   15 may  📉 bajo│  │
-│  │ (5 incluidos en tier)  $ -527.00 │          └──────────────────────────────────┘  │
+│  │ (5 incluidos en tier)  $ -618.00 │          └──────────────────────────────────┘  │
 │  │ 15 usuarios × $7       $  105.00 │                                                │
 │  │ e-CF 3,500 × $0.01     $   35.00 │          💡 SUGERENCIAS DE IA                  │
 │  ├──────────────────────────────────┤          ┌──────────────────────────────────┐  │
-│  │ TOTAL MENSUAL          $  906.00 │          │ • CRM con uso bajo → capacitación │  │
+│  │ TOTAL MENSUAL          $  815.00 │          │ • CRM con uso bajo → capacitación │  │
 │  │ Próximo cobro     12 ago · Azul  │          │ • 40/25 usuarios → sugerir GRANDE │  │
 │  └──────────────────────────────────┘          │ • Copiloto IA prueba: 78% de uso  │  │
 │                                                 │   → alta probabilidad de compra   │  │
 │  HISTORIAL DE PAGOS                             └──────────────────────────────────┘  │
-│  ✅ Jul 2026  $906.00  pagado 12 jul                                                  │
-│  ✅ Jun 2026  $906.00  pagado 12 jun                                                  │
-│  ✅ May 2026  $837.00  pagado 13 may                                                  │
-│  ✅ Instalación $8,300  pagado 10 mar                                                 │
+│  ✅ Jul 2026  $815.00  pagado 12 jul                                                  │
+│  ✅ Jun 2026  $815.00  pagado 12 jun                                                  │
+│  ✅ May 2026  $754.00  pagado 13 may                                                  │
+│  ✅ Instalación $5,900  pagado 10 mar                                                 │
 └──────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
