@@ -1,0 +1,156 @@
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  StatCard,
+  Table,
+  THead,
+  TBody,
+  TR,
+  TH,
+  TD,
+  Badge,
+} from '@regb/ui'
+import { loadClientDetail } from '@/lib/control'
+import { requireProvider } from '@/lib/provider-guard'
+import { cycleLabel, InvoiceBreakdown, StatusBadge, TierBadge, usd } from '@/components/ControlBits'
+
+export const dynamic = 'force-dynamic'
+
+const CATEGORY_LABEL: Record<string, string> = {
+  core: 'Core',
+  standard: 'Estandar',
+  advanced: 'Avanzado',
+  vertical: 'Vertical',
+  enterprise: 'Enterprise',
+}
+
+/**
+ * Ficha 360 del cliente (§12.5): que paga, por que lo paga y que tiene
+ * activo. El desglose es exactamente lo que el motor persistira en
+ * `invoices.lines` cuando se emita la factura del ciclo.
+ */
+export default async function ClientDetailPage({ params }: { params: Promise<{ slug: string }> }) {
+  await requireProvider()
+  const { slug } = await params
+  const data = await loadClientDetail(slug)
+  if (!data) notFound()
+
+  const { client, monthly, installation, modules } = data
+  const fecha = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString('es-DO', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '—'
+
+  return (
+    <div className="space-y-6">
+      <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
+        <Link href="/control" className="text-[var(--color-text-link)] hover:underline">
+          Clientes
+        </Link>{' '}
+        › {client.legalName}
+      </nav>
+
+      <header className="flex flex-wrap items-center gap-3">
+        <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{client.legalName}</h1>
+        <TierBadge tier={client.tier} />
+        <StatusBadge status={client.status} />
+        {client.healthScore !== null && (
+          <Badge
+            tone={
+              client.healthScore >= 70 ? 'success' : client.healthScore >= 40 ? 'warning' : 'danger'
+            }
+          >
+            Salud {client.healthScore}
+          </Badge>
+        )}
+      </header>
+
+      <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          label="Mensualidad"
+          value={usd(client.monthlyTotal)}
+          hint={cycleLabel(client.billingCycle)}
+        />
+        <StatCard label="Instalacion" value={usd(client.installTotal)} hint="pago unico" />
+        <StatCard
+          label="Modulos de pago"
+          value={String(client.paidModules)}
+          hint={
+            client.trialModules > 0 ? `+ ${client.trialModules} en prueba` : 'ninguno en prueba'
+          }
+        />
+        <StatCard
+          label="Renueva"
+          value={fecha(client.renewsAt)}
+          hint={`cliente desde ${fecha(client.goLiveAt)}`}
+        />
+      </section>
+
+      <section aria-label="Desgloses" className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Desglose de la mensualidad</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <InvoiceBreakdown result={monthly} />
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Desglose de la instalacion</CardTitle>
+          </CardHeader>
+          <CardBody>
+            <InvoiceBreakdown result={installation} />
+          </CardBody>
+        </Card>
+      </section>
+
+      <section aria-label="Modulos">
+        <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">
+          Modulos activos ({modules.length})
+        </h2>
+        <Table>
+          <THead>
+            <TR>
+              <TH>Modulo</TH>
+              <TH>Categoria</TH>
+              <TH>Estado</TH>
+              <TH>Activado</TH>
+              <TH numeric>Precio negociado</TH>
+            </TR>
+          </THead>
+          <TBody>
+            {modules.map((m) => (
+              <TR key={m.moduleId}>
+                <TD className="font-medium text-[var(--color-text-primary)]">{m.name}</TD>
+                <TD>{CATEGORY_LABEL[m.category] ?? m.category}</TD>
+                <TD>
+                  <StatusBadge status={m.status} />
+                </TD>
+                <TD>{fecha(m.activatedAt)}</TD>
+                <TD numeric>
+                  {m.priceOverride !== null ? (
+                    <span className="tabular">{usd(m.priceOverride)}</span>
+                  ) : (
+                    <span className="text-[var(--color-text-muted)]">catalogo</span>
+                  )}
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
+        <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+          Los modulos core son gratis en todos los tiers y no aparecen en el desglose de precios.
+        </p>
+      </section>
+    </div>
+  )
+}

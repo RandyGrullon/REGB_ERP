@@ -48,6 +48,7 @@ export default async function Page({
         activeRole={data.role.name}
         activePlatform={platform}
         demoMode={false}
+        isProvider={session.isProvider}
         data={{
           tenant: data.tenant,
           user: data.user,

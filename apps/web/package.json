@@ -12,6 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@regb/billing": "workspace:*",
     "@regb/config": "workspace:*",
     "@regb/core": "workspace:*",
     "@regb/mod-inventory": "workspace:*",

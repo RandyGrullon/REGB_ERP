@@ -46,6 +46,8 @@ export interface ShellProps {
   activePlatform: 'web' | 'desktop' | 'mobile'
   /** Sin Supabase configurado: se puede cambiar de tenant y rol por URL. */
   demoMode: boolean
+  /** Usuario del proveedor: ve el enlace a REGB Control (§7). */
+  isProvider?: boolean
   data: ShellData
 }
 
@@ -71,6 +73,7 @@ export function Shell({
   activeRole,
   activePlatform,
   demoMode,
+  isProvider = false,
   data,
 }: ShellProps) {
   const [activePath, setActivePath] = useState('/')
@@ -110,6 +113,15 @@ export function Shell({
       >
         Roles y permisos
       </a>
+      {/* Solo el proveedor: su panel por encima de los tenants (§7). En demo se muestra porque toda la app es vitrina. */}
+      {(isProvider || demoMode) && (
+        <a
+          href="/control"
+          className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-accent-plum-bright,var(--color-text-secondary))] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
+          REGB Control
+        </a>
+      )}
     </div>
   )
 

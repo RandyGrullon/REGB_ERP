@@ -41,6 +41,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@regb/billing':
+        specifier: workspace:*
+        version: link:../../packages/billing
       '@regb/config':
         specifier: workspace:*
         version: link:../../packages/config

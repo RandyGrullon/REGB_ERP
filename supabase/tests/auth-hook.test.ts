@@ -13,7 +13,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import postgres from 'postgres'
 
-const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:5432/regb_test'
+const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
 const sql = postgres(URL, { max: 4, onnotice: () => {} })
 
 /** Slugs unicos: el test no depende del estado previo de la base. */
