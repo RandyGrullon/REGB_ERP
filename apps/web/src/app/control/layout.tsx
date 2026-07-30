@@ -38,6 +38,12 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
           >
             Facturacion
           </Link>
+          <Link
+            href="/control/onboarding"
+            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
+            Onboarding
+          </Link>
         </nav>
         <div className="ml-auto">
           <Link

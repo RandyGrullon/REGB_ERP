@@ -3,7 +3,7 @@ import { Badge, StatCard, Table, THead, TBody, TR, TH, TD, EmptyState, Mono } fr
 import { listInvoices } from '@/lib/invoicing'
 import { requireProvider } from '@/lib/provider-guard'
 import { usd } from '@/components/ControlBits'
-import { generarFacturasDelMes, registrarPago } from './actions'
+import { aplicarDunning, generarFacturasDelMes, registrarPago } from './actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Facturacion · REGB Control' }
@@ -51,14 +51,25 @@ export default async function FacturacionPage() {
           </Link>{' '}
           › Facturacion
         </nav>
-        <form action={generarFacturasDelMes} className="ml-auto">
-          <button
-            type="submit"
-            className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Generar facturas del mes
-          </button>
-        </form>
+        <div className="ml-auto flex gap-2">
+          <form action={aplicarDunning}>
+            <button
+              type="submit"
+              title="Marca vencidas, degrada morosos (5/10/15/30/90) y recupera a quien pago. Idempotente; jamas borra."
+              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              Aplicar dunning
+            </button>
+          </form>
+          <form action={generarFacturasDelMes}>
+            <button
+              type="submit"
+              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              Generar facturas del mes
+            </button>
+          </form>
+        </div>
       </div>
 
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-3">

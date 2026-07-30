@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { dunningBanner } from '@regb/billing'
 import {
   Badge,
   Card,
@@ -48,6 +49,8 @@ export interface ShellProps {
   demoMode: boolean
   /** Usuario del proveedor: ve el enlace a REGB Control (§7). */
   isProvider?: boolean
+  /** Sesion de impersonacion activa: banner permanente (§7.4). */
+  impersonating?: boolean
   data: ShellData
 }
 
@@ -74,10 +77,14 @@ export function Shell({
   activePlatform,
   demoMode,
   isProvider = false,
+  impersonating = false,
   data,
 }: ShellProps) {
   const [activePath, setActivePath] = useState('/')
   const [menuAbierto, setMenuAbierto] = useState(false)
+
+  // Mora (§6.6): amarillo con factura pendiente, rojo en solo lectura.
+  const mora = dunningBanner(data.tenant.status)
 
   // Agrupa por categoria conservando el orden que ya trae el registry.
   const groups: SidebarGroup[] = []
@@ -195,6 +202,35 @@ export function Shell({
 
       {!demoMode && (
         <form id="salir" name="salir" action="/auth/salir" method="post" className="hidden" />
+      )}
+
+      {impersonating && (
+        <div
+          role="alert"
+          className="flex h-9 shrink-0 items-center justify-center gap-2 bg-[var(--color-accent-plum)] px-4 text-xs font-medium text-white"
+        >
+          <span aria-hidden>👁</span> Estas viendo los datos de {data.tenant.name} como proveedor. La
+          sesion expira sola a los 60 minutos y quedo registrada en ambas bitacoras.
+          <a href="/control" className="underline">
+            Terminar
+          </a>
+        </div>
+      )}
+
+      {mora && (
+        <div
+          role="alert"
+          className="flex min-h-9 shrink-0 items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium"
+          style={{
+            // Mismo par fondo-suave/texto-semantico que Badge: contraste AA
+            // verificado por los tests de @regb/config.
+            background: `color-mix(in srgb, var(--color-semantic-${mora.tone}) 18%, var(--color-surface-deep))`,
+            color: `var(--color-semantic-text-${mora.tone})`,
+          }}
+        >
+          <span aria-hidden>{mora.tone === 'danger' ? '🔒' : '⚠️'}</span>
+          {mora.message}
+        </div>
       )}
 
       <div className="flex min-h-0 flex-1">

@@ -16,7 +16,12 @@ export const dynamic = 'force-dynamic'
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Promise<{ tenant?: string; rol?: string; plataforma?: string }>
+  searchParams: Promise<{
+    tenant?: string
+    rol?: string
+    plataforma?: string
+    impersonando?: string
+  }>
 }) {
   const params = await searchParams
   const platform = (params.plataforma ?? 'web') as 'web' | 'desktop' | 'mobile'
@@ -109,6 +114,7 @@ export default async function Page({
       activeRole={roleName}
       activePlatform={platform}
       demoMode
+      impersonating={params.impersonando === '1'}
       data={{
         tenant: data.tenant,
         user: data.user,

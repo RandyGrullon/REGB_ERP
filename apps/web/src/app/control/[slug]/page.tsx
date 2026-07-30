@@ -17,6 +17,7 @@ import {
 import { loadClientDetail } from '@/lib/control'
 import { requireProvider } from '@/lib/provider-guard'
 import { cycleLabel, InvoiceBreakdown, StatusBadge, TierBadge, usd } from '@/components/ControlBits'
+import { impersonar } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,6 +73,40 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
           </Badge>
         )}
       </header>
+
+      {/* Impersonacion §7.4: razon obligatoria, 60 min, doble bitacora. */}
+      <details className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-[var(--color-text-primary)]">
+          👁 Impersonar a este cliente
+        </summary>
+        <form action={impersonar} className="flex flex-wrap items-end gap-3 px-4 pb-4">
+          <input type="hidden" name="slug" value={client.slug} />
+          <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+            Razon (obligatoria, minimo 10 caracteres — queda en la bitacora del cliente)
+            <input
+              name="reason"
+              required
+              minLength={10}
+              placeholder="Soporte ticket #123: revisar factura duplicada"
+              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+            Ticket
+            <input
+              name="ticket"
+              placeholder="T-123"
+              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <button
+            type="submit"
+            className="h-10 rounded-[var(--radius-md)] bg-[var(--color-accent-plum)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
+            Entrar 60 min
+          </button>
+        </form>
+      </details>
 
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard

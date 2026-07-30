@@ -23,3 +23,11 @@ export async function registrarPago(formData: FormData): Promise<void> {
   await recordManualPayment(invoiceId)
   revalidatePath('/control/facturacion')
 }
+
+export async function aplicarDunning(): Promise<void> {
+  await requireProvider()
+  const { db } = await import('@/lib/db')
+  await db()`select * from regb.apply_dunning()`
+  revalidatePath('/control/facturacion')
+  revalidatePath('/control')
+}
