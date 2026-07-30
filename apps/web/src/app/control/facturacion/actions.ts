@@ -1,0 +1,25 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { requireProvider } from '@/lib/provider-guard'
+import { generateMonthlyInvoices, recordManualPayment } from '@/lib/invoicing'
+
+/**
+ * Acciones de facturacion. Cada una re-verifica que quien llama es el
+ * proveedor: una server action es un endpoint HTTP publico y no hereda
+ * la barrera de la pagina que la pinta.
+ */
+
+export async function generarFacturasDelMes(): Promise<void> {
+  await requireProvider()
+  await generateMonthlyInvoices()
+  revalidatePath('/control/facturacion')
+}
+
+export async function registrarPago(formData: FormData): Promise<void> {
+  await requireProvider()
+  const invoiceId = String(formData.get('invoiceId') ?? '')
+  if (!invoiceId) return
+  await recordManualPayment(invoiceId)
+  revalidatePath('/control/facturacion')
+}

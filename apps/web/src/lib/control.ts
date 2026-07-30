@@ -51,7 +51,7 @@ export interface ControlOverview {
   byTier: { tier: TenantTier; mrr: number; count: number }[]
 }
 
-interface TenantRow {
+export interface TenantRow {
   id: string
   slug: string
   legal_name: string
@@ -74,7 +74,7 @@ interface ModuleRow {
   activated_at: string
 }
 
-async function loadTenantsWithModules(slug?: string): Promise<{
+export async function loadTenantsWithModules(slug?: string): Promise<{
   tenants: TenantRow[]
   modulesByTenant: Map<string, ModuleRow[]>
 }> {
@@ -127,7 +127,7 @@ interface Quotes {
   monthly: InvoiceResult
 }
 
-function quoteTenant(tenant: TenantRow, rows: ModuleRow[]): Quotes {
+export function quoteTenant(tenant: TenantRow, rows: ModuleRow[]): Quotes {
   const activeModules = toEngineModules(rows)
   const discount = CYCLE_TO_DISCOUNT[tenant.billing_cycle ?? 'monthly'] ?? 'none'
   // Uso real (usuarios, storage, consumo) llega en F3 cuando el dispatcher

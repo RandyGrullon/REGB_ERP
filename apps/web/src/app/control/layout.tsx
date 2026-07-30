@@ -21,10 +21,24 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
       >
         <p className="text-sm font-bold text-[var(--color-text-primary)]">
           REGB Control
-          <span className="ml-2 font-normal text-[var(--color-text-muted)]">
+          <span className="ml-2 hidden font-normal text-[var(--color-text-muted)] sm:inline">
             Panel del propietario
           </span>
         </p>
+        <nav aria-label="Secciones" className="flex items-center gap-1 text-sm">
+          <Link
+            href="/control"
+            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
+            Clientes
+          </Link>
+          <Link
+            href="/control/facturacion"
+            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
+            Facturacion
+          </Link>
+        </nav>
         <div className="ml-auto">
           <Link
             href="/"
