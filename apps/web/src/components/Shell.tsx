@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { dunningBanner } from '@regb/billing'
+import { GlobalSearch, type SearchEntry } from './GlobalSearch'
 import {
   Badge,
   Card,
@@ -37,6 +38,10 @@ interface ShellData {
   widgets: string[]
   unavailable: Array<{ moduleId: string; reason: string }>
   routeCount: number
+  /** Avisos sin leer, para la campana. */
+  unread?: number
+  /** Indice de Ctrl+K, ya filtrado por rol en el servidor. */
+  search?: SearchEntry[]
 }
 
 export interface ShellProps {
@@ -157,6 +162,7 @@ export function Shell({
         {...(demoMode ? {} : { onSignOut: () => document.forms.namedItem('salir')?.submit() })}
         center={
           <div className="flex items-center gap-2">
+            {data.search && <GlobalSearch index={data.search} qs={qs} />}
             {/* Controles de la demostracion */}
             {demoMode && (
               <>
@@ -191,17 +197,31 @@ export function Shell({
           </div>
         }
         actions={
-          <button
-            type="button"
-            aria-label="Abrir navegacion"
-            aria-expanded={menuAbierto}
-            onClick={() => setMenuAbierto((v) => !v)}
-            className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
-          >
-            <span aria-hidden className="text-lg">
-              ☰
-            </span>
-          </button>
+          <>
+            <a
+              href={`/notificaciones${qs}`}
+              aria-label={`Notificaciones${data.unread ? `: ${data.unread} sin leer` : ''}`}
+              className="relative grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              <span aria-hidden>🔔</span>
+              {(data.unread ?? 0) > 0 && (
+                <span className="tabular absolute right-1 top-1 min-w-4 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1 text-center text-[10px] font-bold text-white">
+                  {data.unread}
+                </span>
+              )}
+            </a>
+            <button
+              type="button"
+              aria-label="Abrir navegacion"
+              aria-expanded={menuAbierto}
+              onClick={() => setMenuAbierto((v) => !v)}
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
+            >
+              <span aria-hidden className="text-lg">
+                ☰
+              </span>
+            </button>
+          </>
         }
       />
 
