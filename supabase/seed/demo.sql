@@ -92,3 +92,57 @@ begin
      current_date - 150, current_date + 215)
   on conflict do nothing;
 end $$;
+
+-- ── Datos de plataforma (F2): perfiles, settings, avisos, catalogo ──────
+do $$
+declare
+  v_pyme uuid;
+  v_med  uuid;
+  v_maria constant uuid := '00000000-0000-0000-0000-000000000001';
+begin
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
+
+  insert into public.user_profiles (tenant_id, user_id, display_name, email, phone, job_title)
+  values
+    (v_pyme, v_maria, 'Maria Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Propietaria'),
+    (v_med,  v_maria, 'Maria Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Gerente General')
+  on conflict do nothing;
+
+  insert into public.tenant_settings (tenant_id, trade_name, currency)
+  values (v_pyme, 'La Esperanza', 'DOP'), (v_med, 'Caribe', 'DOP')
+  on conflict do nothing;
+
+  insert into public.notifications (tenant_id, user_id, module_id, title, body, link)
+  select v_pyme, null, 'marketplace', 'Tu prueba de Inventario vence pronto',
+         'Quedan pocos dias de prueba. Activalo para no perder el historial de movimientos.',
+         '/marketplace'
+  where not exists (select 1 from public.notifications where tenant_id = v_pyme);
+
+  insert into public.products (tenant_id, sku, name, category, unit, price, cost)
+  values
+    (v_pyme, 'ARZ-001', 'Arroz selecto 5 lb',        'Viveres',  'funda',   215.00, 178.00),
+    (v_pyme, 'ACE-002', 'Aceite de soya 1 gal',      'Viveres',  'galon',   525.00, 462.00),
+    (v_pyme, 'HAB-003', 'Habichuelas rojas 1 lb',    'Viveres',  'libra',    85.00,  64.00),
+    (v_med,  'CEM-100', 'Cemento gris 42.5 kg',      'Ferreteria','saco',    465.00, 401.00),
+    (v_med,  'VAR-200', 'Varilla 3/8 x 20 pies',     'Ferreteria','unidad',  285.00, 240.00),
+    (v_med,  'PIN-300', 'Pintura blanca acrilica gl','Pinturas', 'galon',  1150.00, 890.00)
+  on conflict do nothing;
+end $$;
+
+-- Maria es Owner en ambos clientes: su membership hace real el modulo users.
+do $$
+declare
+  v_pyme uuid;
+  v_med  uuid;
+  v_maria constant uuid := '00000000-0000-0000-0000-000000000001';
+begin
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
+
+  insert into public.memberships (tenant_id, user_id, role_id, invited_at, accepted_at, is_active)
+  select t.tid, v_maria, r.id, now() - interval '4 months', now() - interval '4 months', true
+  from (values (v_pyme), (v_med)) as t(tid)
+  join public.roles r on r.tenant_id = t.tid and r.name = 'Owner'
+  on conflict do nothing;
+end $$;

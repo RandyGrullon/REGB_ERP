@@ -50,12 +50,39 @@ importers:
       '@regb/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@regb/mod-audit':
+        specifier: workspace:*
+        version: link:../../modules/audit
+      '@regb/mod-auth':
+        specifier: workspace:*
+        version: link:../../modules/auth
+      '@regb/mod-backup':
+        specifier: workspace:*
+        version: link:../../modules/backup
+      '@regb/mod-branches':
+        specifier: workspace:*
+        version: link:../../modules/branches
+      '@regb/mod-dashboard':
+        specifier: workspace:*
+        version: link:../../modules/dashboard
+      '@regb/mod-files':
+        specifier: workspace:*
+        version: link:../../modules/files
+      '@regb/mod-imports':
+        specifier: workspace:*
+        version: link:../../modules/imports
       '@regb/mod-inventory':
         specifier: workspace:*
         version: link:../../modules/inventory
       '@regb/mod-invoice-capture':
         specifier: workspace:*
         version: link:../../modules/invoice-capture
+      '@regb/mod-notifications':
+        specifier: workspace:*
+        version: link:../../modules/notifications
+      '@regb/mod-orgs':
+        specifier: workspace:*
+        version: link:../../modules/orgs
       '@regb/mod-payroll':
         specifier: workspace:*
         version: link:../../modules/payroll
@@ -65,6 +92,18 @@ importers:
       '@regb/mod-products':
         specifier: workspace:*
         version: link:../../modules/products
+      '@regb/mod-search':
+        specifier: workspace:*
+        version: link:../../modules/search
+      '@regb/mod-settings':
+        specifier: workspace:*
+        version: link:../../modules/settings
+      '@regb/mod-tour':
+        specifier: workspace:*
+        version: link:../../modules/tour
+      '@regb/mod-users':
+        specifier: workspace:*
+        version: link:../../modules/users
       '@regb/module-registry':
         specifier: workspace:*
         version: link:../../packages/module-registry
@@ -118,6 +157,97 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/audit:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/auth:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/backup:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/branches:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/dashboard:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/files:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/imports:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/inventory:
     dependencies:
       '@regb/module-registry':
@@ -132,6 +262,32 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/invoice-capture:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/notifications:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/orgs:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
@@ -171,6 +327,58 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/products:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/search:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/settings:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/tour:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/users:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

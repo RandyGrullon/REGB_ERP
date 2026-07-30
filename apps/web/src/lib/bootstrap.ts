@@ -10,6 +10,19 @@ import inventoryManifest from '@regb/mod-inventory'
 import posManifest from '@regb/mod-pos'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
+import authManifest from '@regb/mod-auth'
+import usersManifest from '@regb/mod-users'
+import orgsManifest from '@regb/mod-orgs'
+import branchesManifest from '@regb/mod-branches'
+import settingsManifest from '@regb/mod-settings'
+import dashboardManifest from '@regb/mod-dashboard'
+import searchManifest from '@regb/mod-search'
+import notificationsManifest from '@regb/mod-notifications'
+import auditManifest from '@regb/mod-audit'
+import filesManifest from '@regb/mod-files'
+import importsManifest from '@regb/mod-imports'
+import backupManifest from '@regb/mod-backup'
+import tourManifest from '@regb/mod-tour'
 
 /**
  * Bootstrap del shell.
@@ -28,9 +41,28 @@ import invoiceCaptureManifest from '@regb/mod-invoice-capture'
  * nada: si el tenant no los tiene licenciados, no se cargan.
  */
 export const MANIFESTS = new Map<string, ModuleManifest>(
-  [productsManifest, inventoryManifest, posManifest, payrollManifest, invoiceCaptureManifest].map(
-    (m) => [m.id, m],
-  ),
+  [
+    // Plataforma (core)
+    authManifest,
+    usersManifest,
+    orgsManifest,
+    branchesManifest,
+    settingsManifest,
+    dashboardManifest,
+    searchManifest,
+    notificationsManifest,
+    auditManifest,
+    filesManifest,
+    importsManifest,
+    backupManifest,
+    tourManifest,
+    productsManifest,
+    // Negocio
+    inventoryManifest,
+    posManifest,
+    payrollManifest,
+    invoiceCaptureManifest,
+  ].map((m) => [m.id, m]),
 )
 
 export interface BootstrapResult {

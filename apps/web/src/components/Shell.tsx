@@ -51,6 +51,10 @@ export interface ShellProps {
   isProvider?: boolean
   /** Sesion de impersonacion activa: banner permanente (§7.4). */
   impersonating?: boolean
+  /** Ruta actual, para resaltar en el sidebar. */
+  activePath?: string
+  /** Contenido de la pagina. Sin children, pinta el resumen del registry. */
+  children?: React.ReactNode
   data: ShellData
 }
 
@@ -78,9 +82,10 @@ export function Shell({
   demoMode,
   isProvider = false,
   impersonating = false,
+  activePath = '/',
+  children,
   data,
 }: ShellProps) {
-  const [activePath, setActivePath] = useState('/')
   const [menuAbierto, setMenuAbierto] = useState(false)
 
   // Mora (§6.6): amarillo con factura pendiente, rojo en solo lectura.
@@ -237,7 +242,9 @@ export function Shell({
         <Sidebar
           groups={groups}
           activePath={activePath}
-          onNavigate={setActivePath}
+          onNavigate={(p) => {
+            window.location.href = p + qs
+          }}
           footer={enlacesPie}
           className="hidden md:flex"
         />
@@ -256,8 +263,8 @@ export function Shell({
                 groups={groups}
                 activePath={activePath}
                 onNavigate={(p) => {
-                  setActivePath(p)
                   setMenuAbierto(false)
+                  window.location.href = p + qs
                 }}
                 footer={enlacesPie}
               />
@@ -266,7 +273,9 @@ export function Shell({
         )}
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {data.sidebar.length === 0 ? (
+          {children ? (
+            children
+          ) : data.sidebar.length === 0 ? (
             <EmptyState
               icon="🔒"
               title="Aqui no hay nada para ti todavia"
