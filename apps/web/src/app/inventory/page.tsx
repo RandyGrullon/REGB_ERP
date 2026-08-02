@@ -181,12 +181,28 @@ export default async function InventoryPage({
                       </TD>
                     )}
                     <TD>
-                      {bajo && (
-                        <Badge tone="warning" title={`Punto de reorden: ${r.reorder_point}`}>
-                          bajo
-                        </Badge>
-                      )}
-                      {onHand < 0 && <Badge tone="danger">negativo</Badge>}
+                      <span className="flex flex-wrap gap-1">
+                        {bajo && (
+                          <Badge tone="warning" title={`Punto de reorden: ${r.reorder_point}`}>
+                            bajo
+                          </Badge>
+                        )}
+                        {onHand < 0 && (
+                          <Badge tone="danger" title="Se vendio mas de lo que habia registrado">
+                            negativo
+                          </Badge>
+                        )}
+                        {/* Comprometido por encima de lo que hay: un pedido
+                            confirmado ya no se puede despachar completo. */}
+                        {reservado > onHand && (
+                          <Badge
+                            tone="danger"
+                            title={`Hay ${reservado} apartadas para pedidos pero solo quedan ${onHand} en existencia. Algun pedido confirmado no se podra despachar.`}
+                          >
+                            sobre-apartado
+                          </Badge>
+                        )}
+                      </span>
                     </TD>
                   </TR>
                 )
