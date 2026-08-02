@@ -15,6 +15,7 @@
     "@regb/billing": "workspace:*",
     "@regb/config": "workspace:*",
     "@regb/core": "workspace:*",
+    "@regb/mod-ar": "workspace:*",
     "@regb/mod-audit": "workspace:*",
     "@regb/mod-auth": "workspace:*",
     "@regb/mod-backup": "workspace:*",
