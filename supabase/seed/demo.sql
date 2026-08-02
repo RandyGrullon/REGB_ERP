@@ -146,3 +146,34 @@ begin
   join public.roles r on r.tenant_id = t.tid and r.name = 'Owner'
   on conflict do nothing;
 end $$;
+
+-- ── Fase 4: los modulos del MVP comercial y sus datos minimos ──────────
+do $$
+declare
+  v_pyme uuid;
+  v_med  uuid;
+begin
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
+
+  -- Los cinco de F4. El colmado vende en mostrador; la distribuidora, a
+  -- credito con pedidos formales.
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
+  values (v_pyme, 'pos', 'active', true),
+         (v_pyme, 'sales-orders', 'active', true),
+         (v_pyme, 'ar', 'active', true),
+         (v_med,  'pos', 'active', true),
+         (v_med,  'sales-orders', 'active', true),
+         (v_med,  'ar', 'active', true)
+  on conflict do nothing;
+
+  -- Clientes: uno de contado y uno a credito, para que la cartera tenga
+  -- algo que mostrar desde el primer minuto.
+  insert into public.customers (tenant_id, name, tax_id, phone, payment_terms)
+  values
+    (v_pyme, 'Consumidor final',              null,          null,           0),
+    (v_pyme, 'Cafeteria La Parada SRL',       '130-55555-5', '809-555-0140', 15),
+    (v_med,  'Ferreteria El Martillo SRL',    '131-77777-7', '809-555-0170', 30),
+    (v_med,  'Constructora Duarte SRL',       '131-88888-8', '809-555-0180', 45)
+  on conflict do nothing;
+end $$;

@@ -101,11 +101,20 @@ async function resolve(params: DemoParams): Promise<Resolved | null> {
 export async function modulePage(
   params: DemoParams,
   moduleId: string,
+  /**
+   * Permiso que exige ESTA ruta. Por defecto `<modulo>.view`, que es lo que
+   * declara la mayoria de las rutas en su manifest.
+   *
+   * Hay que pasarlo cuando la ruta pide otro: `/pos` declara `pos.sell` en
+   * el manifest, y el rol Cajero tiene `pos.sell` pero no `pos.view`. Con
+   * el valor por defecto, el cajero recibia 404 en su propia caja.
+   */
+  perm?: string,
 ): Promise<{ ctx: ModulePageCtx; shell: Omit<ShellProps, 'children' | 'activePath'> }> {
   const r = await resolve(params)
   if (!r) redirect(authConfigured ? '/login' : '/')
 
-  if (!exigir(r.ctx, moduleId, `${moduleId}.view`).ok) notFound()
+  if (!exigir(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) notFound()
 
   const platform = (params.plataforma ?? 'web') as 'web' | 'desktop' | 'mobile'
   const tenants = r.demo

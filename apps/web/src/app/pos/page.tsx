@@ -23,7 +23,7 @@ const money = (n: number) =>
 /** Caja (S21). Sin turno abierto no se vende: sin eso no hay arqueo posible. */
 export default async function PosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'pos')
+  const { ctx, shell } = await modulePage(params, 'pos', 'pos.sell')
 
   const [turno, productos, clientes, resumen, almacenes] = await asUser(
     ctx.userId,

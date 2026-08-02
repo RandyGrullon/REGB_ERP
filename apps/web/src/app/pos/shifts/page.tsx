@@ -44,7 +44,7 @@ const money = (n: number) =>
 /** Turnos de caja (S21): apertura, cierre y arqueo. */
 export default async function TurnosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'pos')
+  const { ctx, shell } = await modulePage(params, 'pos', 'pos.shift.open')
 
   const shifts = await asUser(
     ctx.userId,

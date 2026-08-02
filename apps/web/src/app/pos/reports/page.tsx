@@ -52,7 +52,7 @@ export default async function CierresPage({
   searchParams: Promise<DemoParams & { q?: string }>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'pos')
+  const { ctx, shell } = await modulePage(params, 'pos', 'pos.report.view')
   const q = (params.q ?? '').trim()
 
   const [ventas, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
