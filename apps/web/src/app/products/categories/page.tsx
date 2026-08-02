@@ -4,12 +4,13 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
-  Table,
-  THead,
+  PageHeader,
   TBody,
-  TR,
-  TH,
   TD,
+  TH,
+  THead,
+  TR,
+  Table,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -59,23 +60,16 @@ export default async function CategoriesPage({
   return (
     <Shell {...shell} activePath="/products/categories">
       <div className="max-w-3xl space-y-5">
-        <div>
-          <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
-            <a href={`/products${qs}`} className="text-[var(--color-text-link)] hover:underline">
-              Catalogo
-            </a>{' '}
-            › Categorias
-          </nav>
-          <h1 className="mt-1 text-xl font-bold text-[var(--color-text-primary)]">Categorias</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Sirven para filtrar el catalogo y agrupar los reportes. Con un nivel de subcategorias
-            basta para casi cualquier negocio.
-          </p>
-        </div>
+        <PageHeader
+          icon="sell"
+          title="Categorias"
+          description="Sirven para filtrar el catalogo y agrupar los reportes. Con un nivel de subcategorias basta para casi cualquier negocio."
+          crumbs={[{ label: 'Catalogo', href: `/products${qs}` }, { label: 'Categorias' }]}
+        />
 
         {categories.length === 0 ? (
           <EmptyState
-            icon="🏷️"
+            icon="sell"
             title="Todavia no hay categorias"
             description="Crea la primera abajo. Si importaste un CSV con columna de categoria, ya deberian aparecer aqui."
           />

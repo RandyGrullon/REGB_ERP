@@ -10,9 +10,12 @@ export default defineModule({
   id: 'search',
   name: 'Busqueda global',
   description: 'Ctrl+K: encuentra modulos, registros, acciones y ayuda desde cualquier pantalla.',
-  icon: 'Search',
+  icon: 'search',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'ayuda',
+  navOrder: 20,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

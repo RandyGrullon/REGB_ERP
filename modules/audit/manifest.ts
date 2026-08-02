@@ -5,9 +5,12 @@ export default defineModule({
   id: 'audit',
   name: 'Auditoria',
   description: 'Quien hizo que y cuando: bitacora inmutable de cada cambio, con antes y despues.',
-  icon: 'ScrollText',
+  icon: 'receipt_long',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'datos',
+  navOrder: 40,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

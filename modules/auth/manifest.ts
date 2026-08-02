@@ -10,9 +10,12 @@ export default defineModule({
   id: 'auth',
   name: 'Mi cuenta',
   description: 'Tu perfil, tu contrasena y tus sesiones. MFA y SSO segun el plan.',
-  icon: 'ShieldCheck',
+  icon: 'shield_person',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'administracion',
+  navOrder: 50,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

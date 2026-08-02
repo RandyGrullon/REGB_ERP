@@ -1,4 +1,4 @@
-import { Badge, EmptyState, Table, THead, TBody, TR, TH, TD } from '@regb/ui'
+import { Badge, EmptyState, Icon, PageHeader, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -52,31 +52,30 @@ export default async function RespaldosPage({
   return (
     <Shell {...shell} activePath="/respaldos">
       <div className="max-w-3xl space-y-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Respaldos</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Un snapshot de tus datos en JSON, descargable. Se genera bajo tus propios permisos: el
-              respaldo no puede contener lo que tu no ves.
-            </p>
-          </div>
-          {puedeCrear && (
-            <form action={crearRespaldo}>
-              <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-              <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-              <button
-                type="submit"
-                className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-              >
-                Crear respaldo ahora
-              </button>
-            </form>
-          )}
-        </div>
+        <PageHeader
+          icon="backup"
+          title="Respaldos"
+          description="Un snapshot de tus datos en JSON, descargable. Se genera bajo tus propios permisos: el respaldo no puede contener lo que tu no ves."
+          actions={
+            puedeCrear ? (
+              <form action={crearRespaldo}>
+                <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
+                <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+                <button
+                  type="submit"
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  <Icon name="cloud_sync" size={18} />
+                  Crear respaldo ahora
+                </button>
+              </form>
+            ) : undefined
+          }
+        />
 
         {backups.length === 0 ? (
           <EmptyState
-            icon="💾"
+            icon="backup"
             title="Todavia no hay respaldos"
             description='Pulsa "Crear respaldo ahora". En produccion ademas se genera uno automatico cada noche.'
           />

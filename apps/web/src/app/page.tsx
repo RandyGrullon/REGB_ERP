@@ -1,4 +1,4 @@
-import { Badge, Card, CardBody, CardHeader, CardTitle, StatCard } from '@regb/ui'
+import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, StatCard } from '@regb/ui'
 import { asUser, db } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -25,7 +25,7 @@ export default async function Page({
     return (
       <main className="grid h-full place-items-center p-8 text-center">
         <div>
-          <p className="text-5xl">🗄️</p>
+          <Icon name="database" size={48} className="text-[var(--color-text-muted)]" />
           <h1 className="mt-4 text-xl font-semibold">No hay ningun cliente todavia</h1>
           <pre className="mt-4 rounded-lg bg-[var(--color-surface-raised)] p-4 text-left text-xs">
             docker start regb-test-db{'\n'}
@@ -64,25 +64,25 @@ export default async function Page({
   const accesos = [
     {
       href: `/usuarios${qs}`,
-      icon: '👥',
+      icon: 'group_add',
       title: 'Invita a tu equipo',
       desc: 'Cada quien con su rol: el cajero ve la caja, el contador los numeros.',
     },
     {
       href: `/marketplace${qs}`,
-      icon: '🧩',
+      icon: 'extension',
       title: 'Activa modulos',
       desc: 'Empieza con lo minimo y agrega piezas cuando el negocio las pida.',
     },
     {
       href: `/importar${qs}`,
-      icon: '📥',
+      icon: 'upload_file',
       title: 'Trae tus datos',
       desc: 'Sube tu catalogo desde CSV con validacion previa y deshacer.',
     },
     {
       href: `/tutorial${qs}`,
-      icon: '🎓',
+      icon: 'school',
       title: 'Aprende con el tour',
       desc: 'Primeros pasos guiados, dentro de la propia pantalla.',
     },
@@ -122,10 +122,13 @@ export default async function Page({
               href={a.href}
               className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 transition-colors hover:border-[var(--color-border-strong)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
-              <p aria-hidden className="text-2xl">
-                {a.icon}
-              </p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-text-primary)]">
+              <span
+                aria-hidden
+                className="grid h-10 w-10 place-items-center rounded-[var(--radius-lg)] bg-[var(--color-brand-soft)]"
+              >
+                <Icon name={a.icon} size={22} className="text-[var(--color-brand-bright)]" />
+              </span>
+              <p className="mt-3 text-sm font-semibold text-[var(--color-text-primary)]">
                 {a.title}
               </p>
               <p className="mt-1 text-xs text-[var(--color-text-secondary)]">{a.desc}</p>

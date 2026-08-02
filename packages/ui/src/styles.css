@@ -8,6 +8,23 @@
 @import 'tailwindcss';
 @import '@regb/config/tokens.css';
 
+/* Material Symbols, servido desde node_modules — NO desde el CDN de Google.
+   El POS tiene que vender sin internet (puerta F5): un icono que no carga
+   deja la caja registradora con botones en blanco. Ver components/Icon.tsx. */
+@import 'material-symbols/rounded.css';
+
+/* Tipografia: IBM Plex, disenada para software empresarial.
+   Mas formal que una grotesca neutra, con numeros de altura uniforme —que
+   es lo que hace legible una tabla de montos— y una mono a juego para SKU,
+   RNC y numeros de factura.
+
+   Se sirve desde node_modules por la misma razon que los iconos. Antes los
+   tokens declaraban "Inter" sin cargarla nunca: la app llevaba todo este
+   tiempo cayendo a la fuente del sistema, distinta en cada maquina. */
+@import '@fontsource-variable/ibm-plex-sans';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/500.css';
+
 /* Tailwind v4 solo escanea el proyecto que lo importa. Sin esta linea, las
    clases que existen UNICAMENTE en los componentes de este paquete —como el
    `w-[72px]` del rail de empresas— no se generan nunca y el layout se rompe

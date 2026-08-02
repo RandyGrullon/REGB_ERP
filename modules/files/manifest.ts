@@ -5,9 +5,12 @@ export default defineModule({
   id: 'files',
   name: 'Archivos',
   description: 'Documentos del negocio: sube, descarga y organiza. Nada se borra de verdad.',
-  icon: 'FolderOpen',
+  icon: 'folder_open',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'datos',
+  navOrder: 20,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

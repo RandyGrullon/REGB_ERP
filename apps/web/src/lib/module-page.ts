@@ -252,10 +252,20 @@ export async function actionCtx(demo?: DemoParams): Promise<ModulePageCtx | null
 }
 
 /** Permiso en servidor, con el motivo exacto si se niega. */
-export function exigir(ctx: ModulePageCtx, moduleId: string, accion: string): ActionResult {
+/**
+ * `amount` es opcional: solo lo usan las acciones cuyo rol puede traer un
+ * `max_amount` en su alcance (por ejemplo, un ajuste de inventario que
+ * necesita aprobacion del gerente por encima de cierto monto).
+ */
+export function exigir(
+  ctx: ModulePageCtx,
+  moduleId: string,
+  accion: string,
+  amount?: number,
+): ActionResult {
   const d = can(
     accion,
-    { module: moduleId },
+    { module: moduleId, ...(amount !== undefined ? { amount } : {}) },
     { userId: ctx.userId, role: ctx.role, activeModules: ctx.licensedModules },
   )
   return d.allowed ? { ok: true } : { ok: false, error: d.detail }

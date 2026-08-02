@@ -5,9 +5,12 @@ export default defineModule({
   id: 'orgs',
   name: 'Empresas',
   description: 'Varias razones sociales (RNC) bajo la misma cuenta, con herencia de configuracion.',
-  icon: 'Building2',
+  icon: 'apartment',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'administracion',
+  navOrder: 20,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

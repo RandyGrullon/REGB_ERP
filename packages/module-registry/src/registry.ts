@@ -27,6 +27,9 @@ export interface SidebarEntry {
   label: string
   icon: string
   category: string
+  /** Seccion del menu lateral, desde el manifest. */
+  navSection: string
+  navOrder: number
   routes: ModuleRoute[]
   /** El modulo corre en prueba: la UI lo marca. */
   isTrial: boolean
@@ -160,6 +163,8 @@ export function hydrate(opts: HydrateOptions): HydrationResult {
       label: manifest.name,
       icon: manifest.icon,
       category: manifest.category,
+      navSection: manifest.navSection,
+      navOrder: manifest.navOrder,
       routes: visibles,
       isTrial: tm?.status === 'trial',
       ...(tm?.trialEndsAt ? { trialDaysLeft: daysUntil(tm.trialEndsAt, now) } : {}),
@@ -170,12 +175,23 @@ export function hydrate(opts: HydrateOptions): HydrationResult {
     widgets.push(...manifest.dashboardWidgets)
   }
 
-  // Orden estable: por categoria y luego alfabetico. Nada de ids cableados.
-  const ORDEN_CATEGORIA = ['core', 'standard', 'advanced', 'vertical', 'enterprise']
+  /**
+   * Orden del menu: por seccion de USO, no por categoria comercial.
+   *
+   * La categoria (core/standard/...) dice cuanto cuesta el modulo. Ordenar
+   * el menu con ella deja Auditoria y Respaldos por encima del punto de
+   * venta, que es lo que el cajero abre doscientas veces al dia.
+   *
+   * Cada modulo declara su seccion y su orden en el manifest, asi que esto
+   * sigue sin conocer ni un solo id de modulo (§2.2).
+   */
+  const ORDEN_SECCION = ['inicio', 'operacion', 'administracion', 'datos', 'ayuda']
   sidebar.sort((a, b) => {
-    const ca = ORDEN_CATEGORIA.indexOf(a.category)
-    const cb = ORDEN_CATEGORIA.indexOf(b.category)
-    return ca !== cb ? ca - cb : a.label.localeCompare(b.label, 'es')
+    const sa = ORDEN_SECCION.indexOf(a.navSection)
+    const sb = ORDEN_SECCION.indexOf(b.navSection)
+    if (sa !== sb) return sa - sb
+    if (a.navOrder !== b.navOrder) return a.navOrder - b.navOrder
+    return a.label.localeCompare(b.label, 'es')
   })
 
   return {

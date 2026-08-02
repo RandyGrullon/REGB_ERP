@@ -5,13 +5,15 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
-  Table,
-  THead,
-  TBody,
-  TR,
-  TH,
-  TD,
   Mono,
+  PageHeader,
+  StatCard,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
 } from '@regb/ui'
 import { PRODUCT_COLUMNS, type ImportError } from '@regb/core'
 import { asUser } from '@/lib/db'
@@ -73,13 +75,30 @@ export default async function ImportarPage({
   return (
     <Shell {...shell} activePath="/importar">
       <div className="space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Importar productos</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Sube tu catalogo desde un CSV. Reconocemos los encabezados solos, validamos antes de
-            guardar y toda importacion se puede deshacer.
-          </p>
-        </div>
+        <PageHeader
+          icon="upload_file"
+          title="Importar productos"
+          description="Sube tu catalogo desde un CSV. Reconocemos los encabezados solos, validamos antes de guardar y toda importacion se puede deshacer."
+          crumbs={[{ label: 'Catalogo', href: `/products${ctx.demoQs}` }, { label: 'Importar' }]}
+        />
+
+        {batches.length > 0 && (
+          <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+            <StatCard label="Importaciones" value={String(batches.length)} hint="en el historial" />
+            <StatCard
+              label="Filas cargadas"
+              value={String(
+                batches.filter((b) => !b.undone_at).reduce((a, b) => a + b.inserted, 0),
+              )}
+              hint="sin contar las deshechas"
+            />
+            <StatCard
+              label="Rechazadas"
+              value={String(batches.reduce((a, b) => a + b.rejected, 0))}
+              hint="con su motivo"
+            />
+          </section>
+        )}
 
         {puedeImportar && (
           <Card>
@@ -132,7 +151,7 @@ export default async function ImportarPage({
           </h2>
           {batches.length === 0 ? (
             <EmptyState
-              icon="📥"
+              icon="upload_file"
               title="Todavia no has importado nada"
               description="Cuando subas un CSV veras aqui cuantas filas entraron, cuales fallaron y por que — con la opcion de deshacerlo todo."
             />

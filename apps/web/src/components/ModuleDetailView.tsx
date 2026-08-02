@@ -109,7 +109,7 @@ export function ModuleDetailView({
 
           {mod.missingRequires.length > 0 && (
             <p className="mt-3 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_15%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-warning)]">
-              ⚠️ Antes necesitas activar: <strong>{mod.missingRequires.join(', ')}</strong>
+              Antes necesitas activar: <strong>{mod.missingRequires.join(', ')}</strong>
             </p>
           )}
 

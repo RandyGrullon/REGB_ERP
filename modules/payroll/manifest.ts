@@ -10,9 +10,12 @@ export default defineModule({
   id: 'payroll',
   name: 'Nomina',
   description: 'Calculo con TSS, AFP, ARS e ISR; prestaciones, regalia y volantes.',
-  icon: 'Users',
+  icon: 'group',
   category: 'advanced',
   version: '0.1.0',
+
+  navSection: 'operacion',
+  navOrder: 70,
 
   pricing: {
     install: { pyme: 400, mediano: 1500, grande: 4000 },

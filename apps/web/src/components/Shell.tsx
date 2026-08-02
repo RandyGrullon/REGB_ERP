@@ -11,6 +11,7 @@ import {
   CardTitle,
   cn,
   EmptyState,
+  Icon,
   Sidebar,
   StatCard,
   TopBar,
@@ -63,13 +64,23 @@ export interface ShellProps {
   data: ShellData
 }
 
-/** Titulo de la seccion del sidebar segun la categoria comercial. */
+/**
+ * Titulo de cada seccion del sidebar.
+ *
+ * Las secciones son de USO, no de precio: cada modulo declara la suya en su
+ * manifest (`navSection`) y el registry ya las devuelve ordenadas. Antes se
+ * agrupaba por categoria comercial y eso dejaba Auditoria y Respaldos por
+ * encima del punto de venta.
+ *
+ * `inicio` va sin encabezado a proposito: son una o dos entradas sueltas y
+ * un titulo encima solo mete ruido.
+ */
 const GROUP_TITLES: Record<string, string> = {
-  core: 'Plataforma',
-  standard: 'Operacion',
-  advanced: 'Avanzado',
-  vertical: 'Tu industria',
-  enterprise: 'Enterprise',
+  inicio: '',
+  operacion: 'Operacion',
+  administracion: 'Administracion',
+  datos: 'Datos',
+  ayuda: 'Ayuda',
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -96,13 +107,14 @@ export function Shell({
   // Mora (§6.6): amarillo con factura pendiente, rojo en solo lectura.
   const mora = dunningBanner(data.tenant.status)
 
-  // Agrupa por categoria conservando el orden que ya trae el registry.
+  // Agrupa por seccion conservando el orden que ya trae el registry.
   const groups: SidebarGroup[] = []
   for (const mod of data.sidebar) {
-    const title = GROUP_TITLES[mod.category] ?? mod.category
-    let g = groups.find((x) => x.title === title)
+    const seccion = mod.navSection ?? 'operacion'
+    const title = GROUP_TITLES[seccion] ?? seccion
+    let g = groups.find((x) => x.key === seccion)
     if (!g) {
-      g = { title, modules: [] }
+      g = { key: seccion, title, modules: [] }
       groups.push(g)
     }
     g.modules.push(mod)
@@ -116,26 +128,33 @@ export function Shell({
 
   const qs = demoMode ? `?tenant=${activeSlug}&rol=${encodeURIComponent(activeRole)}` : ''
 
+  const pieCls =
+    'flex h-10 items-center gap-2.5 rounded-[var(--radius-lg)] px-3 text-sm transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:h-9'
+
   const enlacesPie = (
     <div className="space-y-0.5">
-      <a
-        href={`/marketplace${qs}`}
-        className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-      >
+      <a href={`/marketplace${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
+        <Icon name="extension" size={18} className="shrink-0 text-[var(--color-text-muted)]" />
         Marketplace
       </a>
-      <a
-        href={`/roles${qs}`}
-        className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-      >
+      <a href={`/roles${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
+        <Icon
+          name="admin_panel_settings"
+          size={18}
+          className="shrink-0 text-[var(--color-text-muted)]"
+        />
         Roles y permisos
       </a>
       {/* Solo el proveedor: su panel por encima de los tenants (§7). En demo se muestra porque toda la app es vitrina. */}
       {(isProvider || demoMode) && (
         <a
           href="/control"
-          className="flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-sm text-[var(--color-accent-plum-bright,var(--color-text-secondary))] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          className={cn(
+            pieCls,
+            'text-[var(--color-accent-plum-bright,var(--color-text-secondary))]',
+          )}
         >
+          <Icon name="shield_person" size={18} className="shrink-0 opacity-70" />
           REGB Control
         </a>
       )}
@@ -203,7 +222,7 @@ export function Shell({
               aria-label={`Notificaciones${data.unread ? `: ${data.unread} sin leer` : ''}`}
               className="relative grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
-              <span aria-hidden>🔔</span>
+              <Icon name="notifications" size={20} filled={(data.unread ?? 0) > 0} />
               {(data.unread ?? 0) > 0 && (
                 <span className="tabular absolute right-1 top-1 min-w-4 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1 text-center text-[10px] font-bold text-white">
                   {data.unread}
@@ -217,9 +236,7 @@ export function Shell({
               onClick={() => setMenuAbierto((v) => !v)}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
             >
-              <span aria-hidden className="text-lg">
-                ☰
-              </span>
+              <Icon name={menuAbierto ? 'close' : 'menu'} size={22} />
             </button>
           </>
         }
@@ -234,8 +251,8 @@ export function Shell({
           role="alert"
           className="flex h-9 shrink-0 items-center justify-center gap-2 bg-[var(--color-accent-plum)] px-4 text-xs font-medium text-white"
         >
-          <span aria-hidden>👁</span> Estas viendo los datos de {data.tenant.name} como proveedor. La
-          sesion expira sola a los 60 minutos y quedo registrada en ambas bitacoras.
+          <Icon name="visibility" size={16} /> Estas viendo los datos de {data.tenant.name} como
+          proveedor. La sesion expira sola a los 60 minutos y quedo registrada en ambas bitacoras.
           <a href="/control" className="underline">
             Terminar
           </a>
@@ -253,7 +270,7 @@ export function Shell({
             color: `var(--color-semantic-text-${mora.tone})`,
           }}
         >
-          <span aria-hidden>{mora.tone === 'danger' ? '🔒' : '⚠️'}</span>
+          <Icon name={mora.tone === 'danger' ? 'lock' : 'warning'} size={16} filled />
           {mora.message}
         </div>
       )}
@@ -297,7 +314,7 @@ export function Shell({
             children
           ) : data.sidebar.length === 0 ? (
             <EmptyState
-              icon="🔒"
+              icon="lock"
               title="Aqui no hay nada para ti todavia"
               description={`El rol "${data.roleName}" no tiene ningun modulo visible en ${activePlatform}. Cambia de rol arriba para verlo desde otra silla.`}
             />

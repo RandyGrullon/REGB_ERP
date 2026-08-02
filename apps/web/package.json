@@ -26,6 +26,7 @@
     "@regb/mod-invoice-capture": "workspace:*",
     "@regb/mod-notifications": "workspace:*",
     "@regb/mod-orgs": "workspace:*",
+    "@regb/operations": "workspace:*",
     "@regb/mod-payroll": "workspace:*",
     "@regb/mod-pos": "workspace:*",
     "@regb/mod-products": "workspace:*",

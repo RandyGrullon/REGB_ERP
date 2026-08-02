@@ -5,9 +5,12 @@ export default defineModule({
   id: 'settings',
   name: 'Configuracion',
   description: 'Nombre comercial, zona horaria, moneda, formato de fecha y preferencias.',
-  icon: 'Settings',
+  icon: 'settings',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'administracion',
+  navOrder: 40,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

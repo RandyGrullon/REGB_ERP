@@ -132,6 +132,62 @@ async function* walk(dir) {
   }
 }
 
+/**
+ * Dependencias DECLARADAS de cada modulo, leidas de su manifest.
+ *
+ * Un modulo puede referirse a otro si lo declara en `requires` — asi el
+ * acoplamiento es dato visible en el manifest, no una cadena escondida en
+ * el codigo. Lo que se persigue es el acoplamiento SILENCIOSO.
+ *
+ * Se leen como texto a proposito: este script corre antes de compilar y no
+ * puede cargar TypeScript.
+ */
+async function leerManifests() {
+  const porRuta = new Map() // primer segmento de ruta → { id, requires }
+  let dirs = []
+  try {
+    dirs = await readdir(join(ROOT, 'modules'), { withFileTypes: true })
+  } catch {
+    return porRuta
+  }
+
+  for (const d of dirs) {
+    if (!d.isDirectory()) continue
+    let src
+    try {
+      src = await readFile(join(ROOT, 'modules', d.name, 'manifest.ts'), 'utf8')
+    } catch {
+      continue
+    }
+    const id = /\bid:\s*'([^']+)'/.exec(src)?.[1]
+    if (!id) continue
+
+    const requiresRaw = /\brequires:\s*\[([^\]]*)\]/s.exec(src)?.[1] ?? ''
+    const requires = [...requiresRaw.matchAll(/'([^']+)'/g)].map((m) => m[1])
+
+    for (const m of src.matchAll(/path:\s*'\/([^'/]*)/g)) {
+      const seg = m[1]
+      if (seg) porRuta.set(seg, { id, requires })
+    }
+  }
+  return porRuta
+}
+
+const MODULOS_POR_RUTA = await leerManifests()
+
+/**
+ * ¿El archivo pertenece a un modulo que declara ese id como dependencia?
+ * `apps/web/src/app/importar/actions.ts` pertenece a `imports`, que declara
+ * `requires: ['products']`; referirse a `products` ahi es legitimo.
+ */
+function referenciaDeclarada(rel, id) {
+  const m = /^apps[\\/][^\\/]+[\\/]src[\\/]app[\\/]([^\\/]+)/.exec(rel)
+  if (!m) return false
+  const duenio = MODULOS_POR_RUTA.get(m[1])
+  if (!duenio) return false
+  return duenio.id === id || duenio.requires.includes(id)
+}
+
 const findings = []
 
 for await (const file of walk(ROOT)) {
@@ -142,7 +198,9 @@ for await (const file of walk(ROOT)) {
   lines.forEach((line, i) => {
     if (/registry:allow/.test(line)) return
     const m = CONDITIONAL_RE.exec(line)
-    if (m) findings.push({ file: rel, line: i + 1, id: m[1], text: line.trim().slice(0, 110) })
+    if (!m) return
+    if (referenciaDeclarada(rel, m[1])) return
+    findings.push({ file: rel, line: i + 1, id: m[1], text: line.trim().slice(0, 110) })
   })
 }
 
@@ -159,6 +217,8 @@ for (const f of findings) {
   console.error(`     > ${f.text}\n`)
 }
 console.error(
-  'El descubrimiento debe venir de regb.tenant_modules via el registry. Ver §2.2 y §4.\n',
+  'El descubrimiento debe venir de regb.tenant_modules via el registry. Ver §2.2 y §4.\n' +
+    'Si es la UI de un modulo refiriendose a otro del que DEPENDE, declaralo en\n' +
+    '`requires` de su manifest: asi el acoplamiento queda visible en el catalogo.\n',
 )
 process.exit(1)

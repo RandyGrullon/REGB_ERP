@@ -5,9 +5,12 @@ export default defineModule({
   id: 'tour',
   name: 'Tutorial',
   description: 'Tours interactivos por modulo y checklist de primeros pasos con progreso.',
-  icon: 'GraduationCap',
+  icon: 'school',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'ayuda',
+  navOrder: 10,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

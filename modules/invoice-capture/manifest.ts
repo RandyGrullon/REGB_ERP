@@ -20,9 +20,12 @@ export default defineModule({
   id: 'invoice-capture',
   name: 'Captura de facturas',
   description: 'Fotografia la factura del proveedor y extrae RNC, NCF, fecha, ITBIS y lineas.',
-  icon: 'ScanLine',
+  icon: 'document_scanner',
   category: 'advanced',
   version: '0.1.0',
+
+  navSection: 'operacion',
+  navOrder: 60,
 
   pricing: {
     install: { pyme: 400, mediano: 1500, grande: 4000 },

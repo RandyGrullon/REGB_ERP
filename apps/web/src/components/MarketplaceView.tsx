@@ -100,7 +100,7 @@ export function MarketplaceView({
         >
           ← Volver
         </a>
-        <span className="text-sm font-medium text-[var(--color-text-primary)]">🧩 Marketplace</span>
+        <span className="text-sm font-medium text-[var(--color-text-primary)]">Marketplace</span>
         <div className="flex-1" />
         <span className="hidden text-xs text-[var(--color-text-muted)] sm:inline">
           {tenantName} · {roleName}
@@ -330,7 +330,7 @@ function ModuleCard({
 
       {mod.missingRequires.length > 0 && (
         <p className="mb-2 text-[11px] text-[var(--color-semantic-text-warning)]">
-          ⚠️ Necesita antes: {mod.missingRequires.join(', ')}
+          Necesita antes: {mod.missingRequires.join(', ')}
         </p>
       )}
 

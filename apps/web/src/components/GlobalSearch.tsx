@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Icon } from '@regb/ui'
 
 /**
  * Busqueda global — Ctrl+K (S10, puerta F2).
@@ -74,10 +75,11 @@ export function GlobalSearch({ index, qs }: { index: SearchEntry[]; qs: string }
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-8 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-xs text-[var(--color-text-muted)] hover:border-[var(--color-border-strong)] sm:flex"
+        className="hidden h-9 min-w-56 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-2.5 pr-2 text-xs text-[var(--color-text-muted)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-secondary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] sm:flex"
       >
-        <span aria-hidden>🔍</span> Buscar
-        <kbd className="rounded-[var(--radius-sm)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-[10px]">
+        <Icon name="search" size={18} />
+        <span className="flex-1 text-left">Buscar…</span>
+        <kbd className="rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px]">
           Ctrl K
         </kbd>
       </button>
@@ -95,27 +97,33 @@ export function GlobalSearch({ index, qs }: { index: SearchEntry[]; qs: string }
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-xl rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-2xl"
           >
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value)
-                setCursor(0)
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'ArrowDown') {
-                  e.preventDefault()
-                  setCursor((c) => Math.min(c + 1, results.length - 1))
-                } else if (e.key === 'ArrowUp') {
-                  e.preventDefault()
-                  setCursor((c) => Math.max(c - 1, 0))
-                } else if (e.key === 'Enter' && results[cursor]) {
-                  irA(results[cursor])
-                }
-              }}
-              placeholder="Modulos, registros, acciones, ayuda…"
-              className="h-12 w-full rounded-t-[var(--radius-lg)] border-b border-[var(--color-border)] bg-transparent px-4 text-sm text-[var(--color-text-primary)] outline-none"
-            />
+            <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-4">
+              <Icon name="search" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setCursor(0)
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault()
+                    setCursor((c) => Math.min(c + 1, results.length - 1))
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault()
+                    setCursor((c) => Math.max(c - 1, 0))
+                  } else if (e.key === 'Enter' && results[cursor]) {
+                    irA(results[cursor])
+                  }
+                }}
+                placeholder="Modulos, registros, acciones, ayuda…"
+                className="h-12 w-full bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
+              />
+              <kbd className="shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-text-muted)]">
+                Esc
+              </kbd>
+            </div>
             <ul className="max-h-80 overflow-y-auto p-2" role="listbox" aria-label="Resultados">
               {results.length === 0 && (
                 <li className="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">

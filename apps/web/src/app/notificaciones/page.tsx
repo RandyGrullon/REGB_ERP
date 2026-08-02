@@ -1,4 +1,4 @@
-import { Badge, EmptyState } from '@regb/ui'
+import { Badge, EmptyState, Icon, PageHeader } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -53,30 +53,37 @@ export default async function NotificacionesPage({
   return (
     <Shell {...shell} activePath="/notificaciones">
       <div className="max-w-3xl space-y-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Notificaciones</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              {sinLeer > 0 ? `${sinLeer} sin leer` : 'Todo leido'}
-            </p>
-          </div>
-          {sinLeer > 0 && puedeEditar && (
-            <form action={marcarTodasLeidas}>
-              <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-              <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-              <button
-                type="submit"
-                className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)]"
-              >
-                Marcar todas leidas
-              </button>
-            </form>
-          )}
-        </div>
+        <PageHeader
+          icon="notifications"
+          title="Notificaciones"
+          description="Avisos del sistema y de cada modulo. Los que van a todo el equipo llevan su etiqueta."
+          meta={
+            sinLeer > 0 ? (
+              <Badge tone="danger">{sinLeer} sin leer</Badge>
+            ) : (
+              <Badge tone="success">Todo leido</Badge>
+            )
+          }
+          actions={
+            sinLeer > 0 && puedeEditar ? (
+              <form action={marcarTodasLeidas}>
+                <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
+                <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+                <button
+                  type="submit"
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  <Icon name="done_all" size={18} />
+                  Marcar todas leidas
+                </button>
+              </form>
+            ) : undefined
+          }
+        />
 
         {notices.length === 0 ? (
           <EmptyState
-            icon="🔕"
+            icon="notifications_off"
             title="Nada por aqui"
             description="Cuando un modulo tenga algo que decirte — una prueba por vencer, un pedido aprobado — aparecera en esta lista."
           />

@@ -124,7 +124,7 @@ export default async function AuditoriaPage({
 
         {rows.length === 0 ? (
           <EmptyState
-            icon="📜"
+            icon="history"
             title="Sin actividad registrada"
             description="Cada creacion, cambio o borrado quedara aqui con su antes y su despues."
           />

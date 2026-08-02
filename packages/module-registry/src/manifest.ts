@@ -72,6 +72,24 @@ export const manifestSchema = z
     permissions: z.array(z.string()).min(1, 'Un modulo sin permisos no es auditable'),
 
     routes: z.array(routeSchema).default([]),
+
+    /**
+     * Seccion del menu lateral.
+     *
+     * NO es la categoria comercial. `category` dice cuanto cuesta el modulo;
+     * esto dice donde lo busca la gente. Agrupar la navegacion por categoria
+     * comercial pone Auditoria y Respaldos por encima del punto de venta,
+     * que es lo que el cajero usa doscientas veces al dia.
+     *
+     * Cada modulo declara la suya para que el shell siga sin conocer ni un
+     * solo id de modulo (§2.2).
+     */
+    navSection: z
+      .enum(['inicio', 'operacion', 'administracion', 'datos', 'ayuda'])
+      .default('operacion'),
+    /** Orden dentro de la seccion. Menor va primero; empate resuelve por nombre. */
+    navOrder: z.number().int().default(100),
+
     dashboardWidgets: z.array(z.string()).default([]),
     reports: z.array(z.string()).default([]),
 

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { cn } from '../utils'
+import { Icon } from './Icon'
 
 /**
  * Estado vacio con personalidad.
@@ -8,8 +9,12 @@ import { cn } from '../utils'
  * accion secundaria + enlace al tutorial. Nunca una tabla vacia muda.
  */
 export interface EmptyStateProps {
-  /** Emoji o icono. Grande y amable. */
-  icon?: ReactNode
+  /**
+   * Nombre de un icono Material Symbols (`inventory_2`). Admite tambien un
+   * nodo suelto, pero lo normal es el nombre: si cada pantalla elige su
+   * emoji, el producto acaba sin iconografia coherente.
+   */
+  icon?: string | ReactNode
   title: string
   /** Con humor, en espanol dominicano. */
   description: string
@@ -22,7 +27,7 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({
-  icon = '📦',
+  icon = 'inbox',
   title,
   description,
   action,
@@ -38,9 +43,19 @@ export function EmptyState({
         className,
       )}
     >
-      <div className="text-5xl" aria-hidden>
-        {icon}
-      </div>
+      {typeof icon === 'string' ? (
+        <span
+          aria-hidden
+          className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-surface-raised)]"
+        >
+          <Icon name={icon} size={32} className="text-[var(--color-text-muted)]" />
+        </span>
+      ) : (
+        <div className="text-5xl" aria-hidden>
+          {icon}
+        </div>
+      )}
+
       <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">{title}</h3>
       <p className="max-w-sm text-sm text-[var(--color-text-secondary)]">{description}</p>
 
@@ -55,12 +70,14 @@ export function EmptyState({
         <a
           href={tourHref}
           className={cn(
-            'mt-1 text-xs text-[var(--color-text-link)] underline-offset-4 hover:underline',
+            'mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-text-link)]',
+            'underline-offset-4 hover:underline',
             'focus-visible:outline-2 focus-visible:outline-offset-2',
             'focus-visible:outline-[var(--color-brand-bright)]',
           )}
         >
-          🎓 {tourLabel}
+          <Icon name="school" size={14} />
+          {tourLabel}
         </a>
       )}
     </div>

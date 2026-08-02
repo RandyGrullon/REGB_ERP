@@ -23,7 +23,9 @@ const products = defineModule({
   name: 'Productos',
   category: 'core',
   version: '1.0.0',
-  icon: 'Box',
+  icon: 'inventory_2',
+  navSection: 'operacion',
+  navOrder: 20,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },
@@ -39,7 +41,9 @@ const inventory = defineModule({
   name: 'Inventario',
   category: 'standard',
   version: '1.4.0',
-  icon: 'Package',
+  icon: 'package_2',
+  navSection: 'operacion',
+  navOrder: 30,
   pricing: {
     install: { pyme: 150, mediano: 600, grande: 1800 },
     monthly: { pyme: 19, mediano: 69, grande: 190 },
@@ -63,7 +67,9 @@ const payroll = defineModule({
   name: 'Nomina',
   category: 'advanced',
   version: '1.0.0',
-  icon: 'Users',
+  icon: 'payments',
+  navSection: 'operacion',
+  navOrder: 70,
   pricing: {
     install: { pyme: 400, mediano: 1500, grande: 4000 },
     monthly: { pyme: 45, mediano: 160, grande: 420 },
@@ -292,12 +298,13 @@ describe('Permisos y visibilidad', () => {
 
 // ═══════════════════════════════════════════════════════════════════════
 describe('Orden y widgets', () => {
-  it('el sidebar ordena por categoria y luego alfabeticamente', () => {
+  it('el sidebar ordena por seccion de uso y luego por navOrder', () => {
     const r = hydrate({
       ...base,
       tenantModules: [live('payroll'), live('inventory'), live('products')],
     })
-    // core → standard → advanced
+    // Todos en "operacion": manda el navOrder declarado (20, 30, 70), no la
+    // categoria comercial ni el alfabeto.
     expect(r.sidebar.map((s) => s.moduleId)).toEqual(['products', 'inventory', 'payroll'])
   })
 

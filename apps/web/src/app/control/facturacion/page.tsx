@@ -80,7 +80,7 @@ export default async function FacturacionPage() {
 
       {invoices.length === 0 ? (
         <EmptyState
-          icon="🧾"
+          icon="receipt_long"
           title="Todavia no hay facturas"
           description={
             'Pulsa "Generar facturas del mes": una por cliente activo, calculada por el motor de precios. Generar dos veces no duplica nada.'

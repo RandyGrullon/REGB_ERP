@@ -425,8 +425,8 @@ export function RolesEditor({
 
             {!canEdit && (
               <p className="mt-6 text-xs text-[var(--color-text-muted)]">
-                🔒 Estas viendo esto como <strong>{tenantName}</strong> con un rol que no puede
-                editar permisos. Cambia a Owner o Admin para modificarlos.
+                Estas viendo esto como <strong>{tenantName}</strong> con un rol que no puede editar
+                permisos. Cambia a Owner o Admin para modificarlos.
               </p>
             )}
           </>

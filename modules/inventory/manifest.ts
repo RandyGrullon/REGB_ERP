@@ -9,9 +9,12 @@ export default defineModule({
   id: 'inventory',
   name: 'Inventario',
   description: 'Existencias multi-almacen, kardex, costo promedio y valorizacion.',
-  icon: 'Package',
+  icon: 'package_2',
   category: 'standard',
   version: '0.1.0',
+
+  navSection: 'operacion',
+  navOrder: 30,
 
   pricing: {
     install: { pyme: 150, mediano: 600, grande: 1800 },
@@ -28,6 +31,7 @@ export default defineModule({
     'inventory.transfer',
     'inventory.count',
     'inventory.cost.view',
+    'inventory.warehouses.manage',
     'inventory.export',
   ],
 
@@ -36,6 +40,12 @@ export default defineModule({
     { path: '/inventory/movements', label: 'Movimientos', perm: 'inventory.view' },
     { path: '/inventory/transfers', label: 'Transferencias', perm: 'inventory.transfer' },
     { path: '/inventory/counts', label: 'Conteos', perm: 'inventory.count' },
+    {
+      path: '/inventory/warehouses',
+      label: 'Almacenes',
+      perm: 'inventory.warehouses.manage',
+      hidden: true,
+    },
   ],
 
   dashboardWidgets: ['stock-alerts', 'inventory-value'],
@@ -43,7 +53,10 @@ export default defineModule({
 
   events: {
     emits: ['inventory.stock.low', 'inventory.movement.created'],
-    listens: ['sales.order.confirmed', 'purchase-orders.receipt.posted'],
+    // OJO: el modulo se llama 'sales-orders', no 'sales' — un evento
+    // 'sales.order.confirmed' NUNCA se emitiria (regla del contrato: todo
+    // evento se prefija con el id del modulo que lo emite, ver S20).
+    listens: ['sales-orders.order.confirmed', 'purchase-orders.receipt.posted'],
   },
 
   platforms: { web: true, desktop: true, mobile: true },

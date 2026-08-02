@@ -77,7 +77,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
       {/* Impersonacion §7.4: razon obligatoria, 60 min, doble bitacora. */}
       <details className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)]">
         <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-[var(--color-text-primary)]">
-          👁 Impersonar a este cliente
+          Impersonar a este cliente
         </summary>
         <form action={impersonar} className="flex flex-wrap items-end gap-3 px-4 pb-4">
           <input type="hidden" name="slug" value={client.slug} />

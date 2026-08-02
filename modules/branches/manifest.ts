@@ -5,9 +5,12 @@ export default defineModule({
   id: 'branches',
   name: 'Sucursales',
   description: 'Sucursales y ubicaciones de cada empresa, con acceso por rol y por sucursal.',
-  icon: 'MapPin',
+  icon: 'storefront',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'administracion',
+  navOrder: 30,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

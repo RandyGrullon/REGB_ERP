@@ -5,9 +5,12 @@ export default defineModule({
   id: 'notifications',
   name: 'Notificaciones',
   description: 'Avisos del sistema y de cada modulo: personales o para todo el equipo.',
-  icon: 'Bell',
+  icon: 'notifications',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'inicio',
+  navOrder: 20,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

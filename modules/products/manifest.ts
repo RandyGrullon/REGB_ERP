@@ -9,9 +9,12 @@ export default defineModule({
   id: 'products',
   name: 'Productos',
   description: 'Catalogo de productos con precios, impuestos, categorias y punto de reorden.',
-  icon: 'Box',
+  icon: 'inventory_2',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'operacion',
+  navOrder: 20,
 
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },

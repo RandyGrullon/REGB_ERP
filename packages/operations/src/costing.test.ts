@@ -66,6 +66,25 @@ describe('promedio ponderado movil', () => {
     expect(p).toEqual({ qtyOnHand: 15, avgCost: 42 })
   })
 
+  it('cargar stock inicial SIN costo deja el inventario subvaluado', () => {
+    // Esto no es un fallo del motor: la regla de arriba es correcta. Es la
+    // razon por la que la accion de ajuste hereda el costo del catalogo
+    // cuando el usuario no lo declara (ver apps/web/src/app/inventory/actions.ts).
+    //
+    // Sin esa herencia, cargar 100 unidades sin costo y luego comprar 50 a
+    // $195 promedia contra un monton fantasma de costo cero:
+    let p: StockPosition = { qtyOnHand: 0, avgCost: 0 }
+    p = applyInbound(p, 100, null) // carga inicial mal registrada
+    p = applyInbound(p, 50, 195)
+    expect(p.avgCost).toBe(65) // 9750 / 150 — el inventario vale un tercio de lo real
+
+    // Con el costo heredado del catalogo, el promedio es el correcto:
+    let q: StockPosition = { qtyOnHand: 0, avgCost: 0 }
+    q = applyInbound(q, 100, 180) // costo del catalogo
+    q = applyInbound(q, 50, 195)
+    expect(q.avgCost).toBe(185)
+  })
+
   it('rechaza cantidades no positivas y costos negativos', () => {
     expect(() => applyInbound(VACIO, 0, 10)).toThrow(/cantidad positiva/)
     expect(() => applyInbound(VACIO, -3, 10)).toThrow(/cantidad positiva/)

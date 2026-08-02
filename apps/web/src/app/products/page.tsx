@@ -5,13 +5,20 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  FilterSelect,
+  Icon,
   Mono,
+  PageHeader,
+  SearchField,
+  StatCard,
   Table,
   THead,
   TBody,
   TR,
   TH,
   TD,
+  Toolbar,
+  ToolbarActions,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -58,7 +65,9 @@ export default async function ProductsPage({
   const categoria = params.categoria ?? ''
   const verInactivos = params.inactivos === '1'
 
-  const [products, categories] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const hayFiltros = q !== '' || categoria !== '' || verInactivos
+
+  const [products, categories, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = await tx<ProductRow[]>`
       select id, sku, name, unit, price::text, cost::text, barcode, category,
              category_id, tax_rate::text, reorder_point::text, active
@@ -73,7 +82,15 @@ export default async function ProductsPage({
     const c = await tx<{ id: string; name: string }[]>`
       select id, name from public.product_categories
       where tenant_id = ${ctx.tenantId} order by name`
-    return [p, c] as const
+    const [t] = await tx<{ activos: string; archivados: string }[]>`
+      select count(*) filter (where active)     as activos,
+             count(*) filter (where not active) as archivados
+      from public.products where tenant_id = ${ctx.tenantId}`
+    return [
+      p,
+      c,
+      { activos: Number(t?.activos ?? 0), archivados: Number(t?.archivados ?? 0) },
+    ] as const
   })
 
   const puedeCrear = exigir(ctx, 'products', 'products.create').ok
@@ -86,68 +103,74 @@ export default async function ProductsPage({
   return (
     <Shell {...shell} activePath="/products">
       <div className="space-y-5">
-        <div className="flex flex-wrap items-end gap-3">
-          <div className="flex-1">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Catalogo</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              {products.filter((p) => p.active).length} productos activos
-              {categories.length > 0 && ` · ${categories.length} categorias`}
-            </p>
-          </div>
-          <a
-            href={`/products/categories${qs}`}
-            className="rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-          >
-            Categorias
-          </a>
-        </div>
-
-        {/* Buscador: GET, sin JavaScript. Funciona con el lector de codigo de barras. */}
-        <form method="get" className="flex flex-wrap items-end gap-2">
-          {ctx.demoQs && (
+        <PageHeader
+          icon="inventory_2"
+          title="Catalogo"
+          description="Nada funciona sin el: el inventario cuenta estos productos, la caja los vende y las facturas los cobran."
+          actions={
             <>
-              <input type="hidden" name="tenant" value={ctx.tenantSlug} />
-              <input type="hidden" name="rol" value={ctx.roleName} />
+              <a
+                href={`/products/categories${qs}`}
+                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="sell" size={18} />
+                Categorias
+              </a>
+              <a
+                href={`/importar${qs}`}
+                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="upload_file" size={18} />
+                Importar CSV
+              </a>
             </>
-          )}
-          <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-            Buscar por nombre, codigo o codigo de barras
-            <input
-              name="q"
-              defaultValue={q}
-              placeholder="arroz, ARZ-001, 750..."
-              className={inputCls}
-            />
-          </label>
-          <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-            Categoria
-            <select name="categoria" defaultValue={categoria} className={inputCls}>
-              <option value="">Todas</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]">
+          }
+        />
+
+        <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <StatCard label="Activos" value={String(totales.activos)} hint="a la venta" />
+          <StatCard
+            label="Archivados"
+            value={String(totales.archivados)}
+            hint="fuera del catalogo"
+          />
+          <StatCard label="Categorias" value={String(categories.length)} hint="para organizar" />
+          <StatCard
+            label="Mostrando"
+            value={String(products.length)}
+            hint={hayFiltros ? 'con los filtros' : 'sin filtrar'}
+          />
+        </section>
+
+        {/* Filtros por GET: viajan en la URL, sobreviven a recargar y se
+            comparten por enlace. El buscador acepta el lector de barras. */}
+        <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
+          <SearchField
+            defaultValue={q}
+            label="Nombre, codigo o codigo de barras"
+            placeholder="arroz, ARZ-001, 750…"
+          />
+          <FilterSelect label="Categoria" name="categoria" defaultValue={categoria}>
+            <option value="">Todas</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </FilterSelect>
+          <label className="flex h-10 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)]">
             <input type="checkbox" name="inactivos" value="1" defaultChecked={verInactivos} />
             Ver archivados
           </label>
-          <button
-            type="submit"
-            className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-          >
-            Filtrar
-          </button>
-        </form>
+          <ToolbarActions hasFilters={hayFiltros} clearHref={`/products${qs}`} />
+        </Toolbar>
 
         {products.length === 0 ? (
           <EmptyState
-            icon="📦"
-            title={q || categoria ? 'Nada coincide con ese filtro' : 'Tu catalogo esta vacio'}
+            icon={hayFiltros ? 'search_off' : 'inventory_2'}
+            title={hayFiltros ? 'Nada coincide con ese filtro' : 'Tu catalogo esta vacio'}
             description={
-              q || categoria
+              hayFiltros
                 ? 'Prueba con otro texto o quita el filtro de categoria.'
                 : 'Crea el primer producto abajo, o sube tu catalogo completo desde Importar.'
             }

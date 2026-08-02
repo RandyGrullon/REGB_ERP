@@ -1,5 +1,6 @@
 import type { HTMLAttributes, ReactNode } from 'react'
 import { cn } from '../utils'
+import { Icon } from './Icon'
 
 export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
@@ -49,7 +50,12 @@ export function StatCard({ label, value, delta, hint, className }: StatCardProps
         ? 'var(--color-semantic-text-danger)'
         : 'var(--color-semantic-text-neutral)'
 
-  const arrow = delta?.direction === 'up' ? '▲' : delta?.direction === 'down' ? '▼' : '—'
+  const flecha =
+    delta?.direction === 'up'
+      ? 'trending_up'
+      : delta?.direction === 'down'
+        ? 'trending_down'
+        : 'trending_flat'
 
   return (
     <Card className={cn('p-4', className)}>
@@ -59,8 +65,8 @@ export function StatCard({ label, value, delta, hint, className }: StatCardProps
       <p className="tabular mt-1 text-2xl font-bold text-[var(--color-text-primary)]">{value}</p>
       <div className="mt-1 flex items-center gap-2 text-xs">
         {delta && (
-          <span style={{ color: deltaColor }}>
-            <span aria-hidden>{arrow}</span>{' '}
+          <span className="inline-flex items-center gap-1" style={{ color: deltaColor }}>
+            <Icon name={flecha} size={14} />
             <span className="sr-only">
               {delta.direction === 'up' ? 'sube' : delta.direction === 'down' ? 'baja' : 'igual'}
             </span>

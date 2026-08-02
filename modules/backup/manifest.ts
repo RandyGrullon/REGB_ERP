@@ -5,9 +5,12 @@ export default defineModule({
   id: 'backup',
   name: 'Respaldos',
   description: 'Copias de tus datos bajo demanda, descargables. Tu informacion es tuya.',
-  icon: 'DatabaseBackup',
+  icon: 'backup',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'datos',
+  navOrder: 30,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

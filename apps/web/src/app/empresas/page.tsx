@@ -4,13 +4,15 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Table,
-  THead,
-  TBody,
-  TR,
-  TH,
-  TD,
   Mono,
+  PageHeader,
+  StatCard,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -57,13 +59,31 @@ export default async function EmpresasPage({
   return (
     <Shell {...shell} activePath="/empresas">
       <div className="space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Empresas</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            Cada razon social (RNC) factura por separado; la configuracion se hereda de la
-            principal.
-          </p>
-        </div>
+        <PageHeader
+          icon="apartment"
+          title="Empresas"
+          description="Cada razon social (RNC) factura por separado; la configuracion se hereda de la principal."
+        />
+
+        <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <StatCard label="Empresas" value={String(companies.length)} hint="razones sociales" />
+          <StatCard
+            label="Sucursales"
+            value={String(companies.reduce((a, c) => a + Number(c.branch_count), 0))}
+            hint="en total"
+          />
+          <StatCard
+            label="Tu plan"
+            value={shell.data.tenant.tier.toUpperCase()}
+            hint={
+              shell.data.tenant.tier === 'pyme'
+                ? 'incluye 1 empresa'
+                : shell.data.tenant.tier === 'mediano'
+                  ? 'incluye 3 empresas'
+                  : 'empresas ilimitadas'
+            }
+          />
+        </section>
 
         <Table>
           <THead>

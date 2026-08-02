@@ -9,9 +9,12 @@ export default defineModule({
   id: 'pos',
   name: 'Punto de venta',
   description: 'Tactil, offline, cajas, turnos, arqueo e impresora termica.',
-  icon: 'CreditCard',
+  icon: 'point_of_sale',
   category: 'standard',
   version: '0.1.0',
+
+  navSection: 'operacion',
+  navOrder: 10,
 
   pricing: {
     install: { pyme: 150, mediano: 600, grande: 1800 },

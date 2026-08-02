@@ -10,9 +10,12 @@ export default defineModule({
   id: 'dashboard',
   name: 'Dashboard',
   description: 'Pantalla de inicio con indicadores y widgets de cada modulo activo.',
-  icon: 'LayoutDashboard',
+  icon: 'space_dashboard',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'inicio',
+  navOrder: 10,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },

@@ -5,9 +5,12 @@ export default defineModule({
   id: 'users',
   name: 'Usuarios',
   description: 'Miembros del equipo: perfiles, invitaciones y acceso por rol.',
-  icon: 'Users',
+  icon: 'group',
   category: 'core',
   version: '0.1.0',
+
+  navSection: 'administracion',
+  navOrder: 10,
   pricing: {
     install: { pyme: 0, mediano: 0, grande: 0 },
     monthly: { pyme: 0, mediano: 0, grande: 0 },
