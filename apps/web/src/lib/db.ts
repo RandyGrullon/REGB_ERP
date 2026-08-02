@@ -19,7 +19,8 @@ const DB_URL =
   process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
 
 declare global {
-  // eslint-disable-next-line no-var
+  // `var` es obligatorio aqui: `let`/`const` en `declare global` no crean la
+  // propiedad en globalThis y `globalThis.__regbDb` no compilaria.
   var __regbDb: postgres.Sql | undefined
 }
 

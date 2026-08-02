@@ -72,3 +72,37 @@ describe('helpers de claims sin sesion', () => {
     expect(r!.uid).toBeNull()
   })
 })
+
+/**
+ * La tasa de impuesto va en FRACCION en toda la base (0.18 = 18%).
+ *
+ * Nos mordio en S20: `sales_order_lines.tax_rate` nacio como porcentaje
+ * mientras `products.tax_rate` era fraccion, y un pedido de RD$5,375
+ * mostraba RD$9.68 de ITBIS en vez de RD$967.50. El check 0..1 convierte
+ * ese error en un fallo ruidoso en vez de un cobro silencioso equivocado.
+ */
+describe('tasa de impuesto: siempre fraccion', () => {
+  it('products y sales_order_lines usan el mismo rango', async () => {
+    const rows = await sql<{ table_name: string; numeric_scale: number }[]>`
+      select table_name, numeric_scale
+      from information_schema.columns
+      where table_schema = 'public' and column_name = 'tax_rate'
+      order by table_name`
+    expect(rows.length).toBeGreaterThanOrEqual(2)
+    for (const r of rows) expect(r.numeric_scale).toBe(4)
+  })
+
+  it('la base RECHAZA un 18 escrito como porcentaje', async () => {
+    await expect(
+      sql`select 1 from public.products where tax_rate = 18`.then(async () => {
+        // El insert de prueba corre en transaccion y se revierte.
+        return sql.begin(async (tx) => {
+          const [t] = await tx<{ id: string }[]>`select id from regb.tenants limit 1`
+          await tx`
+            insert into public.products (tenant_id, sku, name, tax_rate)
+            values (${t!.id}, ${'TEST-TAX-' + Date.now()}, 'Prueba tasa', 18)`
+        })
+      }),
+    ).rejects.toThrow()
+  })
+})

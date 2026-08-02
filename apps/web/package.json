@@ -30,6 +30,7 @@
     "@regb/mod-payroll": "workspace:*",
     "@regb/mod-pos": "workspace:*",
     "@regb/mod-products": "workspace:*",
+    "@regb/mod-sales-orders": "workspace:*",
     "@regb/mod-search": "workspace:*",
     "@regb/mod-settings": "workspace:*",
     "@regb/mod-tour": "workspace:*",
