@@ -1,7 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { balanceAfter, deriveInvoiceStatus, dueDateFrom, overpayment } from '@regb/operations'
+import {
+  balanceAfter,
+  deriveInvoiceStatus,
+  dueDateFrom,
+  isValidTaxId,
+  overpayment,
+} from '@regb/operations'
 import { asUser, db } from '@/lib/db'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
@@ -56,9 +62,10 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
         tax: string
         total: string
         number: string
+        tax_id: string | null
       }[]
     >`
-      select o.id, o.status, o.customer_id, c.payment_terms,
+      select o.id, o.status, o.customer_id, c.payment_terms, c.tax_id,
              o.subtotal::text, o.discount::text, o.tax::text, o.total::text, o.number
       from public.sales_orders o
       join public.customers c on c.id = o.customer_id
@@ -79,14 +86,28 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
     const emision = new Date()
     const vence = dueDateFrom(emision, order.payment_terms)
 
+    /**
+     * Comprobante fiscal. Con RNC valido se emite credito fiscal (B01),
+     * que es lo que le permite al cliente descontarse el ITBIS; sin el,
+     * consumo (B02). Emitir B01 sin RNC lo rechaza la DGII en el 607.
+     *
+     * Si no hay secuencia autorizada, `assign_ncf` lanza y la factura NO
+     * se crea: es preferible no facturar a facturar sin comprobante, que
+     * es una factura invalida que hay que rehacer.
+     */
+    const tipo = order.tax_id && isValidTaxId(order.tax_id) ? 'B01' : 'B02'
+    const [c] = await tx<{ assign_ncf: string }[]>`
+      select public.assign_ncf(${ctx.tenantId}, ${tipo})`
+
     await tx`
       insert into public.customer_invoices
         (tenant_id, number, customer_id, source_type, source_id, issue_date, due_date,
-         subtotal, discount, tax, total, created_by)
+         subtotal, discount, tax, total, created_by, ncf, ncf_type, buyer_tax_id)
       values (${ctx.tenantId}, ${n!.next_customer_invoice_number}, ${order.customer_id},
               'sales_order', ${orderId},
               ${emision.toISOString().slice(0, 10)}, ${vence.toISOString().slice(0, 10)},
-              ${order.subtotal}, ${order.discount}, ${order.tax}, ${order.total}, ${ctx.userId})`
+              ${order.subtotal}, ${order.discount}, ${order.tax}, ${order.total}, ${ctx.userId},
+              ${c!.assign_ncf}, ${tipo}, ${order.tax_id})`
 
     await tx`
       select public.emit_event('ar.invoice.issued',
