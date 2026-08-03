@@ -110,7 +110,7 @@ verifica en la acción de servidor, no en el botón.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ⚠️ RLS escrita y verificada en navegador por rol; **sin test automatizado**. La inmutabilidad del kardex tampoco está defendida por una prueba |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/inventory.test.ts` — 14 casos: inmutabilidad del kardex, invariante proyección == suma, aislamiento, módulo apagado. Sin `down` (deuda común) |
 | 3 | Lógica pura con cobertura | ✅ `costing.ts` con 20 tests |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 — `mobileScope`: view, count, transfer |

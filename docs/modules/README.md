@@ -25,7 +25,7 @@ hardware funciona hoy y qué parte de la DGII está conectada.
 | # | Punto | products | inventory | sales-orders | pos | ar |
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 1 | `manifest.ts` completo | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | Migraciones + RLS probadas | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
+| 2 | Migraciones + RLS probadas | ✅ | ✅ | ⚠️ | ✅ | ✅ |
 | 3 | Lógica pura con cobertura | ⚠️ | ✅ | ✅ | ✅ | ✅ |
 | 4 | UI web responsive | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | UI móvil | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
@@ -39,7 +39,7 @@ hardware funciona hoy y qué parte de la DGII está conectada.
 | 13 | Ficha en `docs/modules/` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 14 | Accesibilidad AA | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 
-**11 de 14 en camino, 3 diferidos a F5.** Los ⚠️ están explicados en cada
+**11 de 14 cumplidos o casi, 3 diferidos a F5.** Los ⚠️ están explicados en cada
 ficha; ninguno es un "casi": o falta la prueba automatizada, o falta la
 auditoría formal.
 
@@ -55,8 +55,32 @@ auditoría formal.
 - **Accesibilidad sin auditar.** Se usaron `aria-label`, `role="alert"`,
   foco visible y contraste del design system, pero **no** se pasó axe ni un
   lector de pantalla. Marcarlo ✅ sin correr la herramienta sería inventar.
-- **RLS sin test por módulo.** Solo `products` tiene pruebas de aislamiento
-  y módulo apagado (`supabase/tests/products.test.ts`). Las tablas de
-  inventario, pedidos, caja y cobros llevan las mismas políticas escritas a
-  mano y verificadas en el navegador con roles distintos, pero no hay una
-  prueba automatizada que lo defienda de una regresión.
+- **RLS: falta `sales-orders`.** `products`, `inventory`, `pos` y `ar` tienen
+  pruebas de aislamiento y módulo apagado. Los pedidos y sus líneas solo están
+  verificados en el navegador con roles distintos, que no defiende de una
+  regresión. Es el hueco que queda.
+
+---
+
+## Lo que encontraron estas pruebas
+
+Escribir los tests de aislamiento **no fue un trámite**: destapó dos fugas
+entre clientes en la capa fiscal que ninguna cantidad de uso de la aplicación
+habría revelado, porque las dos requieren hablarle a la base directamente.
+
+1. **`assign_ncf` aceptaba el tenant de otro.** La función es
+   `security definer` —tiene que serlo— y recibía `p_tenant` sin comprobarlo
+   contra `auth.tenant_id()`. Cualquier usuario autenticado podía agotarle los
+   NCF a otro cliente y dejarlo sin poder facturar por días.
+
+2. **Las vistas `dgii_607` y `dgii_608` se saltaban la RLS.** Una vista corre
+   con los privilegios de su dueño salvo que lleve `security_invoker`. Como se
+   crearon sin esa opción, `select * from public.dgii_607` devolvía las ventas
+   de **todos** los clientes: RNC, montos y NCF incluidos.
+
+Ambas corregidas en
+[`0030_fuga_fiscal_entre_clientes.sql`](../../supabase/migrations/0030_fuga_fiscal_entre_clientes.sql).
+
+La lección operativa: **toda vista nueva sobre una tabla con RLS necesita
+`security_invoker = true`**, y toda función `security definer` que reciba un
+`tenant_id` por parámetro tiene que validarlo ella misma.

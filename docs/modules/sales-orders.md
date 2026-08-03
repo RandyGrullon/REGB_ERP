@@ -103,7 +103,7 @@ rebota entero. Es opcional: un consumidor final no tiene RNC.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ⚠️ verificada por rol en navegador; sin test automatizado |
+| 2 | Migraciones + RLS probadas | ⚠️ `customers` cubierta de refilón por `fiscal.test.ts`; los pedidos solo verificados en navegador. Es el hueco de prueba que queda |
 | 3 | Lógica pura con cobertura | ✅ `fulfillment.ts`, 20 tests |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 |

@@ -128,7 +128,7 @@ verifica **en la acción de servidor**, no en el botón.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ⚠️ verificada por rol en navegador; sin test automatizado |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/fiscal.test.ts` — turno único por almacén, arqueo, aislamiento de ventas, módulo apagado |
 | 3 | Lógica pura con cobertura | ✅ `cash.ts`, 14 tests |
 | 4 | UI web responsive | ✅ 375 / **768** / 1440 |
 | 5 | UI móvil | 🔜 F5 |
