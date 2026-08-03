@@ -95,6 +95,32 @@ async function resolve(params: DemoParams): Promise<Resolved | null> {
 }
 
 /**
+ * A donde mandar a alguien que no puede abrir `moduleId`.
+ *
+ * Devuelve la primera ruta que su rol SI puede abrir, respetando el orden
+ * del sidebar —que es el orden por uso, no alfabetico— o `null` si el
+ * modulo pedido esta a su alcance y no hay que redirigir a ningun lado.
+ *
+ * Existe por el cajero: no tiene `dashboard.view` ni lo necesita, y sin
+ * esto su primera pantalla al entrar era un 404.
+ */
+export async function primeraRutaVisible(
+  params: DemoParams,
+  moduleId: string,
+  perm?: string,
+): Promise<string | null> {
+  const r = await resolve(params)
+  if (!r) return null
+  if (exigir(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) return null
+
+  for (const entrada of r.data.hydration.sidebar) {
+    const ruta = entrada.routes.find((x) => !x.hidden && !x.path.includes(':'))
+    if (ruta) return ruta.path
+  }
+  return null
+}
+
+/**
  * Pagina de modulo completa: contexto + props del Shell.
  * Sin sesion redirige; sin permiso de ver, la ruta "no existe" (404).
  */

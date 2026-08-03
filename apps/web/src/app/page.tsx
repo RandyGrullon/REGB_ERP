@@ -1,7 +1,9 @@
-import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, StatCard } from '@regb/ui'
+import { Badge, Icon, StatCard } from '@regb/ui'
+import { redirect } from 'next/navigation'
 import { asUser, db } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { modulePage, primeraRutaVisible, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { Widget, cargarDatosWidgets, type DatosWidgets } from '@/components/widgets'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,9 +39,21 @@ export default async function Page({
     )
   }
 
+  // Un cajero no tiene `dashboard.view` y no lo necesita: lo que necesita
+  // es la caja. Sin esto su primera pantalla del dia era un 404 —el error
+  // mas desmoralizante posible para alguien que acaba de entrar al sistema.
+  // Se le manda a la primera ruta que SI puede abrir.
+  const puerta = await primeraRutaVisible(params, 'dashboard')
+  if (puerta) {
+    const qsDemo = params.tenant
+      ? `?tenant=${params.tenant}&rol=${encodeURIComponent(params.rol ?? '')}`
+      : ''
+    redirect(`${puerta}${qsDemo}`)
+  }
+
   const { ctx, shell } = await modulePage(params, 'dashboard')
 
-  const stats = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [stats, datosWidgets] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [row] = await tx<
       { usuarios: string; sucursales: string; productos: string; empresas: string }[]
     >`
@@ -52,12 +66,18 @@ export default async function Page({
           where tenant_id = ${ctx.tenantId} and active)                       as productos,
         (select count(*) from public.companies
           where tenant_id = ${ctx.tenantId} and deleted_at is null)           as empresas`
-    return {
+    const s = {
       usuarios: Number(row?.usuarios ?? 0),
       sucursales: Number(row?.sucursales ?? 0),
       productos: Number(row?.productos ?? 0),
       empresas: Number(row?.empresas ?? 0),
     }
+    // Los widgets van en el mismo `asUser`: una sola sesion de RLS para
+    // toda la pantalla de inicio, que es la que mas se abre del ERP. Las
+    // claves salen del registry —el dashboard no sabe de que modulo vino
+    // cada una, ni le hace falta.
+    const w: DatosWidgets = await cargarDatosWidgets(tx, ctx.tenantId, shell.data.widgets)
+    return [s, w] as const
   })
 
   const qs = ctx.demoQs
@@ -142,16 +162,7 @@ export default async function Page({
             className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
           >
             {shell.data.widgets.map((w) => (
-              <Card key={w}>
-                <CardHeader>
-                  <CardTitle className="text-sm">{w}</CardTitle>
-                </CardHeader>
-                <CardBody>
-                  <p className="py-4 text-center text-xs text-[var(--color-text-muted)]">
-                    Este widget lo llena su modulo cuando tenga datos que ensenar (F4).
-                  </p>
-                </CardBody>
-              </Card>
+              <Widget key={w} clave={w} datos={datosWidgets} qs={qs} />
             ))}
           </section>
         )}

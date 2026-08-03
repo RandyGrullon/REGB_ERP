@@ -41,8 +41,8 @@ export default defineModule({
     { path: '/pos/ticket/:id', label: 'Ticket', perm: 'pos.report.view', hidden: true },
   ],
 
-  dashboardWidgets: ['sales-today'],
-  events: { emits: ['pos.sale.completed', 'pos.shift.closed'], listens: [] },
+  dashboardWidgets: ['sales-today', 'open-shifts'],
+  events: { emits: ['pos.sale.completed', 'pos.sale.voided', 'pos.shift.closed'], listens: [] },
 
   platforms: { web: true, desktop: true, mobile: true },
   mobileScope: ['sell', 'view'],
