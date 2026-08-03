@@ -25,7 +25,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'pos', 'pos.sell')
 
-  const [turno, productos, clientes, resumen, almacenes] = await asUser(
+  const [turno, productos, clientes, resumen, almacenes, ncfOk] = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -88,7 +88,17 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         select id, name from public.warehouses
         where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
 
-      return [t, p, c, r, w] as const
+      // Se pregunta ANTES de vender, no despues. Un cajero que descubre
+      // que no hay comprobante fiscal cuando el cliente ya pago no puede
+      // hacer nada; sabiendolo al abrir la caja, avisa al dueno a tiempo.
+      const [n] = await tx<{ ok: boolean }[]>`
+        select exists (
+          select 1 from public.ncf_sequences
+          where tenant_id = ${ctx.tenantId} and ncf_type = 'B02' and is_active
+            and expires_on >= current_date and next_number <= range_to
+        ) as ok`
+
+      return [t, p, c, r, w, n?.ok ?? false] as const
     },
   )
 
@@ -133,6 +143,34 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             )
           }
         />
+
+        {turno && !ncfOk && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-warning)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_12%,transparent)] p-4 text-sm"
+          >
+            <Icon
+              name="receipt_long"
+              size={20}
+              filled
+              className="shrink-0 text-[var(--color-semantic-text-warning)]"
+            />
+            <p className="text-[var(--color-text-secondary)]">
+              <strong className="text-[var(--color-text-primary)]">
+                No hay secuencia de NCF disponible.
+              </strong>{' '}
+              Se puede seguir vendiendo, pero los tickets saldran sin comprobante fiscal y no
+              serviran para credito fiscal.{' '}
+              <a
+                href={`/cobrar/ncf${qs}`}
+                className="text-[var(--color-text-link)] underline hover:no-underline"
+              >
+                Carga la autorizacion de la DGII
+              </a>{' '}
+              — pedirla toma dias.
+            </p>
+          </div>
+        )}
 
         {turno ? (
           <>

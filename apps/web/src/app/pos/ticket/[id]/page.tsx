@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { formatTaxId } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { PrintButton } from '@/components/PrintButton'
@@ -106,15 +107,22 @@ export default async function TicketPage({
       <div className="mx-auto w-[80mm] bg-white p-3 font-[family-name:var(--font-mono)] text-[11px] leading-tight text-black">
         <header className="text-center">
           <p className="text-[13px] font-bold uppercase">{head.company_name ?? 'REGB ERP'}</p>
-          {head.company_tax_id && <p>RNC {head.company_tax_id}</p>}
+          {head.company_tax_id && <p>RNC {formatTaxId(head.company_tax_id)}</p>}
           <p>{head.warehouse_name}</p>
         </header>
 
         <hr className="my-2 border-dashed border-black" />
 
-        {head.ncf && (
-          <p className="text-center text-[12px] font-bold">
-            NCF: {head.ncf}
+        {/* Sin NCF el ticket lo DICE. Callarlo es lo peor de los dos
+            mundos: el cliente cree que tiene un comprobante fiscal, y se
+            entera cuando su contador lo rechaza. Impreso, al menos sale
+            del mostrador con la conversacion hecha. */}
+        {head.ncf ? (
+          <p className="text-center text-[12px] font-bold">NCF: {head.ncf}</p>
+        ) : (
+          <p className="border border-black py-1 text-center text-[10px] font-bold uppercase">
+            Sin comprobante fiscal
+            <span className="block font-normal normal-case">no valido para credito fiscal</span>
           </p>
         )}
         <p>Ticket: {head.number}</p>
@@ -130,7 +138,7 @@ export default async function TicketPage({
         </p>
         {head.cashier_name && <p>Cajero: {head.cashier_name}</p>}
         <p>Cliente: {head.customer_name ?? 'Consumidor final'}</p>
-        {head.customer_tax_id && <p>RNC/Ced: {head.customer_tax_id}</p>}
+        {head.customer_tax_id && <p>RNC/Ced: {formatTaxId(head.customer_tax_id)}</p>}
 
         {head.voided && (
           <p className="my-2 border border-black py-1 text-center text-[13px] font-bold">
@@ -201,4 +209,3 @@ export default async function TicketPage({
     </>
   )
 }
-

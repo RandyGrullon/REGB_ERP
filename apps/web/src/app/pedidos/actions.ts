@@ -5,6 +5,8 @@ import {
   deriveOrderStatus,
   documentTotals,
   lineTotals,
+  isValidTaxId,
+  normalizeTaxId,
   planFulfillment,
   validateDelivery,
   type OrderLineState,
@@ -44,13 +46,33 @@ export async function crearCliente(fd: FormData): Promise<ActionResult> {
   if (!permiso.ok) return permiso
 
   const name = String(fd.get('name') ?? '').trim()
-  const taxId = String(fd.get('taxId') ?? '').trim() || null
+  const taxIdRaw = String(fd.get('taxId') ?? '').trim()
   const phone = String(fd.get('phone') ?? '').trim() || null
   const email = String(fd.get('email') ?? '').trim() || null
   const terms = num(String(fd.get('terms') ?? '0')) ?? 0
 
   if (name.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
   if (terms < 0) return { ok: false, error: 'Los dias de credito no pueden ser negativos.' }
+
+  // El RNC se valida AQUI, no en la DGII.
+  //
+  // Un RNC mal tecleado no se nota al guardarlo: se nota el dia 20, cuando
+  // el 607 rebota entero y hay que rehacerlo con la fecha limite encima.
+  // El digito verificador (modulo 11 para RNC, Luhn para cedula) atrapa
+  // ese error en el momento en que se comete, que es cuando cuesta un
+  // segundo arreglarlo.
+  //
+  // Queda opcional a proposito: un consumidor final no tiene RNC y
+  // obligarlo trancaria el alta de la mitad de los clientes de un colmado.
+  const taxId = taxIdRaw === '' ? null : normalizeTaxId(taxIdRaw)
+  if (taxId !== null && !isValidTaxId(taxId)) {
+    return {
+      ok: false,
+      error:
+        `"${taxIdRaw}" no es un RNC ni una cedula valida: el digito verificador no cuadra. ` +
+        'Revisalo con el cliente — un RNC malo hace rebotar el 607 completo.',
+    }
+  }
 
   await asUser(ctx.userId, ctx.tenantId, (tx) => {
     return tx`

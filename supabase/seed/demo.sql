@@ -21,7 +21,7 @@ on conflict (slug) do nothing;
 -- ── Cliente 2: MEDIANO ─────────────────────────────────────────────────
 insert into regb.tenants (slug, legal_name, trade_name, tax_id, tier, status, installed_at, go_live_at, health_score)
 values ('distribuidora-caribe', 'Distribuidora Caribe SRL', 'Caribe',
-        '131-45678-9', 'mediano', 'active', now() - interval '6 months', now() - interval '5 months', 94)
+        '131-45678-2', 'mediano', 'active', now() - interval '6 months', now() - interval '5 months', 94)
 on conflict (slug) do nothing;
 
 -- ── Empresas, sucursales y modulos ─────────────────────────────────────
@@ -47,7 +47,7 @@ begin
   end if;
 
   insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
-  values (v_med, 'Distribuidora Caribe SRL', '131-45678-9', 'DOP', true)
+  values (v_med, 'Distribuidora Caribe SRL', '131-45678-2', 'DOP', true)
   on conflict do nothing
   returning id into v_c2;
   if v_c2 is null then
@@ -172,8 +172,11 @@ begin
   insert into public.customers (tenant_id, name, tax_id, phone, payment_terms)
   values
     (v_pyme, 'Consumidor final',              null,          null,           0),
-    (v_pyme, 'Cafeteria La Parada SRL',       '130-55555-5', '809-555-0140', 15),
-    (v_med,  'Ferreteria El Martillo SRL',    '131-77777-7', '809-555-0170', 30),
-    (v_med,  'Constructora Duarte SRL',       '131-88888-8', '809-555-0180', 45)
+    -- Los RNC llevan digito verificador (modulo 11): estos NO son numeros
+    -- decorativos. Cambiar el ultimo digito los invalida y el alta de
+    -- clientes los rechazara, que es justo lo que debe pasar.
+    (v_pyme, 'Cafeteria La Parada SRL',       '130-55555-9', '809-555-0140', 15),
+    (v_med,  'Ferreteria El Martillo SRL',    '131-77777-5', '809-555-0170', 30),
+    (v_med,  'Constructora Duarte SRL',       '131-88888-7', '809-555-0180', 45)
   on conflict do nothing;
 end $$;

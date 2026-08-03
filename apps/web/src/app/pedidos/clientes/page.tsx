@@ -19,6 +19,7 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
+import { formatTaxId } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -142,7 +143,7 @@ export default async function ClientesPage({
               {customers.map((c) => (
                 <TR key={c.id} className={c.is_active ? '' : 'opacity-50'}>
                   <TD className="font-medium text-[var(--color-text-primary)]">{c.name}</TD>
-                  <TD>{c.tax_id ? <Mono>{c.tax_id}</Mono> : '—'}</TD>
+                  <TD>{c.tax_id ? <Mono>{formatTaxId(c.tax_id)}</Mono> : '—'}</TD>
                   <TD>
                     <span className="text-xs">
                       {c.phone ?? '—'}
@@ -207,9 +208,22 @@ export default async function ClientesPage({
                     className={inputCls}
                   />
                 </label>
-                <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   RNC / Cedula
-                  <input name="taxId" placeholder="130-11111-1" className={inputCls} />
+                  <input
+                    name="taxId"
+                    placeholder="130-11111-1"
+                    inputMode="numeric"
+                    // 9 digitos de RNC u 11 de cedula, con o sin guiones.
+                    // El digito verificador lo comprueba el servidor: esto
+                    // solo evita el viaje cuando falta un numero entero.
+                    pattern="[\d\s-]{9,13}"
+                    title="RNC de 9 digitos o cedula de 11. Opcional."
+                    className={inputCls}
+                  />
+                  <span className="text-[10px] text-[var(--color-text-muted)]">
+                    Opcional. Se verifica el digito.
+                  </span>
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Telefono
