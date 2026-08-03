@@ -44,6 +44,7 @@ export default defineModule({
       perm: 'ar.invoice.create',
       icon: 'verified',
     },
+    { path: '/cobrar/dgii', label: 'Reportes DGII', perm: 'ar.export', icon: 'account_balance' },
     { path: '/cobrar/:id', label: 'Factura', perm: 'ar.view', hidden: true },
   ],
 
