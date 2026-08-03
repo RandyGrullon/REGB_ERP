@@ -147,36 +147,82 @@ begin
   on conflict do nothing;
 end $$;
 
--- ── Fase 4: los modulos del MVP comercial y sus datos minimos ──────────
+-- ═══════════════════════════════════════════════════════════════════════
+--  Cartera y arqueo: para que la demo tenga que ensenar el primer minuto
+-- ═══════════════════════════════════════════════════════════════════════
+--  Una cartera vacia no demuestra nada. Estas tres facturas caen en tres
+--  tramos distintos de antiguedad a proposito —una al dia, una que empieza
+--  a doler y una casi perdida— porque es la lectura que un dueno hace en
+--  cinco segundos y la que decide si compra.
+--
+--  Las fechas son relativas a `current_date`: la demo envejece sola y
+--  nunca se ve congelada en el pasado.
 do $$
 declare
-  v_pyme uuid;
-  v_med  uuid;
+  v_med      uuid;
+  v_pyme     uuid;
+  v_martillo uuid;
+  v_duarte   uuid;
+  v_alm      uuid;
+  v_maria    uuid;
+  v_inv      uuid;
+  v_turno    uuid;
 begin
-  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
   select id into v_med  from regb.tenants where slug = 'distribuidora-caribe';
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  if v_med is null or v_pyme is null then return; end if;
 
-  -- Los cinco de F4. El colmado vende en mostrador; la distribuidora, a
-  -- credito con pedidos formales.
-  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
-  values (v_pyme, 'pos', 'active', true),
-         (v_pyme, 'sales-orders', 'active', true),
-         (v_pyme, 'ar', 'active', true),
-         (v_med,  'pos', 'active', true),
-         (v_med,  'sales-orders', 'active', true),
-         (v_med,  'ar', 'active', true)
-  on conflict do nothing;
+  select id into v_martillo from public.customers
+    where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_duarte from public.customers
+    where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  if v_martillo is null or v_duarte is null then return; end if;
 
-  -- Clientes: uno de contado y uno a credito, para que la cartera tenga
-  -- algo que mostrar desde el primer minuto.
-  insert into public.customers (tenant_id, name, tax_id, phone, payment_terms)
+  -- ── Tres facturas en tres tramos ─────────────────────────────────────
+  -- 10 dias: al dia. 45: hay que llamar. 95: ya es una negociacion.
+  insert into public.customer_invoices
+    (tenant_id, number, customer_id, source_type, issue_date, due_date,
+     subtotal, discount, tax, total, status)
   values
-    (v_pyme, 'Consumidor final',              null,          null,           0),
-    -- Los RNC llevan digito verificador (modulo 11): estos NO son numeros
-    -- decorativos. Cambiar el ultimo digito los invalida y el alta de
-    -- clientes los rechazara, que es justo lo que debe pasar.
-    (v_pyme, 'Cafeteria La Parada SRL',       '130-55555-9', '809-555-0140', 15),
-    (v_med,  'Ferreteria El Martillo SRL',    '131-77777-5', '809-555-0170', 30),
-    (v_med,  'Constructora Duarte SRL',       '131-88888-7', '809-555-0180', 45)
-  on conflict do nothing;
+    (v_med, 'FAC-DEMO-0001', v_martillo, 'manual',
+     current_date - 10, current_date + 20,
+     18500.00, 0, 3330.00, 21830.00, 'open'),
+    (v_med, 'FAC-DEMO-0002', v_duarte, 'manual',
+     current_date - 75, current_date - 45,
+     42000.00, 2000.00, 7200.00, 47200.00, 'partially_paid'),
+    (v_med, 'FAC-DEMO-0003', v_martillo, 'manual',
+     current_date - 125, current_date - 95,
+     9800.00, 0, 1764.00, 11564.00, 'overdue')
+  on conflict (tenant_id, number) do nothing;
+
+  -- Un abono parcial: la de 45 dias envejece solo su REMANENTE, que es
+  -- justo lo que distingue un aging bien hecho de uno que suma totales.
+  select id into v_inv from public.customer_invoices
+    where tenant_id = v_med and number = 'FAC-DEMO-0002';
+  if v_inv is not null then
+    insert into public.customer_payments
+      (tenant_id, invoice_id, amount, method, reference, received_at)
+    values (v_med, v_inv, 20000.00, 'transfer', 'TRF-889021',
+            now() - interval '30 days')
+    on conflict do nothing;
+  end if;
+
+  -- ── Un turno cerrado con faltante ────────────────────────────────────
+  -- Con diferencia a proposito: un arqueo que siempre cuadra no ensena a
+  -- leer un arqueo. RD$40 de faltante es lo tipico —vuelto mal dado—, no
+  -- un robo, y el tour lo explica asi.
+  select id into v_alm from public.warehouses
+    where tenant_id = v_pyme order by is_default desc limit 1;
+  select user_id into v_maria from public.user_profiles
+    where tenant_id = v_pyme limit 1;
+
+  if v_alm is not null then
+    insert into public.pos_shifts
+      (tenant_id, warehouse_id, cashier_id, opening_float, counted_cash,
+       expected_cash, variance, status, opened_at, closed_at, notes)
+    values (v_pyme, v_alm, v_maria, 2000.00, 20380.00, 20420.00, -40.00,
+            'closed', now() - interval '2 days' - interval '8 hours',
+            now() - interval '2 days', 'Faltante, se revisara manana')
+    returning id into v_turno;
+  end if;
 end $$;
