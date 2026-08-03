@@ -38,6 +38,12 @@ export default defineModule({
   routes: [
     { path: '/cobrar', label: 'Por cobrar', perm: 'ar.view' },
     { path: '/cobrar/cartera', label: 'Cartera', perm: 'ar.view', icon: 'monitoring' },
+    {
+      path: '/cobrar/ncf',
+      label: 'Comprobantes',
+      perm: 'ar.invoice.create',
+      icon: 'verified',
+    },
     { path: '/cobrar/:id', label: 'Factura', perm: 'ar.view', hidden: true },
   ],
 
