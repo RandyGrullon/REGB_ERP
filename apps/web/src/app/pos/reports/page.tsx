@@ -26,6 +26,7 @@ export const metadata = { title: 'Cierres · REGB ERP' }
 interface SaleRow {
   id: string
   number: string
+  ncf: string | null
   total: string
   voided: boolean
   void_reason: string | null
@@ -57,7 +58,7 @@ export default async function CierresPage({
 
   const [ventas, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const v = await tx<SaleRow[]>`
-      select s.id, s.number, s.total::text, s.voided, s.void_reason, s.created_at::text,
+      select s.id, s.number, s.ncf, s.total::text, s.voided, s.void_reason, s.created_at::text,
              c.name as customer_name, up.display_name as cashier_name,
              w.name as warehouse_name,
              (select string_agg(p.method || ':' || p.amount::text, ',')
@@ -143,6 +144,7 @@ export default async function CierresPage({
             <THead>
               <TR>
                 <TH>Ticket</TH>
+                <TH>NCF</TH>
                 <TH>Cuando</TH>
                 <TH>Caja</TH>
                 <TH>Cliente</TH>
@@ -160,11 +162,31 @@ export default async function CierresPage({
               {ventas.map((v) => (
                 <TR key={v.id} className={v.voided ? 'opacity-50' : ''}>
                   <TD>
-                    <Mono>{v.number}</Mono>
+                    <a
+                      href={`/pos/ticket/${v.id}${qs}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      title="Ver e imprimir el ticket"
+                      className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
+                      <Mono>{v.number}</Mono>
+                    </a>
                     {v.voided && (
                       <Badge tone="danger" dot={false} className="ml-2" title={v.void_reason ?? ''}>
                         anulado
                       </Badge>
+                    )}
+                  </TD>
+                  <TD>
+                    {v.ncf ? (
+                      <Mono>{v.ncf}</Mono>
+                    ) : (
+                      <span
+                        title="Este ticket salio sin comprobante fiscal: no hay secuencia de la DGII cargada."
+                        className="text-xs text-[var(--color-semantic-text-warning)]"
+                      >
+                        sin NCF
+                      </span>
                     )}
                   </TD>
                   <TD>{hora(v.created_at)}</TD>

@@ -52,12 +52,13 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               sku: string
               name: string
               unit: string
+              barcode: string | null
               price: string
               tax_rate: string
               disponible: string
             }[]
           >`
-            select pr.id, pr.sku, pr.name, pr.unit, pr.price::text, pr.tax_rate::text,
+            select pr.id, pr.sku, pr.name, pr.unit, pr.barcode, pr.price::text, pr.tax_rate::text,
                    coalesce(sl.qty_on_hand - sl.qty_reserved, 0)::text as disponible
             from public.products pr
             left join public.stock_levels sl
@@ -103,6 +104,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     sku: p.sku,
     name: p.name,
     unit: p.unit,
+    barcode: p.barcode,
     price: Number(p.price),
     taxRate: Number(p.tax_rate),
     disponible: Number(p.disponible),

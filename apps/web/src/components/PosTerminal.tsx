@@ -24,6 +24,8 @@ import { cobrarVentaForm } from '@/app/pos/actions'
 export interface PosProduct {
   id: string
   sku: string
+  /** Codigo de barras impreso en el empaque. Lo dispara el lector. */
+  barcode: string | null
   name: string
   unit: string
   price: number
@@ -51,6 +53,20 @@ const METODOS: { id: PaymentMethod; label: string; icon: string }[] = [
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+/**
+ * Criterio unico de busqueda: lo usan la rejilla y el escaner. Separados
+ * se desincronizan, y entonces el cajero ve un solo producto en pantalla
+ * pero el Enter no lo agrega —el fallo mas confuso posible en un mostrador.
+ */
+function coincide(p: PosProduct, q: string): boolean {
+  const t = q.toLowerCase()
+  return (
+    p.name.toLowerCase().includes(t) ||
+    p.sku.toLowerCase().includes(t) ||
+    (p.barcode?.includes(q) ?? false)
+  )
+}
+
 export function PosTerminal({
   shiftId,
   products,
@@ -69,15 +85,14 @@ export function PosTerminal({
   const [customerId, setCustomerId] = useState('')
   const [metodo, setMetodo] = useState<PaymentMethod>('cash')
   const [recibido, setRecibido] = useState('')
+  const [noEncontrado, setNoEncontrado] = useState<string | null>(null)
 
   const porId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
   const filtrados = useMemo(() => {
-    const q = busqueda.trim().toLowerCase()
+    const q = busqueda.trim()
     if (q === '') return products.slice(0, 40)
-    return products
-      .filter((p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q))
-      .slice(0, 40)
+    return products.filter((p) => coincide(p, q)).slice(0, 40)
   }, [busqueda, products])
 
   // Mismo motor que usa el servidor: lo que ve el cajero antes de cobrar es
@@ -119,6 +134,46 @@ export function PosTerminal({
     setBusqueda('')
   }
 
+  /**
+   * Lector de codigo de barras.
+   *
+   * Un lector USB es un TECLADO: teclea el codigo y manda Enter. No hace
+   * falta driver ni Electron — solo escuchar el Enter en el buscador,
+   * resolver el codigo y limpiar para el siguiente producto.
+   *
+   * Se busca por codigo de barras exacto primero y por SKU despues: dos
+   * productos distintos no comparten codigo, pero un SKU escrito a mano
+   * puede coincidir parcialmente con otro.
+   */
+  function alEscanear(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+
+    // Del DOM, no del estado: el escaner teclea el codigo entero y manda
+    // Enter en milisegundos, asi que `busqueda` puede ir un render atrasado
+    // y con el closure viejo se leeria un codigo a medias. El input siempre
+    // tiene el valor completo.
+    const codigo = e.currentTarget.value.trim()
+    if (codigo === '') return
+
+    const exacto =
+      products.find((p) => p.barcode && p.barcode === codigo) ??
+      products.find((p) => p.sku.toLowerCase() === codigo.toLowerCase())
+
+    if (exacto) {
+      agregar(exacto)
+      return
+    }
+    // Un solo resultado tambien basta: el cajero ya filtro escribiendo.
+    const coincidencias = products.filter((p) => coincide(p, codigo))
+    if (coincidencias.length === 1) {
+      agregar(coincidencias[0]!)
+      return
+    }
+    setNoEncontrado(codigo)
+    setTimeout(() => setNoEncontrado(null), 2500)
+  }
+
   function cambiarQty(productId: string, delta: number) {
     setLineas((prev) =>
       prev
@@ -151,11 +206,23 @@ export function PosTerminal({
           <input
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
+            onKeyDown={alEscanear}
             placeholder="Buscar o escanear codigo de barras…"
             autoFocus
             className="h-12 w-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-11 pr-3 text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-brand-bright)]"
           />
         </div>
+
+        {noEncontrado && (
+          <p
+            role="alert"
+            className="flex items-center gap-2 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_16%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-warning)]"
+          >
+            <Icon name="barcode_reader" size={18} />
+            Ningun producto con el codigo <strong>{noEncontrado}</strong>. Revisa que este en el
+            catalogo con su codigo de barras.
+          </p>
+        )}
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
           {filtrados.map((p) => (

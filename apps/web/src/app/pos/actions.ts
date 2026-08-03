@@ -217,12 +217,50 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
     const [n] = await tx<{ next_pos_sale_number: string }[]>`
       select public.next_pos_sale_number(${ctx.tenantId})`
 
+    // Comprobante fiscal. Un cliente con RNC pide credito fiscal (B01) para
+    // deducir el ITBIS; el que pasa por el mostrador se lleva consumo (B02).
+    //
+    // Si no hay secuencia cargada la venta NO se detiene: un colmado que
+    // recien abre vende antes de que la DGII le autorice el primer rango, y
+    // trancar la caja por eso seria peor que el ticket sin NCF. La pantalla
+    // de Comprobantes ya avisa a gritos cuando falta o esta por agotarse.
+    const [cli] = customerId
+      ? await tx<{ tax_id: string | null }[]>`
+          select tax_id from public.customers
+          where id = ${customerId} and tenant_id = ${ctx.tenantId}`
+      : []
+    const tipoNcf = cli?.tax_id ? 'B01' : 'B02'
+
+    // Se comprueba ANTES de llamar en vez de atrapar la excepcion: si
+    // `assign_ncf` lanza, Postgres aborta la transaccion completa y todo lo
+    // que viene despues —lineas, kardex, pagos— falla con "current
+    // transaction is aborted". Un try/catch de JS no deshace eso.
+    //
+    // El `for update` de aqui es el mismo candado que toma `assign_ncf`, y
+    // dura hasta el commit: entre la comprobacion y el consumo nadie mas
+    // puede gastar el numero.
+    const [disponible] = await tx<{ id: string }[]>`
+      select id from public.ncf_sequences
+      where tenant_id = ${ctx.tenantId} and ncf_type = ${tipoNcf}
+        and is_active and company_id is null
+        and expires_on >= current_date
+        and next_number <= range_to
+      for update`
+
+    const ncf = disponible
+      ? ((
+          await tx<{ assign_ncf: string }[]>`
+            select public.assign_ncf(${ctx.tenantId}, ${tipoNcf})`
+        )[0]?.assign_ncf ?? null)
+      : null
+
     const [venta] = await tx<{ id: string }[]>`
       insert into public.pos_sales
-        (tenant_id, shift_id, number, customer_id, subtotal, discount, tax, total, cashier_id)
+        (tenant_id, shift_id, number, customer_id, subtotal, discount, tax, total, cashier_id,
+         ncf, ncf_type)
       values (${ctx.tenantId}, ${shiftId}, ${n!.next_pos_sale_number}, ${customerId},
               ${totales.subtotal}, ${totales.discount}, ${totales.tax}, ${totales.total},
-              ${ctx.userId})
+              ${ctx.userId}, ${ncf}, ${ncf ? tipoNcf : null})
       returning id`
 
     for (const [i, l] of lineasCalc.entries()) {

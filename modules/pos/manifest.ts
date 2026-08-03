@@ -38,6 +38,7 @@ export default defineModule({
     { path: '/pos', label: 'Caja', perm: 'pos.sell' },
     { path: '/pos/shifts', label: 'Turnos', perm: 'pos.shift.open' },
     { path: '/pos/reports', label: 'Cierres', perm: 'pos.report.view' },
+    { path: '/pos/ticket/:id', label: 'Ticket', perm: 'pos.report.view', hidden: true },
   ],
 
   dashboardWidgets: ['sales-today'],
