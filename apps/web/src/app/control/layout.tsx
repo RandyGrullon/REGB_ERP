@@ -25,25 +25,23 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
             Panel del propietario
           </span>
         </p>
-        <nav aria-label="Secciones" className="flex items-center gap-1 text-sm">
-          <Link
-            href="/control"
-            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Clientes
-          </Link>
-          <Link
-            href="/control/facturacion"
-            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Facturacion
-          </Link>
-          <Link
-            href="/control/onboarding"
-            className="rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Onboarding
-          </Link>
+        <nav aria-label="Secciones" className="flex items-center gap-1 overflow-x-auto text-sm">
+          {[
+            { href: '/control', label: 'Clientes' },
+            { href: '/control/salud', label: 'Salud' },
+            { href: '/control/datos', label: 'Todo el dato' },
+            { href: '/control/actividad', label: 'Actividad' },
+            { href: '/control/facturacion', label: 'Facturacion' },
+            { href: '/control/onboarding', label: 'Onboarding' },
+          ].map((s) => (
+            <Link
+              key={s.href}
+              href={s.href}
+              className="whitespace-nowrap rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              {s.label}
+            </Link>
+          ))}
         </nav>
         <div className="ml-auto">
           <Link
@@ -54,7 +52,9 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
           </Link>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto p-4 md:p-6">
+        {children}
+      </main>
     </div>
   )
 }
