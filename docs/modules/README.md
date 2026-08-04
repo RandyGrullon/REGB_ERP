@@ -25,8 +25,8 @@ hardware funciona hoy y qué parte de la DGII está conectada.
 | # | Punto | products | inventory | sales-orders | pos | ar |
 |---|---|:--:|:--:|:--:|:--:|:--:|
 | 1 | `manifest.ts` completo | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ | ✅ | ⚠️ | ✅ | ✅ |
-| 3 | Lógica pura con cobertura | ⚠️ | ✅ | ✅ | ✅ | ✅ |
+| 2 | Migraciones + RLS probadas | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 3 | Lógica pura con cobertura | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 4 | UI web responsive | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 5 | UI móvil | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
 | 6 | Desktop verificado | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
@@ -39,26 +39,30 @@ hardware funciona hoy y qué parte de la DGII está conectada.
 | 13 | Ficha en `docs/modules/` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 14 | Accesibilidad AA | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
 
-**11 de 14 cumplidos o casi, 3 diferidos a F5.** Los ⚠️ están explicados en cada
-ficha; ninguno es un "casi": o falta la prueba automatizada, o falta la
-auditoría formal.
+**11 de 14 cumplidos, 3 diferidos a F5.** El único ⚠️ que queda es la
+accesibilidad: se usó el design system, foco visible y roles ARIA, pero no se
+pasó axe ni un lector de pantalla, y marcarlo verde sin correr la herramienta
+sería inventar.
 
 ### Deuda declarada, común a los cinco
 
 - **Migraciones sin `down`.** El runner es forward-only y ninguna de las 28
   tiene rollback. Se sustituye por *"la migración se prueba desde base
   limpia"*, que es la garantía que de verdad se ejerce en cada `gate:f0`.
-- **Cobertura sin medir.** `@vitest/coverage-v8` no está instalado, así que
-  el ≥80% del punto 3 **no está verificado**. Lo que sí hay son 107 tests de
-  dominio en `@regb/operations`. Instalar el reporter es trabajo de una
-  tarde y hasta entonces el número no se afirma.
+- **Cobertura medida.** `pnpm test:coverage` la reporta por paquete.
+  `@regb/operations` —donde vive toda la lógica de F4— está en **97.8 %** de
+  líneas, con `costing`, `cash`, `fulfillment`, `receivables` y `documents` al
+  100 %. `module-registry` 95.1 %, `permissions` 93.7 %, `billing` 93.5 %.
+  `@regb/core` marca 44 % porque `tours.ts` son 316 líneas de contenido de
+  tutorial sin una sola rama; su lógica de verdad (`csv`, `events`) está entre
+  95 % y 100 %.
 - **Accesibilidad sin auditar.** Se usaron `aria-label`, `role="alert"`,
   foco visible y contraste del design system, pero **no** se pasó axe ni un
   lector de pantalla. Marcarlo ✅ sin correr la herramienta sería inventar.
-- **RLS: falta `sales-orders`.** `products`, `inventory`, `pos` y `ar` tienen
-  pruebas de aislamiento y módulo apagado. Los pedidos y sus líneas solo están
-  verificados en el navegador con roles distintos, que no defiende de una
-  regresión. Es el hueco que queda.
+- **RLS: los cinco cubiertos.** 161 pruebas contra Postgres real. La última en
+  llegar, `sales-orders`, confirmó los dos agujeros que la 0031 ya había
+  tapado: la numeración se podía consumir desde otro cliente, y seguía
+  entregando números con el módulo apagado.
 
 ---
 

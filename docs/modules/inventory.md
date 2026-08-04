@@ -111,7 +111,7 @@ verifica en la acción de servidor, no en el botón.
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
 | 2 | Migraciones + RLS probadas | ✅ `supabase/tests/inventory.test.ts` — 14 casos: inmutabilidad del kardex, invariante proyección == suma, aislamiento, módulo apagado. Sin `down` (deuda común) |
-| 3 | Lógica pura con cobertura | ✅ `costing.ts` con 20 tests |
+| 3 | Lógica pura con cobertura | ✅ `costing.ts` 20 tests · **100%** de líneas |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 — `mobileScope`: view, count, transfer |
 | 6 | Desktop verificado | 🔜 F5 |

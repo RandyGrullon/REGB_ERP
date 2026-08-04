@@ -84,7 +84,7 @@ reportes.
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
 | 2 | Migraciones + RLS probadas | ⚠️ RLS probada en `supabase/tests/products.test.ts` (13 casos: aislamiento, módulo apagado). Sin `down` — deuda común |
-| 3 | Lógica pura con cobertura | ⚠️ El catálogo casi no tiene lógica pura: son CRUD y RLS. Lo que sí la tiene (totales, impuestos) vive en `documents.ts` con 21 tests |
+| 3 | Lógica pura con cobertura | ✅ El catálogo casi no tiene lógica pura —es CRUD y RLS—; lo que sí la tiene (totales, impuestos) vive en `documents.ts`, 21 tests, **100%** de líneas |
 | 4 | UI web responsive | ✅ 375 / 768 / 1440 |
 | 5 | UI móvil | 🔜 F5 — `mobileScope` ya declarado |
 | 6 | Desktop verificado | 🔜 F5 |

@@ -103,8 +103,8 @@ rebota entero. Es opcional: un consumidor final no tiene RNC.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ⚠️ `customers` cubierta de refilón por `fiscal.test.ts`; los pedidos solo verificados en navegador. Es el hueco de prueba que queda |
-| 3 | Lógica pura con cobertura | ✅ `fulfillment.ts`, 20 tests |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/sales-orders.test.ts` — 25 casos: aislamiento, `customers` como tabla core, módulo apagado, numeración concurrente sin huecos, restricciones |
+| 3 | Lógica pura con cobertura | ✅ `fulfillment.ts` 20 tests · **100%** de líneas |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 |
 | 6 | Desktop verificado | 🔜 F5 |

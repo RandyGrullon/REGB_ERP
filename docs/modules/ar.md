@@ -157,7 +157,7 @@ Verificado por rol: el Contador entra a los reportes DGII, el Cajero recibe
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
 | 2 | Migraciones + RLS probadas | ✅ `supabase/tests/fiscal.test.ts` — NCF sin duplicados bajo concurrencia, 607/608 complementarios, aislamiento fiscal |
-| 3 | Lógica pura con cobertura | ✅ `receivables.ts` 22 tests + `dgii.ts` 14 |
+| 3 | Lógica pura con cobertura | ✅ `receivables.ts` 22 tests (**100%**) + `dgii.ts` 14 (**97.6%**) |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 — `mobileScope`: view |
 | 6 | Desktop verificado | 🔜 F5 |
