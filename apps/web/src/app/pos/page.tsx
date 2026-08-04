@@ -11,6 +11,7 @@ import {
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { BarraEscritorio } from '@/components/BarraEscritorio'
 import { PosTerminal, type PosProduct } from '@/components/PosTerminal'
 import { abrirTurnoForm } from './actions'
 
@@ -143,6 +144,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             )
           }
         />
+
+        <BarraEscritorio />
 
         {turno && !ncfOk && (
           <div

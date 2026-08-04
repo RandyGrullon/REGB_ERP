@@ -148,6 +148,19 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
   const customerId = String(fd.get('customerId') ?? '') || null
   if (!shiftId) return { ok: false, error: 'Abre un turno antes de vender.' }
 
+  // Clave de idempotencia de la caja (F5). Va siempre, no solo offline:
+  // una respuesta perdida por un corte deja a la caja sin saber si la
+  // venta entro, y su unica salida es reintentar. Sin esta clave, ese
+  // reintento crea el duplicado que descuadra el arqueo a las 6 de la
+  // tarde. `sold_at` es la hora REAL del cobro, que en una venta encolada
+  // no es la de llegada al servidor.
+  const clientRef = String(fd.get('clientRef') ?? '').trim() || null
+  const soldAtRaw = String(fd.get('soldAt') ?? '').trim()
+  const soldAt = soldAtRaw !== '' && !Number.isNaN(Date.parse(soldAtRaw)) ? soldAtRaw : null
+  if (clientRef !== null && !/^[0-9a-f-]{36}$/i.test(clientRef)) {
+    return { ok: false, error: 'La referencia de la venta no es valida.' }
+  }
+
   let carrito: { productId: string; qty: number; discountPct: number }[]
   let pagos: { method: PaymentMethod; amount: number }[]
   try {
@@ -214,6 +227,16 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
         .toFixed(2)} y el ticket es ${totales.total.toFixed(2)}.`
     }
 
+    // Antes de consumir numero y NCF: si esta venta ya llego, se devuelve
+    // la que hay. Consumir primero seria quemar un NCF por cada reintento,
+    // y un NCF gastado no vuelve.
+    if (clientRef !== null) {
+      const [ya] = await tx<{ id: string; number: string }[]>`
+        select id, number from public.pos_sales
+        where tenant_id = ${ctx.tenantId} and client_ref = ${clientRef}`
+      if (ya) return `duplicada:${ya.number}`
+    }
+
     const [n] = await tx<{ next_pos_sale_number: string }[]>`
       select public.next_pos_sale_number(${ctx.tenantId})`
 
@@ -257,10 +280,12 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
     const [venta] = await tx<{ id: string }[]>`
       insert into public.pos_sales
         (tenant_id, shift_id, number, customer_id, subtotal, discount, tax, total, cashier_id,
-         ncf, ncf_type)
+         ncf, ncf_type, client_ref, sold_at, synced_at)
       values (${ctx.tenantId}, ${shiftId}, ${n!.next_pos_sale_number}, ${customerId},
               ${totales.subtotal}, ${totales.discount}, ${totales.tax}, ${totales.total},
-              ${ctx.userId}, ${ncf}, ${ncf ? tipoNcf : null})
+              ${ctx.userId}, ${ncf}, ${ncf ? tipoNcf : null},
+              ${clientRef}, ${soldAt ?? new Date().toISOString()},
+              ${clientRef !== null ? new Date().toISOString() : null})
       returning id`
 
     for (const [i, l] of lineasCalc.entries()) {
@@ -292,6 +317,9 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
+  // Una venta ya sincronizada NO es un error: es el reintento haciendo su
+  // trabajo. Devolver ok deja que la caja borre la venta de su cola.
+  if (typeof res === 'string' && res.startsWith('duplicada:')) return { ok: true }
   if (res === 'sin-turno') return { ok: false, error: 'Ese turno no existe.' }
   if (res === 'turno-cerrado') return { ok: false, error: 'El turno ya se cerro.' }
   if (res === 'producto-invalido') {
