@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import { Badge, Button, Card, Icon, cn } from '@regb/ui'
 import { CATEGORIES, type CatalogEntry } from '@/lib/catalog'
+import { solicitarActivacionForm } from '@/app/marketplace/actions'
 
 /**
  * Marketplace (§12.3).
@@ -77,12 +78,17 @@ export function MarketplaceView({
   tenantName,
   roleName,
   backHref,
+  hiddenFields,
+  solicitudPendiente,
 }: {
   catalog: CatalogEntry[]
   tier: string
   tenantName: string
   roleName: string
   backHref: string
+  hiddenFields: Record<string, string>
+  /** Ya hay una peticion abierta: el cliente tiene que saberlo. */
+  solicitudPendiente: { modules: string[]; createdAt: string } | null
 }) {
   const [filtro, setFiltro] = useState<string>('todos')
   const [busqueda, setBusqueda] = useState('')
@@ -90,6 +96,7 @@ export function MarketplaceView({
   const [soloDisponibles, setSoloDisponibles] = useState(false)
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
   const [ultimoPaquete, setUltimoPaquete] = useState<string | null>(null)
+  const [pedido, setPedido] = useState(false)
 
   const activo = (m: CatalogEntry) => m.status === 'active' || m.status === 'trial'
   const porId = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog])
@@ -212,6 +219,30 @@ export function MarketplaceView({
             por el mismo motor que emite tu factura.
           </p>
         </div>
+
+        {(solicitudPendiente || pedido) && (
+          <div
+            role="status"
+            className="mb-4 flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-success)] bg-[color-mix(in_srgb,var(--color-semantic-success)_10%,transparent)] p-3 text-sm"
+          >
+            <Icon
+              name="mark_email_read"
+              size={20}
+              filled
+              className="shrink-0 text-[var(--color-semantic-text-success)]"
+            />
+            <p className="text-[var(--color-text-secondary)]">
+              <strong className="text-[var(--color-text-primary)]">
+                Tu solicitud esta en camino.
+              </strong>{' '}
+              {solicitudPendiente
+                ? `Pediste ${solicitudPendiente.modules.length} modulo${solicitudPendiente.modules.length === 1 ? '' : 's'}. `
+                : ''}
+              Nadie activa nada por su cuenta: te llamamos para cotizar la instalacion y ver si hay
+              datos que migrar. Si vuelves a pedir, se actualiza esta misma solicitud.
+            </p>
+          </div>
+        )}
 
         {enPrueba.length > 0 && (
           <div
@@ -435,9 +466,17 @@ export function MarketplaceView({
                   Limpiar
                 </Button>
               )}
-              <Button size="sm" disabled={simulacion.cuenta === 0}>
-                Solicitar activacion
-              </Button>
+              <form action={solicitarActivacionForm} onSubmit={() => setPedido(true)}>
+                {Object.entries(hiddenFields).map(([k, v]) => (
+                  <input key={k} type="hidden" name={k} value={v} />
+                ))}
+                <input type="hidden" name="modulos" value={JSON.stringify([...seleccionReal])} />
+                <input type="hidden" name="mensual" value={String(simulacion.mensual)} />
+                <input type="hidden" name="instalacion" value={String(simulacion.instalacion)} />
+                <Button size="sm" type="submit" disabled={simulacion.cuenta === 0}>
+                  Solicitar activacion
+                </Button>
+              </form>
             </div>
           </div>
         </div>

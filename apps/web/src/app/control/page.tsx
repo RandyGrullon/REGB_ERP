@@ -17,7 +17,7 @@ import {
   ToolbarActions,
 } from '@regb/ui'
 import { loadControlOverview, type ControlClient } from '@/lib/control'
-import { cargarExtrasPorTenant, type ExtrasCliente } from '@/lib/control-datos'
+import { cargarExtrasPorTenant, cargarSolicitudes, type ExtrasCliente } from '@/lib/control-datos'
 import { db } from '@/lib/db'
 import { requireProvider } from '@/lib/provider-guard'
 import { cycleLabel, StatusBadge, TierBadge, usd } from '@/components/ControlBits'
@@ -112,6 +112,7 @@ export default async function ControlOverviewPage({
   const p = await searchParams
   const { mrr, clients, byTier } = await loadControlOverview()
   const extras = await cargarExtrasPorTenant()
+  const solicitudes = await cargarSolicitudes()
 
   // El id del tenant no viaja en ControlClient; se cruza por slug.
   const idPorSlug = new Map(
@@ -190,6 +191,58 @@ export default async function ControlOverviewPage({
           hint="mora, silencio o salud baja"
         />
       </section>
+
+      {solicitudes.length > 0 && (
+        <section
+          aria-label="Solicitudes de activacion"
+          className="rounded-[var(--radius-lg)] border border-[var(--color-semantic-success)] bg-[color-mix(in_srgb,var(--color-semantic-success)_8%,transparent)] p-4"
+        >
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
+            <Icon
+              name="shopping_cart_checkout"
+              size={20}
+              filled
+              className="text-[var(--color-semantic-text-success)]"
+            />
+            {solicitudes.length} cliente{solicitudes.length === 1 ? '' : 's'} quiere
+            {solicitudes.length === 1 ? '' : 'n'} activar modulos
+          </h2>
+          <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+            Es lo unico de este panel donde alguien esta diciendo que quiere pagarte mas. Llamalo
+            hoy: la cotizacion que vio esta guardada, asi que la conversacion arranca del mismo
+            numero.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {solicitudes.map((s) => (
+              <li
+                key={s.id}
+                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[var(--color-border-subtle)] pt-2 text-sm first:border-0 first:pt-0"
+              >
+                <Link
+                  href={`/control/${s.slug}`}
+                  className="font-medium text-[var(--color-text-link)] hover:underline"
+                >
+                  {s.tenant}
+                </Link>
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {s.modulos.join(', ')}
+                </span>
+                <span className="tabular text-xs text-[var(--color-text-muted)]">
+                  {usd(s.mensual)}/mes + {usd(s.instalacion)} de instalacion
+                </span>
+                <span className="ml-auto text-xs text-[var(--color-text-muted)]">
+                  hace {Math.max(0, dias(s.desde) ?? 0)} d
+                </span>
+                {s.nota && (
+                  <span className="w-full text-xs italic text-[var(--color-text-secondary)]">
+                    &ldquo;{s.nota}&rdquo;
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {riesgosos.length > 0 && !p.riesgo && (
         <div

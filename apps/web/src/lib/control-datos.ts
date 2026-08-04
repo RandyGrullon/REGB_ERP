@@ -296,6 +296,62 @@ export async function cargarSalud(): Promise<Salud> {
   }
 }
 
+// ── Solicitudes de activacion ────────────────────────────────────────────
+
+export interface SolicitudActivacion {
+  id: string
+  tenant: string
+  slug: string
+  tier: string
+  modulos: string[]
+  mensual: number
+  instalacion: number
+  nota: string | null
+  desde: string
+}
+
+/**
+ * Lo que los clientes han pedido activar y nadie ha atendido.
+ *
+ * Es la unica pantalla del panel donde alguien esta diciendo "quiero
+ * pagarte mas". Va arriba del todo por eso.
+ */
+export async function cargarSolicitudes(): Promise<SolicitudActivacion[]> {
+  const sql = db()
+  const filas = await sql<
+    {
+      id: string
+      tenant: string
+      slug: string
+      tier: string
+      modules: string[]
+      quoted_monthly: string
+      quoted_install: string
+      note: string | null
+      created_at: string
+    }[]
+  >`
+    select r.id, t.legal_name as tenant, t.slug, t.tier,
+           r.modules, r.quoted_monthly::text, r.quoted_install::text,
+           r.note, r.created_at::text
+    from regb.activation_requests r
+    join regb.tenants t on t.id = r.tenant_id
+    where r.status = 'pending'
+    order by r.created_at`
+
+  return filas.map((f) => ({
+    id: f.id,
+    tenant: f.tenant,
+    slug: f.slug,
+    tier: f.tier,
+    modulos: f.modules,
+    mensual: Number(f.quoted_monthly),
+    instalacion: Number(f.quoted_install),
+    nota: f.note,
+    desde: f.created_at,
+  }))
+}
+
 // ── Actividad y contexto por cliente para la lista principal ─────────────
 
 export interface ExtrasCliente {

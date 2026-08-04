@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { checkAccess } from '@regb/sdk'
 import { bootstrap, listTenants } from '@/lib/bootstrap'
 import { loadCatalog } from '@/lib/marketplace'
+import { asUser } from '@/lib/db'
 import { authConfigured, currentSession } from '@/lib/supabase'
 import { MarketplaceView } from '@/components/MarketplaceView'
 import type { TenantTier } from '@regb/core'
@@ -24,6 +25,7 @@ export default async function MarketplacePage({
   const params = await searchParams
 
   let tenantId: string
+  let userId: string
   let tier: TenantTier
   let tenantName: string
   let roleName: string
@@ -36,6 +38,7 @@ export default async function MarketplacePage({
     const data = await bootstrap({ session })
     if (!data) redirect('/sin-acceso')
     tenantId = data.tenant.id
+    userId = data.user.id
     tier = data.tenant.tier as TenantTier
     tenantName = data.tenant.name
     roleName = data.role.name
@@ -48,12 +51,24 @@ export default async function MarketplacePage({
     })
     if (!data) redirect('/')
     tenantId = data.tenant.id
+    userId = data.user.id
     tier = data.tenant.tier as TenantTier
     tenantName = data.tenant.name
     roleName = data.role.name
   }
 
   const catalog = await loadCatalog(tenantId, tier)
+
+  // Si ya hay una peticion abierta el cliente tiene que verlo, o vuelve a
+  // pulsar el boton creyendo que la primera vez no funciono.
+  const [pendiente] = await asUser(
+    userId,
+    tenantId,
+    (tx) => tx<{ modules: string[]; created_at: string }[]>`
+      select modules, created_at::text
+      from regb.activation_requests
+      where tenant_id = ${tenantId} and status = 'pending'`,
+  )
 
   return (
     <MarketplaceView
@@ -63,6 +78,12 @@ export default async function MarketplacePage({
       roleName={roleName}
       backHref={
         authConfigured ? '/' : `/?tenant=${params.tenant ?? ''}&rol=${params.rol ?? 'Owner'}`
+      }
+      hiddenFields={
+        authConfigured ? {} : { tenant: params.tenant ?? '', rol: params.rol ?? 'Owner' }
+      }
+      solicitudPendiente={
+        pendiente ? { modules: pendiente.modules, createdAt: pendiente.created_at } : null
       }
     />
   )
