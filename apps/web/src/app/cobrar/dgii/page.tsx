@@ -68,6 +68,46 @@ function fecha(yyyymmdd: string): string {
 
 const ID_LABEL: Record<string, string> = { '1': 'RNC', '2': 'Cedula', '3': 'Sin identificar' }
 
+/**
+ * Descarga del reporte.
+ *
+ * Sale CSV y no el TXT de la Oficina Virtual: ese layout lo fija una norma
+ * que cambia, y un archivo mal formado no falla aqui — falla el dia 20 en
+ * la ventanilla. El contador abre el CSV, lo revisa y lo carga donde ya
+ * trabaja.
+ */
+function Descargar({
+  reporte,
+  periodo,
+  qs,
+  vacio,
+}: {
+  reporte: '607' | '608'
+  periodo: string
+  qs: string
+  vacio: boolean
+}) {
+  const sep = qs === '' ? '?' : '&'
+  return (
+    <a
+      href={`/api/dgii/${reporte}${qs}${sep}periodo=${periodo}`}
+      download
+      aria-disabled={vacio}
+      title={
+        vacio ? 'No hay nada que descargar en este periodo' : 'Descarga en CSV para tu contador'
+      }
+      className={`flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
+        vacio
+          ? 'pointer-events-none opacity-40'
+          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]'
+      }`}
+    >
+      <Icon name="download" size={16} />
+      Descargar CSV
+    </a>
+  )
+}
+
 export default async function DgiiPage({
   searchParams,
 }: {
@@ -144,10 +184,7 @@ export default async function DgiiPage({
               ))}
             </select>
           </label>
-          <ToolbarActions
-            hasFilters={periodo !== periodoActual}
-            clearHref={`/cobrar/dgii${qs}`}
-          />
+          <ToolbarActions hasFilters={periodo !== periodoActual} clearHref={`/cobrar/dgii${qs}`} />
         </Toolbar>
 
         <section aria-label="Resumen del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -171,9 +208,12 @@ export default async function DgiiPage({
         </div>
 
         <section aria-labelledby="t607" className="space-y-2">
-          <h2 id="t607" className="text-sm font-semibold text-[var(--color-text-primary)]">
-            607 · Ventas del periodo
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="t607" className="text-sm font-semibold text-[var(--color-text-primary)]">
+              607 · Ventas del periodo
+            </h2>
+            <Descargar reporte="607" periodo={periodo} qs={qs} vacio={ventas.length === 0} />
+          </div>
           {ventas.length === 0 ? (
             <EmptyState
               icon="receipt_long"
@@ -236,9 +276,12 @@ export default async function DgiiPage({
         </section>
 
         <section aria-labelledby="t608" className="space-y-2">
-          <h2 id="t608" className="text-sm font-semibold text-[var(--color-text-primary)]">
-            608 · Comprobantes anulados
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="t608" className="text-sm font-semibold text-[var(--color-text-primary)]">
+              608 · Comprobantes anulados
+            </h2>
+            <Descargar reporte="608" periodo={periodo} qs={qs} vacio={anulados.length === 0} />
+          </div>
           {anulados.length === 0 ? (
             <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]">
               Ninguno en este periodo. Es lo normal y lo deseable.
