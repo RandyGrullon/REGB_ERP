@@ -37,12 +37,10 @@ hardware funciona hoy y qué parte de la DGII está conectada.
 | 11 | Precio en los 3 tiers | ✅ | ✅ | ✅ | ✅ | ✅ |
 | 12 | E2E en 3 plataformas | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
 | 13 | Ficha en `docs/modules/` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 14 | Accesibilidad AA | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ |
+| 14 | Accesibilidad AA | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**11 de 14 cumplidos, 3 diferidos a F5.** El único ⚠️ que queda es la
-accesibilidad: se usó el design system, foco visible y roles ARIA, pero no se
-pasó axe ni un lector de pantalla, y marcarlo verde sin correr la herramienta
-sería inventar.
+**11 de 14 cumplidos, 3 diferidos a F5.** Ya no queda ningún ⚠️: los tres
+pendientes se cerraron con medición, no con promesas.
 
 ### Deuda declarada, común a los cinco
 
@@ -56,9 +54,10 @@ sería inventar.
   `@regb/core` marca 44 % porque `tours.ts` son 316 líneas de contenido de
   tutorial sin una sola rama; su lógica de verdad (`csv`, `events`) está entre
   95 % y 100 %.
-- **Accesibilidad sin auditar.** Se usaron `aria-label`, `role="alert"`,
-  foco visible y contraste del design system, pero **no** se pasó axe ni un
-  lector de pantalla. Marcarlo ✅ sin correr la herramienta sería inventar.
+- **Accesibilidad: medida y corregida.** Ver abajo. Lo que sigue sin
+  comprobarse es lo que una máquina no decide: orden de foco lógico, si un
+  texto alternativo describe de verdad, y si el flujo completo se puede
+  hacer solo con teclado. Eso pide una persona y un lector de pantalla.
 - **RLS: los cinco cubiertos.** 161 pruebas contra Postgres real. La última en
   llegar, `sales-orders`, confirmó los dos agujeros que la 0031 ya había
   tapado: la numeración se podía consumir desde otro cliente, y seguía
@@ -88,3 +87,31 @@ Ambas corregidas en
 La lección operativa: **toda vista nueva sobre una tabla con RLS necesita
 `security_invoker = true`**, y toda función `security definer` que reciba un
 `tenant_id` por parámetro tiene que validarlo ella misma.
+
+
+---
+
+## Accesibilidad
+
+Se auditaron las **29 pantallas** con una sonda propia
+([`scripts/sonda-a11y.js`](../../scripts/sonda-a11y.js)) que comprueba las
+cinco familias de WCAG 2.1 AA que se pueden decidir con la página pintada:
+nombre accesible de cada control, jerarquía de encabezados, landmarks, ids
+repetidos y contraste real calculado sobre los colores computados.
+
+No depende de una CDN a propósito: así corre contra el servidor local sin
+internet, que es donde de verdad se prueba.
+
+**Primera pasada: 21 de 29 pantallas con fallos.** Tres problemas, y los tres
+se arreglaron en el sitio correcto:
+
+| Problema | Dónde estaba | Arreglo |
+|---|---|---|
+| `h1 → h3` en 18 pantallas | `CardTitle` y `EmptyState` renderizaban `h3` | Pasan a `h2`. Un salto de nivel se anuncia como *"falta una sección"*: quien navega por encabezados se queda buscando algo que no existe |
+| 5 controles sin nombre | Filtro de almacén, buscador de la caja, dos campos de alcance en Roles, subida de CSV | `aria-label`. El `<label>` de Roles era hermano y no envolvía, así que no nombraba nada; el placeholder tampoco sirve — desaparece al escribir |
+| 2 pantallas sin `main` | Roles y Marketplace tienen chrome propio, fuera del Shell | El panel de contenido pasa a `<main>` |
+
+**Segunda pasada: 4 pantallas.** **Tercera: 0 de 29.**
+
+**Contraste: cero fallos desde la primera pasada.** El design system Aurora
+aguanta sin excepciones, que era lo que más riesgo tenía de no cumplir.

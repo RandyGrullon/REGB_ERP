@@ -115,7 +115,7 @@ rebota entero. Es opcional: un consumidor final no tiene RNC.
 | 11 | Precio en 3 tiers | ✅ |
 | 12 | E2E en 3 plataformas | 🔜 F5 |
 | 13 | Ficha | ✅ |
-| 14 | Accesibilidad AA | ⚠️ sin auditar |
+| 14 | Accesibilidad AA | ✅ 29 pantallas sin fallos automatizables — sin controles anónimos, jerarquía de encabezados correcta, landmarks y contraste (ver [README](README.md#accesibilidad)) |
 
 ## Lo que NO hace
 

@@ -19,9 +19,24 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
   return <div className={cn('px-4 pt-4 pb-2', className)} {...props} />
 }
 
-export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+/**
+ * Titulo de tarjeta.
+ *
+ * `h2` y no `h3`: el titulo de la pantalla es el unico `h1`, asi que una
+ * tarjeta colgada de el es el segundo nivel. Con `h3` quedaba el salto
+ * h1 -> h3, y un lector de pantalla anuncia eso como "falta una seccion":
+ * quien navega por encabezados —que es como navega mucha gente con lector—
+ * se queda buscando un nivel que no existe.
+ *
+ * `as` permite bajar a `h3` cuando la tarjeta si cuelga de un `h2` real.
+ */
+export function CardTitle({
+  className,
+  as: Tag = 'h2',
+  ...props
+}: HTMLAttributes<HTMLHeadingElement> & { as?: 'h2' | 'h3' | 'h4' }) {
   return (
-    <h3
+    <Tag
       className={cn('text-base font-semibold text-[var(--color-text-primary)]', className)}
       {...props}
     />

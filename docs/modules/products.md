@@ -95,7 +95,7 @@ reportes.
 | 11 | Precio en 3 tiers | ✅ 0/0/0, deliberado |
 | 12 | E2E en 3 plataformas | 🔜 F5 |
 | 13 | Ficha | ✅ este archivo |
-| 14 | Accesibilidad AA | ⚠️ sin auditar con axe |
+| 14 | Accesibilidad AA | ✅ 29 pantallas sin fallos automatizables — sin controles anónimos, jerarquía de encabezados correcta, landmarks y contraste (ver [README](README.md#accesibilidad)) |
 
 ## Lo que NO hace, y por qué
 

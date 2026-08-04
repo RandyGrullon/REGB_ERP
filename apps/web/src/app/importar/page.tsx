@@ -114,6 +114,7 @@ export default async function ImportarPage({
                   name="archivo"
                   accept=".csv,text/csv"
                   required
+                  aria-label="Archivo CSV con los productos"
                   className="text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--color-surface-raised)] file:px-3 file:py-2 file:text-sm file:text-[var(--color-text-primary)]"
                 />
                 <button

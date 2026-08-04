@@ -100,6 +100,7 @@ export default async function InventoryPage({
             )}
             <select
               name="almacen"
+              aria-label="Filtrar por almacen"
               defaultValue={almacenFiltro}
               className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
             >

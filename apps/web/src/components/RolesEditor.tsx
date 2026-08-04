@@ -265,7 +265,7 @@ export function RolesEditor({
       </aside>
 
       {/* ── Detalle del rol ────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-4 md:p-6">
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
         {!rol ? (
           <p className="py-16 text-center text-sm text-[var(--color-text-muted)]">
             Elige un rol a la izquierda.
@@ -431,7 +431,7 @@ export function RolesEditor({
             )}
           </>
         )}
-      </div>
+      </main>
     </div>
   )
 }
@@ -559,6 +559,10 @@ function ScopeEditor({
           disabled={!editable}
           defaultValue={typeof scope.max_amount === 'number' ? scope.max_amount : ''}
           placeholder="sin tope"
+          // El <label> de al lado es hermano y no envuelve, asi que no
+          // nombra a este campo. El placeholder tampoco: desaparece al
+          // escribir y varios lectores no lo anuncian.
+          aria-label="Monto maximo por operacion"
           onBlur={(e) => {
             const v = e.target.value.trim()
             onChange('max_amount', v === '' ? null : Number(v))
@@ -579,6 +583,7 @@ function ScopeEditor({
           disabled={!editable}
           defaultValue={typeof scope.hours === 'string' ? scope.hours : ''}
           placeholder="07:00-19:00"
+          aria-label="Horario permitido"
           onBlur={(e) => {
             const v = e.target.value.trim()
             onChange('hours', v === '' ? null : v)

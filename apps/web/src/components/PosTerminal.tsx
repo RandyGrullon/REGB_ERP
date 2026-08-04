@@ -266,6 +266,7 @@ export function PosTerminal({
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={alEscanear}
             placeholder="Buscar o escanear codigo de barras…"
+            aria-label="Buscar producto o escanear codigo de barras"
             autoFocus
             className="h-12 w-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-11 pr-3 text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-brand-bright)]"
           />

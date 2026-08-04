@@ -201,7 +201,7 @@ export function MarketplaceView({
         <Badge tone="brand">{TIER_LABEL[tier] ?? tier}</Badge>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 pb-64 md:p-6 md:pb-56">
+      <main className="flex-1 overflow-y-auto p-4 pb-64 md:p-6 md:pb-56">
         <div className="mb-4">
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
             Enciende lo que necesitas
@@ -365,7 +365,7 @@ export function MarketplaceView({
             ))}
           </div>
         )}
-      </div>
+      </main>
 
       {/* ── Simulador (§12.3) ─────────────────────────────────────────── */}
       <div className="absolute inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface-deep)] p-4 shadow-[var(--shadow-lg)]">

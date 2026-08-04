@@ -56,7 +56,10 @@ export function EmptyState({
         </div>
       )}
 
-      <h3 className="text-lg font-semibold text-[var(--color-text-primary)]">{title}</h3>
+      {/* h2, no h3: cuelga directamente del h1 de la pantalla. Con h3
+          quedaba el salto h1 -> h3 y un lector lo anuncia como si faltara
+          una seccion entera. */}
+      <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">{title}</h2>
       <p className="max-w-sm text-sm text-[var(--color-text-secondary)]">{description}</p>
 
       {(action || secondaryAction) && (
