@@ -53,6 +53,19 @@ const METODOS: { id: PaymentMethod; label: string; icon: string }[] = [
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+/** Lo unico que el terminal necesita del escritorio. */
+interface PuenteCaja {
+  encolarVenta?: (v: {
+    soldAt: string
+    shiftId: string
+    customerId: string | null
+    cart: unknown
+    payments: unknown
+    tenant?: string
+    rol?: string
+  }) => Promise<{ ok: boolean; clientRef: string; pendientes: number }>
+}
+
 /**
  * Criterio unico de busqueda: lo usan la rejilla y el escaner. Separados
  * se desincronizan, y entonces el cajero ve un solo producto en pantalla
@@ -86,6 +99,7 @@ export function PosTerminal({
   const [metodo, setMetodo] = useState<PaymentMethod>('cash')
   const [recibido, setRecibido] = useState('')
   const [noEncontrado, setNoEncontrado] = useState<string | null>(null)
+  const [encolada, setEncolada] = useState<string | null>(null)
 
   const porId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
 
@@ -172,6 +186,50 @@ export function PosTerminal({
     }
     setNoEncontrado(codigo)
     setTimeout(() => setNoEncontrado(null), 2500)
+  }
+
+  /**
+   * Cobro en la app de escritorio (F5).
+   *
+   * Cuando existe el puente, la venta SIEMPRE pasa por la cola: haya linea
+   * o no. Un solo camino, no dos.
+   *
+   * Es deliberado y es la decision que evita la clase de fallo mas cara de
+   * un POS offline. Si la caja preguntara "¿hay internet?" para decidir
+   * entre enviar y encolar, el caso malo es justo el del medio: hay linea,
+   * el envio sale, y el corte ocurre ANTES de que llegue la respuesta.
+   * Ahi la caja no sabe si la venta entro, y cualquier cosa que haga esta
+   * mal —reintentar duplica, rendirse pierde—. Pasando siempre por la
+   * cola, ese caso es el normal: la clave de idempotencia hace que el
+   * reintento sea seguro y la venta llegue exactamente una vez.
+   *
+   * Con linea, la cola sube de inmediato y el cajero no nota diferencia.
+   */
+  function alCobrar(e: React.FormEvent<HTMLFormElement>) {
+    const puente = (window as unknown as { regb?: PuenteCaja }).regb
+    if (!puente?.encolarVenta) return // en el navegador manda el formulario
+
+    e.preventDefault()
+    void puente
+      .encolarVenta({
+        soldAt: new Date().toISOString(),
+        shiftId,
+        customerId: customerId || null,
+        cart: lineas,
+        payments: pagos,
+        ...(hiddenFields.tenant ? { tenant: hiddenFields.tenant } : {}),
+        ...(hiddenFields.rol ? { rol: hiddenFields.rol } : {}),
+      })
+      .then((r) => {
+        setLineas([])
+        setRecibido('')
+        setEncolada(
+          r.pendientes > 1
+            ? `Cobrada. Quedan ${r.pendientes} ventas por subir.`
+            : 'Cobrada y subida.',
+        )
+        setTimeout(() => setEncolada(null), 4000)
+      })
   }
 
   function cambiarQty(productId: string, delta: number) {
@@ -435,7 +493,7 @@ export function PosTerminal({
           </div>
         )}
 
-        <form action={cobrarVentaForm}>
+        <form action={cobrarVentaForm} onSubmit={alCobrar}>
           {Object.entries(hiddenFields).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
@@ -461,6 +519,16 @@ export function PosTerminal({
             Cobrar RD$ {money(totales.total)}
           </button>
         </form>
+
+        {encolada && (
+          <p
+            role="status"
+            className="mt-2 flex items-center gap-1.5 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-semantic-success)_14%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-success)]"
+          >
+            <Icon name="check_circle" size={18} filled />
+            {encolada}
+          </p>
+        )}
       </section>
     </div>
   )
