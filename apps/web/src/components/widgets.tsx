@@ -25,6 +25,8 @@ export interface DatosWidgets {
   backorder: number
   vencidas: { customer: string; total: number; dias: number }[]
   catalogoIncompleto: { sinPrecio: number; sinCategoria: number; total: number }
+  masVendidos: { name: string; unidades: number; importe: number }[]
+  mejoresClientes: { name: string; compras: number; importe: number }[]
 }
 
 const money = (n: number) =>
@@ -56,6 +58,8 @@ export async function cargarDatosWidgets(
     backorder: 0,
     vencidas: [],
     catalogoIncompleto: { sinPrecio: 0, sinCategoria: 0, total: 0 },
+    masVendidos: [],
+    mejoresClientes: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -128,6 +132,64 @@ export async function cargarDatosWidgets(
         order by i.due_date
         limit 5`
     ).map((r) => ({ customer: r.customer, total: Number(r.total), dias: Number(r.dias) }))
+  }
+
+  // Los mas vendidos salen de la caja Y de los pedidos: un colmado vende
+  // por mostrador y una distribuidora por pedido, y el widget tiene que
+  // servirle a los dos. Sumar solo uno de los dos caminos daria un ranking
+  // que contradice lo que el dueno ve en su propio negocio.
+  if (pidieron('top-products')) {
+    vacio.masVendidos = (
+      await tx<{ name: string; unidades: string; importe: string }[]>`
+        with ventas as (
+          select l.product_id, l.qty as unidades, l.line_total as importe
+          from public.pos_sale_lines l
+          join public.pos_sales s on s.id = l.sale_id
+          where l.tenant_id = ${tenantId} and not s.voided
+            and s.sold_at >= now() - interval '30 days'
+          union all
+          -- Prorrateado por lo ENTREGADO: line_total es de lo pedido, y en
+          -- un pedido a medias contaria como vendido lo que todavia esta
+          -- en el almacen.
+          select l.product_id, l.qty_delivered,
+                 l.line_total * (l.qty_delivered / nullif(l.qty_ordered, 0))
+          from public.sales_order_lines l
+          join public.sales_orders o on o.id = l.order_id
+          where l.tenant_id = ${tenantId} and o.status <> 'cancelled'
+            and l.qty_delivered > 0
+            and o.created_at >= now() - interval '30 days'
+        )
+        select p.name, sum(v.unidades)::text as unidades, sum(v.importe)::text as importe
+        from ventas v
+        join public.products p on p.id = v.product_id
+        group by p.name
+        order by sum(v.importe) desc
+        limit 5`
+    ).map((r) => ({ name: r.name, unidades: Number(r.unidades), importe: Number(r.importe) }))
+  }
+
+  if (pidieron('top-customers')) {
+    vacio.mejoresClientes = (
+      await tx<{ name: string; compras: string; importe: string }[]>`
+        with compras as (
+          select s.customer_id, s.total
+          from public.pos_sales s
+          where s.tenant_id = ${tenantId} and not s.voided
+            and s.customer_id is not null
+            and s.sold_at >= now() - interval '90 days'
+          union all
+          select o.customer_id, o.total
+          from public.sales_orders o
+          where o.tenant_id = ${tenantId} and o.status <> 'cancelled'
+            and o.created_at >= now() - interval '90 days'
+        )
+        select c.name, count(*)::text as compras, sum(x.total)::text as importe
+        from compras x
+        join public.customers c on c.id = x.customer_id
+        group by c.name
+        order by sum(x.total) desc
+        limit 5`
+    ).map((r) => ({ name: r.name, compras: Number(r.compras), importe: Number(r.importe) }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -366,15 +428,38 @@ const WIDGETS: Record<
   },
 
   'top-products': {
-    titulo: 'Mas vendidos',
+    titulo: 'Mas vendidos (30 dias)',
     icono: 'trending_up',
-    render: () => <Vacio>Necesita el historial de ventas del modulo de reportes.</Vacio>,
+    render: (d) =>
+      d.masVendidos.length === 0 ? (
+        <Vacio>Todavia no hay ventas en los ultimos 30 dias.</Vacio>
+      ) : (
+        <ul>
+          {d.masVendidos.map((p) => (
+            <Fila key={p.name} izq={p.name} sub={`${p.unidades} u`} der={money(p.importe)} />
+          ))}
+        </ul>
+      ),
   },
 
   'top-customers': {
-    titulo: 'Mejores clientes',
+    titulo: 'Mejores clientes (90 dias)',
     icono: 'groups',
-    render: () => <Vacio>Necesita el historial de ventas del modulo de reportes.</Vacio>,
+    render: (d) =>
+      d.mejoresClientes.length === 0 ? (
+        <Vacio>Sin compras con cliente identificado. En mostrador es lo normal.</Vacio>
+      ) : (
+        <ul>
+          {d.mejoresClientes.map((c) => (
+            <Fila
+              key={c.name}
+              izq={c.name}
+              sub={`${c.compras} compra${c.compras === 1 ? '' : 's'}`}
+              der={money(c.importe)}
+            />
+          ))}
+        </ul>
+      ),
   },
 }
 
