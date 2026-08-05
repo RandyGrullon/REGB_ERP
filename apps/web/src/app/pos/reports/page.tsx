@@ -15,6 +15,7 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
+import { TIPOS_ANULACION } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -211,6 +212,25 @@ export default async function CierresPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="saleId" value={v.id} />
+                          {/* El codigo es lo que se declara en el 608; el
+                              texto de al lado es lo que se entiende dentro
+                              de seis meses. La DGII no acepta el texto. */}
+                          <select
+                            name="voidType"
+                            required
+                            defaultValue=""
+                            aria-label={`Motivo DGII para anular ${v.number}`}
+                            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                          >
+                            <option value="" disabled>
+                              Motivo DGII…
+                            </option>
+                            {Object.entries(TIPOS_ANULACION).map(([codigo, texto]) => (
+                              <option key={codigo} value={codigo}>
+                                {codigo} · {texto}
+                              </option>
+                            ))}
+                          </select>
                           <input
                             name="reason"
                             required

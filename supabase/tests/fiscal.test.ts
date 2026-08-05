@@ -235,23 +235,54 @@ describe('607 y 608 son complementarios', () => {
     expect(f!.tipo_identificacion).toBe('1')
   })
 
-  it('al anularla sale del 607 y entra al 608, con su motivo', async () => {
+  it('al anularla sale del 607 y entra al 608, con su codigo Y su explicacion', async () => {
     await sql`
       update public.pos_sales
-      set voided = true, void_reason = 'devolucion del cliente', voided_at = now()
+      set voided = true, void_type = '6', void_reason = 'devolucion del cliente',
+          voided_at = now()
       where id = ${ventaId}`
 
     const [en607, en608] = await as(userA, tenantA, async (tx) => {
       const a = await tx<{ ncf: string }[]>`
         select ncf from public.dgii_607 where ncf = 'B0100000100'`
-      const b = await tx<{ ncf: string; motivo: string }[]>`
-        select ncf, motivo from public.dgii_608 where ncf = 'B0100000100'`
+      const b = await tx<{ ncf: string; motivo: string | null; explicacion: string }[]>`
+        select ncf, motivo, explicacion from public.dgii_608 where ncf = 'B0100000100'`
       return [a, b] as const
     })
 
     expect(en607).toHaveLength(0)
     expect(en608).toHaveLength(1)
-    expect(en608[0]!.motivo).toBe('devolucion del cliente')
+    // El CODIGO es lo que se declara; el texto es lo que se entiende. Son
+    // campos distintos a proposito: la DGII no acepta el texto.
+    expect(en608[0]!.motivo).toBe('6')
+    expect(en608[0]!.explicacion).toBe('devolucion del cliente')
+  })
+
+  it('una anulacion sin clasificar deja el motivo nulo, no un texto', async () => {
+    // Es lo que impide generar el archivo, y por eso tiene que verse.
+    const [v] = await sql<{ id: string }[]>`
+      insert into public.pos_sales
+        (tenant_id, shift_id, number, subtotal, discount, tax, total, cashier_id,
+         ncf, ncf_type, voided, void_reason, voided_at)
+      values (${tenantA}, ${turnoA}, ${`TK-${RUN}-SC`}, 10, 0, 0, 10, ${userA},
+              'B0100000199', 'B01', true, 'se anulo hace meses', now())
+      returning id`
+
+    const [f] = await as(
+      userA,
+      tenantA,
+      (tx) => tx<{ motivo: string | null }[]>`
+        select motivo from public.dgii_608 where ncf = 'B0100000199'`,
+    )
+    expect(f!.motivo).toBeNull()
+
+    await sql`delete from public.pos_sales where id = ${v!.id}`
+  })
+
+  it('la base rechaza un codigo de anulacion que no existe', async () => {
+    await expect(
+      sql`update public.pos_sales set void_type = '99' where id = ${ventaId}`,
+    ).rejects.toThrow(/motivo_anulacion|violates check/)
   })
 
   it('una venta SIN NCF no entra en ninguno de los dos', async () => {

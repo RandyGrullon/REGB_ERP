@@ -62,6 +62,11 @@ export const TIPOS_ANULACION: Record<string, string> = {
   '8': 'Errores en secuencia de NCF',
 }
 
+/** ¿Es uno de los ocho codigos que acepta la DGII? */
+export function esMotivoDgii(v: string): boolean {
+  return Object.prototype.hasOwnProperty.call(TIPOS_ANULACION, v)
+}
+
 export interface LineaVenta607 {
   /** RNC o cedula del COMPRADOR, solo digitos. Vacio si no se identifico. */
   rncComprador: string | null

@@ -14,6 +14,7 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
+import { TIPOS_ANULACION } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -50,7 +51,9 @@ interface Fila608 {
   ncf: string
   ncf_type: string
   fecha_comprobante: string
-  motivo: string
+  /** Codigo DGII. Nulo si nadie clasifico la anulacion. */
+  motivo: string | null
+  explicacion: string
 }
 
 const money = (n: number) =>
@@ -168,7 +171,7 @@ export default async function DgiiPage({
       order by ncf`
 
     const a = await tx<Fila608[]>`
-      select origen, ncf, ncf_type, fecha_comprobante, motivo
+      select origen, ncf, ncf_type, fecha_comprobante, motivo, explicacion
       from public.dgii_608
       where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
       order by ncf`
@@ -185,6 +188,7 @@ export default async function DgiiPage({
 
   const totalVentas = ventas.reduce((s, f) => s + Number(f.total), 0)
   const totalItbis = ventas.reduce((s, f) => s + Number(f.itbis_facturado), 0)
+  const sinClasificar = anulados.filter((a) => a.motivo === null).length
   const qs = ctx.demoQs
 
   const legible = (p: string) =>
@@ -337,6 +341,29 @@ export default async function DgiiPage({
           )}
         </section>
 
+        {sinClasificar > 0 && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] p-3 text-sm"
+          >
+            <Icon
+              name="error"
+              size={20}
+              filled
+              className="shrink-0 text-[var(--color-semantic-text-danger)]"
+            />
+            <p className="text-[var(--color-text-secondary)]">
+              Hay <strong className="text-[var(--color-text-primary)]">{sinClasificar}</strong>{' '}
+              anulacion{sinClasificar === 1 ? '' : 'es'} sin el motivo que pide la DGII. Son
+              anteriores a que el sistema lo pidiera, y{' '}
+              <strong className="text-[var(--color-text-primary)]">
+                el archivo del 608 no se genera
+              </strong>{' '}
+              hasta clasificarlas: entregar una con el motivo equivocado es peor que no entregarla.
+            </p>
+          </div>
+        )}
+
         <section aria-labelledby="t608" className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="t608" className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -358,7 +385,8 @@ export default async function DgiiPage({
                   <TH>NCF</TH>
                   <TH>Origen</TH>
                   <TH>Fecha</TH>
-                  <TH>Motivo</TH>
+                  <TH>Motivo DGII</TH>
+                  <TH>Explicacion</TH>
                 </TR>
               </THead>
               <TBody>
@@ -373,7 +401,23 @@ export default async function DgiiPage({
                       </Badge>
                     </TD>
                     <TD>{fecha(f.fecha_comprobante)}</TD>
-                    <TD>{f.motivo}</TD>
+                    <TD>
+                      {f.motivo ? (
+                        <>
+                          <Mono>{f.motivo}</Mono>{' '}
+                          <span className="text-xs text-[var(--color-text-secondary)]">
+                            {TIPOS_ANULACION[f.motivo]}
+                          </span>
+                        </>
+                      ) : (
+                        <Badge tone="danger">sin clasificar</Badge>
+                      )}
+                    </TD>
+                    <TD>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {f.explicacion}
+                      </span>
+                    </TD>
                   </TR>
                 ))}
               </TBody>

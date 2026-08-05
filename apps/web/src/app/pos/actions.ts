@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import {
   documentTotals,
+  esMotivoDgii,
   paymentsBalance,
   reconcileCash,
   type Payment,
@@ -344,8 +345,18 @@ export async function anularVenta(fd: FormData): Promise<ActionResult> {
 
   const saleId = String(fd.get('saleId') ?? '')
   const motivo = String(fd.get('reason') ?? '').trim()
+  // El codigo es lo que se DECLARA en el 608; el texto es lo que se
+  // entiende en una auditoria dentro de seis meses. Se piden los dos
+  // porque "codigo 6" a secas no le dice nada a nadie.
+  const codigo = String(fd.get('voidType') ?? '').trim()
   if (!saleId) return { ok: false, error: 'Faltan datos.' }
   if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulacion.' }
+  if (!esMotivoDgii(codigo)) {
+    return {
+      ok: false,
+      error: 'Elige el motivo que pide la DGII: sin el, el ticket no se puede declarar en el 608.',
+    }
+  }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [venta] = await tx<{ voided: boolean; shift_id: string }[]>`
@@ -373,7 +384,7 @@ export async function anularVenta(fd: FormData): Promise<ActionResult> {
 
     await tx`
       update public.pos_sales
-      set voided = true, void_reason = ${motivo}, voided_at = now()
+      set voided = true, void_type = ${codigo}, void_reason = ${motivo}, voided_at = now()
       where id = ${saleId} and tenant_id = ${ctx.tenantId}`
 
     return 'ok'

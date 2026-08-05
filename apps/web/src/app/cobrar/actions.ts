@@ -5,6 +5,7 @@ import {
   balanceAfter,
   deriveInvoiceStatus,
   dueDateFrom,
+  esMotivoDgii,
   isValidTaxId,
   overpayment,
 } from '@regb/operations'
@@ -210,8 +211,16 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
 
   const invoiceId = String(fd.get('invoiceId') ?? '')
   const motivo = String(fd.get('reason') ?? '').trim()
+  // El codigo se declara en el 608; el texto explica. Los dos.
+  const codigo = String(fd.get('voidType') ?? '').trim()
   if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
   if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulacion.' }
+  if (!esMotivoDgii(codigo)) {
+    return {
+      ok: false,
+      error: 'Elige el motivo que pide la DGII: sin el, la factura no se puede declarar en el 608.',
+    }
+  }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [cobrado] = await tx<{ n: string }[]>`
@@ -223,7 +232,7 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
 
     await tx`
       update public.customer_invoices
-      set status = 'void', void_reason = ${motivo}
+      set status = 'void', void_type = ${codigo}, void_reason = ${motivo}
       where id = ${invoiceId} and tenant_id = ${ctx.tenantId} and status <> 'void'`
     return 'ok'
   })
