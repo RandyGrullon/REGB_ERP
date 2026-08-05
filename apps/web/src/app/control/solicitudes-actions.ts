@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { db } from '@/lib/db'
+import { despachar } from '@/lib/despachador'
 import { authConfigured, currentSession } from '@/lib/supabase'
 import { requireProvider } from '@/lib/provider-guard'
 
@@ -107,4 +108,17 @@ export async function descartarSolicitud(fd: FormData): Promise<void> {
     where id = ${id} and status = 'pending'`
 
   revalidatePath('/control')
+}
+
+/**
+ * Dispara un lote del bus a mano.
+ *
+ * El cron lo hace solo cada pocos minutos, pero cuando algo se atasca
+ * hace falta ver el efecto ahora y no dentro de cinco: si el error se
+ * repite, sale en la lista de esta misma pantalla.
+ */
+export async function despacharAhora(): Promise<void> {
+  await requireProvider()
+  await despachar(200)
+  revalidatePath('/control/salud')
 }

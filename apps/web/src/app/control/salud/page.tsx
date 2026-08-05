@@ -17,6 +17,8 @@ import {
 } from '@regb/ui'
 import { cargarSalud } from '@/lib/control-datos'
 import { requireProvider } from '@/lib/provider-guard'
+import { despacharAhora } from '../solicitudes-actions'
+import { TEMAS_ATENDIDOS } from '@/lib/despachador'
 import { usd } from '@/components/ControlBits'
 
 export const dynamic = 'force-dynamic'
@@ -238,10 +240,21 @@ export default async function SaludPage() {
               </div>
             )}
 
+            <form action={despacharAhora} className="mt-3">
+              <button
+                type="submit"
+                className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="play_arrow" size={16} />
+                Despachar ahora
+              </button>
+            </form>
+
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              <Mono>event_outbox</Mono> es la unica senal de error que persiste hoy. No hay tabla de
-              excepciones de aplicacion ni de errores HTTP: si algo falla fuera del bus, no queda
-              rastro.
+              El bus atiende {TEMAS_ATENDIDOS.length} temas; los que nadie escucha se cierran en vez
+              de reintentarse para siempre — un outbox lleno de eventos que nadie quiere parece una
+              averia. <Mono>event_outbox</Mono> sigue siendo la unica senal de error que persiste:
+              si algo falla fuera del bus, no queda rastro.
             </p>
           </CardBody>
         </Card>

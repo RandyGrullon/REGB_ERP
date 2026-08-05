@@ -16,7 +16,7 @@ Verificado contra el repo el 3 de agosto de 2026.
 | Catálogo, inventario, pedidos, caja y cobros | ✅ funcionando |
 | NCF, reportes 607 y 608, validación de RNC | ✅ funcionando |
 | Lector de código de barras y ticket de 80 mm | ✅ funcionando |
-| Aislamiento entre clientes (RLS) | ✅ con 136 pruebas |
+| Aislamiento entre clientes (RLS) | ✅ con 163 pruebas |
 | Responsive 375 / 768 / 1440 | ✅ 29 pantallas verificadas |
 | **Inicio de sesión real** | ⚠️ el código está, falta configurarlo — [paso 1](#1-conectar-supabase) |
 | **Cobro automático de la mensualidad** | ❌ pasarelas sin conectar — [paso 7](#7-cobrar) |
@@ -37,7 +37,7 @@ sistema. `apps/web/src/lib/supabase.ts:38` lo decide con una sola condición:
 si existen las dos variables de entorno, hay login real.
 
 1. Crea un proyecto en Supabase y apunta `DATABASE_URL` a su Postgres.
-2. Aplica las 32 migraciones sobre esa base, **desde cero y en orden**. No
+2. Aplica las 37 migraciones sobre esa base, **desde cero y en orden**. No
    hay `down`: la garantía es que arranca limpia, y es la que se ejerce en
    cada `gate:f0`.
 3. Crea `apps/web/.env.local`:
@@ -178,7 +178,7 @@ Y `/control` con el filtro **"solo en riesgo"**: mora, silencio de más de
 pnpm gate:f0
 ```
 
-Typecheck, lint, 136 pruebas contra Postgres real y tres auditorías: que no
+Typecheck, lint, 163 pruebas contra Postgres real y tres auditorías: que no
 haya secretos en código de cliente, que el core no conozca módulos, y que
 los manifiestos sean válidos y sin colisión de rutas.
 
@@ -203,3 +203,34 @@ solo los borra con `--si`.
 | El 607 rebota | Un RNC con el dígito mal | `/pedidos/clientes` — ahora se valida al guardar |
 | La caja no cuadra | Vuelto mal dado o precio desactualizado | `/pos/shifts` — mirar el arqueo con el nombre del cajero |
 | El cliente entra a un 404 | Su rol no tiene la ruta de inicio | ya resuelto: aterriza en la primera pantalla que sí puede abrir |
+
+---
+
+## Encender el bus de eventos
+
+Los módulos se avisan entre sí por un outbox: el evento se escribe en la
+**misma transacción** que el dato, así que si la venta se guarda su evento
+existe, y si la transacción falla tampoco hay evento.
+
+Alguien tiene que vaciarlo. Añade a `.env.local`:
+
+```bash
+REGB_CRON_SECRET=<algo largo y aleatorio>
+```
+
+Y llama cada pocos minutos:
+
+```bash
+curl -X POST https://tu-erp/api/eventos/despachar -H "authorization: Bearer $REGB_CRON_SECRET"
+```
+
+Con Vercel Cron, un `cron` en el servidor o la Edge Function, da igual.
+**Sin ese secreto, en producción el endpoint devuelve 503 y no despacha
+nada** — mejor que quede parado y visible que abierto a cualquiera.
+
+Se puede disparar a mano desde `/control/salud` → *Despachar ahora* cuando
+quieras ver el efecto sin esperar al reloj.
+
+La entrega es *at-least-once*: un evento puede procesarse dos veces si el
+proceso muere en mal momento. Por eso los handlers son idempotentes y nada
+crítico cuelga del bus — la reserva de stock es síncrona a propósito.
