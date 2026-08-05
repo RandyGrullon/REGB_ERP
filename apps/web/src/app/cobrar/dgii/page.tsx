@@ -108,6 +108,44 @@ function Descargar({
   )
 }
 
+/**
+ * Archivo .TXT de envio.
+ *
+ * Se ofrece aparte y con aviso: el layout sale de la Norma General 07-2018
+ * pero NO se ha comparado con un archivo real ya aceptado por la DGII.
+ * Hasta que eso pase, el CSV es el camino recomendado y este es el que
+ * hay que verificar antes del primer envio.
+ */
+function DescargarTxt({
+  reporte,
+  periodo,
+  qs,
+  vacio,
+}: {
+  reporte: '607' | '608'
+  periodo: string
+  qs: string
+  vacio: boolean
+}) {
+  const sep = qs === '' ? '?' : '&'
+  return (
+    <a
+      href={`/api/dgii/${reporte}${qs}${sep}periodo=${periodo}&formato=txt`}
+      download
+      aria-disabled={vacio}
+      title="Formato de la Norma General 07-2018. Verificalo antes de tu primer envio."
+      className={`flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-[var(--color-semantic-warning)] px-3 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
+        vacio
+          ? 'pointer-events-none opacity-40'
+          : 'text-[var(--color-semantic-text-warning)] hover:bg-[color-mix(in_srgb,var(--color-semantic-warning)_10%,transparent)]'
+      }`}
+    >
+      <Icon name="draft" size={16} />
+      TXT de envio
+    </a>
+  )
+}
+
 export default async function DgiiPage({
   searchParams,
 }: {
@@ -207,12 +245,36 @@ export default async function DgiiPage({
           </p>
         </div>
 
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-semantic-warning)] p-3 text-sm"
+        >
+          <Icon
+            name="draft"
+            size={20}
+            className="shrink-0 text-[var(--color-semantic-text-warning)]"
+          />
+          <p className="text-[var(--color-text-secondary)]">
+            El <strong className="text-[var(--color-text-primary)]">TXT de envio</strong> sigue el
+            formato de la Norma General 07-2018, pero{' '}
+            <strong className="text-[var(--color-text-primary)]">
+              todavia no se ha comparado con un archivo tuyo ya aceptado
+            </strong>{' '}
+            por la DGII. Antes de tu primer envio, abrelo al lado de uno que hayas subido bien y
+            avisanos si algo no cuadra. Mientras tanto, el CSV es el camino seguro: lo revisa tu
+            contador antes de subir nada.
+          </p>
+        </div>
+
         <section aria-labelledby="t607" className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="t607" className="text-sm font-semibold text-[var(--color-text-primary)]">
               607 · Ventas del periodo
             </h2>
-            <Descargar reporte="607" periodo={periodo} qs={qs} vacio={ventas.length === 0} />
+            <span className="flex gap-2">
+              <DescargarTxt reporte="607" periodo={periodo} qs={qs} vacio={ventas.length === 0} />
+              <Descargar reporte="607" periodo={periodo} qs={qs} vacio={ventas.length === 0} />
+            </span>
           </div>
           {ventas.length === 0 ? (
             <EmptyState
@@ -280,7 +342,10 @@ export default async function DgiiPage({
             <h2 id="t608" className="text-sm font-semibold text-[var(--color-text-primary)]">
               608 · Comprobantes anulados
             </h2>
-            <Descargar reporte="608" periodo={periodo} qs={qs} vacio={anulados.length === 0} />
+            <span className="flex gap-2">
+              <DescargarTxt reporte="608" periodo={periodo} qs={qs} vacio={anulados.length === 0} />
+              <Descargar reporte="608" periodo={periodo} qs={qs} vacio={anulados.length === 0} />
+            </span>
           </div>
           {anulados.length === 0 ? (
             <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]">
