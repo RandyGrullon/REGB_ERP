@@ -5,7 +5,9 @@ mañana. Nada de esto es código nuevo: el código está. Lo que falta es
 **configurar y cargar datos**, y algunas cosas solo las puedes hacer tú
 porque implican crear cuentas y credenciales.
 
-Verificado contra el repo el 3 de agosto de 2026.
+Verificado contra el repo el 2 de septiembre de 2026. **Ya hay un primer
+cliente real confirmado**: una empresa de venta de productos electrónicos,
+con ventas al contado y a crédito (15/30 días según el cliente).
 
 ---
 
@@ -13,15 +15,17 @@ Verificado contra el repo el 3 de agosto de 2026.
 
 | | Estado |
 |---|---|
-| Catálogo, inventario, pedidos, caja y cobros | ✅ funcionando |
+| Catálogo, inventario, pedidos, caja, cobros y compras a proveedores | ✅ funcionando |
+| Cargo por mora manual (sin fórmula automática) y clientes exentos | ✅ funcionando |
 | NCF, reportes 607 y 608, validación de RNC | ✅ funcionando |
 | Lector de código de barras y ticket de 80 mm | ✅ funcionando |
-| Aislamiento entre clientes (RLS) | ✅ con 163 pruebas |
-| Responsive 375 / 768 / 1440 | ✅ 29 pantallas verificadas |
+| Aislamiento entre clientes (RLS) | ✅ con 196 pruebas |
+| Responsive 375 / 768 / 1440 | ✅ 32 pantallas verificadas |
 | **Inicio de sesión real** | ⚠️ el código está, falta configurarlo — [paso 1](#1-conectar-supabase) |
 | **Cobro automático de la mensualidad** | ❌ pasarelas sin conectar — [paso 7](#7-cobrar) |
 | App de escritorio y móvil | ❌ son F5 |
 | Envío de e-CF a la DGII | ❌ es F6 |
+| Reporte 606 (compras) | ❌ falta investigar el formato exacto que pide la DGII |
 
 **Se puede operar sin las tres últimas.** Un colmado factura con NCF en
 papel y paga por transferencia; eso es exactamente cómo opera hoy la
@@ -37,7 +41,7 @@ sistema. `apps/web/src/lib/supabase.ts:38` lo decide con una sola condición:
 si existen las dos variables de entorno, hay login real.
 
 1. Crea un proyecto en Supabase y apunta `DATABASE_URL` a su Postgres.
-2. Aplica las 37 migraciones sobre esa base, **desde cero y en orden**. No
+2. Aplica las 40 migraciones sobre esa base, **desde cero y en orden**. No
    hay `down`: la garantía es que arranca limpia, y es la que se ejerce en
    cada `gate:f0`.
 3. Crea `apps/web/.env.local`:
@@ -110,7 +114,12 @@ En este orden, porque cada paso depende del anterior:
    noche o un domingo: cargar existencias mientras se vende garantiza que
    no cuadre.
 5. **Clientes a crédito** — `/pedidos/clientes`, con sus días de crédito.
-   Esos días son los que después deciden quién está en mora.
+   Esos días son los que después deciden quién está en mora. Si algún
+   cliente nunca debe pagar cargo por mora aunque se atrase (por relación,
+   volumen o acuerdo), márcalo como exento en `/cobrar` — es un flag fijo,
+   no se calcula solo.
+6. **Proveedores** — `/compras/proveedores`, con su RNC y días de crédito
+   que ellos te dan a ti. Sin esto no se puede crear una orden de compra.
 
 ---
 
@@ -178,7 +187,7 @@ Y `/control` con el filtro **"solo en riesgo"**: mora, silencio de más de
 pnpm gate:f0
 ```
 
-Typecheck, lint, 163 pruebas contra Postgres real y tres auditorías: que no
+Typecheck, lint, 196 pruebas contra Postgres real y tres auditorías: que no
 haya secretos en código de cliente, que el core no conozca módulos, y que
 los manifiestos sean válidos y sin colisión de rutas.
 
@@ -203,6 +212,7 @@ solo los borra con `--si`.
 | El 607 rebota | Un RNC con el dígito mal | `/pedidos/clientes` — ahora se valida al guardar |
 | La caja no cuadra | Vuelto mal dado o precio desactualizado | `/pos/shifts` — mirar el arqueo con el nombre del cajero |
 | El cliente entra a un 404 | Su rol no tiene la ruta de inicio | ya resuelto: aterriza en la primera pantalla que sí puede abrir |
+| No aparece el botón de cargo por mora | El cliente está marcado exento, la factura no tiene días de atraso, o está anulada | `/cobrar` — sección *Clientes exentos de mora* |
 
 ---
 

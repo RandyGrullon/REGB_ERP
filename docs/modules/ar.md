@@ -140,7 +140,7 @@ Migraciones [`0027`](../../supabase/migrations/0027_dgii_607_608.sql) y
 |---|---|
 | **607** ventas | ✅ vista `public.dgii_607` — facturas a crédito **y** ventas de caja, sin las anuladas |
 | **608** anulados | ✅ vista `public.dgii_608` — el NCF se declara, no se omite |
-| **606** compras | ❌ necesita el módulo de compras (F8) |
+| **606** compras | ❌ `purchase-orders` ya existe (2026-09-02) y captura `supplier_ncf`/`supplier_ncf_date`, pero el reporte en sí no está construido — necesita la misma verificación rigurosa del formato DGII que ya se hizo para 607/608, y eso no se ha investigado para 606. No es falta de módulo, es falta de esa investigación. |
 
 `/cobrar/dgii` los muestra por periodo, con permiso `ar.export`.
 
