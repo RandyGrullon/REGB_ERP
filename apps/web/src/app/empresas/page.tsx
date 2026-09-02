@@ -4,6 +4,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  Icon,
   Mono,
   PageHeader,
   StatCard,
@@ -17,7 +18,7 @@ import {
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { crearEmpresaForm, marcarPrincipalForm } from './actions'
+import { crearEmpresaForm, editarEmpresaForm, marcarPrincipalForm } from './actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Empresas · REGB ERP' }
@@ -55,6 +56,36 @@ export default async function EmpresasPage({
 
   const puedeCrear = exigir(ctx, 'orgs', 'orgs.create').ok
   const puedeEditar = exigir(ctx, 'orgs', 'orgs.edit').ok
+  const qs = ctx.demoQs
+
+  /** Columnas que se repiten sin importar si la fila es editable. */
+  const colsComunes = (c: CompanyRow) => (
+    <>
+      <TD>{c.currency}</TD>
+      <TD numeric>
+        <span className="tabular">{c.branch_count}</span>
+      </TD>
+      <TD>
+        {c.is_default ? (
+          <Badge tone="brand">Principal</Badge>
+        ) : puedeEditar ? (
+          <form action={marcarPrincipalForm} className="inline">
+            <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+            <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+            <input type="hidden" name="id" value={c.id} />
+            <button
+              type="submit"
+              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
+            >
+              Hacer principal
+            </button>
+          </form>
+        ) : (
+          '—'
+        )}
+      </TD>
+    </>
+  )
 
   return (
     <Shell {...shell} activePath="/empresas">
@@ -88,43 +119,61 @@ export default async function EmpresasPage({
         <Table>
           <THead>
             <TR>
-              <TH>Razon social</TH>
-              <TH>RNC</TH>
+              <TH>Razon social y RNC</TH>
               <TH>Moneda</TH>
               <TH numeric>Sucursales</TH>
               <TH>Principal</TH>
             </TR>
           </THead>
           <TBody>
-            {companies.map((c) => (
-              <TR key={c.id}>
-                <TD className="font-medium text-[var(--color-text-primary)]">{c.legal_name}</TD>
-                <TD>{c.tax_id ? <Mono>{c.tax_id}</Mono> : '—'}</TD>
-                <TD>{c.currency}</TD>
-                <TD numeric>
-                  <span className="tabular">{c.branch_count}</span>
-                </TD>
-                <TD>
-                  {c.is_default ? (
-                    <Badge tone="brand">Principal</Badge>
-                  ) : puedeEditar ? (
-                    <form action={marcarPrincipalForm} className="inline">
-                      <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-                      <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+            {companies.map((c) =>
+              puedeEditar ? (
+                <TR key={c.id}>
+                  <TD>
+                    <form action={editarEmpresaForm} className="flex flex-wrap items-center gap-1.5">
+                      <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                      <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={c.id} />
+                      <input
+                        name="legal"
+                        required
+                        minLength={3}
+                        defaultValue={c.legal_name}
+                        aria-label={`Razon social de ${c.legal_name}`}
+                        className="h-8 min-w-48 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                      />
+                      <input
+                        name="rnc"
+                        defaultValue={c.tax_id ?? ''}
+                        placeholder="RNC"
+                        aria-label={`RNC de ${c.legal_name}`}
+                        className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                      />
                       <button
                         type="submit"
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
+                        aria-label={`Guardar cambios de ${c.legal_name}`}
+                        className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
                       >
-                        Hacer principal
+                        <Icon name="save" size={16} />
                       </button>
                     </form>
-                  ) : (
-                    '—'
-                  )}
-                </TD>
-              </TR>
-            ))}
+                  </TD>
+                  {colsComunes(c)}
+                </TR>
+              ) : (
+                <TR key={c.id}>
+                  <TD className="font-medium text-[var(--color-text-primary)]">
+                    {c.legal_name}
+                    {c.tax_id && (
+                      <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                        <Mono>{c.tax_id}</Mono>
+                      </span>
+                    )}
+                  </TD>
+                  {colsComunes(c)}
+                </TR>
+              ),
+            )}
           </TBody>
         </Table>
 
