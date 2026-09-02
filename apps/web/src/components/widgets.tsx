@@ -27,6 +27,8 @@ export interface DatosWidgets {
   catalogoIncompleto: { sinPrecio: number; sinCategoria: number; total: number }
   masVendidos: { name: string; unidades: number; importe: number }[]
   mejoresClientes: { name: string; compras: number; importe: number }[]
+  ordenesPorRecibir: { number: string; supplier: string; total: number; estado: string }[]
+  mejoresProveedores: { name: string; ordenes: number; importe: number }[]
 }
 
 const money = (n: number) =>
@@ -60,6 +62,8 @@ export async function cargarDatosWidgets(
     catalogoIncompleto: { sinPrecio: 0, sinCategoria: 0, total: 0 },
     masVendidos: [],
     mejoresClientes: [],
+    ordenesPorRecibir: [],
+    mejoresProveedores: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -190,6 +194,34 @@ export async function cargarDatosWidgets(
         order by sum(x.total) desc
         limit 5`
     ).map((r) => ({ name: r.name, compras: Number(r.compras), importe: Number(r.importe) }))
+  }
+
+  if (pidieron('po-pending-receipt')) {
+    vacio.ordenesPorRecibir = (
+      await tx<{ number: string; supplier: string; total: string; estado: string }[]>`
+        select po.number, s.name as supplier, po.total::text, po.status as estado
+        from public.purchase_orders po
+        join public.suppliers s on s.id = po.supplier_id
+        where po.tenant_id = ${tenantId}
+          and po.status in ('confirmed', 'partially_received')
+        order by po.order_date
+        limit 5`
+    ).map((r) => ({ ...r, total: Number(r.total) }))
+  }
+
+  if (pidieron('po-top-suppliers')) {
+    vacio.mejoresProveedores = (
+      await tx<{ name: string; ordenes: string; importe: string }[]>`
+        select s.name, count(*)::text as ordenes, sum(po.total)::text as importe
+        from public.purchase_orders po
+        join public.suppliers s on s.id = po.supplier_id
+        where po.tenant_id = ${tenantId}
+          and po.status <> 'cancelled'
+          and po.order_date >= now() - interval '90 days'
+        group by s.name
+        order by sum(po.total) desc
+        limit 5`
+    ).map((r) => ({ name: r.name, ordenes: Number(r.ordenes), importe: Number(r.importe) }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -425,6 +457,47 @@ const WIDGETS: Record<
         </ul>
       )
     },
+  },
+
+  'po-pending-receipt': {
+    titulo: 'Compras por recibir',
+    icono: 'local_shipping',
+    render: (d) =>
+      d.ordenesPorRecibir.length === 0 ? (
+        <Vacio>Nada esperando en camino.</Vacio>
+      ) : (
+        <ul>
+          {d.ordenesPorRecibir.map((o) => (
+            <Fila
+              key={o.number}
+              izq={o.supplier}
+              sub={o.number}
+              der={money(o.total)}
+              {...(o.estado === 'partially_received' ? { tono: 'warning' as const } : {})}
+            />
+          ))}
+        </ul>
+      ),
+  },
+
+  'po-top-suppliers': {
+    titulo: 'Mejores proveedores (90 dias)',
+    icono: 'groups',
+    render: (d) =>
+      d.mejoresProveedores.length === 0 ? (
+        <Vacio>Sin compras confirmadas en los ultimos 90 dias.</Vacio>
+      ) : (
+        <ul>
+          {d.mejoresProveedores.map((p) => (
+            <Fila
+              key={p.name}
+              izq={p.name}
+              sub={`${p.ordenes} orden${p.ordenes === 1 ? '' : 'es'}`}
+              der={money(p.importe)}
+            />
+          ))}
+        </ul>
+      ),
   },
 
   'top-products': {

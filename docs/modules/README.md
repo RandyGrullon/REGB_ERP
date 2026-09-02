@@ -16,31 +16,35 @@ documento donde alguien va a buscar la verdad.
 | `sales-orders` | Vender a crédito con el stock apartado | [sales-orders.md](sales-orders.md) |
 | `pos` | Vender al contado en el mostrador | [pos.md](pos.md) |
 | `ar` | Cobrar y declarar | [ar.md](ar.md) |
+| `purchase-orders` | Pedir al proveedor y recibir con el costo real | [purchase-orders.md](purchase-orders.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
 
 ## Estado de los 14 puntos, de un vistazo
 
-| # | Punto | products | inventory | sales-orders | pos | ar |
-|---|---|:--:|:--:|:--:|:--:|:--:|
-| 1 | `manifest.ts` completo | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 3 | Lógica pura con cobertura | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 4 | UI web responsive | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 5 | UI móvil | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
-| 6 | Desktop verificado | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
-| 7 | Tour ≥6 pasos | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 8 | Datos demo | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 9 | ≥2 widgets | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 10 | Eventos documentados | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 11 | Precio en los 3 tiers | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 12 | E2E en 3 plataformas | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
-| 13 | Ficha en `docs/modules/` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| 14 | Accesibilidad AA | ✅ | ✅ | ✅ | ✅ | ✅ |
+| # | Punto | products | inventory | sales-orders | pos | ar | purchase-orders |
+|---|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| 1 | `manifest.ts` completo | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 2 | Migraciones + RLS probadas | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 3 | Lógica pura con cobertura | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 4 | UI web responsive | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 5 | UI móvil | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
+| 6 | Desktop verificado | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
+| 7 | Tour ≥6 pasos | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 8 | Datos demo | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 9 | ≥2 widgets | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 10 | Eventos documentados | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 11 | Precio en los 3 tiers | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 12 | E2E en 3 plataformas | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 | 🔜 F5 |
+| 13 | Ficha en `docs/modules/` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| 14 | Accesibilidad AA | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-**11 de 14 cumplidos, 3 diferidos a F5.** Ya no queda ningún ⚠️: los tres
-pendientes se cerraron con medición, no con promesas.
+**Los seis: 11 de 14 cumplidos, 3 diferidos a F5** (móvil, escritorio, E2E en
+3 plataformas — todos atados a Electron/Expo, que se construyen en F5).
+`purchase-orders` llegó despues pero cerró los mismos 11, incluida la sonda
+de accesibilidad sobre sus 3 pantallas nuevas: cero fallos, copiando los
+patrones que `sales-orders` ya habia corregido.
 
 ### Deuda declarada, común a los cinco
 
@@ -58,10 +62,11 @@ pendientes se cerraron con medición, no con promesas.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cinco cubiertos.** 161 pruebas contra Postgres real. La última en
-  llegar, `sales-orders`, confirmó los dos agujeros que la 0031 ya había
-  tapado: la numeración se podía consumir desde otro cliente, y seguía
-  entregando números con el módulo apagado.
+- **RLS: los seis cubiertos.** 186 pruebas contra Postgres real (163 de los
+  cinco de F4 + 23 de `purchase-orders`). La numeración de `purchase-orders`
+  se escribió con la guarda de tenant y módulo activo desde la primera
+  versión — el agujero que `sales-orders` tuvo que tapar despues con la 0031
+  no llegó a existir aquí.
 
 ---
 
@@ -93,7 +98,7 @@ La lección operativa: **toda vista nueva sobre una tabla con RLS necesita
 
 ## Accesibilidad
 
-Se auditaron las **29 pantallas** con una sonda propia
+Se auditaron las **29 pantallas** de F4 con una sonda propia
 ([`scripts/sonda-a11y.js`](../../scripts/sonda-a11y.js)) que comprueba las
 cinco familias de WCAG 2.1 AA que se pueden decidir con la página pintada:
 nombre accesible de cada control, jerarquía de encabezados, landmarks, ids
@@ -115,3 +120,8 @@ se arreglaron en el sitio correcto:
 
 **Contraste: cero fallos desde la primera pasada.** El design system Aurora
 aguanta sin excepciones, que era lo que más riesgo tenía de no cumplir.
+
+Las **3 pantallas de `purchase-orders`** (`/compras`, `/compras/proveedores`,
+`/compras/:id`) llegaron limpias desde la primera pasada — se construyeron
+copiando los patrones de `sales-orders` ya corregidos, no repitiendo los
+errores originales.

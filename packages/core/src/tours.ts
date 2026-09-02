@@ -309,6 +309,44 @@ export const TOURS: Tour[] = [
       },
     ],
   },
+  {
+    id: 'f4.compras',
+    moduleId: 'purchase-orders',
+    title: 'Pide al proveedor y recibe con el costo real',
+    summary: 'Confirmar es la promesa del proveedor; recibir es lo que de verdad entra.',
+    xp: 50,
+    steps: [
+      {
+        title: 'Registra tus proveedores',
+        body: 'Nombre, RNC y cuantos dias de credito te da. Es lo minimo para armar una orden.',
+        action: { label: 'Ir a Proveedores', path: '/compras/proveedores' },
+      },
+      {
+        title: 'Una orden nace en borrador',
+        body: 'Le agregas productos con el costo que este proveedor te cotizo hoy, no el que dice el catalogo. En borrador se corrige libremente.',
+        action: { label: 'Ir a Compras', path: '/compras' },
+      },
+      {
+        title: 'Confirmar NO mueve inventario',
+        body: 'Al reves que un pedido de venta: confirmar es la promesa del proveedor, no la tuya. El almacen no cambia hasta que de verdad llega el camion.',
+        tip: 'Si necesitas saber cuanto tienes comprometido con proveedores, es la suma de las ordenes confirmadas, no de las recibidas.',
+      },
+      {
+        title: 'Recibe completo o por partes',
+        body: 'El camion trae 80 de 100 pedidos: recibe esos 80 hoy y el resto cuando llegue. El estado de la orden se mueve solo.',
+        action: { label: 'Ir a Compras', path: '/compras' },
+      },
+      {
+        title: 'El costo real es el que promedia',
+        body: 'Si el proveedor te cobra distinto a lo cotizado, declaralo al recibir. Ese es el costo que entra al promedio ponderado del inventario, no el que pediste.',
+        tip: 'Una diferencia grande y repetida con el mismo proveedor es la senal de que hay que renegociar o buscar otro.',
+      },
+      {
+        title: 'Cancelar no revierte lo recibido',
+        body: 'Cancelar una orden detiene lo que falta por llegar. Lo que ya entro al almacen se queda —ya es tuyo—, igual que una entrega ya hecha en un pedido de venta.',
+      },
+    ],
+  },
 ]
 
 export function toursFor(licensedModules: Set<string>): Tour[] {

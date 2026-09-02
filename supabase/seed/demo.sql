@@ -77,7 +77,8 @@ begin
   values (v_med, 'inventory', 'active', true),
          (v_med, 'pos', 'active', true),
          (v_med, 'payroll', 'active', true),
-         (v_med, 'invoice-capture', 'active', true)
+         (v_med, 'invoice-capture', 'active', true),
+         (v_med, 'purchase-orders', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -224,5 +225,80 @@ begin
             'closed', now() - interval '2 days' - interval '8 hours',
             now() - interval '2 days', 'Faltante, se revisara manana')
     returning id into v_turno;
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Compras: un proveedor y una orden recibida a medias, con el costo real
+--  distinto al cotizado —eso es lo que el widget de variacion de costo
+--  tiene que ensenar en el primer minuto, no una orden que cuadra perfecto.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_alm       uuid;
+  v_cemento   uuid;
+  v_proveedor uuid;
+  v_orden     uuid;
+  v_linea     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm from public.warehouses
+    where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_cemento from public.products
+    where tenant_id = v_med and sku = 'CEM-100';
+  if v_alm is null or v_cemento is null then return; end if;
+
+  insert into public.suppliers (tenant_id, code, name, tax_id, phone, payment_terms)
+  values (v_med, 'PROV-001', 'Materiales Del Este SRL', '132-98765-3', '809-555-0202', 30)
+  on conflict (tenant_id, code) do nothing
+  returning id into v_proveedor;
+  if v_proveedor is null then
+    select id into v_proveedor from public.suppliers
+      where tenant_id = v_med and code = 'PROV-001';
+  end if;
+
+  insert into public.purchase_orders
+    (tenant_id, number, supplier_id, warehouse_id, status, order_date,
+     subtotal, tax, total, confirmed_at)
+  values
+    (v_med, 'OC-DEMO-0001', v_proveedor, v_alm, 'partially_received',
+     current_date - 6, 40100.00, 7218.00, 47318.00, now() - interval '6 days')
+  on conflict (tenant_id, number) do nothing
+  returning id into v_orden;
+  if v_orden is null then
+    select id into v_orden from public.purchase_orders
+      where tenant_id = v_med and number = 'OC-DEMO-0001';
+  end if;
+
+  -- Se pidieron 100 sacos a RD$401 (el mismo costo que ya tenia el
+  -- catalogo). Solo llegaron 60 en este primer camion, y a RD$415 —el
+  -- proveedor subio el precio—, asi que el costo real difiere del
+  -- cotizado a proposito.
+  select id into v_linea from public.purchase_order_lines
+    where order_id = v_orden and product_id = v_cemento;
+  if v_linea is null then
+    insert into public.purchase_order_lines
+      (order_id, tenant_id, product_id, qty_ordered, qty_received, unit_cost, tax_rate, line_total)
+    values
+      (v_orden, v_med, v_cemento, 100, 60, 401.00, 0.18, 47318.00)
+    returning id into v_linea;
+  end if;
+
+  -- El movimiento de inventario es lo que de verdad mueve el promedio
+  -- ponderado: mismo trigger que un ajuste (0019), sin logica nueva.
+  if not exists (
+    select 1 from public.inventory_movements
+    where reference_type = 'purchase_order' and reference_id = v_orden
+  ) then
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost,
+       reference_type, reference_id, notes, created_at)
+    values
+      (v_med, v_alm, v_cemento, 'receipt', 60, 415.00,
+       'purchase_order', v_orden, 'Recepcion parcial OC-DEMO-0001',
+       now() - interval '2 days');
   end if;
 end $$;
