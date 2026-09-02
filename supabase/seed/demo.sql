@@ -179,6 +179,10 @@ begin
     where tenant_id = v_med and name = 'Constructora Duarte SRL';
   if v_martillo is null or v_duarte is null then return; end if;
 
+  -- Duarte es cliente de volumen: se le exime del cargo por mora aunque
+  -- pague tarde. Es la decision fija de negocio que el modulo respeta.
+  update public.customers set late_fee_exempt = true where id = v_duarte;
+
   -- ── Tres facturas en tres tramos ─────────────────────────────────────
   -- 10 dias: al dia. 45: hay que llamar. 95: ya es una negociacion.
   insert into public.customer_invoices
@@ -200,12 +204,30 @@ begin
   -- justo lo que distingue un aging bien hecho de uno que suma totales.
   select id into v_inv from public.customer_invoices
     where tenant_id = v_med and number = 'FAC-DEMO-0002';
-  if v_inv is not null then
+  -- `customer_payments` no tiene una restriccion unica: `on conflict do
+  -- nothing` aqui era un no-op y cada corrida del seed sumaba otro abono
+  -- de RD$20,000, hasta cobrar de mas por 6 corridas seguidas. Se comprueba
+  -- a mano, como ya se hace en el resto de este archivo.
+  if v_inv is not null and not exists (
+    select 1 from public.customer_payments where invoice_id = v_inv
+  ) then
     insert into public.customer_payments
       (tenant_id, invoice_id, amount, method, reference, received_at)
     values (v_med, v_inv, 20000.00, 'transfer', 'TRF-889021',
-            now() - interval '30 days')
-    on conflict do nothing;
+            now() - interval '30 days');
+  end if;
+
+  -- La de 95 dias de atraso (Martillo, no exento): se le aplico un cargo
+  -- por mora a mano, RD$500, decidido por el negocio -no una formula-.
+  select id into v_inv from public.customer_invoices
+    where tenant_id = v_med and number = 'FAC-DEMO-0003';
+  if v_inv is not null and not exists (
+    select 1 from public.invoice_late_fees where invoice_id = v_inv
+  ) then
+    insert into public.invoice_late_fees
+      (tenant_id, invoice_id, amount, days_late_at_charge, notes, applied_at)
+    values (v_med, v_inv, 500.00, 80, 'Cargo por atraso, acordado por telefono',
+            now() - interval '15 days');
   end if;
 
   -- ── Un turno cerrado con faltante ────────────────────────────────────

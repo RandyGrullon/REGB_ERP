@@ -3,10 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import {
   balanceAfter,
+  daysOverdue,
   deriveInvoiceStatus,
   dueDateFrom,
   esMotivoDgii,
   isValidTaxId,
+  lateFeeEligible,
   overpayment,
 } from '@regb/operations'
 import { asUser, db } from '@/lib/db'
@@ -202,6 +204,88 @@ export async function registrarCobro(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+/**
+ * Aplica un cargo por mora, capturado a mano.
+ *
+ * NO hay formula: cuanto cobrar lo decide el negocio caso por caso, y esta
+ * accion no calcula nada por su cuenta -solo valida que la factura sea
+ * elegible (no anulada, no exenta, con dias de atraso) y deja el rastro de
+ * con cuantos dias de atraso se decidio, para quien lo revise despues.
+ *
+ * Un cargo puede reabrir una factura ya "paid": el cliente termino de pagar
+ * el capital, pero ahora debe el cargo que se decidio despues. Es correcto.
+ */
+export async function aplicarCargoPorMora(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'ar', 'ar.latefee.apply')
+  if (!permiso.ok) return permiso
+
+  const invoiceId = String(fd.get('invoiceId') ?? '')
+  const monto = num(String(fd.get('amount') ?? ''))
+  const notas = String(fd.get('notes') ?? '').trim() || null
+  if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
+  if (monto === null || monto <= 0) return { ok: false, error: 'El monto debe ser positivo.' }
+
+  const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [inv] = await tx<{ status: string; due_date: string; customer_exempt: boolean }[]>`
+      select i.status, i.due_date::text, c.late_fee_exempt as customer_exempt
+      from public.customer_invoices i
+      join public.customers c on c.id = i.customer_id
+      where i.id = ${invoiceId} and i.tenant_id = ${ctx.tenantId} for update`
+    if (!inv) return 'no-existe'
+
+    const dias = daysOverdue(new Date(`${inv.due_date}T12:00:00`), new Date())
+    if (
+      !lateFeeEligible(
+        inv.status as 'open' | 'partially_paid' | 'paid' | 'overdue' | 'void',
+        inv.customer_exempt,
+        dias,
+      )
+    ) {
+      return 'no-elegible'
+    }
+
+    await tx`
+      insert into public.invoice_late_fees
+        (tenant_id, invoice_id, amount, days_late_at_charge, notes, applied_by)
+      values (${ctx.tenantId}, ${invoiceId}, ${monto}, ${dias}, ${notas}, ${ctx.userId})`
+
+    // Recalcula el estado igual que un cobro, pero con el capital + TODA la
+    // mora acumulada -no solo la de este cargo- contra lo cobrado.
+    const [totales] = await tx<{ total: string; mora: string; cobrado: string }[]>`
+      select i.total::text,
+             coalesce((select sum(f.amount) from public.invoice_late_fees f
+                        where f.invoice_id = i.id), 0)::text as mora,
+             coalesce((select sum(p.amount) from public.customer_payments p
+                        where p.invoice_id = i.id), 0)::text as cobrado
+      from public.customer_invoices i where i.id = ${invoiceId}`
+    const estado = deriveInvoiceStatus(
+      Number(totales!.total) + Number(totales!.mora),
+      Number(totales!.cobrado),
+      new Date(`${inv.due_date}T12:00:00`),
+      new Date(),
+    )
+    await tx`
+      update public.customer_invoices set status = ${estado}
+      where id = ${invoiceId} and tenant_id = ${ctx.tenantId}`
+
+    return 'ok'
+  })
+
+  if (res === 'no-existe') return { ok: false, error: 'Esa factura no existe.' }
+  if (res === 'no-elegible') {
+    return {
+      ok: false,
+      error: 'Este cliente esta exento de mora, la factura esta anulada, o no tiene dias de atraso.',
+    }
+  }
+  if (res !== 'ok') return { ok: false, error: res }
+
+  revalidatePath('/cobrar')
+  return { ok: true }
+}
+
 /** Anula la factura. No borra: la marca con motivo, como todo en el sistema. */
 export async function anularFactura(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
@@ -248,6 +332,31 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+/**
+ * Marca o desmarca a un cliente como exento de cargos por mora. Es una
+ * decision del negocio (relacion, volumen, acuerdo) y queda fija hasta que
+ * alguien la cambie a mano — no se calcula sola por comportamiento.
+ */
+export async function alternarExentoMora(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'ar', 'ar.latefee.apply')
+  if (!permiso.ok) return permiso
+
+  const id = String(fd.get('id') ?? '')
+  if (!id) return { ok: false, error: 'Faltan datos.' }
+
+  await asUser(ctx.userId, ctx.tenantId, (tx) => {
+    return tx`
+      update public.customers set late_fee_exempt = not late_fee_exempt, updated_at = now()
+      where id = ${id} and tenant_id = ${ctx.tenantId}`
+  })
+
+  revalidatePath('/pedidos/clientes')
+  revalidatePath('/cobrar')
+  return { ok: true }
+}
+
 /** Marca vencidas las que pasaron su fecha. Idempotente. */
 export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
@@ -271,6 +380,12 @@ export async function registrarCobroForm(fd: FormData): Promise<void> {
 }
 export async function anularFacturaForm(fd: FormData): Promise<void> {
   await anularFactura(fd)
+}
+export async function aplicarCargoPorMoraForm(fd: FormData): Promise<void> {
+  await aplicarCargoPorMora(fd)
+}
+export async function alternarExentoMoraForm(fd: FormData): Promise<void> {
+  await alternarExentoMora(fd)
 }
 export async function marcarVencidasForm(fd: FormData): Promise<void> {
   await marcarVencidas(fd)

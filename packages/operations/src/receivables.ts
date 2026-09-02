@@ -158,3 +158,21 @@ export function overpayment(total: number, settlements: number[]): number {
   const aplicado = settlements.reduce((a, n) => a + n, 0)
   return roundBankers(Math.max(0, aplicado - total), 2)
 }
+
+/**
+ * Si se le puede aplicar un cargo por mora a esta factura.
+ *
+ * NO hay formula que calcule el monto: eso lo decide el negocio caso por
+ * caso y puede cambiar. Esta funcion solo decide si la opcion se OFRECE —
+ * cliente exento o factura anulada, nunca; sin dias de atraso, tampoco
+ * tiene sentido (no hay mora que cobrar).
+ */
+export function lateFeeEligible(
+  invoiceStatus: InvoiceStatus,
+  customerExempt: boolean,
+  daysLate: number,
+): boolean {
+  if (customerExempt) return false
+  if (invoiceStatus === 'void') return false
+  return daysLate > 0
+}

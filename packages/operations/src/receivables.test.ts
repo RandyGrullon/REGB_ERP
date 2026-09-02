@@ -5,6 +5,7 @@ import {
   buildAging,
   daysOverdue,
   deriveInvoiceStatus,
+  lateFeeEligible,
   overpayment,
   type OpenInvoice,
 } from './receivables.js'
@@ -151,5 +152,25 @@ describe('saldos', () => {
   it('el excedente se reporta aparte para volverlo credito del cliente', () => {
     expect(overpayment(1000, [1200])).toBe(200)
     expect(overpayment(1000, [800])).toBe(0)
+  })
+})
+
+describe('elegibilidad de cargo por mora', () => {
+  it('cliente exento nunca es elegible, aunque haya atraso', () => {
+    expect(lateFeeEligible('overdue', true, 30)).toBe(false)
+  })
+
+  it('factura anulada nunca es elegible', () => {
+    expect(lateFeeEligible('void', false, 30)).toBe(false)
+  })
+
+  it('sin dias de atraso no hay mora que cobrar', () => {
+    expect(lateFeeEligible('open', false, 0)).toBe(false)
+    expect(lateFeeEligible('paid', false, -5)).toBe(false)
+  })
+
+  it('con atraso, cliente no exento y factura no anulada: elegible', () => {
+    expect(lateFeeEligible('overdue', false, 1)).toBe(true)
+    expect(lateFeeEligible('paid', false, 10)).toBe(true)
   })
 })

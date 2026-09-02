@@ -32,6 +32,7 @@ export default defineModule({
     'ar.invoice.create',
     'ar.invoice.void',
     'ar.payment.record',
+    'ar.latefee.apply',
     'ar.export',
   ],
 

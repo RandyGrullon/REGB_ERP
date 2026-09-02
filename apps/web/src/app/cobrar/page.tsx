@@ -20,11 +20,17 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { daysOverdue } from '@regb/operations'
+import { daysOverdue, lateFeeEligible } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { facturarPedidoForm, marcarVencidasForm, registrarCobroForm } from './actions'
+import {
+  alternarExentoMoraForm,
+  aplicarCargoPorMoraForm,
+  facturarPedidoForm,
+  marcarVencidasForm,
+  registrarCobroForm,
+} from './actions'
 import { ESTADO_FACTURA } from './estados'
 
 export const dynamic = 'force-dynamic'
@@ -34,12 +40,21 @@ interface InvoiceRow {
   id: string
   number: string
   customer_name: string
+  customer_exempt: boolean
   issue_date: string
   due_date: string
   total: string
+  mora: string
   cobrado: string
   saldo: string
   status: string
+}
+
+interface CustomerExemptRow {
+  id: string
+  name: string
+  payment_terms: number
+  late_fee_exempt: boolean
 }
 
 const money = (n: number) =>
@@ -57,10 +72,15 @@ export default async function CobrarPage({
   const estado = params.estado ?? ''
   const hayFiltros = q !== '' || estado !== ''
 
-  const [facturas, porFacturar, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [facturas, porFacturar, totales, clientesExentos] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
     const f = await tx<InvoiceRow[]>`
-        select i.id, i.number, c.name as customer_name,
+        select i.id, i.number, c.name as customer_name, c.late_fee_exempt as customer_exempt,
                i.issue_date::text, i.due_date::text, i.total::text, i.status,
+               coalesce((select sum(fe.amount) from public.invoice_late_fees fe
+                          where fe.invoice_id = i.id), 0)::text as mora,
                coalesce((select sum(p.amount) from public.customer_payments p
                           where p.invoice_id = i.id), 0)::text as cobrado,
                public.invoice_balance(i.id)::text as saldo
@@ -94,11 +114,21 @@ export default async function CobrarPage({
           count(*) filter (where status in ('open','partially_paid','overdue'))::text as facturas
         from public.customer_invoices where tenant_id = ${ctx.tenantId}`
 
-    return [f, pf, t] as const
+    // Solo importa para quien vende a credito: de contado no hay plazo que
+    // incumplir, asi que no tiene sentido marcarlo exento de algo que nunca
+    // le va a aplicar.
+    const ce = await tx<CustomerExemptRow[]>`
+        select id, name, payment_terms, late_fee_exempt
+        from public.customers
+        where tenant_id = ${ctx.tenantId} and is_active and payment_terms > 0
+        order by name`
+
+    return [f, pf, t, ce] as const
   })
 
   const puedeFacturar = exigir(ctx, 'ar', 'ar.invoice.create').ok
   const puedeCobrar = exigir(ctx, 'ar', 'ar.payment.record').ok
+  const puedeAplicarMora = exigir(ctx, 'ar', 'ar.latefee.apply').ok
   const qs = ctx.demoQs
   const hoy = new Date()
 
@@ -233,9 +263,9 @@ export default async function CobrarPage({
                 <TH numeric>Cobrado</TH>
                 <TH numeric>Saldo</TH>
                 <TH>Estado</TH>
-                {puedeCobrar && (
+                {(puedeCobrar || puedeAplicarMora) && (
                   <TH>
-                    <span className="sr-only">Cobrar</span>
+                    <span className="sr-only">Cobrar / mora</span>
                   </TH>
                 )}
               </TR>
@@ -272,43 +302,80 @@ export default async function CobrarPage({
                     </TD>
                     <TD numeric>
                       <span className="tabular font-semibold">{money(saldo)}</span>
+                      {Number(f.mora) > 0 && (
+                        <span className="block text-[10px] text-[var(--color-semantic-text-warning)]">
+                          incl. {money(Number(f.mora))} mora
+                        </span>
+                      )}
                     </TD>
                     <TD>
                       <Badge tone={e.tone}>{e.label}</Badge>
                     </TD>
-                    {puedeCobrar && (
+                    {(puedeCobrar || puedeAplicarMora) && (
                       <TD>
-                        {saldo > 0 && f.status !== 'void' && (
-                          <form action={registrarCobroForm} className="flex items-center gap-1">
-                            <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                            <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                            <input type="hidden" name="invoiceId" value={f.id} />
-                            <input
-                              name="amount"
-                              defaultValue={saldo.toFixed(2)}
-                              inputMode="decimal"
-                              aria-label={`Monto a cobrar de ${f.number}`}
-                              className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
-                            />
-                            <select
-                              name="method"
-                              aria-label="Forma de pago"
-                              className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
-                            >
-                              <option value="cash">Efectivo</option>
-                              <option value="transfer">Transf.</option>
-                              <option value="check">Cheque</option>
-                              <option value="card">Tarjeta</option>
-                            </select>
-                            <button
-                              type="submit"
-                              aria-label={`Registrar cobro de ${f.number}`}
-                              className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                            >
-                              <Icon name="payments" size={18} />
-                            </button>
-                          </form>
-                        )}
+                        <div className="flex flex-col items-start gap-1">
+                          {puedeCobrar && saldo > 0 && f.status !== 'void' && (
+                            <form action={registrarCobroForm} className="flex items-center gap-1">
+                              <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                              <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                              <input type="hidden" name="invoiceId" value={f.id} />
+                              <input
+                                name="amount"
+                                defaultValue={saldo.toFixed(2)}
+                                inputMode="decimal"
+                                aria-label={`Monto a cobrar de ${f.number}`}
+                                className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
+                              />
+                              <select
+                                name="method"
+                                aria-label="Forma de pago"
+                                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
+                              >
+                                <option value="cash">Efectivo</option>
+                                <option value="transfer">Transf.</option>
+                                <option value="check">Cheque</option>
+                                <option value="card">Tarjeta</option>
+                              </select>
+                              <button
+                                type="submit"
+                                aria-label={`Registrar cobro de ${f.number}`}
+                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
+                              >
+                                <Icon name="payments" size={18} />
+                              </button>
+                            </form>
+                          )}
+                          {puedeAplicarMora &&
+                            lateFeeEligible(
+                              f.status as 'open' | 'partially_paid' | 'paid' | 'overdue' | 'void',
+                              f.customer_exempt,
+                              dias,
+                            ) && (
+                              <form
+                                action={aplicarCargoPorMoraForm}
+                                className="flex items-center gap-1"
+                                title={`${dias} dias de atraso — el monto lo decides tu, no hay calculo automatico`}
+                              >
+                                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                                <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                                <input type="hidden" name="invoiceId" value={f.id} />
+                                <input
+                                  name="amount"
+                                  placeholder="0.00"
+                                  inputMode="decimal"
+                                  aria-label={`Cargo por mora de ${f.number}`}
+                                  className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
+                                />
+                                <button
+                                  type="submit"
+                                  aria-label={`Aplicar cargo por mora a ${f.number}`}
+                                  className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-semantic-text-warning)] transition-colors hover:bg-[var(--color-surface-raised)]"
+                                >
+                                  <Icon name="schedule" size={18} />
+                                </button>
+                              </form>
+                            )}
+                        </div>
                       </TD>
                     )}
                   </TR>
@@ -316,6 +383,49 @@ export default async function CobrarPage({
               })}
             </TBody>
           </Table>
+        )}
+
+        {puedeAplicarMora && clientesExentos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Clientes exentos de mora</CardTitle>
+            </CardHeader>
+            <CardBody className="space-y-2">
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Un cliente marcado aqui nunca genera cargo por mora, aunque pague tarde. Es una
+                decision fija: no cambia sola por como pague.
+              </p>
+              <ul className="divide-y divide-[var(--color-border-subtle)]">
+                {clientesExentos.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 py-2">
+                    <span className="text-sm text-[var(--color-text-primary)]">
+                      {c.name}
+                      <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                        {c.payment_terms} dias de credito
+                      </span>
+                    </span>
+                    <form action={alternarExentoMoraForm}>
+                      <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                      <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                      <input type="hidden" name="id" value={c.id} />
+                      <button
+                        type="submit"
+                        className="flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]"
+                      >
+                        {c.late_fee_exempt ? (
+                          <Badge tone="neutral" dot={false}>
+                            Exento — quitar
+                          </Badge>
+                        ) : (
+                          'Marcar exento'
+                        )}
+                      </button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          </Card>
         )}
       </div>
     </Shell>
