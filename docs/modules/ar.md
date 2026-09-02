@@ -169,13 +169,20 @@ es la parte que más cambia por decreto. Por eso vive aislada y versionada en
 
 ## Pantallas
 
+> 🐞 **Ruta declarada, nunca construida.** El manifest siempre declaró
+> `/cobrar/:id`, pero la pantalla no existía — `anularFactura()` no tenía
+> ningún punto de entrada en la UI, y no había forma de ver el historial de
+> cobros ni de cargos por mora de una factura, solo los totales agregados
+> en la lista. Se descubrió auditando que cada ruta declarada en un
+> manifest tuviera su `page.tsx` real. Construido 2026-09-02.
+
 | Ruta | Permiso | Qué hace |
 |---|---|---|
 | `/cobrar` | `ar.view` | Facturas, cobros |
 | `/cobrar/cartera` | `ar.view` | Antigüedad por tramo y por cliente |
 | `/cobrar/ncf` | `ar.invoice.create` | Secuencias autorizadas, salud de cada una |
 | `/cobrar/dgii` | `ar.export` | 607 y 608 del periodo |
-| `/cobrar/:id` | `ar.view` | Detalle de factura (oculta del menú) |
+| `/cobrar/:id` | `ar.view` | Detalle: historial de cobros y cargos por mora, anular (oculta del menú) |
 
 Verificado por rol: el Contador entra a los reportes DGII, el Cajero recibe
 404.
@@ -197,7 +204,7 @@ Verificado por rol: el Contador entra a los reportes DGII, el Cajero recibe
 | 1 | `manifest.ts` completo | ✅ |
 | 2 | Migraciones + RLS probadas | ✅ `supabase/tests/fiscal.test.ts` (NCF sin duplicados bajo concurrencia, 607/608 complementarios, aislamiento fiscal) + `supabase/tests/ar-late-fees.test.ts` (10 casos: aislamiento, cliente exento bloqueado por trigger, spoofing de tenant vía `invoice_id` ajeno, saldo con mora, módulo apagado, restricciones) |
 | 3 | Lógica pura con cobertura | ✅ `receivables.ts` 26 tests (**100%**, incluye `lateFeeEligible`) + `dgii.ts` 14 (**97.6%**) |
-| 4 | UI web responsive | ✅ verificado en navegador: aplicar cargo por mora, ver saldo recalculado y estado reabierto, marcar/quitar cliente exento y confirmar que el control desaparece |
+| 4 | UI web responsive | ✅ verificado en navegador: aplicar cargo por mora, ver saldo recalculado y estado reabierto, marcar/quitar cliente exento y confirmar que el control desaparece, registrar un cobro desde el detalle y ver el historial actualizado |
 | 5 | UI móvil | 🔜 F5 — `mobileScope`: view |
 | 6 | Desktop verificado | 🔜 F5 |
 | 7 | Tour ≥6 pasos | ✅ `f4.cobrar`, 6 pasos |

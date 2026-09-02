@@ -278,7 +278,12 @@ export default async function CobrarPage({
                 return (
                   <TR key={f.id} className={f.status === 'void' ? 'opacity-50' : ''}>
                     <TD>
-                      <Mono>{f.number}</Mono>
+                      <a
+                        href={`/cobrar/${f.id}${qs}`}
+                        className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
+                        <Mono>{f.number}</Mono>
+                      </a>
                     </TD>
                     <TD className="font-medium text-[var(--color-text-primary)]">
                       {f.customer_name}
