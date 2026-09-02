@@ -38,29 +38,37 @@ begin
   -- Los modulos core los activa el trigger al crear el cliente. Aqui solo
   -- se agregan los de pago, que es lo que diferencia a un cliente de otro.
 
-  insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
-  values (v_pyme, 'Colmado La Esperanza SRL', '130-11111-1', 'DOP', true)
-  on conflict do nothing
-  returning id into v_c1;
+  -- `companies` solo tiene PK(id) -un uuid nuevo cada vez-, asi que un
+  -- "on conflict do nothing" aqui nunca dispara: cada corrida duplicaria
+  -- la empresa. Se comprueba a mano, igual que el resto de este archivo.
+  select id into v_c1 from public.companies where tenant_id = v_pyme limit 1;
   if v_c1 is null then
-    select id into v_c1 from public.companies where tenant_id = v_pyme limit 1;
+    insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
+    values (v_pyme, 'Colmado La Esperanza SRL', '130-11111-1', 'DOP', true)
+    returning id into v_c1;
   end if;
 
-  insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
-  values (v_med, 'Distribuidora Caribe SRL', '131-45678-2', 'DOP', true)
-  on conflict do nothing
-  returning id into v_c2;
+  select id into v_c2 from public.companies where tenant_id = v_med limit 1;
   if v_c2 is null then
-    select id into v_c2 from public.companies where tenant_id = v_med limit 1;
+    insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
+    values (v_med, 'Distribuidora Caribe SRL', '131-45678-2', 'DOP', true)
+    returning id into v_c2;
   end if;
 
-  insert into public.branches (tenant_id, company_id, name, code)
-  values (v_pyme, v_c1, 'Villa Consuelo', 'VC')
-  on conflict do nothing;
+  -- Mismo caso: `branches` solo tiene PK(id).
+  if not exists (select 1 from public.branches where company_id = v_c1 and code = 'VC') then
+    insert into public.branches (tenant_id, company_id, name, code)
+    values (v_pyme, v_c1, 'Villa Consuelo', 'VC');
+  end if;
 
-  insert into public.branches (tenant_id, company_id, name, code)
-  values (v_med, v_c2, 'Santo Domingo', 'SD'), (v_med, v_c2, 'Santiago', 'STI')
-  on conflict do nothing;
+  if not exists (select 1 from public.branches where company_id = v_c2 and code = 'SD') then
+    insert into public.branches (tenant_id, company_id, name, code)
+    values (v_med, v_c2, 'Santo Domingo', 'SD');
+  end if;
+  if not exists (select 1 from public.branches where company_id = v_c2 and code = 'STI') then
+    insert into public.branches (tenant_id, company_id, name, code)
+    values (v_med, v_c2, 'Santiago', 'STI');
+  end if;
 
   -- ── El colmado: lo minimo para dejar Excel ───────────────────────────
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
@@ -239,7 +247,13 @@ begin
   select user_id into v_maria from public.user_profiles
     where tenant_id = v_pyme limit 1;
 
-  if v_alm is not null then
+  -- `pos_shifts` no tiene una restriccion unica que un "on conflict"
+  -- pudiera usar: se comprueba por sus notas fijas, que son el ancla de
+  -- este turno de demostracion en concreto.
+  if v_alm is not null and not exists (
+    select 1 from public.pos_shifts
+    where warehouse_id = v_alm and notes = 'Faltante, se revisara manana'
+  ) then
     insert into public.pos_shifts
       (tenant_id, warehouse_id, cashier_id, opening_float, counted_cash,
        expected_cash, variance, status, opened_at, closed_at, notes)
