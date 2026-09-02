@@ -33,7 +33,7 @@ Se **conserva** la columna vieja `category text` como caché de display: la leen
 `importar` y la búsqueda global, y romperlas para ganar normalización pura no
 valía la pena.
 
-RLS módulo-gated (`auth.module_active('products')`) + `provider_impersonating`
+RLS módulo-gated (`rls.module_active('products')`) + `provider_impersonating`
 + `audit.record('products')`, idéntica a las 7 tablas de 0016.
 
 ## La trampa que costó dinero

@@ -11,7 +11,7 @@ create schema if not exists regb;   -- proveedor: tenants, precios, facturas
 create schema if not exists audit;   -- log particionado por mes
 
 comment on schema regb is
-  'Datos del proveedor (Randy). Invisible para los clientes: toda tabla exige auth.is_provider().';
+  'Datos del proveedor (Randy). Invisible para los clientes: toda tabla exige rls.is_provider().';
 comment on schema audit is
   'Bitacora de auditoria particionada por mes. Escritura solo por trigger.';
 
@@ -32,13 +32,36 @@ end $$;
 -- El esquema auth existe en Supabase; en CI lo creamos vacio.
 create schema if not exists auth;
 
+-- Esquema propio para las funciones de aislamiento (tenant_id, is_provider,
+-- module_active, impersonating, custom_access_token_hook). NO viven en
+-- `auth`: en un proyecto real de Supabase ese esquema es de
+-- `supabase_admin` y `postgres` solo tiene USAGE, no CREATE -- crear algo
+-- ahi falla con "permission denied for schema auth", descubierto al
+-- desplegar contra un proyecto real por primera vez.
+create schema if not exists rls;
+comment on schema rls is
+  'Funciones de aislamiento multi-tenant (tenant_id, module_active, etc). Vive aparte de auth porque ese esquema es de Supabase, no nuestro.';
+
 grant usage on schema public to anon, authenticated;
 grant usage on schema regb to authenticated;
 grant usage on schema audit to authenticated;
--- Sin esto, las politicas RLS no pueden invocar auth.tenant_id() ni
--- auth.module_active() y toda consulta muere con "permission denied for
+grant usage on schema rls to anon, authenticated;
+-- Sin esto, las politicas RLS no pueden invocar rls.tenant_id() ni
+-- rls.module_active() y toda consulta muere con "permission denied for
 -- schema auth". Supabase lo trae de fabrica; un Postgres limpio (CI) no.
-grant usage on schema auth to anon, authenticated;
+--
+-- En un proyecto real de Supabase, el rol `postgres` no es dueno del
+-- esquema `auth` (lo es `supabase_auth_admin`) y no puede otorgar sobre
+-- el: falla con "permission denied for schema auth" aunque el permiso ya
+-- exista de fabrica. Se ignora ese error especifico -insufficient_privilege-
+-- en vez de dejar que tumbe toda la migracion; en CI con Postgres limpio,
+-- donde `postgres` SI es dueno, el grant se aplica normal.
+do $$
+begin
+  execute 'grant usage on schema auth to anon, authenticated';
+exception when insufficient_privilege then
+  raise notice 'Sin permiso para otorgar sobre auth: se asume que Supabase ya lo dio de fabrica.';
+end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Helpers de aislamiento
@@ -49,7 +72,7 @@ grant usage on schema auth to anon, authenticated;
 -- ═══════════════════════════════════════════════════════════════════════
 
 -- El tenant SIEMPRE sale del JWT. Nunca del body, params ni searchParams.
-create or replace function auth.tenant_id()
+create or replace function rls.tenant_id()
 returns uuid
 language sql
 stable
@@ -63,11 +86,11 @@ as $$
   )::uuid
 $$;
 
-comment on function auth.tenant_id() is
+comment on function rls.tenant_id() is
   'Tenant del usuario actual, leido del JWT. Unica fuente valida de tenant_id.';
 
 -- ¿Es un usuario del proveedor (REGB Control)?
-create or replace function auth.is_provider()
+create or replace function rls.is_provider()
 returns boolean
 language sql
 stable
@@ -81,11 +104,11 @@ as $$
   )
 $$;
 
-comment on function auth.is_provider() is
+comment on function rls.is_provider() is
   'True solo para usuarios de REGB Control. Puerta de entrada al esquema regb.';
 
 -- Id del usuario actual (en CI, donde no existe el auth.uid() de Supabase).
-create or replace function auth.regb_uid()
+create or replace function rls.regb_uid()
 returns uuid
 language sql
 stable
@@ -106,7 +129,7 @@ $$;
 -- (mismo idioma que usa pg_dump para restaurar en orden arbitrario).
 set local check_function_bodies = off;
 
-create or replace function auth.module_active(p_module text)
+create or replace function rls.module_active(p_module text)
 returns boolean
 language sql
 stable
@@ -116,23 +139,23 @@ as $$
   select exists (
     select 1
     from regb.tenant_modules tm
-    where tm.tenant_id = auth.tenant_id()
+    where tm.tenant_id = rls.tenant_id()
       and tm.module_id = p_module
       and tm.status in ('trial', 'active')
       and tm.enabled
   )
 $$;
 
-comment on function auth.module_active(text) is
+comment on function rls.module_active(text) is
   'True si el tenant tiene el modulo licenciado y encendido. Toda politica RLS de negocio debe invocarla.';
 
 set local check_function_bodies = on;
 
 -- Las funciones helper las invoca cada politica RLS, en cada query.
-grant execute on function auth.tenant_id()          to anon, authenticated;
-grant execute on function auth.is_provider()        to anon, authenticated;
-grant execute on function auth.regb_uid()          to anon, authenticated;
-grant execute on function auth.module_active(text)  to anon, authenticated;
+grant execute on function rls.tenant_id()          to anon, authenticated;
+grant execute on function rls.is_provider()        to anon, authenticated;
+grant execute on function rls.regb_uid()          to anon, authenticated;
+grant execute on function rls.module_active(text)  to anon, authenticated;
 
 -- ── Utilidad: updated_at automatico ────────────────────────────────────
 create or replace function public.touch_updated_at()

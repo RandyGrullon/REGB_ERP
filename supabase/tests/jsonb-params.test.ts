@@ -57,8 +57,8 @@ describe('parametros jsonb', () => {
 describe('helpers de claims sin sesion', () => {
   it('devuelven null / false en vez de lanzar', async () => {
     const [r] = await sql<{ uid: string | null; tenant: string | null; provider: boolean }[]>`
-      select auth.regb_uid() as uid, auth.tenant_id() as tenant,
-             auth.is_provider() as provider`
+      select rls.regb_uid() as uid, rls.tenant_id() as tenant,
+             rls.is_provider() as provider`
     expect(r!.uid).toBeNull()
     expect(r!.tenant).toBeNull()
     expect(r!.provider).toBe(false)
@@ -67,7 +67,7 @@ describe('helpers de claims sin sesion', () => {
   it('tampoco lanzan con la cadena vacia explicita', async () => {
     const [r] = await sql.begin(async (tx) => {
       await tx`select set_config('request.jwt.claims', '', true)`
-      return tx<{ uid: string | null }[]>`select auth.regb_uid() as uid`
+      return tx<{ uid: string | null }[]>`select rls.regb_uid() as uid`
     })
     expect(r!.uid).toBeNull()
   })

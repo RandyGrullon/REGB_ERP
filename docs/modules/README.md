@@ -79,7 +79,7 @@ habría revelado, porque las dos requieren hablarle a la base directamente.
 
 1. **`assign_ncf` aceptaba el tenant de otro.** La función es
    `security definer` —tiene que serlo— y recibía `p_tenant` sin comprobarlo
-   contra `auth.tenant_id()`. Cualquier usuario autenticado podía agotarle los
+   contra `rls.tenant_id()`. Cualquier usuario autenticado podía agotarle los
    NCF a otro cliente y dejarlo sin poder facturar por días.
 
 2. **Las vistas `dgii_607` y `dgii_608` se saltaban la RLS.** Una vista corre

@@ -202,18 +202,18 @@ describe('Aislamiento de escritura', () => {
 
 // ═══════════════════════════════════════════════════════════════════════
 describe('Licencia de modulos', () => {
-  it('auth.module_active es true para quien lo tiene licenciado', async () => {
+  it('rls.module_active es true para quien lo tiene licenciado', async () => {
     const [r] = await as(
       claims(userB, tenantB),
-      (tx) => tx<{ active: boolean }[]>`select auth.module_active('inventory') as active`,
+      (tx) => tx<{ active: boolean }[]>`select rls.module_active('inventory') as active`,
     )
     expect(r!.active).toBe(true)
   })
 
-  it('auth.module_active es false para quien NO lo compro', async () => {
+  it('rls.module_active es false para quien NO lo compro', async () => {
     const [r] = await as(
       claims(userA, tenantA),
-      (tx) => tx<{ active: boolean }[]>`select auth.module_active('inventory') as active`,
+      (tx) => tx<{ active: boolean }[]>`select rls.module_active('inventory') as active`,
     )
     expect(r!.active).toBe(false)
   })
@@ -224,7 +224,7 @@ describe('Licencia de modulos', () => {
 
     const [r] = await as(
       claims(userB, tenantB),
-      (tx) => tx<{ active: boolean }[]>`select auth.module_active('inventory') as active`,
+      (tx) => tx<{ active: boolean }[]>`select rls.module_active('inventory') as active`,
     )
     expect(r!.active).toBe(false)
 

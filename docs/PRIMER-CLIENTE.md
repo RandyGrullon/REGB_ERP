@@ -40,10 +40,17 @@ URL (`?tenant=…&rol=…`) y no hay contraseña. Eso es una vitrina, no un
 sistema. `apps/web/src/lib/supabase.ts:38` lo decide con una sola condición:
 si existen las dos variables de entorno, hay login real.
 
-1. Crea un proyecto en Supabase y apunta `DATABASE_URL` a su Postgres.
+1. Crea un proyecto en Supabase. En *Project Settings → Database →
+   Connection string*, usa la variante **Session pooler** (URI), no
+   *Direct connection*: la directa exige IPv6, que la mayoría de redes
+   domesticas no tiene. Pon esa cadena (con la contraseña real, no
+   `[YOUR-PASSWORD]`) en `DATABASE_URL`.
 2. Aplica las 40 migraciones sobre esa base, **desde cero y en orden**. No
    hay `down`: la garantía es que arranca limpia, y es la que se ejerce en
-   cada `gate:f0`.
+   cada `gate:f0`. No hay `psql` ni `supabase` CLI garantizados en todos los
+   entornos; el driver `postgres` (ya en `apps/web/node_modules`) sirve
+   igual — un script de una docena de líneas que lee `supabase/migrations/`
+   ordenado y llama `sql.file()` por archivo, cortando en el primer error.
 3. Crea `apps/web/.env.local`:
 
 ```bash
@@ -55,9 +62,21 @@ DATABASE_URL=postgresql://…
 4. **Registra el hook de token.** Sin esto nada funciona: es lo que mete
    `tenant_id` y `is_provider` en el JWT, y toda la RLS del sistema cuelga
    de ese claim. En el panel de Supabase, *Authentication → Hooks → Custom
-   Access Token*, apunta a `auth.custom_access_token_hook`. La migración
+   Access Token*, apunta a **`rls.custom_access_token_hook`** — no
+   `auth.custom_access_token_hook`. La migración
    [`0008_auth_token_hook.sql`](../supabase/migrations/0008_auth_token_hook.sql)
    ya le dio el `grant` a `supabase_auth_admin`.
+
+   > 🐞 **Descubierto al desplegar contra un proyecto real por primera
+   > vez (2026-09-02):** las funciones de aislamiento (`tenant_id()`,
+   > `is_provider()`, `module_active()`, `impersonating()`, y este mismo
+   > hook) vivían en el esquema `auth`. Eso funcionaba en el Postgres
+   > limpio de CI, donde nuestra propia migración es dueña de ese
+   > esquema — pero en Supabase real, `auth` pertenece a `supabase_admin`
+   > y el rol `postgres` con el que te conectas solo tiene `USAGE`, no
+   > `CREATE`. La migración 0001 fallaba con *"permission denied for
+   > schema auth"* antes de llegar siquiera al hook. Se movieron todas a
+   > un esquema propio, `rls`, que si es nuestro.
 
 **Cómo saber que quedó bien:** entra con un usuario y abre `/perfil`. Si
 ves tu rol y tus permisos, el claim llegó. Si recibes un 404, no llegó.

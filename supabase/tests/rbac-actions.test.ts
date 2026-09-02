@@ -184,7 +184,7 @@ describe('Provisionamiento de un cliente nuevo', () => {
   })
 
   it('nace con los modulos core ya activos', async () => {
-    // §6.1: los core vienen con el plan. Sin esto, `auth.module_active`
+    // §6.1: los core vienen con el plan. Sin esto, `rls.module_active`
     // era false para todos y nadie podia ni editar sus propios roles.
     const [r] = await sql<{ n: string }[]>`
       select count(*) as n

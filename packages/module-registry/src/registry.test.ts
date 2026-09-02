@@ -194,7 +194,7 @@ describe('Licencia frente a renderizado — dos fronteras distintas', () => {
   /**
    * `activeModules` = lo que puede PINTARSE.
    * `licensedModules` = lo que el cliente PAGA, la misma frontera que
-   * `auth.module_active()` en SQL.
+   * `rls.module_active()` en SQL.
    *
    * Confundirlas convierte un hueco de implementacion en un 403
    * inexplicable: el cliente compro el modulo, la UI aun no existe, y el

@@ -36,10 +36,10 @@ declare
   v_year smallint := extract(year from now())::smallint;
   v_n    integer;
 begin
-  if p_tenant is distinct from auth.tenant_id() then
+  if p_tenant is distinct from rls.tenant_id() then
     raise exception 'No puedes numerar pedidos de otro cliente.' using errcode = '42501';
   end if;
-  if not auth.module_active('sales-orders') then
+  if not rls.module_active('sales-orders') then
     raise exception 'El modulo de pedidos no esta activo: no se entregan numeros.'
       using errcode = '42501';
   end if;
@@ -62,10 +62,10 @@ declare
   v_year smallint := extract(year from now())::smallint;
   v_n    integer;
 begin
-  if p_tenant is distinct from auth.tenant_id() then
+  if p_tenant is distinct from rls.tenant_id() then
     raise exception 'No puedes numerar tickets de otro cliente.' using errcode = '42501';
   end if;
-  if not auth.module_active('pos') then
+  if not rls.module_active('pos') then
     raise exception 'El modulo de caja no esta activo: no se entregan numeros.'
       using errcode = '42501';
   end if;
@@ -88,10 +88,10 @@ declare
   v_year smallint := extract(year from now())::smallint;
   v_n    integer;
 begin
-  if p_tenant is distinct from auth.tenant_id() then
+  if p_tenant is distinct from rls.tenant_id() then
     raise exception 'No puedes numerar facturas de otro cliente.' using errcode = '42501';
   end if;
-  if not auth.module_active('ar') then
+  if not rls.module_active('ar') then
     raise exception 'El modulo de cuentas por cobrar no esta activo: no se entregan numeros.'
       using errcode = '42501';
   end if;

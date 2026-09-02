@@ -24,8 +24,8 @@
 
 create policy tenant_corrige on regb.activation_requests
   for update
-  using (tenant_id = auth.tenant_id() and status = 'pending')
-  with check (tenant_id = auth.tenant_id() and status = 'pending');
+  using (tenant_id = rls.tenant_id() and status = 'pending')
+  with check (tenant_id = rls.tenant_id() and status = 'pending');
 
 comment on policy tenant_corrige on regb.activation_requests is
   'El cliente corrige su peticion mientras nadie la haya atendido. Despues manda el historial, no el.';

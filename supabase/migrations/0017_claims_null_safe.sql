@@ -8,7 +8,7 @@
 --
 --  Mientras esto solo se llamaba desde politicas RLS pasaba inadvertido:
 --  ahi siempre hay sesion. Al enganchar audit.record() a mas tablas en
---  0016, el trigger empezo a llamar a auth.regb_uid() en CUALQUIER
+--  0016, el trigger empezo a llamar a rls.regb_uid() en CUALQUIER
 --  escritura — incluidas las que hace el dueno de las tablas sin claims —
 --  y un simple `delete` de mantenimiento fallaba.
 --
@@ -18,7 +18,7 @@
 --  dentro de las politicas: cero coste en RLS.
 -- ═══════════════════════════════════════════════════════════════════════
 
-create or replace function auth.tenant_id()
+create or replace function rls.tenant_id()
 returns uuid
 language sql
 stable
@@ -32,7 +32,7 @@ as $$
   )::uuid
 $$;
 
-create or replace function auth.is_provider()
+create or replace function rls.is_provider()
 returns boolean
 language sql
 stable
@@ -46,7 +46,7 @@ as $$
   )
 $$;
 
-create or replace function auth.regb_uid()
+create or replace function rls.regb_uid()
 returns uuid
 language sql
 stable
@@ -59,5 +59,5 @@ as $$
   )::uuid
 $$;
 
-comment on function auth.regb_uid() is
+comment on function rls.regb_uid() is
   'Usuario actual segun el JWT, o null si no hay sesion. Nunca lanza: la bitacora escribe desde triggers que corren con y sin sesion.';

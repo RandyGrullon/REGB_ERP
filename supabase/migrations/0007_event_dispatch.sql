@@ -109,7 +109,7 @@ as $$
 declare
   v_id bigint;
 begin
-  if auth.tenant_id() is null then
+  if rls.tenant_id() is null then
     raise exception 'No se puede emitir un evento sin tenant en el JWT';
   end if;
 
@@ -119,7 +119,7 @@ begin
 
   insert into public.event_outbox (tenant_id, type, payload, emitted_by, correlation_id)
   values (
-    auth.tenant_id(),
+    rls.tenant_id(),
     p_type,
     p_payload,
     p_emitted_by,

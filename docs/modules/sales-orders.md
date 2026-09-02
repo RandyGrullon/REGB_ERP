@@ -11,11 +11,11 @@ entrega, con el stock apartado desde que se confirma.
 
 `ar` puede funcionar **sin** `sales-orders` — un tenant que factura servicios
 no usa pedidos. Si `customers` estuviera cerrada tras
-`auth.module_active('sales-orders')`, ese tenant vería **cero clientes** y `ar`
+`rls.module_active('sales-orders')`, ese tenant vería **cero clientes** y `ar`
 quedaría inservible.
 
 Por eso **`public.customers` es tabla de patrón core**: RLS
-`tenant_id = auth.tenant_id()` **sin** chequeo de módulo, igual que
+`tenant_id = rls.tenant_id()` **sin** chequeo de módulo, igual que
 `companies`, `branches` o `roles`. Su pantalla vive en `sales-orders` por ser
 el primero que la necesita, pero el dato es transversal.
 

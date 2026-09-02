@@ -52,13 +52,13 @@ alter table regb.activation_requests force row level security;
 -- cambiar lo pedido una vez que el proveedor empezo a trabajarla es como
 -- se pierde el rastro de que se acordo.
 create policy tenant_lee on regb.activation_requests
-  for select using (tenant_id = auth.tenant_id() or auth.is_provider());
+  for select using (tenant_id = rls.tenant_id() or rls.is_provider());
 
 create policy tenant_pide on regb.activation_requests
-  for insert with check (tenant_id = auth.tenant_id());
+  for insert with check (tenant_id = rls.tenant_id());
 
 create policy proveedor_atiende on regb.activation_requests
-  for update using (auth.is_provider()) with check (auth.is_provider());
+  for update using (rls.is_provider()) with check (rls.is_provider());
 
 grant select, insert on regb.activation_requests to authenticated;
 grant update on regb.activation_requests to authenticated;

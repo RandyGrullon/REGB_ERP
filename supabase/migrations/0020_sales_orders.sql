@@ -136,12 +136,12 @@ begin
     execute format('alter table public.%I force row level security', r.tabla);
     execute format(
       'create policy tenant_module on public.%I for all
-         using (tenant_id = auth.tenant_id() and auth.module_active(%L))
-         with check (tenant_id = auth.tenant_id() and auth.module_active(%L))',
+         using (tenant_id = rls.tenant_id() and rls.module_active(%L))
+         with check (tenant_id = rls.tenant_id() and rls.module_active(%L))',
       r.tabla, r.modulo, r.modulo);
     execute format(
       'create policy provider_impersonating on public.%I for select
-         using (auth.impersonating(tenant_id))', r.tabla);
+         using (rls.impersonating(tenant_id))', r.tabla);
   end loop;
 end $$;
 
@@ -152,13 +152,13 @@ end $$;
  */
 create policy tenant_pos on public.customers
   for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('pos'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('pos'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('pos'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('pos'));
 
 create policy tenant_ar on public.customers
   for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('ar'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('ar'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('ar'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('ar'));
 
 -- ── Bitacora ────────────────────────────────────────────────────────────
 create trigger audit_me after insert or update or delete on public.customers

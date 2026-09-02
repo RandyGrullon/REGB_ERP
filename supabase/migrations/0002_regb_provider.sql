@@ -112,7 +112,7 @@ create table regb.tenant_modules (
   primary key (tenant_id, module_id)
 );
 
--- El helper auth.module_active() consulta por (tenant, modulo, status, enabled)
+-- El helper rls.module_active() consulta por (tenant, modulo, status, enabled)
 -- en cada evaluacion de politica RLS. Sin este indice, cada query paga un scan.
 create index tenant_modules_active_idx
   on regb.tenant_modules (tenant_id, module_id)

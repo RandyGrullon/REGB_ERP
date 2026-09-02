@@ -22,7 +22,7 @@ begin
     execute format('alter table regb.%I force row level security', t);
     execute format(
       'create policy provider_only on regb.%I for all
-         using (auth.is_provider()) with check (auth.is_provider())', t);
+         using (rls.is_provider()) with check (rls.is_provider())', t);
   end loop;
 end $$;
 
@@ -30,7 +30,7 @@ end $$;
 -- para que el marketplace y el registry funcionen. Solo lectura, solo lo suyo.
 create policy tenant_reads_own_modules on regb.tenant_modules
   for select
-  using (tenant_id = auth.tenant_id());
+  using (tenant_id = rls.tenant_id());
 
 create policy anyone_reads_published_catalog on regb.module_catalog
   for select
@@ -46,16 +46,16 @@ create policy anyone_reads_pricing on regb.module_pricing
 -- El cliente ve sus propias facturas (portal de suscripcion). Nada mas.
 create policy tenant_reads_own_invoices on regb.invoices
   for select
-  using (tenant_id = auth.tenant_id());
+  using (tenant_id = rls.tenant_id());
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  ESQUEMA public — aislamiento por tenant
 --
 --  PATRON CANONICO para tablas del CORE (siempre licenciadas):
---     using (tenant_id = auth.tenant_id())
+--     using (tenant_id = rls.tenant_id())
 --
 --  PATRON CANONICO para tablas de un MODULO de negocio:
---     using (tenant_id = auth.tenant_id() and auth.module_active('<id>'))
+--     using (tenant_id = rls.tenant_id() and rls.module_active('<id>'))
 --
 --  El segundo es el que hace que un modulo apagado devuelva 403 y no datos,
 --  aunque el usuario adivine la URL. Ver §8.3.
@@ -70,32 +70,32 @@ begin
     execute format('alter table public.%I force row level security', t);
     execute format(
       'create policy tenant_isolation on public.%I for all
-         using (tenant_id = auth.tenant_id())
-         with check (tenant_id = auth.tenant_id())', t);
+         using (tenant_id = rls.tenant_id())
+         with check (tenant_id = rls.tenant_id())', t);
   end loop;
 end $$;
 
 -- ── Impersonacion del proveedor ────────────────────────────────────────
 --  Solo LECTURA, solo con sesion abierta, solo dentro de 60 minutos.
 --  Documento maestro §7.4.
-create or replace function auth.impersonating(p_tenant uuid)
+create or replace function rls.impersonating(p_tenant uuid)
 returns boolean
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select auth.is_provider() and exists (
+  select rls.is_provider() and exists (
     select 1
     from regb.impersonation_log il
     where il.tenant_id = p_tenant
-      and il.provider_user = auth.regb_uid()
+      and il.provider_user = rls.regb_uid()
       and il.ended_at is null
       and il.started_at > now() - interval '60 minutes'
   )
 $$;
 
-comment on function auth.impersonating(uuid) is
+comment on function rls.impersonating(uuid) is
   'Sesion de impersonacion abierta y vigente. Expira sola a los 60 minutos.';
 
 do $$
@@ -104,7 +104,7 @@ begin
   foreach t in array array['companies','branches','roles','memberships','tour_progress'] loop
     execute format(
       'create policy provider_impersonation_read on public.%I for select
-         using (auth.impersonating(tenant_id))', t);
+         using (rls.impersonating(tenant_id))', t);
   end loop;
 end $$;
 
@@ -116,7 +116,7 @@ alter table audit.log force row level security;
 
 create policy tenant_reads_own_audit on audit.log
   for select
-  using (tenant_id = auth.tenant_id() or auth.is_provider());
+  using (tenant_id = rls.tenant_id() or rls.is_provider());
 
 -- Sin politica de insert/update/delete: solo el trigger (security definer)
 -- puede escribir. La bitacora es inmutable por diseno.

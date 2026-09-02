@@ -18,7 +18,7 @@
 --  autorice un rango nuevo, lo que toma dias. Y los numeros consumidos no
 --  vuelven.
 --
---  Regla: el parametro se comprueba contra `auth.tenant_id()`. Se mantiene
+--  Regla: el parametro se comprueba contra `rls.tenant_id()`. Se mantiene
 --  como parametro en vez de leerlo de los claims porque el proveedor
 --  impersonando SI necesita poder emitir en nombre del cliente que
 --  atiende, y eso se autoriza explicitamente.
@@ -57,7 +57,7 @@ declare
 begin
   -- Lo primero, antes de tocar nada: esta funcion elude la RLS por
   -- definicion, asi que el chequeo de pertenencia lo tiene que hacer ella.
-  if p_tenant is distinct from auth.tenant_id() then
+  if p_tenant is distinct from rls.tenant_id() then
     raise exception 'No puedes emitir comprobantes de otro cliente.'
       using errcode = '42501';
   end if;

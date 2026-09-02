@@ -3,7 +3,7 @@
 --
 --  LA PIEZA QUE CIERRA EL CIRCULO DE SEGURIDAD.
 --
---  Todo el aislamiento de REGB descansa en que `auth.tenant_id()` lea un
+--  Todo el aislamiento de REGB descansa en que `rls.tenant_id()` lea un
 --  tenant del JWT. Hasta ahora ese claim lo poniamos a mano. Aqui lo pone
 --  Postgres, en el momento exacto en que Supabase emite el token, leyendo
 --  de `public.memberships`.
@@ -30,7 +30,7 @@ create table regb.provider_users (
 alter table regb.provider_users enable row level security;
 alter table regb.provider_users force row level security;
 create policy provider_only on regb.provider_users
-  for all using (auth.is_provider()) with check (auth.is_provider());
+  for all using (rls.is_provider()) with check (rls.is_provider());
 
 -- Defensa en profundidad: ademas de la politica RLS, `authenticated` no
 -- tiene NINGUN grant sobre esta tabla. Un cliente no recibe una lista
@@ -52,7 +52,7 @@ comment on table regb.provider_users is
 --  eso significa que no ve absolutamente nada. Fallar cerrado es correcto:
 --  un error de este hook nunca puede traducirse en ver datos de mas.
 -- ═══════════════════════════════════════════════════════════════════════
-create or replace function auth.custom_access_token_hook(event jsonb)
+create or replace function rls.custom_access_token_hook(event jsonb)
 returns jsonb
 language plpgsql
 stable
@@ -131,7 +131,7 @@ begin
 end;
 $$;
 
-comment on function auth.custom_access_token_hook(jsonb) is
+comment on function rls.custom_access_token_hook(jsonb) is
   'Inyecta tenant_id, role_id e is_provider en el JWT desde public.memberships. Falla cerrado.';
 
 -- ── Permisos del hook ──────────────────────────────────────────────────
@@ -141,14 +141,15 @@ do $$
 begin
   if exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
     grant usage on schema auth to supabase_auth_admin;
-    grant execute on function auth.custom_access_token_hook(jsonb) to supabase_auth_admin;
+    grant usage on schema rls to supabase_auth_admin;
+    grant execute on function rls.custom_access_token_hook(jsonb) to supabase_auth_admin;
     grant select on public.memberships to supabase_auth_admin;
     grant select on regb.tenants to supabase_auth_admin;
     grant select on regb.provider_users to supabase_auth_admin;
   end if;
 end $$;
 
-revoke execute on function auth.custom_access_token_hook(jsonb) from public, anon, authenticated;
+revoke execute on function rls.custom_access_token_hook(jsonb) from public, anon, authenticated;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Invitaciones
@@ -168,7 +169,7 @@ security invoker
 set search_path = ''
 as $$
 declare
-  v_tenant uuid := auth.tenant_id();
+  v_tenant uuid := rls.tenant_id();
   v_user   uuid;
   v_id     uuid;
 begin

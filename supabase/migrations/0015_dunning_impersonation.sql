@@ -5,7 +5,7 @@
 --  · 90 archivo. NINGÚN paso borra datos — el test lo verifica contando.
 --
 --  Impersonación (§7.4): razón obligatoria (≥10), 60 minutos (los hace
---  cumplir auth.impersonating() de 0005) y doble auditoría: el log del
+--  cumplir rls.impersonating() de 0005) y doble auditoría: el log del
 --  proveedor Y la bitácora del propio tenant.
 -- ═══════════════════════════════════════════════════════════════════════
 
@@ -24,7 +24,7 @@ create table regb.dunning_log (
 alter table regb.dunning_log enable row level security;
 alter table regb.dunning_log force row level security;
 create policy provider_only on regb.dunning_log
-  for all using (auth.is_provider()) with check (auth.is_provider());
+  for all using (rls.is_provider()) with check (rls.is_provider());
 
 -- ── Aplicar dunning ─────────────────────────────────────────────────────
 --  Se puede correr las veces que sea (cron horario, botón del panel):

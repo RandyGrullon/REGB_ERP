@@ -244,12 +244,12 @@ begin
     execute format('alter table public.%I force row level security', r.tabla);
     execute format(
       'create policy tenant_module on public.%I for all
-         using (tenant_id = auth.tenant_id() and auth.module_active(''inventory''))
-         with check (tenant_id = auth.tenant_id() and auth.module_active(''inventory''))',
+         using (tenant_id = rls.tenant_id() and rls.module_active(''inventory''))
+         with check (tenant_id = rls.tenant_id() and rls.module_active(''inventory''))',
       r.tabla);
     execute format(
       'create policy provider_impersonating on public.%I for select
-         using (auth.impersonating(tenant_id))', r.tabla);
+         using (rls.impersonating(tenant_id))', r.tabla);
   end loop;
 end $$;
 
@@ -265,15 +265,15 @@ alter table public.inventory_movements force row level security;
 
 create policy tenant_module_select on public.inventory_movements
   for select
-  using (tenant_id = auth.tenant_id() and auth.module_active('inventory'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('inventory'));
 
 create policy tenant_module_insert on public.inventory_movements
   for insert
-  with check (tenant_id = auth.tenant_id() and auth.module_active('inventory'));
+  with check (tenant_id = rls.tenant_id() and rls.module_active('inventory'));
 
 create policy provider_impersonating on public.inventory_movements
   for select
-  using (auth.impersonating(tenant_id));
+  using (rls.impersonating(tenant_id));
 
 -- ── Bitacora ───────────────────────────────────────────────────────────
 --  El kardex NO se audita en audit.log: ya es su propio libro inmutable,

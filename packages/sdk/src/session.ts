@@ -2,7 +2,7 @@
  * ═══════════════════════════════════════════════════════════════════════
  *  Lectura de la sesion — logica pura
  *
- *  Traduce los claims que puso `auth.custom_access_token_hook` a algo que
+ *  Traduce los claims que puso `rls.custom_access_token_hook` a algo que
  *  la app pueda usar. No habla con la red: recibe claims, devuelve sesion.
  *
  *  REGLA QUE NO SE NEGOCIA: el `tenantId` sale de aqui y de ningun otro

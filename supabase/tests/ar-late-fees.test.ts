@@ -160,7 +160,7 @@ describe('Aislamiento entre clientes', () => {
 
   it('B no puede colar un cargo a la factura de A usando su PROPIO tenant_id', async () => {
     // El truco: la RLS de insert solo compara tenant_id de la fila nueva
-    // contra auth.tenant_id() -no revisa a quien pertenece invoice_id-, asi
+    // contra rls.tenant_id() -no revisa a quien pertenece invoice_id-, asi
     // que sin el trigger esto pasaria la RLS y le colaria un cargo a un
     // cliente ajeno. Es el mismo agujero que la 0031 tapo en otro lado.
     await expect(

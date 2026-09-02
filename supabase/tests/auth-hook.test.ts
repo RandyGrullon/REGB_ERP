@@ -47,7 +47,7 @@ interface Claims {
 /** Invoca el hook igual que lo haria Supabase al emitir un token. */
 async function emitir(userId: string): Promise<Claims['app_metadata']> {
   const [row] = await sql<{ result: { claims: Claims } }[]>`
-    select auth.custom_access_token_hook(
+    select rls.custom_access_token_hook(
       jsonb_build_object(
         'user_id', ${userId}::uuid,
         'claims', jsonb_build_object('app_metadata', '{}'::jsonb)
@@ -213,7 +213,7 @@ describe('Superficie de ataque del hook', () => {
     await expect(
       sql.begin(async (tx) => {
         await tx.unsafe('set local role authenticated')
-        return tx`select auth.custom_access_token_hook('{}'::jsonb)`
+        return tx`select rls.custom_access_token_hook('{}'::jsonb)`
       }),
     ).rejects.toThrow(/permission denied/i)
   })

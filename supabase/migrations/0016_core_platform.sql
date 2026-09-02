@@ -143,12 +143,12 @@ begin
     execute format('alter table public.%I force row level security', r.tabla);
     execute format(
       'create policy tenant_module on public.%I for all
-         using (tenant_id = auth.tenant_id() and auth.module_active(%L))
-         with check (tenant_id = auth.tenant_id() and auth.module_active(%L))',
+         using (tenant_id = rls.tenant_id() and rls.module_active(%L))
+         with check (tenant_id = rls.tenant_id() and rls.module_active(%L))',
       r.tabla, r.modulo, r.modulo);
     execute format(
       'create policy provider_impersonating on public.%I for select
-         using (auth.impersonating(tenant_id))', r.tabla);
+         using (rls.impersonating(tenant_id))', r.tabla);
   end loop;
 end $$;
 

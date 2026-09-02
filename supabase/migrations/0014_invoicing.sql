@@ -46,7 +46,7 @@ revoke all on function regb.next_invoice_number() from public;
 alter table regb.invoice_counters enable row level security;
 alter table regb.invoice_counters force row level security;
 create policy provider_only on regb.invoice_counters
-  for all using (auth.is_provider()) with check (auth.is_provider());
+  for all using (rls.is_provider()) with check (rls.is_provider());
 
 -- ── Intentos de cobro ───────────────────────────────────────────────────
 --  Cada intento contra la pasarela queda registrado con su clave de
@@ -78,7 +78,7 @@ create index payment_attempts_due_idx
 alter table regb.payment_attempts enable row level security;
 alter table regb.payment_attempts force row level security;
 create policy provider_only on regb.payment_attempts
-  for all using (auth.is_provider()) with check (auth.is_provider());
+  for all using (rls.is_provider()) with check (rls.is_provider());
 
 comment on table regb.payment_attempts is
   'Cada intento de cobro, con clave de idempotencia. Regla 7 del agente regb-billing.';

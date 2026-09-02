@@ -7,7 +7,7 @@ import { requireProvider } from '@/lib/provider-guard'
 
 /**
  * Impersonacion (§7.4): razon obligatoria (>=10), 60 minutos de vigencia
- * (auth.impersonating() los hace cumplir), doble bitacora (la del
+ * (rls.impersonating() los hace cumplir), doble bitacora (la del
  * proveedor y la del tenant, escritas por regb.start_impersonation).
  *
  * Con auth real el MFA se re-verifica ANTES de llegar aqui (Supabase AAL2).

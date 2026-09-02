@@ -2,7 +2,7 @@
 --  0011 — Los modulos core se activan solos
 --
 --  §6.1: "15 core (incluidos en todos los planes)". Hasta ahora un cliente
---  nuevo nacia SIN ellos, asi que `auth.module_active('rbac')` era false
+--  nuevo nacia SIN ellos, asi que `rls.module_active('rbac')` era false
 --  para todo el mundo y nadie podia ni editar sus propios roles.
 --
 --  El sintoma era raro y el diagnostico no: los core no son algo que se

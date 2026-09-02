@@ -1112,24 +1112,24 @@ erDiagram
 
 ```sql
 -- Helper: tenant actual
-create or replace function auth.tenant_id() returns uuid
+create or replace function rls.tenant_id() returns uuid
 language sql stable as $$
   select nullif(current_setting('request.jwt.claims', true)::json
          -> 'app_metadata' ->> 'tenant_id','')::uuid
 $$;
 
-create or replace function auth.is_provider() returns boolean
+create or replace function rls.is_provider() returns boolean
 language sql stable as $$
   select coalesce((current_setting('request.jwt.claims', true)::json
          -> 'app_metadata' ->> 'is_provider')::boolean, false)
 $$;
 
 -- Helper: ¿el módulo está activo y habilitado?
-create or replace function auth.module_active(p_module text) returns boolean
+create or replace function rls.module_active(p_module text) returns boolean
 language sql stable as $$
   select exists (
     select 1 from regb.tenant_modules
-    where tenant_id = auth.tenant_id()
+    where tenant_id = rls.tenant_id()
       and module_id = p_module
       and status in ('trial','active')
       and enabled
@@ -1141,13 +1141,13 @@ alter table public.products enable row level security;
 
 create policy tenant_isolation on public.products
   for all
-  using      (tenant_id = auth.tenant_id() and auth.module_active('products'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('products'));
+  using      (tenant_id = rls.tenant_id() and rls.module_active('products'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('products'));
 
 -- Acceso del proveedor: solo con impersonación activa y auditada
 create policy provider_impersonation on public.products
   for select
-  using (auth.is_provider() and exists (
+  using (rls.is_provider() and exists (
     select 1 from regb.impersonation_log
     where tenant_id = products.tenant_id
       and provider_user = auth.uid()
@@ -1157,7 +1157,7 @@ create policy provider_impersonation on public.products
 
 -- Esquema regb: SOLO proveedor
 alter table regb.tenants enable row level security;
-create policy provider_only on regb.tenants for all using (auth.is_provider());
+create policy provider_only on regb.tenants for all using (rls.is_provider());
 ```
 
 ### 10.3 Controles adicionales

@@ -162,7 +162,7 @@ describe('impersonacion (§7.4)', () => {
     expect(Number(open!.c)).toBe(0)
   })
 
-  it('auth.impersonating() considera vencida una sesion de mas de 60 min', async () => {
+  it('rls.impersonating() considera vencida una sesion de mas de 60 min', async () => {
     await sql`select regb.start_impersonation(
       ${providerUser}, ${tenant}, 'Soporte ticket #4514: prueba de expiracion')`
     await sql`update regb.impersonation_log
@@ -177,7 +177,7 @@ describe('impersonacion (§7.4)', () => {
     const vigente = await sql.begin(async (tx) => {
       await tx`select set_config('request.jwt.claims', ${claims}, true)`
       await tx.unsafe('set local role authenticated')
-      const [r] = await tx<{ ok: boolean }[]>`select auth.impersonating(${tenant}) as ok`
+      const [r] = await tx<{ ok: boolean }[]>`select rls.impersonating(${tenant}) as ok`
       return r!.ok
     })
     expect(vigente).toBe(false)

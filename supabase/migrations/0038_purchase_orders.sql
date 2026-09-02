@@ -133,10 +133,10 @@ declare
   v_year smallint := extract(year from now())::smallint;
   v_n    integer;
 begin
-  if p_tenant is distinct from auth.tenant_id() then
+  if p_tenant is distinct from rls.tenant_id() then
     raise exception 'No puedes numerar ordenes de otro cliente.' using errcode = '42501';
   end if;
-  if not auth.module_active('purchase-orders') then
+  if not rls.module_active('purchase-orders') then
     raise exception 'El modulo de compras no esta activo: no se entregan numeros.'
       using errcode = '42501';
   end if;
@@ -174,12 +174,12 @@ begin
     execute format('alter table public.%I force row level security', r.tabla);
     execute format(
       'create policy tenant_module on public.%I for all
-         using (tenant_id = auth.tenant_id() and auth.module_active(%L))
-         with check (tenant_id = auth.tenant_id() and auth.module_active(%L))',
+         using (tenant_id = rls.tenant_id() and rls.module_active(%L))
+         with check (tenant_id = rls.tenant_id() and rls.module_active(%L))',
       r.tabla, r.modulo, r.modulo);
     execute format(
       'create policy provider_impersonating on public.%I for select
-         using (auth.impersonating(tenant_id))', r.tabla);
+         using (rls.impersonating(tenant_id))', r.tabla);
   end loop;
 end $$;
 

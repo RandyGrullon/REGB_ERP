@@ -101,11 +101,11 @@ alter table public.invoice_late_fees enable row level security;
 alter table public.invoice_late_fees force row level security;
 
 create policy tenant_module on public.invoice_late_fees for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('ar'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('ar'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('ar'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('ar'));
 
 create policy provider_impersonating on public.invoice_late_fees for select
-  using (auth.impersonating(tenant_id));
+  using (rls.impersonating(tenant_id));
 
 create trigger audit_me after insert or update or delete on public.invoice_late_fees
   for each row execute function audit.record('ar');

@@ -55,7 +55,7 @@ export interface HydrationResult {
   /**
    * Modulos licenciados y encendidos, tenga o no manifest.
    *
-   * Es la MISMA frontera que `auth.module_active()` en SQL, y por tanto la
+   * Es la MISMA frontera que `rls.module_active()` en SQL, y por tanto la
    * que debe alimentar al evaluador de permisos.
    */
   licensedModules: Set<string>

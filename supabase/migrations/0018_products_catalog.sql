@@ -84,12 +84,12 @@ alter table public.product_categories force row level security;
 
 create policy tenant_module on public.product_categories
   for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('products'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('products'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('products'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('products'));
 
 create policy provider_impersonating on public.product_categories
   for select
-  using (auth.impersonating(tenant_id));
+  using (rls.impersonating(tenant_id));
 
 -- ── Bitacora ───────────────────────────────────────────────────────────
 create trigger audit_me after insert or update or delete on public.product_categories

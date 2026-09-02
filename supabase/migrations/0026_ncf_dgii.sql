@@ -169,16 +169,16 @@ alter table public.ncf_sequences force row level security;
 -- con comprobante fiscal.
 create policy tenant_ar on public.ncf_sequences
   for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('ar'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('ar'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('ar'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('ar'));
 
 create policy tenant_pos on public.ncf_sequences
   for all
-  using (tenant_id = auth.tenant_id() and auth.module_active('pos'))
-  with check (tenant_id = auth.tenant_id() and auth.module_active('pos'));
+  using (tenant_id = rls.tenant_id() and rls.module_active('pos'))
+  with check (tenant_id = rls.tenant_id() and rls.module_active('pos'));
 
 create policy provider_impersonating on public.ncf_sequences
-  for select using (auth.impersonating(tenant_id));
+  for select using (rls.impersonating(tenant_id));
 
 create trigger audit_me after insert or update or delete on public.ncf_sequences
   for each row execute function audit.record('ar');
