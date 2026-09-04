@@ -41,13 +41,26 @@ export function createClient(cookies: CookieStore): ServerClient {
 /**
  * La sesion del usuario actual, o null.
  *
- * Usa `getUser()` y NO `getSession()`: `getUser` valida el token contra el
- * servidor de auth. `getSession` se fia de la cookie, que en el servidor es
- * un dato que llega del cliente y por tanto no es de fiar.
+ * Usa `getClaims()`, no `getUser()` ni `getSession()` a secas: `getClaims`
+ * verifica la firma del JWT contra las claves del proyecto -tan seguro
+ * como `getUser()`, sin el viaje de red al servidor de auth- y devuelve
+ * los claims TAL COMO quedaron en el token, que es donde vive lo que
+ * `rls.custom_access_token_hook` inyecta.
+ *
+ * `getUser()` NO sirve para esto: devuelve `app_metadata` desde
+ * `auth.users.raw_app_meta_data`, la fila persistida -que el hook nunca
+ * toca-, no desde el token firmado en este login. Se descubrio contra un
+ * proyecto real: `raw_app_meta_data` solo tenia `{provider: "email"}`, y
+ * `tenant_id`/`is_provider` vivian nada mas en el JWT.
  */
 export async function getSession(cookies: CookieStore): Promise<RegbSession | null> {
   const supabase = createClient(cookies)
-  const { data, error } = await supabase.auth.getUser()
-  if (error || !data.user) return null
-  return readSession(data.user)
+  const { data, error } = await supabase.auth.getClaims()
+  if (error || !data?.claims) return null
+  const { claims } = data
+  return readSession({
+    id: claims.sub,
+    email: typeof claims.email === 'string' ? claims.email : undefined,
+    app_metadata: claims.app_metadata,
+  })
 }
