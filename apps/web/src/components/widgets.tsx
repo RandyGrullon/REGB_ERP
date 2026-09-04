@@ -36,6 +36,8 @@ export interface DatosWidgets {
   porPagarEstaSemana: number
   efectivoEnBancos: { total: number; cuentas: number }
   flujoEnRojo: { semana: number | null; efectivoFinal: number }
+  conciliacionPendiente: { cuenta: string; pendientes: number; monto: number }[]
+  ultimoImport: { cuenta: string; hace: number } | null
 }
 
 const money = (n: number) =>
@@ -77,6 +79,8 @@ export async function cargarDatosWidgets(
     porPagarEstaSemana: 0,
     efectivoEnBancos: { total: 0, cuentas: 0 },
     flujoEnRojo: { semana: null, efectivoFinal: 0 },
+    conciliacionPendiente: [],
+    ultimoImport: null,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -311,6 +315,32 @@ export async function cargarDatosWidgets(
       semana: firstShortfallWeek(proyeccion),
       efectivoFinal: proyeccion[proyeccion.length - 1]?.runningBalance ?? 0,
     }
+  }
+
+  if (pidieron('pending-reconciliation')) {
+    vacio.conciliacionPendiente = (
+      await tx<{ cuenta: string; pendientes: string; monto: string }[]>`
+        select a.account_name as cuenta, count(*)::text as pendientes,
+               coalesce(sum(abs(l.amount)), 0)::text as monto
+        from public.bank_statement_lines l
+        join public.bank_accounts a on a.id = l.bank_account_id
+        where l.tenant_id = ${tenantId} and l.match_status = 'pending'
+        group by a.account_name
+        order by count(*) desc
+        limit 5`
+    ).map((r) => ({ cuenta: r.cuenta, pendientes: Number(r.pendientes), monto: Number(r.monto) }))
+  }
+
+  if (pidieron('last-import-status')) {
+    const [u] = await tx<{ cuenta: string; hace: string }[]>`
+      select a.account_name as cuenta,
+             (current_date - i.period_end)::text as hace
+      from public.bank_statement_imports i
+      join public.bank_accounts a on a.id = i.bank_account_id
+      where i.tenant_id = ${tenantId}
+      order by i.period_end desc, i.created_at desc
+      limit 1`
+    vacio.ultimoImport = u ? { cuenta: u.cuenta, hace: Number(u.hace) } : null
   }
 
   if (pidieron('catalog-completeness')) {
@@ -676,6 +706,45 @@ const WIDGETS: Record<
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
             el efectivo se pone en rojo: adelanta cobros o corre pagos
+          </span>
+        </p>
+      ),
+  },
+
+  'pending-reconciliation': {
+    titulo: 'Conciliacion pendiente',
+    icono: 'compare_arrows',
+    render: (d) =>
+      d.conciliacionPendiente.length === 0 ? (
+        <Vacio>Nada esperando conciliarse.</Vacio>
+      ) : (
+        <ul>
+          {d.conciliacionPendiente.map((c, i) => (
+            <Fila key={i} izq={c.cuenta} sub={`${c.pendientes} linea(s)`} der={money(c.monto)} tono="warning" />
+          ))}
+        </ul>
+      ),
+  },
+
+  'last-import-status': {
+    titulo: 'Ultimo estado importado',
+    icono: 'history',
+    render: (d) =>
+      d.ultimoImport === null ? (
+        <Vacio>Todavia no se ha importado ningun estado de cuenta.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span
+            className={`tabular text-2xl font-semibold ${
+              d.ultimoImport.hace > 35
+                ? 'text-[var(--color-semantic-text-warning)]'
+                : 'text-[var(--color-text-primary)]'
+            }`}
+          >
+            {d.ultimoImport.hace} dias
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            desde el cierre del ultimo import de {d.ultimoImport.cuenta}
           </span>
         </p>
       ),

@@ -103,7 +103,8 @@ begin
          (v_med, 'purchase-orders', 'active', true),
          (v_med, 'accounting', 'active', true),
          (v_med, 'ap', 'active', true),
-         (v_med, 'treasury', 'active', true)
+         (v_med, 'treasury', 'active', true),
+         (v_med, 'bank-rec', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -511,4 +512,51 @@ begin
     values (v_med, v_operativa, v_reserva, 75000.00, current_date - 1,
             'Aparte para la nomina de la quincena');
   end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Conciliacion bancaria: un import con las 3 situaciones reales -una
+--  linea ya conciliada, una pendiente con candidato obvio, y una
+--  pendiente SIN candidato (una comision que el banco cobro y que nadie
+--  registro en tesoreria: la razon de ser del modulo)-.
+--
+--  Idempotente por chequeo de existencia -no hay unique en period_start/
+--  period_end que lo garantice solo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med          uuid;
+  v_operativa    uuid;
+  v_deposito     uuid;
+  v_import       uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_operativa from public.bank_accounts
+    where tenant_id = v_med and bank_name = 'Banco Popular' and account_number = '790-12345-6';
+  if v_operativa is null then return; end if;
+
+  select id into v_import from public.bank_statement_imports
+    where tenant_id = v_med and bank_account_id = v_operativa;
+  if v_import is not null then return; end if;
+
+  select id into v_deposito from public.bank_transactions
+    where tenant_id = v_med and bank_account_id = v_operativa and reference = 'DEP-8841';
+
+  insert into public.bank_statement_imports
+    (tenant_id, bank_account_id, period_start, period_end, statement_balance)
+  values (v_med, v_operativa, current_date - 10, current_date, 124450.00)
+  returning id into v_import;
+
+  insert into public.bank_statement_lines
+    (tenant_id, import_id, bank_account_id, line_date, description, amount,
+     match_status, matched_transaction_id)
+  values
+    (v_med, v_import, v_operativa, current_date - 6, 'DEPOSITO EFECTIVO SUC PRINCIPAL',
+     42500.00, case when v_deposito is not null then 'matched' else 'pending' end, v_deposito),
+    (v_med, v_import, v_operativa, current_date - 4, 'TRANSFERENCIA A PROVEEDOR',
+     -18700.00, 'pending', null),
+    (v_med, v_import, v_operativa, current_date - 1, 'COMISION MANTENIMIENTO DE CUENTA',
+     -150.00, 'pending', null);
 end $$;

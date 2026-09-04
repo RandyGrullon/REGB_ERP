@@ -14,6 +14,7 @@ import arManifest from '@regb/mod-ar'
 import apManifest from '@regb/mod-ap'
 import accountingManifest from '@regb/mod-accounting'
 import treasuryManifest from '@regb/mod-treasury'
+import bankRecManifest from '@regb/mod-bank-rec'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -72,6 +73,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     apManifest,
     accountingManifest,
     treasuryManifest,
+    bankRecManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

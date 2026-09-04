@@ -89,6 +89,9 @@ importers:
       '@regb/mod-backup':
         specifier: workspace:*
         version: link:../../modules/backup
+      '@regb/mod-bank-rec':
+        specifier: workspace:*
+        version: link:../../modules/bank-rec
       '@regb/mod-branches':
         specifier: workspace:*
         version: link:../../modules/branches
@@ -265,6 +268,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/backup:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/bank-rec:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
