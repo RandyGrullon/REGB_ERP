@@ -70,6 +70,20 @@ begin
     values (v_med, v_c2, 'Santiago', 'STI');
   end if;
 
+  -- ── Almacenes: sin esto, inventario/POS/compras/pedidos no tienen
+  --    donde mover nada. `warehouses` SI tiene restriccion unica real
+  --    (tenant_id, code), asi que `on conflict` aqui es seguro -al reves
+  --    de companies/branches, que no la tenian-.
+  insert into public.warehouses (tenant_id, branch_id, name, code, is_default)
+  select v_pyme, b.id, 'Almacen Villa Consuelo', 'ALM-VC', true
+  from public.branches b where b.tenant_id = v_pyme and b.code = 'VC'
+  on conflict (tenant_id, code) do nothing;
+
+  insert into public.warehouses (tenant_id, branch_id, name, code, is_default)
+  select v_med, b.id, 'Almacen Santo Domingo', 'ALM-SD', true
+  from public.branches b where b.tenant_id = v_med and b.code = 'SD'
+  on conflict (tenant_id, code) do nothing;
+
   -- ── El colmado: lo minimo para dejar Excel ───────────────────────────
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
   values (v_pyme, 'pos', 'active', true)
@@ -87,7 +101,8 @@ begin
          (v_med, 'payroll', 'active', true),
          (v_med, 'invoice-capture', 'active', true),
          (v_med, 'purchase-orders', 'active', true),
-         (v_med, 'accounting', 'active', true)
+         (v_med, 'accounting', 'active', true),
+         (v_med, 'ap', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -401,4 +416,42 @@ begin
   where not exists (
     select 1 from public.journal_entries where tenant_id = v_med and number = 'AS-DEMO-0002'
   );
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Cuentas por pagar: una factura de proveedor con retencion, abonada a
+--  medias -para que la demo no ensene solo "cero deudas", que no le
+--  ensena a nadie a leer la pantalla-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_prov     uuid;
+  v_factura  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_prov from public.suppliers
+    where tenant_id = v_med and name = 'Materiales Del Este SRL';
+  if v_prov is null then return; end if;
+
+  select id into v_factura from public.supplier_invoices
+    where tenant_id = v_med and supplier_id = v_prov and supplier_invoice_number = 'FACT-0891';
+  if v_factura is null then
+    -- Retencion del 2% de ITBIS -tipico en servicios-, capturada a mano:
+    -- el sistema no decide cuando aplica, solo la deja escribir.
+    insert into public.supplier_invoices
+      (tenant_id, supplier_id, supplier_invoice_number, issue_date, due_date,
+       subtotal, tax, retention_amount, total)
+    values (v_med, v_prov, 'FACT-0891', current_date - 20, current_date + 10,
+            15000.00, 2700.00, 300.00, 17700.00)
+    returning id into v_factura;
+
+    insert into public.supplier_payments (tenant_id, invoice_id, amount, method, reference)
+    values (v_med, v_factura, 8000.00, 'transfer', 'TRF-PROV-4471');
+  end if;
+
+  update public.supplier_invoices set status = 'partially_paid'
+  where id = v_factura and status = 'open';
 end $$;

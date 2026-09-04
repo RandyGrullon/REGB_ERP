@@ -17,6 +17,7 @@
     "@regb/core": "workspace:*",
     "@regb/mod-ar": "workspace:*",
     "@regb/mod-accounting": "workspace:*",
+    "@regb/mod-ap": "workspace:*",
     "@regb/mod-audit": "workspace:*",
     "@regb/mod-auth": "workspace:*",
     "@regb/mod-backup": "workspace:*",

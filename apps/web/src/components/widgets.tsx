@@ -31,6 +31,8 @@ export interface DatosWidgets {
   mejoresProveedores: { name: string; ordenes: number; importe: number }[]
   asientosBorrador: number
   asientosDelMes: number
+  porPagarVencido: { supplier: string; total: number; dias: number }[]
+  porPagarEstaSemana: number
 }
 
 const money = (n: number) =>
@@ -68,6 +70,8 @@ export async function cargarDatosWidgets(
     mejoresProveedores: [],
     asientosBorrador: 0,
     asientosDelMes: 0,
+    porPagarVencido: [],
+    porPagarEstaSemana: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -237,6 +241,32 @@ export async function cargarDatosWidgets(
       from public.journal_entries where tenant_id = ${tenantId}`
     vacio.asientosBorrador = Number(a?.borrador ?? 0)
     vacio.asientosDelMes = Number(a?.del_mes ?? 0)
+  }
+
+  if (pidieron('overdue-payables')) {
+    vacio.porPagarVencido = (
+      await tx<{ supplier: string; total: string; dias: string }[]>`
+        select s.name as supplier,
+               public.ap_invoice_balance(i.id)::text as total,
+               (current_date - i.due_date)::text as dias
+        from public.supplier_invoices i
+        join public.suppliers s on s.id = i.supplier_id
+        where i.tenant_id = ${tenantId}
+          and i.status not in ('paid', 'void')
+          and i.due_date < current_date
+        order by i.due_date
+        limit 5`
+    ).map((r) => ({ supplier: r.supplier, total: Number(r.total), dias: Number(r.dias) }))
+  }
+
+  if (pidieron('due-this-week')) {
+    const [d] = await tx<{ n: string }[]>`
+      select count(*)::text as n
+      from public.supplier_invoices
+      where tenant_id = ${tenantId}
+        and status in ('open', 'partially_paid', 'overdue')
+        and due_date between current_date and current_date + interval '7 days'`
+    vacio.porPagarEstaSemana = Number(d?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -513,6 +543,48 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'overdue-payables': {
+    titulo: 'Vencido por pagar',
+    icono: 'request_page',
+    render: (d) =>
+      d.porPagarVencido.length === 0 ? (
+        <Vacio>Nadie te esta esperando.</Vacio>
+      ) : (
+        <ul>
+          {d.porPagarVencido.map((v, i) => (
+            <Fila
+              key={i}
+              izq={v.supplier}
+              sub={`${v.dias} d`}
+              der={money(v.total)}
+              tono={v.dias > 30 ? 'danger' : 'warning'}
+            />
+          ))}
+        </ul>
+      ),
+  },
+
+  'due-this-week': {
+    titulo: 'Vence esta semana',
+    icono: 'event_upcoming',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.porPagarEstaSemana > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.porPagarEstaSemana}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          factura{d.porPagarEstaSemana === 1 ? '' : 's'} de proveedor en los proximos 7 dias
+        </span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

@@ -11,6 +11,7 @@ import posManifest from '@regb/mod-pos'
 import salesOrdersManifest from '@regb/mod-sales-orders'
 import purchaseOrdersManifest from '@regb/mod-purchase-orders'
 import arManifest from '@regb/mod-ar'
+import apManifest from '@regb/mod-ap'
 import accountingManifest from '@regb/mod-accounting'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
@@ -67,6 +68,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     salesOrdersManifest,
     purchaseOrdersManifest,
     arManifest,
+    apManifest,
     accountingManifest,
     payrollManifest,
     invoiceCaptureManifest,
