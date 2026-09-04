@@ -71,6 +71,9 @@ importers:
       '@regb/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@regb/mod-accounting':
+        specifier: workspace:*
+        version: link:../../modules/accounting
       '@regb/mod-ar':
         specifier: workspace:*
         version: link:../../modules/ar
@@ -183,6 +186,19 @@ importers:
       tailwindcss:
         specifier: ^4.0.0
         version: 4.3.3
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/accounting:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

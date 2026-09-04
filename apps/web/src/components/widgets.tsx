@@ -29,6 +29,8 @@ export interface DatosWidgets {
   mejoresClientes: { name: string; compras: number; importe: number }[]
   ordenesPorRecibir: { number: string; supplier: string; total: number; estado: string }[]
   mejoresProveedores: { name: string; ordenes: number; importe: number }[]
+  asientosBorrador: number
+  asientosDelMes: number
 }
 
 const money = (n: number) =>
@@ -64,6 +66,8 @@ export async function cargarDatosWidgets(
     mejoresClientes: [],
     ordenesPorRecibir: [],
     mejoresProveedores: [],
+    asientosBorrador: 0,
+    asientosDelMes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -222,6 +226,17 @@ export async function cargarDatosWidgets(
         order by sum(po.total) desc
         limit 5`
     ).map((r) => ({ name: r.name, ordenes: Number(r.ordenes), importe: Number(r.importe) }))
+  }
+
+  if (pidieron('draft-entries-pending', 'monthly-entries-posted')) {
+    const [a] = await tx<{ borrador: string; del_mes: string }[]>`
+      select
+        count(*) filter (where status = 'draft')                                    as borrador,
+        count(*) filter (where status = 'posted'
+          and entry_date >= date_trunc('month', current_date))                      as del_mes
+      from public.journal_entries where tenant_id = ${tenantId}`
+    vacio.asientosBorrador = Number(a?.borrador ?? 0)
+    vacio.asientosDelMes = Number(a?.del_mes ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -498,6 +513,42 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'draft-entries-pending': {
+    titulo: 'Asientos sin contabilizar',
+    icono: 'edit_note',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.asientosBorrador > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.asientosBorrador}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.asientosBorrador === 0
+            ? 'todo lo capturado ya se contabilizo'
+            : 'en borrador, sin afectar la balanza todavia'}
+        </span>
+      </p>
+    ),
+  },
+
+  'monthly-entries-posted': {
+    titulo: 'Asientos contabilizados este mes',
+    icono: 'account_balance',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.asientosDelMes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">desde el dia 1</span>
+      </p>
+    ),
   },
 
   'top-products': {

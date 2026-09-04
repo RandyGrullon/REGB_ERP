@@ -17,6 +17,7 @@ documento donde alguien va a buscar la verdad.
 | `pos` | Vender al contado en el mostrador | [pos.md](pos.md) |
 | `ar` | Cobrar y declarar | [ar.md](ar.md) |
 | `purchase-orders` | Pedir al proveedor y recibir con el costo real | [purchase-orders.md](purchase-orders.md) |
+| `accounting` | Partida doble, mayor y balanza (F6) | [accounting.md](accounting.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -62,12 +63,16 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los seis cubiertos.** 196 pruebas contra Postgres real (163 de los
-  cinco de F4 + 23 de `purchase-orders` + 10 del cargo por mora en `ar`). La
-  numeración de `purchase-orders` se escribió con la guarda de tenant y
-  módulo activo desde la primera
-  versión — el agujero que `sales-orders` tuvo que tapar despues con la 0031
-  no llegó a existir aquí.
+- **RLS: los siete cubiertos.** 218 pruebas contra Postgres real (163 de
+  los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por mora en `ar`
+  + 22 de `accounting`). La numeración de `purchase-orders` y de
+  `accounting` se escribió con la guarda de tenant y módulo activo desde la
+  primera versión — el agujero que `sales-orders` tuvo que tapar despues
+  con la 0031 no llegó a existir en ninguna de las dos. `accounting` sí
+  encontró su propia variante al escribir el test de aislamiento: colar
+  una línea con el tenant propio pero apuntando a un asiento o cuenta
+  ajenos, tapada con una comprobación cruzada en el trigger de
+  inmutabilidad.
 
 ---
 

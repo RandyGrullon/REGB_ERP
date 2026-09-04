@@ -86,7 +86,8 @@ begin
          (v_med, 'pos', 'active', true),
          (v_med, 'payroll', 'active', true),
          (v_med, 'invoice-capture', 'active', true),
-         (v_med, 'purchase-orders', 'active', true)
+         (v_med, 'purchase-orders', 'active', true),
+         (v_med, 'accounting', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -337,4 +338,67 @@ begin
        'purchase_order', v_orden, 'Recepcion parcial OC-DEMO-0001',
        now() - interval '2 days');
   end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Contabilidad: catalogo minimo + un asiento contabilizado y uno en
+--  borrador -para que el widget de "sin contabilizar" tenga algo que
+--  mostrar, no solo el caso feliz-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_caja    uuid;
+  v_ventas  uuid;
+  v_itbis   uuid;
+  v_asiento uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  -- Catalogo minimo: lo justo para que el primer asiento tenga sentido.
+  insert into public.accounts (tenant_id, code, name, type) values
+    (v_med, '1101', 'Caja', 'asset'),
+    (v_med, '1102', 'Cuentas por cobrar', 'asset'),
+    (v_med, '2101', 'ITBIS por pagar', 'liability'),
+    (v_med, '3101', 'Capital social', 'equity'),
+    (v_med, '4101', 'Ventas', 'revenue'),
+    (v_med, '5101', 'Costo de ventas', 'expense')
+  on conflict (tenant_id, code) do nothing;
+
+  select id into v_caja   from public.accounts where tenant_id = v_med and code = '1101';
+  select id into v_ventas from public.accounts where tenant_id = v_med and code = '4101';
+  select id into v_itbis  from public.accounts where tenant_id = v_med and code = '2101';
+  if v_caja is null or v_ventas is null or v_itbis is null then return; end if;
+
+  -- Un asiento contabilizado: venta de contado con su ITBIS aparte. Se
+  -- crea en borrador y se contabiliza con la MISMA funcion que usa la
+  -- app -no se inserta directo en 'posted'-, porque el trigger de
+  -- inmutabilidad no distingue "recien creado" de "de hace meses": una
+  -- fila que nace en 'posted' ya no admite agregarle lineas despues.
+  select id into v_asiento from public.journal_entries
+    where tenant_id = v_med and number = 'AS-DEMO-0001';
+  if v_asiento is null then
+    insert into public.journal_entries (tenant_id, number, entry_date, description)
+    values (v_med, 'AS-DEMO-0001', current_date - 3, 'Venta de contado del dia')
+    returning id into v_asiento;
+
+    insert into public.journal_entry_lines (entry_id, tenant_id, account_id, debit, credit) values
+      (v_asiento, v_med, v_caja, 11800.00, 0),
+      (v_asiento, v_med, v_ventas, 0, 10000.00),
+      (v_asiento, v_med, v_itbis, 0, 1800.00);
+
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', gen_random_uuid(), 'app_metadata',
+        json_build_object('tenant_id', v_med, 'is_provider', false))::text, true);
+    perform public.post_journal_entry(v_asiento);
+  end if;
+
+  -- Un borrador SIN contabilizar: para que el widget de pendientes no
+  -- ensene siempre el caso feliz de "todo al dia".
+  insert into public.journal_entries (tenant_id, number, entry_date, description)
+  select v_med, 'AS-DEMO-0002', current_date, 'Compra de suministros de oficina'
+  where not exists (
+    select 1 from public.journal_entries where tenant_id = v_med and number = 'AS-DEMO-0002'
+  );
 end $$;

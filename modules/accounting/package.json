@@ -1,0 +1,23 @@
+{
+  "name": "@regb/mod-accounting",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./manifest.ts",
+  "exports": {
+    ".": "./manifest.ts"
+  },
+  "scripts": {
+    "build": "echo 'sin build'",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@regb/module-registry": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
