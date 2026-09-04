@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { Icon } from '@regb/ui'
+import { ControlNav } from './ControlNav'
 
 export const metadata = { title: 'REGB Control' }
 
@@ -16,40 +18,49 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex h-full min-h-screen flex-col bg-[var(--color-surface-base)]">
       <header
-        className="flex h-14 shrink-0 items-center gap-4 border-b-2 px-4"
+        className="flex h-14 shrink-0 items-center gap-3 border-b-2 px-4"
         style={{ borderColor: 'var(--color-accent-plum)' }}
       >
-        <p className="text-sm font-bold text-[var(--color-text-primary)]">
-          REGB Control
-          <span className="ml-2 hidden font-normal text-[var(--color-text-muted)] sm:inline">
-            Panel del propietario
+        <span className="flex shrink-0 items-center gap-2">
+          <span
+            aria-hidden
+            className="grid h-7 w-7 place-items-center rounded-[var(--radius-md)] text-[13px] font-bold text-white"
+            style={{ background: 'var(--color-accent-plum)' }}
+          >
+            R
           </span>
-        </p>
-        <nav aria-label="Secciones" className="flex items-center gap-1 overflow-x-auto text-sm">
-          {[
-            { href: '/control', label: 'Clientes' },
-            { href: '/control/salud', label: 'Salud' },
-            { href: '/control/datos', label: 'Todo el dato' },
-            { href: '/control/actividad', label: 'Actividad' },
-            { href: '/control/facturacion', label: 'Facturacion' },
-            { href: '/control/onboarding', label: 'Onboarding' },
-          ].map((s) => (
-            <Link
-              key={s.href}
-              href={s.href}
-              className="whitespace-nowrap rounded-[var(--radius-md)] px-2 py-1 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              {s.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="ml-auto">
+          <span className="text-sm font-bold text-[var(--color-text-primary)]">
+            REGB Control
+            <span className="ml-2 hidden font-normal text-[var(--color-text-muted)] sm:inline">
+              Panel del propietario
+            </span>
+          </span>
+        </span>
+
+        <span className="hidden h-6 w-px shrink-0 bg-[var(--color-border)] sm:block" aria-hidden />
+
+        <ControlNav />
+
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <Link
             href="/"
-            className="rounded-[var(--radius-md)] px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
           >
-            ← Volver al ERP
+            <Icon name="arrow_back" size={16} />
+            <span className="hidden sm:inline">Volver al ERP</span>
           </Link>
+          <span className="h-6 w-px shrink-0 bg-[var(--color-border)]" aria-hidden />
+          <form action="/auth/salir" method="post">
+            <button
+              type="submit"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              <Icon name="logout" size={16} />
+              <span className="hidden sm:inline">Salir</span>
+            </button>
+          </form>
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1600px] flex-1 overflow-y-auto p-4 md:p-6">
