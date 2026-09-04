@@ -102,7 +102,8 @@ begin
          (v_med, 'invoice-capture', 'active', true),
          (v_med, 'purchase-orders', 'active', true),
          (v_med, 'accounting', 'active', true),
-         (v_med, 'ap', 'active', true)
+         (v_med, 'ap', 'active', true),
+         (v_med, 'treasury', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -454,4 +455,60 @@ begin
 
   update public.supplier_invoices set status = 'partially_paid'
   where id = v_factura and status = 'open';
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Tesoreria: dos cuentas bancarias con movimientos y una transferencia
+--  entre ellas -que es la unica forma de ver las dos mitades juntas-.
+--
+--  Idempotente por el unico real (tenant_id, bank_name, account_number).
+--  Los movimientos NO se pueden borrar ni reescribir (trigger de
+--  inmutabilidad), asi que se insertan solo si la cuenta acaba de nacer.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_operativa   uuid;
+  v_reserva     uuid;
+  v_nuevas      boolean := false;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_operativa from public.bank_accounts
+    where tenant_id = v_med and bank_name = 'Banco Popular' and account_number = '790-12345-6';
+  if v_operativa is null then
+    insert into public.bank_accounts
+      (tenant_id, bank_name, account_name, account_number, account_type, opening_balance)
+    values (v_med, 'Banco Popular', 'Cuenta operativa', '790-12345-6', 'checking', 185000.00)
+    returning id into v_operativa;
+    v_nuevas := true;
+  end if;
+
+  select id into v_reserva from public.bank_accounts
+    where tenant_id = v_med and bank_name = 'Banreservas' and account_number = '960-88214-3';
+  if v_reserva is null then
+    insert into public.bank_accounts
+      (tenant_id, bank_name, account_name, account_number, account_type, opening_balance)
+    values (v_med, 'Banreservas', 'Reserva de nomina', '960-88214-3', 'savings', 60000.00)
+    returning id into v_reserva;
+  end if;
+
+  if v_nuevas then
+    insert into public.bank_transactions
+      (tenant_id, bank_account_id, type, amount, description, reference, transaction_date)
+    values
+      (v_med, v_operativa, 'deposit', 42500.00, 'Deposito de cobros de la semana',
+       'DEP-8841', current_date - 6),
+      (v_med, v_operativa, 'withdrawal', 18700.00, 'Pago a Materiales Del Este SRL',
+       'TRF-PROV-4471', current_date - 4),
+      (v_med, v_operativa, 'withdrawal', 9200.00, 'Combustible y peajes de la flota',
+       null, current_date - 2);
+
+    -- La transferencia genera sus dos mitades sola (trigger de la 0044).
+    insert into public.bank_transfers
+      (tenant_id, from_account_id, to_account_id, amount, transfer_date, description)
+    values (v_med, v_operativa, v_reserva, 75000.00, current_date - 1,
+            'Aparte para la nomina de la quincena');
+  end if;
 end $$;

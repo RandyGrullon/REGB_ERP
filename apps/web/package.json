@@ -38,6 +38,7 @@
     "@regb/mod-search": "workspace:*",
     "@regb/mod-settings": "workspace:*",
     "@regb/mod-tour": "workspace:*",
+    "@regb/mod-treasury": "workspace:*",
     "@regb/mod-users": "workspace:*",
     "@regb/module-registry": "workspace:*",
     "@regb/permissions": "workspace:*",

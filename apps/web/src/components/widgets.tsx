@@ -1,4 +1,5 @@
 import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, Mono } from '@regb/ui'
+import { buildCashFlowProjection, firstShortfallWeek } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
 
 /**
@@ -33,6 +34,8 @@ export interface DatosWidgets {
   asientosDelMes: number
   porPagarVencido: { supplier: string; total: number; dias: number }[]
   porPagarEstaSemana: number
+  efectivoEnBancos: { total: number; cuentas: number }
+  flujoEnRojo: { semana: number | null; efectivoFinal: number }
 }
 
 const money = (n: number) =>
@@ -72,6 +75,8 @@ export async function cargarDatosWidgets(
     asientosDelMes: 0,
     porPagarVencido: [],
     porPagarEstaSemana: 0,
+    efectivoEnBancos: { total: 0, cuentas: 0 },
+    flujoEnRojo: { semana: null, efectivoFinal: 0 },
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -267,6 +272,45 @@ export async function cargarDatosWidgets(
         and status in ('open', 'partially_paid', 'overdue')
         and due_date between current_date and current_date + interval '7 days'`
     vacio.porPagarEstaSemana = Number(d?.n ?? 0)
+  }
+
+  if (pidieron('cash-position', 'cash-flow-warning')) {
+    const [c] = await tx<{ total: string; cuentas: string }[]>`
+      select coalesce(sum(public.bank_account_balance(id)), 0)::text as total,
+             count(*)::text as cuentas
+      from public.bank_accounts
+      where tenant_id = ${tenantId} and is_active`
+    vacio.efectivoEnBancos = { total: Number(c?.total ?? 0), cuentas: Number(c?.cuentas ?? 0) }
+  }
+
+  if (pidieron('cash-flow-warning')) {
+    // Las facturas abiertas de ar/ap: si esos modulos no estan activos, su
+    // propia RLS ya devuelve cero filas y la proyeccion queda plana.
+    const [cobrar, pagar] = await Promise.all([
+      tx<{ due_date: string; saldo: string }[]>`
+        select due_date::text, public.invoice_balance(id)::text as saldo
+        from public.customer_invoices
+        where tenant_id = ${tenantId} and status in ('open', 'partially_paid', 'overdue')`,
+      tx<{ due_date: string; saldo: string }[]>`
+        select due_date::text, public.ap_invoice_balance(id)::text as saldo
+        from public.supplier_invoices
+        where tenant_id = ${tenantId} and status in ('open', 'partially_paid', 'overdue')`,
+    ])
+    const item = (r: { due_date: string; saldo: string }) => ({
+      dueDate: new Date(`${r.due_date.slice(0, 10)}T12:00:00`),
+      amount: Number(r.saldo),
+    })
+    const proyeccion = buildCashFlowProjection(
+      vacio.efectivoEnBancos.total,
+      cobrar.map(item).filter((r) => r.amount > 0),
+      pagar.map(item).filter((r) => r.amount > 0),
+      new Date(),
+      8,
+    )
+    vacio.flujoEnRojo = {
+      semana: firstShortfallWeek(proyeccion),
+      efectivoFinal: proyeccion[proyeccion.length - 1]?.runningBalance ?? 0,
+    }
   }
 
   if (pidieron('catalog-completeness')) {
@@ -585,6 +629,56 @@ const WIDGETS: Record<
         </span>
       </p>
     ),
+  },
+
+  'cash-position': {
+    titulo: 'Efectivo en bancos',
+    icono: 'account_balance',
+    render: (d) =>
+      d.efectivoEnBancos.cuentas === 0 ? (
+        <Vacio>Todavia no hay cuentas bancarias registradas.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span
+            className={`tabular text-2xl font-semibold ${
+              d.efectivoEnBancos.total < 0
+                ? 'text-[var(--color-semantic-text-danger)]'
+                : 'text-[var(--color-text-primary)]'
+            }`}
+          >
+            RD$ {money(d.efectivoEnBancos.total)}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            en {d.efectivoEnBancos.cuentas} cuenta{d.efectivoEnBancos.cuentas === 1 ? '' : 's'}{' '}
+            activa{d.efectivoEnBancos.cuentas === 1 ? '' : 's'}
+          </span>
+        </p>
+      ),
+  },
+
+  'cash-flow-warning': {
+    titulo: 'Flujo de caja a 8 semanas',
+    icono: 'ssid_chart',
+    render: (d) =>
+      d.flujoEnRojo.semana === null ? (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-success)]">
+            RD$ {money(d.flujoEnRojo.efectivoFinal)}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            proyectado al cierre, sin semanas en rojo
+          </span>
+        </p>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-danger)]">
+            Semana {d.flujoEnRojo.semana + 1}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            el efectivo se pone en rojo: adelanta cobros o corre pagos
+          </span>
+        </p>
+      ),
   },
 
   'draft-entries-pending': {
