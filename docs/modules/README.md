@@ -42,6 +42,7 @@ documento donde alguien va a buscar la verdad.
 | `rfq` | Comparar cotizaciones de proveedores con un ganador que elige siempre la misma regla (F8) | [rfq.md](rfq.md) |
 | `receipts` | Inspeccion real al recibir -aceptado contra rechazado-, discrepancia y devolucion al proveedor (F8) | [receipts.md](receipts.md) |
 | `lots-serials` | Trazabilidad por lote/serie, FEFO como algoritmo, alertas de vencimiento y recall (F8) | [lots-serials.md](lots-serials.md) |
+| `transfers` | Traslado entre almacenes con estado de transito real y discrepancia visible (F8) | [transfers.md](transfers.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -87,7 +88,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y uno cubiertos.** 507 pruebas contra Postgres real
+- **RLS: los treinta y dos cubiertos.** 519 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -97,7 +98,7 @@ patrones que `sales-orders` ya habia corregido.
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
-  `lots-serials`). La numeración
+  `lots-serials` + 12 de `transfers`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -132,7 +133,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_linea_recepcion`, `impedir_devolucion_ajena`,
   `impedir_editar_recepcion`, `impedir_editar_devolucion_resuelta`,
   `impedir_lote_ajeno`, `impedir_referencia_ajena_lot_stock`,
-  `impedir_recall_ajeno`, `impedir_editar_recall_cerrado`) se
+  `impedir_recall_ajeno`, `impedir_editar_recall_cerrado`,
+  `impedir_transferencia_ajena`, `impedir_referencia_ajena_linea_transferencia`,
+  `impedir_editar_linea_transferencia_resuelta`,
+  `impedir_borrar_linea_transferencia_despachada`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -318,7 +322,25 @@ patrones que `sales-orders` ya habia corregido.
   verificado abriendo y cerrando un recall real sobre el lote vencido
   sembrado. Un item serializado deliberadamente no es un concepto
   aparte: es un lote de cantidad 1 cuyo número de lote ES el número de
-  serie, para no duplicar la idea en dos columnas.
+  serie, para no duplicar la idea en dos columnas. `transfers` no
+  reemplaza ni toca la transferencia simple de un paso que ya trae
+  `inventory` (`stock_transfers`, 0019) -sigue funcionando igual para
+  quien no necesita más-, y agrega el flujo completo con estado de
+  tránsito: despachado postea `transfer_out` en el origen, recibido
+  postea `transfer_in` en el destino, y la discrepancia entre ambos se
+  calcula con `detectarDiscrepancia()` -la misma función de
+  `receipts.ts`, reutilizada tal cual-. Es el primer módulo de la serie
+  donde la inmutabilidad se aplica **por campo, no por fila entera**:
+  `qty_requested` se congela al despachar (fijar `qty_sent`), y la
+  línea completa se congela al recibir (fijar `qty_received`) -dos
+  transiciones de un solo uso sobre la misma fila, en vez de mover el
+  registro completo a una tabla histórica aparte-. Verificado en vivo
+  recibiendo una transferencia real de 15 sacos con solo 14 llegando:
+  el badge "Faltó 1" apareció automáticamente, los movimientos
+  `transfer_out`/`transfer_in` quedaron confirmados en
+  `inventory_movements`, y un intento posterior de editar
+  `qty_received` por SQL directo fue rechazado por el trigger de
+  inmutabilidad.
 
 ---
 

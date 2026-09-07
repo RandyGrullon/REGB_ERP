@@ -145,7 +145,8 @@ begin
          (v_med, 'requisitions', 'active', true),
          (v_med, 'rfq', 'active', true),
          (v_med, 'receipts', 'active', true),
-         (v_med, 'lots-serials', 'active', true)
+         (v_med, 'lots-serials', 'active', true),
+         (v_med, 'transfers', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -567,6 +568,82 @@ begin
   if not exists (select 1 from public.product_recalls where tenant_id = v_med and lot_id = v_lote_vencido) then
     insert into public.product_recalls (tenant_id, product_id, lot_id, reason)
     values (v_med, v_pintura, v_lote_vencido, 'Lote vencido todavia en el almacen: retirar y no vender.');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Transferencias (modulo 50): un segundo almacen -Santiago- para que
+--  el traslado tenga sentido, una transferencia en transito -para
+--  probar "recibir" en vivo- y una ya recibida con una discrepancia
+--  real -salieron 10, llegaron 8-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_alm_sd      uuid;
+  v_alm_stgo    uuid;
+  v_cemento     uuid;
+  v_transito    uuid;
+  v_recibida    uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm_sd from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  if v_alm_sd is null or v_cemento is null then return; end if;
+
+  select id into v_alm_stgo from public.warehouses where tenant_id = v_med and name = 'Almacen Santiago';
+  if v_alm_stgo is null then
+    insert into public.warehouses (tenant_id, name, is_default, is_active)
+    values (v_med, 'Almacen Santiago', false, true)
+    returning id into v_alm_stgo;
+  end if;
+
+  -- En transito: despachada, esperando confirmar recepcion en Santiago.
+  insert into public.transfer_orders
+    (tenant_id, from_warehouse_id, to_warehouse_id, status, notes, dispatched_at)
+  select v_med, v_alm_sd, v_alm_stgo, 'in_transit', 'Reposicion para la sucursal de Santiago', now() - interval '1 day'
+  where not exists (
+    select 1 from public.transfer_orders
+    where tenant_id = v_med and from_warehouse_id = v_alm_sd and to_warehouse_id = v_alm_stgo and status = 'in_transit'
+  )
+  returning id into v_transito;
+
+  if v_transito is not null then
+    insert into public.transfer_order_lines (order_id, tenant_id, product_id, qty_requested, qty_sent)
+    values (v_transito, v_med, v_cemento, 15, 15);
+
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, reference_type, reference_id, notes, created_at)
+    values
+      (v_med, v_alm_sd, v_cemento, 'transfer_out', -15, 'transfer_order', v_transito,
+       'Despacho a Santiago', now() - interval '1 day');
+  end if;
+
+  -- Ya recibida, con discrepancia real: salieron 10, llegaron 8.
+  insert into public.transfer_orders
+    (tenant_id, from_warehouse_id, to_warehouse_id, status, notes, dispatched_at, received_at)
+  select v_med, v_alm_sd, v_alm_stgo, 'received', 'Reposicion de la semana pasada',
+         now() - interval '6 days', now() - interval '5 days'
+  where not exists (
+    select 1 from public.transfer_orders
+    where tenant_id = v_med and from_warehouse_id = v_alm_sd and to_warehouse_id = v_alm_stgo and status = 'received'
+  )
+  returning id into v_recibida;
+
+  if v_recibida is not null then
+    insert into public.transfer_order_lines
+      (order_id, tenant_id, product_id, qty_requested, qty_sent, qty_received)
+    values (v_recibida, v_med, v_cemento, 10, 10, 8);
+
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, reference_type, reference_id, notes, created_at)
+    values
+      (v_med, v_alm_sd, v_cemento, 'transfer_out', -10, 'transfer_order', v_recibida,
+       'Despacho a Santiago', now() - interval '6 days'),
+      (v_med, v_alm_stgo, v_cemento, 'transfer_in', 8, 'transfer_order', v_recibida,
+       'Llegaron 2 sacos menos de los despachados', now() - interval '5 days');
   end if;
 end $$;
 

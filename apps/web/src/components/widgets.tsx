@@ -86,6 +86,7 @@ export interface DatosWidgets {
   rfqsAbiertos: number
   recepcionesConDiscrepancias: number
   lotesPorVencer: number
+  transferenciasEnTransito: number
 }
 
 const money = (n: number) =>
@@ -177,6 +178,7 @@ export async function cargarDatosWidgets(
     rfqsAbiertos: 0,
     recepcionesConDiscrepancias: 0,
     lotesPorVencer: 0,
+    transferenciasEnTransito: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -864,6 +866,13 @@ export async function cargarDatosWidgets(
       where tenant_id = ${tenantId} and expiry_date is not null
         and expiry_date >= current_date and expiry_date <= current_date + interval '30 days'`
     vacio.lotesPorVencer = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('transfers-in-transit')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.transfer_orders
+      where tenant_id = ${tenantId} and status = 'in_transit'`
+    vacio.transferenciasEnTransito = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1846,6 +1855,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.lotesPorVencer === 0 ? 'nada por vencer en 30 dias' : 'vencen en 30 dias o menos'}
+        </span>
+      </p>
+    ),
+  },
+
+  'transfers-in-transit': {
+    titulo: 'Transferencias en transito',
+    icono: 'local_shipping',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.transferenciasEnTransito}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.transferenciasEnTransito === 0 ? 'nada en camino' : 'esperando confirmar recepcion'}
         </span>
       </p>
     ),
