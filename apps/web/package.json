@@ -32,6 +32,7 @@
     "@regb/mod-time-off": "workspace:*",
     "@regb/mod-expenses": "workspace:*",
     "@regb/mod-hr-portal": "workspace:*",
+    "@regb/mod-benefits": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

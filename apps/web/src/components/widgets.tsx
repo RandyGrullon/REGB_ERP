@@ -6,6 +6,8 @@ import {
   firstShortfallWeek,
   horaEsperadaEnRD,
   lateMinutes,
+  saldoPrestamo,
+  totalAportePatronal,
 } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
 
@@ -66,6 +68,8 @@ export interface DatosWidgets {
   gastosPorAprobar: number
   gastosPorReembolsar: number
   anunciosRecientes: { title: string; publicado: string }[]
+  prestamosPendientes: number
+  costoBeneficiosMensual: number
 }
 
 const money = (n: number) =>
@@ -142,6 +146,8 @@ export async function cargarDatosWidgets(
     gastosPorAprobar: 0,
     gastosPorReembolsar: 0,
     anunciosRecientes: [],
+    prestamosPendientes: 0,
+    costoBeneficiosMensual: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -652,6 +658,34 @@ export async function cargarDatosWidgets(
       select title, published_at::text from public.hr_announcements
       where tenant_id = ${tenantId} order by published_at desc limit 5`
     vacio.anunciosRecientes = filas.map((f) => ({ title: f.title, publicado: f.published_at }))
+  }
+
+  if (pidieron('loans-outstanding')) {
+    const prestamos = await tx<{ id: string; principal: string }[]>`
+      select id, principal::text from public.benefit_loans
+      where tenant_id = ${tenantId} and status = 'active'`
+    const pagos = await tx<{ loan_id: string; amount: string }[]>`
+      select loan_id, amount::text from public.benefit_loan_payments
+      where tenant_id = ${tenantId}`
+    const pagosPorId = new Map<string, { amount: number }[]>()
+    for (const p of pagos) {
+      const lista = pagosPorId.get(p.loan_id) ?? []
+      lista.push({ amount: Number(p.amount) })
+      pagosPorId.set(p.loan_id, lista)
+    }
+    vacio.prestamosPendientes = prestamos.reduce(
+      (acc, p) => acc + saldoPrestamo(Number(p.principal), pagosPorId.get(p.id) ?? []),
+      0,
+    )
+  }
+
+  if (pidieron('benefits-cost')) {
+    const inscripciones = await tx<{ status: string; employer_contribution: string }[]>`
+      select status, employer_contribution::text from public.benefit_enrollments
+      where tenant_id = ${tenantId}`
+    vacio.costoBeneficiosMensual = totalAportePatronal(
+      inscripciones.map((i) => ({ status: i.status, employer_contribution: Number(i.employer_contribution) })),
+    )
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1406,6 +1440,32 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'loans-outstanding': {
+    titulo: 'Prestamos pendientes',
+    icono: 'volunteer_activism',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.prestamosPendientes)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">saldo activo total</span>
+      </p>
+    ),
+  },
+
+  'benefits-cost': {
+    titulo: 'Costo de beneficios',
+    icono: 'health_and_safety',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.costoBeneficiosMensual)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">aporte patronal mensual</span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

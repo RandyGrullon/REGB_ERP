@@ -135,7 +135,8 @@ begin
          (v_med, 'attendance', 'active', true),
          (v_med, 'time-off', 'active', true),
          (v_med, 'expenses', 'active', true),
-         (v_med, 'hr-portal', 'active', true)
+         (v_med, 'hr-portal', 'active', true),
+         (v_med, 'benefits', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1165,5 +1166,68 @@ begin
       (v_med, 'Nueva politica de vacaciones',
        'A partir de este año, las vacaciones se solicitan con al menos 2 semanas de anticipacion desde el portal.',
        now() - interval '25 days');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Beneficios: un prestamo activo con dos cuotas ya pagadas -saldo
+--  parcial, calculado en vivo-, un adelanto ya saldado por completo, y
+--  dos inscripciones a un plan de seguro -para ver el costo patronal-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael
+  v_cajera    uuid; -- Yolanda
+  v_vendedor  uuid; -- Anthony
+  v_prestamo  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  select id into v_vendedor  from public.employees where tenant_id = v_med and code = 'E-003';
+  if v_encargada is null or v_cajera is null or v_vendedor is null then return; end if;
+
+  if not exists (
+    select 1 from public.benefit_loans where tenant_id = v_med and employee_id = v_cajera
+  ) then
+    -- Prestamo de 12000 a 6 cuotas de 2000, sin interes -dos ya pagadas-.
+    insert into public.benefit_loans
+      (tenant_id, employee_id, loan_type, principal, installments, installment_amount, start_date)
+    values (v_med, v_cajera, 'loan', 12000, 6, 2000, current_date - 60)
+    returning id into v_prestamo;
+
+    insert into public.benefit_loan_payments (tenant_id, loan_id, amount, paid_at, source)
+    values (v_med, v_prestamo, 2000, now() - interval '30 days', 'payroll'),
+           (v_med, v_prestamo, 2000, now() - interval '15 days', 'payroll');
+  end if;
+
+  if not exists (
+    select 1 from public.benefit_loans where tenant_id = v_med and employee_id = v_vendedor
+  ) then
+    -- Adelanto de 3000 en una sola cuota -ya saldado por completo-.
+    insert into public.benefit_loans
+      (tenant_id, employee_id, loan_type, principal, installments, installment_amount, start_date, status)
+    values (v_med, v_vendedor, 'advance', 3000, 1, 3000, current_date - 20, 'active')
+    returning id into v_prestamo;
+
+    insert into public.benefit_loan_payments (tenant_id, loan_id, amount, paid_at, source)
+    values (v_med, v_prestamo, 3000, now() - interval '18 days', 'cash');
+
+    update public.benefit_loans set status = 'paid' where id = v_prestamo;
+  end if;
+
+  if not exists (
+    select 1 from public.benefit_enrollments where tenant_id = v_med and employee_id = v_encargada
+  ) then
+    insert into public.benefit_enrollments
+      (tenant_id, employee_id, plan_name, employee_contribution, employer_contribution, effective_date)
+    values (v_med, v_encargada, 'Seguro Salud Plus', 800, 1800, current_date - 300);
+
+    insert into public.benefit_enrollments
+      (tenant_id, employee_id, plan_name, employee_contribution, employer_contribution, effective_date)
+    values (v_med, v_cajera, 'Seguro Salud Basico', 500, 1200, current_date - 200);
   end if;
 end $$;

@@ -32,6 +32,7 @@ documento donde alguien va a buscar la verdad.
 | `time-off` | Vacaciones y permisos con saldo calculado -Codigo de Trabajo Art. 177- (F7) | [time-off.md](time-off.md) |
 | `expenses` | Gastos y reembolsos con ITBIS deducible calculado por NCF (F7) | [expenses.md](expenses.md) |
 | `hr-portal` | Autoservicio: volantes, vacaciones, datos personales y anuncios (F7) | [hr-portal.md](hr-portal.md) |
+| `benefits` | Prestamos internos, adelantos y planes de seguro con aporte patronal (F7) | [benefits.md](benefits.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -77,14 +78,14 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintiuno cubiertos.** 377 pruebas contra Postgres real
+- **RLS: los veintidós cubiertos.** 390 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
   `cost-centers` + 8 de `multicurrency` + 13 de `payments` + 11 de
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
-  `time-off` + 12 de `expenses` + 8 de `hr-portal`). La numeración de
-  `purchase-orders` y de
+  `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
+  `benefits`). La numeración de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -102,12 +103,16 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_cliente_ajeno`, `impedir_referencia_ajena_empleado`,
   `impedir_contrato_ajeno`, `impedir_linea_nomina_ajena`,
   `impedir_geocerca_ajena`, `impedir_marcaje_ajeno`,
-  `impedir_solicitud_ausencia_ajena`, `impedir_gasto_ajeno`) se
-  escribieron desde el primer día, no como corrección posterior.
-  `expenses` tiene una variante nueva en el patron: valida la
-  referencia cruzada tambien en `update`, no solo `insert`, porque
-  `payroll_period_id` se rellena despues de crear la fila, al momento
-  de reembolsar -la unica vez en la serie que hace falta-. `multicurrency`
+  `impedir_solicitud_ausencia_ajena`, `impedir_gasto_ajeno`,
+  `impedir_prestamo_ajeno`, `impedir_pago_prestamo_ajeno`,
+  `impedir_inscripcion_ajena`) se escribieron desde el primer día, no
+  como corrección posterior. `expenses` tiene una variante nueva en el
+  patron: valida la referencia cruzada tambien en `update`, no solo
+  `insert`, porque `payroll_period_id` se rellena despues de crear la
+  fila, al momento de reembolsar. `benefits` tiene la misma referencia
+  cruzada hacia `payroll_period_id` -en `benefit_loan_payments`- pero
+  SIN necesitar esa variante de `update`: ahi el periodo se rellena en
+  el mismo `insert` del pago, no despues. `multicurrency`
   encontró su propio descuido -no un agujero de aislamiento, sino
   `currencies` con RLS activo pero sin `FORCE`- atrapado por la red de
   seguridad `isolation.test.ts` que corre contra todo el esquema
@@ -152,10 +157,18 @@ patrones que `sales-orders` ya habia corregido.
   ni uno de pruebas -el patrón de disable/enable trigger alrededor del
   delete de limpieza se copió directo del arreglo de `time-off`, y el
   módulo pasó limpio en su primera corrida completa de `gate:f0`-.
-  `hr-portal` es el primer módulo de la serie 0031-0056 sin un trigger
+  `hr-portal` es el primer módulo de la serie 0031-0057 sin un trigger
   de referencia cruzada: su única tabla nueva, `hr_announcements`, no
   tiene `employee_id` ni `branch_id` -nada que pueda apuntar a un
   registro de otro tenant-, así que la RLS de `tenant_id` sola basta.
+  `benefits` no encontró bugs nuevos, pero sí introdujo un matiz de
+  inmutabilidad que ningún módulo anterior necesitó: `benefit_loans`
+  (el préstamo) es editable mientras está `active` -mismo patrón que
+  `approved` en `expenses`-, pero `benefit_loan_payments` (cada pago)
+  es inmutable **desde el primer momento**, sin condición de estado
+  -ni siquiera con el préstamo todavía activo se puede editar un pago
+  ya registrado-, la única tabla de la serie con un trigger de
+  inmutabilidad incondicional.
 
 ---
 
