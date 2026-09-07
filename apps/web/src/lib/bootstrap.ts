@@ -28,6 +28,7 @@ import hrPortalManifest from '@regb/mod-hr-portal'
 import benefitsManifest from '@regb/mod-benefits'
 import recruitingManifest from '@regb/mod-recruiting'
 import performanceManifest from '@regb/mod-performance'
+import trainingManifest from '@regb/mod-training'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -100,6 +101,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     benefitsManifest,
     recruitingManifest,
     performanceManifest,
+    trainingManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

@@ -6,6 +6,7 @@ import {
   firstShortfallWeek,
   horaEsperadaEnRD,
   lateMinutes,
+  certificadoVigente,
   progresoObjetivo,
   saldoPrestamo,
   totalAportePatronal,
@@ -75,6 +76,8 @@ export interface DatosWidgets {
   pipelinePorVacante: { title: string; n: number }[]
   objetivosConProgreso: { title: string; progreso: number }[]
   planesDeMejoraActivos: number
+  inscripcionesEnCurso: number
+  certificadosPorVencer: { name: string; vence: string }[]
 }
 
 const money = (n: number) =>
@@ -157,6 +160,8 @@ export async function cargarDatosWidgets(
     pipelinePorVacante: [],
     objetivosConProgreso: [],
     planesDeMejoraActivos: 0,
+    inscripcionesEnCurso: 0,
+    certificadosPorVencer: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -742,6 +747,31 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.performance_improvement_plans
       where tenant_id = ${tenantId} and status = 'active'`
     vacio.planesDeMejoraActivos = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('enrollments-in-progress')) {
+    const [en] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.training_enrollments
+      where tenant_id = ${tenantId} and status = 'enrolled'`
+    vacio.inscripcionesEnCurso = Number(en?.n ?? 0)
+  }
+
+  if (pidieron('certificates-expiring')) {
+    const filas = await tx<{ employee_name: string; course_title: string; expires_at: string | null }[]>`
+      select e.first_name || ' ' || e.last_name as employee_name, c.title as course_title,
+             cert.expires_at::text
+      from public.training_certificates cert
+      join public.training_enrollments en on en.id = cert.enrollment_id
+      join public.employees e on e.id = en.employee_id
+      join public.training_courses c on c.id = en.course_id
+      where cert.tenant_id = ${tenantId} and cert.expires_at is not null
+      order by cert.expires_at`
+    const hoy = new Date()
+    vacio.certificadosPorVencer = filas
+      .filter((f) => certificadoVigente(new Date(f.expires_at!), hoy))
+      .filter((f) => (new Date(f.expires_at!).getTime() - hoy.getTime()) / 86_400_000 <= 30)
+      .map((f) => ({ name: `${f.employee_name} · ${f.course_title}`, vence: f.expires_at! }))
+      .slice(0, 5)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1588,6 +1618,34 @@ const WIDGETS: Record<
         </span>
       </p>
     ),
+  },
+
+  'enrollments-in-progress': {
+    titulo: 'Inscripciones en curso',
+    icono: 'school',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.inscripcionesEnCurso}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">sin nota registrada todavia</span>
+      </p>
+    ),
+  },
+
+  'certificates-expiring': {
+    titulo: 'Certificados por vencer',
+    icono: 'workspace_premium',
+    render: (d) =>
+      d.certificadosPorVencer.length === 0 ? (
+        <Vacio>Ningun certificado vence en los proximos 30 dias.</Vacio>
+      ) : (
+        <ul>
+          {d.certificadosPorVencer.map((c, i) => (
+            <Fila key={i} izq={c.name} der={fechaCortaUTC(c.vence.slice(0, 10))} tono="warning" />
+          ))}
+        </ul>
+      ),
   },
 
   'draft-entries-pending': {

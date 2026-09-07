@@ -35,6 +35,7 @@ documento donde alguien va a buscar la verdad.
 | `benefits` | Prestamos internos, adelantos y planes de seguro con aporte patronal (F7) | [benefits.md](benefits.md) |
 | `recruiting` | Vacantes, candidatos y pipeline de aplicaciones con maquina de estados (F7) | [recruiting.md](recruiting.md) |
 | `performance` | OKR con progreso derivado, evaluacion 360, 1:1 y planes de mejora (F7) | [performance.md](performance.md) |
+| `training` | Cursos con aprobacion contra el minimo real, certificados y matriz de competencias (F7) | [training.md](training.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -80,15 +81,15 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veinticuatro cubiertos.** 415 pruebas contra Postgres real
+- **RLS: los veinticinco cubiertos.** 429 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
   `cost-centers` + 8 de `multicurrency` + 13 de `payments` + 11 de
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
-  `benefits` + 11 de `recruiting` + 14 de `performance`). La numeración
-  de `purchase-orders` y de
+  `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
+  `training`). La numeración de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -111,8 +112,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_inscripcion_ajena`, `impedir_aplicacion_ajena`,
   `impedir_entrevista_ajena`, `impedir_objetivo_ajeno`,
   `impedir_resultado_clave_ajeno`,
-  `impedir_referencia_ajena_empleado_desempeno`) se escribieron desde
-  el primer día, no
+  `impedir_referencia_ajena_empleado_desempeno`,
+  `impedir_inscripcion_curso_ajena`, `impedir_certificado_ajeno`,
+  `impedir_competencia_ajena`) se escribieron desde el primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
   `insert`, porque `payroll_period_id` se rellena despues de crear la
@@ -195,7 +197,15 @@ patrones que `sales-orders` ya habia corregido.
   botón de guardar sin nombre accesible en la fila de progreso de un
   resultado clave, el `<Icon>` bastaba visualmente pero no aportaba
   nombre accesible por ir con `aria-hidden`-, corregido con `aria-label`
-  antes de dar el módulo por terminado.
+  antes de dar el módulo por terminado. `training` encontró un choque de
+  nombres, no un agujero de seguridad: su primer intento de migración
+  reutilizó `impedir_inscripcion_ajena`, ya tomado por `benefits` para
+  `benefit_enrollments` -Postgres rechazó la migración completa
+  (`function "impedir_inscripcion_ajena" already exists`), sin dejar
+  nada a medio aplicar porque el archivo corre como una sola transacción
+  implícita-. Renombrada a `impedir_inscripcion_curso_ajena` antes de
+  reintentar, aplicando desde entonces la lección de la propia sonda de
+  accesibilidad de `performance`.
 
 ---
 

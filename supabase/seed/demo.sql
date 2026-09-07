@@ -138,7 +138,8 @@ begin
          (v_med, 'hr-portal', 'active', true),
          (v_med, 'benefits', 'active', true),
          (v_med, 'recruiting', 'active', true),
-         (v_med, 'performance', 'active', true)
+         (v_med, 'performance', 'active', true),
+         (v_med, 'training', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1319,5 +1320,67 @@ begin
 
     insert into public.performance_improvement_plans (tenant_id, employee_id, reason, goals, start_date, end_date)
     values (v_med, v_cajera, 'Llegadas tarde recurrentes', 'Llegar a tiempo las proximas 4 semanas', current_date - 5, current_date + 25);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Capacitacion: un curso completado y certificado -con el certificado
+--  por vencer pronto, para ver el widget en accion-, uno en curso sin
+--  nota todavia, uno no aprobado, y una competencia con dos empleados
+--  evaluados -para ver el promedio del equipo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_encargada   uuid; -- Rafael
+  v_cajera      uuid; -- Yolanda
+  v_vendedor    uuid; -- Anthony
+  v_curso_at    uuid;
+  v_curso_caja  uuid;
+  v_inscripcion uuid;
+  v_competencia uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  select id into v_vendedor  from public.employees where tenant_id = v_med and code = 'E-003';
+  if v_encargada is null or v_cajera is null or v_vendedor is null then return; end if;
+
+  if not exists (select 1 from public.training_courses where tenant_id = v_med) then
+    insert into public.training_courses (tenant_id, title, description, duration_hours, passing_score)
+    values (v_med, 'Atencion al cliente', 'Fundamentos de servicio al cliente en el mostrador.', 4, 70)
+    returning id into v_curso_at;
+
+    insert into public.training_courses (tenant_id, title, description, duration_hours, passing_score)
+    values (v_med, 'Manejo de caja y arqueo', 'Procedimiento correcto de apertura, cierre y arqueo de caja.', 3, 80)
+    returning id into v_curso_caja;
+
+    -- Yolanda: completo y aprobo -certificado por vencer en 20 dias-.
+    insert into public.training_enrollments
+      (tenant_id, course_id, employee_id, status, score, enrolled_at, completed_at)
+    values (v_med, v_curso_caja, v_cajera, 'completed', 92, now() - interval '10 days', now() - interval '2 days')
+    returning id into v_inscripcion;
+
+    insert into public.training_certificates (tenant_id, enrollment_id, expires_at)
+    values (v_med, v_inscripcion, now() + interval '20 days');
+
+    -- Anthony: en curso, todavia sin nota.
+    insert into public.training_enrollments (tenant_id, course_id, employee_id, enrolled_at)
+    values (v_med, v_curso_at, v_vendedor, now() - interval '3 days');
+
+    -- Rafael: no aprobo -por debajo del minimo del curso-.
+    insert into public.training_enrollments
+      (tenant_id, course_id, employee_id, status, score, enrolled_at, completed_at)
+    values (v_med, v_curso_caja, v_encargada, 'failed', 55, now() - interval '15 days', now() - interval '12 days');
+
+    insert into public.training_competencies (tenant_id, name, description)
+    values (v_med, 'Atencion al cliente', 'Capacidad de resolver quejas y dudas del cliente en el mostrador')
+    returning id into v_competencia;
+
+    insert into public.training_employee_competencies (tenant_id, employee_id, competency_id, level)
+    values (v_med, v_encargada, v_competencia, 5),
+           (v_med, v_cajera, v_competencia, 4);
   end if;
 end $$;
