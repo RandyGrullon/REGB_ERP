@@ -53,6 +53,8 @@ export interface DatosWidgets {
   tasaMasVieja: number | null
   linksPendientes: { description: string; amount: number }[]
   recurrentesVencidos: number
+  headcount: number
+  nuevosIngresos: { name: string; hace: number }[]
 }
 
 const money = (n: number) =>
@@ -106,6 +108,8 @@ export async function cargarDatosWidgets(
     tasaMasVieja: null,
     linksPendientes: [],
     recurrentesVencidos: 0,
+    headcount: 0,
+    nuevosIngresos: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -502,6 +506,26 @@ export async function cargarDatosWidgets(
       from public.recurring_charges
       where tenant_id = ${tenantId} and is_active and next_charge_date <= current_date`
     vacio.recurrentesVencidos = Number(d?.n ?? 0)
+  }
+
+  if (pidieron('headcount')) {
+    const [h] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.employees
+      where tenant_id = ${tenantId} and status = 'active'`
+    vacio.headcount = Number(h?.n ?? 0)
+  }
+
+  if (pidieron('new-hires')) {
+    vacio.nuevosIngresos = (
+      await tx<{ name: string; hace: string }[]>`
+        select first_name || ' ' || last_name as name,
+               (current_date - hire_date)::text as hace
+        from public.employees
+        where tenant_id = ${tenantId} and status = 'active'
+          and hire_date >= current_date - interval '30 days'
+        order by hire_date desc
+        limit 5`
+    ).map((r) => ({ name: r.name, hace: Number(r.hace) }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1075,6 +1099,34 @@ const WIDGETS: Record<
             listo{d.recurrentesVencidos === 1 ? '' : 's'} para generar su link
           </span>
         </p>
+      ),
+  },
+
+  'headcount': {
+    titulo: 'Empleados activos',
+    icono: 'badge',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.headcount}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">en nomina hoy</span>
+      </p>
+    ),
+  },
+
+  'new-hires': {
+    titulo: 'Ingresos recientes',
+    icono: 'person_add',
+    render: (d) =>
+      d.nuevosIngresos.length === 0 ? (
+        <Vacio>Nadie nuevo en los ultimos 30 dias.</Vacio>
+      ) : (
+        <ul>
+          {d.nuevosIngresos.map((n, i) => (
+            <Fila key={i} izq={n.name} der={`hace ${n.hace} d`} />
+          ))}
+        </ul>
       ),
   },
 

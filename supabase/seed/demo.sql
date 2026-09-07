@@ -129,7 +129,8 @@ begin
          (v_med, 'budgets', 'active', true),
          (v_med, 'cost-centers', 'active', true),
          (v_med, 'multicurrency', 'active', true),
-         (v_med, 'payments', 'active', true)
+         (v_med, 'payments', 'active', true),
+         (v_med, 'employees', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -809,5 +810,76 @@ begin
     insert into public.recurring_charges
       (tenant_id, customer_id, amount, description, frequency, next_charge_date)
     values (v_med, v_duarte, 3500.00, 'Mantenimiento mensual de equipos', 'monthly', current_date - 2);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Empleados: una jerarquia real de tres niveles -para que el organigrama
+--  se vea con algo mas que una sola persona-, con una promocion real
+--  registrada como segundo contrato, y un ingreso reciente para el widget
+--  de "nuevos ingresos".
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_gerente   uuid;
+  v_encargada uuid;
+  v_vendedor  uuid;
+  v_nuevos    boolean := false;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_gerente from public.employees where tenant_id = v_med and code = 'E-001';
+  if v_gerente is null then
+    insert into public.employees
+      (tenant_id, code, first_name, last_name, national_id, hire_date, position, department, salary)
+    values (v_med, 'E-001', 'Rafael', 'Encarnacion', '001-8823456-1',
+            current_date - interval '3 years', 'Gerente General', 'Direccion', 85000.00)
+    returning id into v_gerente;
+
+    insert into public.employee_contracts
+      (tenant_id, employee_id, contract_type, start_date, salary, position)
+    values (v_med, v_gerente, 'indefinido', current_date - interval '3 years', 85000.00, 'Gerente General');
+
+    v_nuevos := true;
+  end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_encargada is null then
+    insert into public.employees
+      (tenant_id, code, first_name, last_name, national_id, hire_date, position, department,
+       manager_id, salary)
+    values (v_med, 'E-002', 'Yolanda', 'Peña', '001-7712345-9',
+            current_date - interval '2 years', 'Encargada de Sucursal', 'Ventas', v_gerente, 32000.00)
+    returning id into v_encargada;
+
+    -- Primer contrato, y la promocion que le siguio un ano despues -dos
+    -- filas de historial real, no un solo salario reescrito-.
+    insert into public.employee_contracts
+      (tenant_id, employee_id, contract_type, start_date, salary, position, is_active)
+    values (v_med, v_encargada, 'indefinido', current_date - interval '2 years', 25000.00,
+            'Vendedora', false);
+
+    insert into public.employee_contracts
+      (tenant_id, employee_id, contract_type, start_date, salary, position)
+    values (v_med, v_encargada, 'indefinido', current_date - interval '1 year', 32000.00,
+            'Encargada de Sucursal');
+
+    v_nuevos := true;
+  end if;
+
+  select id into v_vendedor from public.employees where tenant_id = v_med and code = 'E-003';
+  if v_vendedor is null then
+    insert into public.employees
+      (tenant_id, code, first_name, last_name, hire_date, position, department, manager_id, salary)
+    values (v_med, 'E-003', 'Anthony', 'Ramirez', current_date - 10, 'Vendedor', 'Ventas',
+            v_encargada, 18000.00);
+
+    insert into public.employee_contracts (tenant_id, employee_id, contract_type, start_date, salary, position)
+    select v_med, id, 'indefinido', current_date - 10, 18000.00, 'Vendedor'
+    from public.employees where tenant_id = v_med and code = 'E-003';
+
+    v_nuevos := true;
   end if;
 end $$;
