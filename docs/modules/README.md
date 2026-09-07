@@ -44,6 +44,7 @@ documento donde alguien va a buscar la verdad.
 | `lots-serials` | Trazabilidad por lote/serie, FEFO como algoritmo, alertas de vencimiento y recall (F8) | [lots-serials.md](lots-serials.md) |
 | `transfers` | Traslado entre almacenes con estado de transito real y discrepancia visible (F8) | [transfers.md](transfers.md) |
 | `stock-counts` | Clasificacion ABC real, conteo ciego y ajuste con aprobacion (F8) | [stock-counts.md](stock-counts.md) |
+| `barcode` | EAN-13 real, etiquetas con el codigo dibujado y escaneo con la camara (F8) | [barcode.md](barcode.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -89,7 +90,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y tres cubiertos.** 531 pruebas contra Postgres real
+- **RLS: los treinta y cuatro cubiertos.** 538 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -99,7 +100,8 @@ patrones que `sales-orders` ya habia corregido.
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
-  `lots-serials` + 12 de `transfers` + 12 de `stock-counts`). La numeración
+  `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
+  `barcode`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -140,7 +142,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_borrar_linea_transferencia_despachada`,
   `impedir_programacion_conteo_ajena`, `impedir_conteo_ajeno`,
   `impedir_referencia_ajena_linea_conteo`, `impedir_editar_conteo_resuelto`,
-  `impedir_editar_linea_conteo_no_editable`) se
+  `impedir_editar_linea_conteo_no_editable`, `impedir_escaneo_ajeno`,
+  `impedir_editar_escaneo`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -364,7 +367,25 @@ patrones que `sales-orders` ya habia corregido.
   Verificado en vivo: un conteo real aprobado con su ajuste confirmado
   en `inventory_movements`/`stock_levels`, y un conteo nuevo contado a
   ciegas -confirmado que `system_qty` nunca aparece en esa pantalla-,
-  enviado a aprobación y rechazado sin tocar el inventario.
+  enviado a aprobación y rechazado sin tocar el inventario. `barcode`
+  no agrega una columna nueva -`products.barcode` y su índice único
+  parcial ya existían desde 0016-: escribe ahí directamente.
+  `digitoVerificadorEan13()` implementa el algoritmo oficial de GS1
+  -probado contra un EAN-13 real conocido
+  (`4006381333931`) antes de generar el primero propio-, y
+  `patronBarrasEan13()` codifica el patrón completo de 95 módulos con
+  las tablas L/G/R del estándar para dibujar el código de barras real
+  en SVG, sin ninguna librería externa. La única tabla nueva,
+  `barcode_scans`, es una bitácora inmutable de cada escaneo, igual que
+  `audit.log`. El escaneo con cámara usa `BarcodeDetector` -la API
+  nativa del navegador-, con entrada manual como respaldo real (no
+  decorativo) donde no está soportada; verificado en el navegador de
+  este entorno, sin `BarcodeDetector`, confirmando que el mensaje de
+  respaldo aparece y la búsqueda manual funciona igual. Verificado en
+  vivo: generados dos EAN-13 reales (validados de nuevo con
+  `codigoEan13Valido()`), etiquetas con las barras dibujadas
+  correctamente, y un escaneo manual encontrando el producto correcto
+  con su existencia por almacén.
 
 ---
 

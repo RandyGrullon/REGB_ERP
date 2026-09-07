@@ -147,7 +147,8 @@ begin
          (v_med, 'receipts', 'active', true),
          (v_med, 'lots-serials', 'active', true),
          (v_med, 'transfers', 'active', true),
-         (v_med, 'stock-counts', 'active', true)
+         (v_med, 'stock-counts', 'active', true),
+         (v_med, 'barcode', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -697,6 +698,33 @@ begin
 
     insert into public.cycle_count_lines (count_id, tenant_id, product_id, system_qty, counted_qty, unit_cost)
     values (v_conteo, v_med, v_cemento, 55, 53, 411.50);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Codigos de barra (modulo 52): el cemento ya tiene un EAN-13 real
+--  asignado y un escaneo registrado -para probar etiquetas y escaneo
+--  sin interactuar primero-; la pintura y la varilla se dejan SIN
+--  codigo a proposito, para que "generar codigos faltantes" tenga
+--  trabajo real que hacer en la demo en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_cemento uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  if v_cemento is null then return; end if;
+
+  update public.products set barcode = '2000000000015'
+  where id = v_cemento and barcode is null;
+
+  if not exists (select 1 from public.barcode_scans where tenant_id = v_med and product_id = v_cemento) then
+    insert into public.barcode_scans (tenant_id, product_id, scanned_code, scanned_at)
+    values (v_med, v_cemento, '2000000000015', now() - interval '3 hours');
   end if;
 end $$;
 

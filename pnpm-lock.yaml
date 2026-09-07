@@ -95,6 +95,9 @@ importers:
       '@regb/mod-bank-rec':
         specifier: workspace:*
         version: link:../../modules/bank-rec
+      '@regb/mod-barcode':
+        specifier: workspace:*
+        version: link:../../modules/barcode
       '@regb/mod-benefits':
         specifier: workspace:*
         version: link:../../modules/benefits
@@ -360,6 +363,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/bank-rec:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/barcode:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
