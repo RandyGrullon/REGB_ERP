@@ -152,6 +152,9 @@ importers:
       '@regb/mod-manufacturing':
         specifier: workspace:*
         version: link:../../modules/manufacturing
+      '@regb/mod-mrp':
+        specifier: workspace:*
+        version: link:../../modules/mrp
       '@regb/mod-multicurrency':
         specifier: workspace:*
         version: link:../../modules/multicurrency
@@ -622,6 +625,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/manufacturing:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/mrp:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

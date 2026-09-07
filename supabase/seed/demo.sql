@@ -152,7 +152,8 @@ begin
          (v_med, 'fleet', 'active', true),
          (v_med, 'logistics', 'active', true),
          (v_med, 'bom', 'active', true),
-         (v_med, 'manufacturing', 'active', true)
+         (v_med, 'manufacturing', 'active', true),
+         (v_med, 'mrp', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -935,6 +936,56 @@ begin
   ) then
     insert into public.production_orders (tenant_id, bom_id, warehouse_id, qty_planned)
     values (v_med, v_bom, v_alm_sd, 5);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Planificacion MRP (modulo 57): una corrida ya hecha para 10 kits
+--  basicos de reparacion, con sus 4 sugerencias -3 de comprar, 1 de
+--  producir- para ver ambos caminos de aceptacion sin correr nada en
+--  vivo primero. Asume cero stock disponible de estos insumos, asi
+--  que la bruta y la neta coinciden.
+--
+--  El arbol real que explota KIT-100 x10 (bm.output_qty=1 en ambos
+--  BOM): cemento 0.5*10=5 (compra, hoja); VAR-REF 2*10=20 (PRODUCE,
+--  tiene su propia receta activa) que a su vez explota en varilla
+--  1*20=20 (compra) y pintura 0.1*20=2 (compra); mas la pintura
+--  directa del kit 0.25*10=2.5 (compra) -que se ACUMULA con la de
+--  arriba: 2+2.5=4.5, la misma materia prima en dos ramas distintas-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_kit     uuid;
+  v_cemento uuid;
+  v_varilla uuid;
+  v_pintura uuid;
+  v_var_ref uuid;
+  v_run     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_kit     from public.products where tenant_id = v_med and sku = 'KIT-100';
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  select id into v_varilla from public.products where tenant_id = v_med and sku = 'VAR-200';
+  select id into v_pintura from public.products where tenant_id = v_med and sku = 'PIN-300';
+  select id into v_var_ref from public.products where tenant_id = v_med and sku = 'VAR-REF';
+  if v_kit is null or v_cemento is null or v_varilla is null or v_pintura is null or v_var_ref is null then
+    return;
+  end if;
+
+  if not exists (select 1 from public.mrp_runs where tenant_id = v_med and target_product_id = v_kit) then
+    insert into public.mrp_runs (tenant_id, target_product_id, target_qty, notes)
+    values (v_med, v_kit, 10, 'Reponer el kit basico de reparacion para el trimestre')
+    returning id into v_run;
+
+    insert into public.mrp_suggestions (run_id, tenant_id, product_id, action, qty_suggested)
+    values
+      (v_run, v_med, v_cemento, 'purchase', 5),
+      (v_run, v_med, v_var_ref, 'produce', 20),
+      (v_run, v_med, v_varilla, 'purchase', 20),
+      (v_run, v_med, v_pintura, 'purchase', 4.5);
   end if;
 end $$;
 

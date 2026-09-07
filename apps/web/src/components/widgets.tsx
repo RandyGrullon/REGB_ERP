@@ -93,6 +93,7 @@ export interface DatosWidgets {
   rutasEnProgreso: number
   bomsActivos: number
   ordenesProduccionEnProgreso: number
+  sugerenciasMrpPendientes: number
 }
 
 const money = (n: number) =>
@@ -191,6 +192,7 @@ export async function cargarDatosWidgets(
     rutasEnProgreso: 0,
     bomsActivos: 0,
     ordenesProduccionEnProgreso: 0,
+    sugerenciasMrpPendientes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -933,6 +935,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.production_orders
       where tenant_id = ${tenantId} and status in ('released', 'in_progress')`
     vacio.ordenesProduccionEnProgreso = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('mrp-suggestions-pending')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.mrp_suggestions
+      where tenant_id = ${tenantId} and status = 'pending'`
+    vacio.sugerenciasMrpPendientes = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2018,6 +2027,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.ordenesProduccionEnProgreso === 0 ? 'nada en piso' : 'produciendo ahora'}
+        </span>
+      </p>
+    ),
+  },
+
+  'mrp-suggestions-pending': {
+    titulo: 'Sugerencias de MRP pendientes',
+    icono: 'insights',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.sugerenciasMrpPendientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.sugerenciasMrpPendientes === 0 ? 'nada que decidir' : 'comprar o producir'}
         </span>
       </p>
     ),

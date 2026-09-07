@@ -49,6 +49,7 @@ documento donde alguien va a buscar la verdad.
 | `logistics` | Planificacion de rutas y prueba de entrega real -sin GPS ni optimizacion falsos- (F8) | [logistics.md](logistics.md) |
 | `bom` | Costeo multinivel real, versiones y sustitutos de lista de materiales (F8.5) | [bom.md](bom.md) |
 | `manufacturing` | Lanzamiento, consumo real, avance y mermas de ordenes de produccion (F8.5) | [manufacturing.md](manufacturing.md) |
+| `mrp` | Explosion de necesidades multinivel real y sugerencias de comprar o producir, nunca automaticas (F8.5) | [mrp.md](mrp.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -94,7 +95,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y ocho cubiertos.** 588 pruebas contra Postgres real
+- **RLS: los treinta y nueve cubiertos.** 598 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -106,7 +107,7 @@ patrones que `sales-orders` ya habia corregido.
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
-  `manufacturing`). La numeración
+  `manufacturing` + 10 de `mrp`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -158,7 +159,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_linea_bom_no_borrador`,
   `impedir_orden_produccion_ajena`, `impedir_referencia_ajena_linea_produccion`,
   `impedir_reporte_ajeno`, `impedir_editar_orden_produccion_resuelta`,
-  `impedir_editar_linea_produccion`, `impedir_editar_reporte`) se
+  `impedir_editar_linea_produccion`, `impedir_editar_reporte`,
+  `impedir_producto_ajeno_corrida_mrp`, `impedir_referencia_ajena_sugerencia_mrp`,
+  `impedir_editar_corrida_mrp`, `impedir_editar_sugerencia_resuelta`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -471,7 +474,29 @@ patrones que `sales-orders` ya habia corregido.
   completándola con dos reportes reales (uno con merma genuina), con
   las entradas de producto terminado confirmadas en
   `inventory_movements` y la inmutabilidad de la receta verificada
-  incluso ya completada.
+  incluso ya completada. `mrp` cierra el bloque de manufactura de F8.5
+  reutilizando el mismo tipo de recorrido recursivo que `bom` una
+  tercera vez: `explotarNecesidadesMrp()` recorre el árbol exactamente
+  como `costoUnitarioMultinivel()`, pero acumula CANTIDAD por producto
+  en vez de costo, sumando entre ramas que repiten la misma materia
+  prima -verificado con el mismo par KIT-100/VAR-REF que `bom` usó
+  para probar su propia recursión: la pintura aparece tanto dentro de
+  la receta de VAR-REF como directamente en la del kit, y las dos
+  ramas se sumaron en una sola sugerencia de 4.5, no en dos filas
+  separadas-. La honestidad del módulo está en lo que NO hace al
+  aceptar una sugerencia: aceptar una de producir crea una orden real
+  en borrador -`manufacturing` es un `requires` declarado, ese
+  acoplamiento es legítimo-, pero aceptar una de comprar solo cambia
+  su propio estado, sin crear una requisición ni una orden de compra
+  por su cuenta, porque ese acoplamiento no está declarado
+  (`recommends`, no `requires`). Verificado en vivo los tres caminos
+  sobre una corrida real de 10 kits: aceptar la sugerencia de comprar
+  cemento no tocó `production_orders`; aceptar la de producir VAR-REF
+  creó una orden real de 20 unidades en el almacén elegido,
+  confirmada abriendo su propio detalle; descartar la de pintura la
+  dejó sin ningún efecto -las tres revertidas después, para que la
+  corrida sembrada siga siendo el punto de partida de una demostración
+  desde cero-.
 
 ---
 
