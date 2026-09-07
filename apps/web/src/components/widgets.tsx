@@ -4,6 +4,7 @@ import {
   buildCashFlowProjection,
   daysSinceRate,
   firstShortfallWeek,
+  horaEsperadaEnRD,
   lateMinutes,
 } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
@@ -60,10 +61,24 @@ export interface DatosWidgets {
   costoNominaMesActual: number
   marcajesHoy: number
   tardanzasHoy: { name: string; minutos: number }[]
+  solicitudesPendientes: number
+  fueraHoy: { name: string; tipo: string; regresa: string }[]
 }
 
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** Formatea una fecha `YYYY-MM-DD` sin pasar por la zona local -evita que
+ * un `new Date('2026-09-15')` se corra un dia al convertir a la hora del
+ * servidor-. */
+const fechaCortaUTC = (iso: string) => {
+  const [y, m, d] = iso.split('-').map(Number)
+  return new Date(Date.UTC(y!, m! - 1, d!)).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
 
 /**
  * Se consulta SOLO lo que alguna clave declarada necesita, y en una sola
@@ -119,6 +134,8 @@ export async function cargarDatosWidgets(
     costoNominaMesActual: 0,
     marcajesHoy: 0,
     tardanzasHoy: [],
+    solicitudesPendientes: 0,
+    fueraHoy: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -581,12 +598,33 @@ export async function cargarDatosWidgets(
     vacio.tardanzasHoy = filas
       .map((f) => {
         const entrada = new Date(f.check_in)
-        const esperado = new Date(entrada)
-        esperado.setHours(8, 0, 0, 0)
+        const esperado = horaEsperadaEnRD(entrada, 8)
         return { name: f.name, minutos: lateMinutes(entrada, esperado) }
       })
       .filter((f) => f.minutos > 0)
       .slice(0, 5)
+  }
+
+  if (pidieron('time-off-pending')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.time_off_requests
+      where tenant_id = ${tenantId} and status = 'pending'`
+    vacio.solicitudesPendientes = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('team-out-today')) {
+    const filas = await tx<{ name: string; leave_type: string; end_date: string }[]>`
+      select e.first_name || ' ' || e.last_name as name, t.leave_type, t.end_date::text
+      from public.time_off_requests t
+      join public.employees e on e.id = t.employee_id
+      where t.tenant_id = ${tenantId} and t.status = 'approved'
+        and current_date between t.start_date and t.end_date
+      order by t.end_date`
+    vacio.fueraHoy = filas.map((f) => ({
+      name: f.name,
+      tipo: f.leave_type,
+      regresa: f.end_date,
+    }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1251,6 +1289,42 @@ const WIDGETS: Record<
         <ul>
           {d.tardanzasHoy.map((t, i) => (
             <Fila key={i} izq={t.name} der={`${t.minutos} min`} tono="danger" />
+          ))}
+        </ul>
+      ),
+  },
+
+  'time-off-pending': {
+    titulo: 'Solicitudes por aprobar',
+    icono: 'beach_access',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.solicitudesPendientes > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.solicitudesPendientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.solicitudesPendientes === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'team-out-today': {
+    titulo: 'Fuera hoy',
+    icono: 'event_busy',
+    render: (d) =>
+      d.fueraHoy.length === 0 ? (
+        <Vacio>Nadie del equipo esta fuera hoy.</Vacio>
+      ) : (
+        <ul>
+          {d.fueraHoy.map((f, i) => (
+            <Fila key={i} izq={f.name} der={`regresa ${fechaCortaUTC(f.regresa)}`} />
           ))}
         </ul>
       ),

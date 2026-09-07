@@ -132,7 +132,8 @@ begin
          (v_med, 'payments', 'active', true),
          (v_med, 'employees', 'active', true),
          (v_med, 'payroll', 'active', true),
-         (v_med, 'attendance', 'active', true)
+         (v_med, 'attendance', 'active', true),
+         (v_med, 'time-off', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1008,5 +1009,69 @@ begin
     insert into public.attendance_records
       (tenant_id, employee_id, check_in, check_in_method, check_in_lat, check_in_lng, within_geofence)
     values (v_med, v_vendedor, v_entrada_hoy, 'geofence', 18.486070, -69.931200, true);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Vacaciones & Permisos: una solicitud de vacaciones ya tomada -reduce el
+--  saldo del encargado-, una pendiente por aprobar, y un permiso personal
+--  rechazado -para ver los tres estados en la pantalla-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael, el de mas antiguedad: tiene saldo para pedir
+  v_cajera    uuid; -- Yolanda
+  v_inicio    date;
+  v_fin       date;
+  v_dias      integer;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_encargada is null or v_cajera is null then return; end if;
+
+  if not exists (
+    select 1 from public.time_off_requests where tenant_id = v_med and employee_id = v_encargada
+  ) then
+    -- Ya tomada y aprobada, hace un par de meses -resta del saldo mostrado en pantalla-.
+    v_inicio := current_date - 60;
+    v_fin    := current_date - 56;
+    select count(*) into v_dias from generate_series(v_inicio, v_fin, interval '1 day') d
+      where extract(dow from d) not in (0, 6);
+
+    insert into public.time_off_requests
+      (tenant_id, employee_id, leave_type, start_date, end_date, business_days, status, decided_at)
+    values (v_med, v_encargada, 'vacation', v_inicio, v_fin, v_dias, 'approved', now() - interval '55 days');
+
+    -- Pendiente por aprobar, unas semanas adelante -para la cola de /vacaciones/aprobar-.
+    v_inicio := current_date + 14;
+    v_fin    := current_date + 18;
+    select count(*) into v_dias from generate_series(v_inicio, v_fin, interval '1 day') d
+      where extract(dow from d) not in (0, 6);
+
+    insert into public.time_off_requests
+      (tenant_id, employee_id, leave_type, start_date, end_date, business_days, reason)
+    values (v_med, v_encargada, 'vacation', v_inicio, v_fin, v_dias, 'Viaje familiar ya reservado');
+  end if;
+
+  if not exists (
+    select 1 from public.time_off_requests where tenant_id = v_med and employee_id = v_cajera
+  ) then
+    -- Un permiso personal de un dia, rechazado -para ver el estado en pantalla-.
+    -- Si esa fecha cae en fin de semana, no habria ningun dia laborable
+    -- que contar -y business_days > 0 es obligatorio-, asi que se
+    -- retrocede hasta encontrar un dia entre semana.
+    v_inicio := current_date - 20;
+    while extract(dow from v_inicio) in (0, 6) loop
+      v_inicio := v_inicio - 1;
+    end loop;
+
+    insert into public.time_off_requests
+      (tenant_id, employee_id, leave_type, start_date, end_date, business_days, status, reason, decided_at, decision_note)
+    values (v_med, v_cajera, 'personal', v_inicio, v_inicio, 1, 'rejected',
+            'Cita personal', now() - interval '19 days', 'Coincide con el cierre de mes, se reagenda.');
   end if;
 end $$;
