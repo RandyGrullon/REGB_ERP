@@ -37,6 +37,7 @@ documento donde alguien va a buscar la verdad.
 | `performance` | OKR con progreso derivado, evaluacion 360, 1:1 y planes de mejora (F7) | [performance.md](performance.md) |
 | `training` | Cursos con aprobacion contra el minimo real, certificados y matriz de competencias (F7) | [training.md](training.md) |
 | `suppliers` | Documentos con vigencia calculada, cuentas bancarias y evaluacion de proveedores (F8) | [suppliers.md](suppliers.md) |
+| `price-lists` | Precio por cliente, canal o volumen con precedencia real (F8) | [price-lists.md](price-lists.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -82,7 +83,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintiséis cubiertos.** 443 pruebas contra Postgres real
+- **RLS: los veintisiete cubiertos.** 455 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -90,7 +91,8 @@ patrones que `sales-orders` ya habia corregido.
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
-  `training` + 14 de `suppliers`). La numeración de `purchase-orders` y de
+  `training` + 14 de `suppliers` + 12 de `price-lists`). La numeración
+  de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -115,8 +117,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_resultado_clave_ajeno`,
   `impedir_referencia_ajena_empleado_desempeno`,
   `impedir_inscripcion_curso_ajena`, `impedir_certificado_ajeno`,
-  `impedir_competencia_ajena`, `impedir_referencia_ajena_proveedor`) se
-  escribieron desde el primer día, no
+  `impedir_competencia_ajena`, `impedir_referencia_ajena_proveedor`,
+  `impedir_lista_precio_ajena`, `impedir_entrada_lista_precio_ajena`,
+  `impedir_lista_precio_ajena_en_cliente`) se escribieron desde el
+  primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
   `insert`, porque `payroll_period_id` se rellena despues de crear la
@@ -222,7 +226,14 @@ patrones que `sales-orders` ya habia corregido.
   sí un bug de correctitud real. Reproducido contra Docker local antes
   de tocar nada, y corregido ampliando la política -nunca reduciendo el
   acceso ya existente- para que `purchase-orders`, `ap` o `suppliers`
-  desbloqueen la ficha básica.
+  desbloqueen la ficha básica. `price-lists` encontró su propio
+  scaffold muerto: `customers.price_list` (0020) era una columna de
+  texto libre que nunca se leyó ni se escribió desde ningún código de
+  la app -mismo hallazgo que `payroll`/`attendance` antes de que esta
+  fase les diera contenido real-. Eliminada y reemplazada por
+  `customers.price_list_id`, la primera vez en la serie 0031-0062 que
+  el agujero de referencia cruzada aparece en una columna agregada
+  *después* a una tabla que ya existía, no en la tabla original.
 
 ---
 

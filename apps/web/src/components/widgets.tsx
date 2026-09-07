@@ -7,6 +7,7 @@ import {
   horaEsperadaEnRD,
   lateMinutes,
   certificadoVigente,
+  listaVigente,
   progresoObjetivo,
   saldoPrestamo,
   totalAportePatronal,
@@ -80,6 +81,7 @@ export interface DatosWidgets {
   certificadosPorVencer: { name: string; vence: string }[]
   proveedoresPendientes: number
   documentosProveedorPorVencer: { name: string; vence: string }[]
+  listasPrecioVigentes: number
 }
 
 const money = (n: number) =>
@@ -166,6 +168,7 @@ export async function cargarDatosWidgets(
     certificadosPorVencer: [],
     proveedoresPendientes: 0,
     documentosProveedorPorVencer: [],
+    listasPrecioVigentes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -797,6 +800,34 @@ export async function cargarDatosWidgets(
       .filter((f) => (new Date(f.expires_at!).getTime() - hoy.getTime()) / 86_400_000 <= 30)
       .map((f) => ({ name: `${f.supplier_name} · ${f.doc_type}`, vence: f.expires_at! }))
       .slice(0, 5)
+  }
+
+  if (pidieron('active-price-lists')) {
+    const filas = await tx<{
+      id: string
+      scope: string
+      channel: string | null
+      start_date: string
+      end_date: string | null
+      status: string
+    }[]>`
+      select id, scope, channel, start_date::text, end_date::text, status
+      from public.price_lists where tenant_id = ${tenantId}`
+    const hoy = new Date()
+    vacio.listasPrecioVigentes = filas.filter((f) =>
+      listaVigente(
+        {
+          id: f.id,
+          scope: f.scope as 'customer' | 'channel' | 'general',
+          customerId: null,
+          channel: f.channel,
+          startDate: new Date(`${f.start_date}T00:00:00`),
+          endDate: f.end_date ? new Date(`${f.end_date}T00:00:00`) : null,
+          status: f.status,
+        },
+        hoy,
+      ),
+    ).length
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1707,6 +1738,19 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'active-price-lists': {
+    titulo: 'Listas de precio vigentes',
+    icono: 'sell',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.listasPrecioVigentes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">activas hoy</span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

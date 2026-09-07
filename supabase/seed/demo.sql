@@ -140,7 +140,8 @@ begin
          (v_med, 'recruiting', 'active', true),
          (v_med, 'performance', 'active', true),
          (v_med, 'training', 'active', true),
-         (v_med, 'suppliers', 'active', true)
+         (v_med, 'suppliers', 'active', true),
+         (v_med, 'price-lists', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1415,5 +1416,58 @@ begin
     insert into public.supplier_evaluations (tenant_id, supplier_id, score, comments, evaluated_by, evaluated_at)
     values (v_med, v_proveedor, 4, 'Entrega puntual, calidad consistente.', 'Rafael Encarnacion', now() - interval '60 days'),
            (v_med, v_proveedor, 5, 'Resolvio un reclamo de calidad muy rapido.', 'Rafael Encarnacion', now() - interval '10 days');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Listas de precios: una general con descuento por volumen en cemento,
+--  una de cliente con precio especial en varilla -asignada de verdad al
+--  cliente-, y una de canal online con precio especial en pintura.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_cemento     uuid;
+  v_varilla     uuid;
+  v_pintura     uuid;
+  v_duarte      uuid;
+  v_lista_gen   uuid;
+  v_lista_cli   uuid;
+  v_lista_canal uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  select id into v_varilla from public.products where tenant_id = v_med and sku = 'VAR-200';
+  select id into v_pintura from public.products where tenant_id = v_med and sku = 'PIN-300';
+  select id into v_duarte  from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  if v_cemento is null or v_varilla is null or v_pintura is null or v_duarte is null then return; end if;
+
+  if not exists (select 1 from public.price_lists where tenant_id = v_med) then
+    insert into public.price_lists (tenant_id, name, scope, start_date)
+    values (v_med, 'Lista General 2026', 'general', current_date - 60)
+    returning id into v_lista_gen;
+
+    insert into public.price_list_entries (tenant_id, price_list_id, product_id, min_quantity, unit_price)
+    values (v_med, v_lista_gen, v_cemento, 1, 465),
+           (v_med, v_lista_gen, v_cemento, 50, 440),
+           (v_med, v_lista_gen, v_cemento, 200, 410);
+
+    insert into public.price_lists (tenant_id, name, scope, customer_id, start_date)
+    values (v_med, 'Constructora Duarte - Mayorista', 'customer', v_duarte, current_date - 30)
+    returning id into v_lista_cli;
+
+    insert into public.price_list_entries (tenant_id, price_list_id, product_id, min_quantity, unit_price)
+    values (v_med, v_lista_cli, v_varilla, 1, 270);
+
+    update public.customers set price_list_id = v_lista_cli where id = v_duarte;
+
+    insert into public.price_lists (tenant_id, name, scope, channel, start_date)
+    values (v_med, 'Canal Online', 'channel', 'online', current_date - 15)
+    returning id into v_lista_canal;
+
+    insert into public.price_list_entries (tenant_id, price_list_id, product_id, min_quantity, unit_price)
+    values (v_med, v_lista_canal, v_pintura, 1, 1100);
   end if;
 end $$;
