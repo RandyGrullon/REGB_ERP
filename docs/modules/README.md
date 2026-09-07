@@ -45,6 +45,7 @@ documento donde alguien va a buscar la verdad.
 | `transfers` | Traslado entre almacenes con estado de transito real y discrepancia visible (F8) | [transfers.md](transfers.md) |
 | `stock-counts` | Clasificacion ABC real, conteo ciego y ajuste con aprobacion (F8) | [stock-counts.md](stock-counts.md) |
 | `barcode` | EAN-13 real, etiquetas con el codigo dibujado y escaneo con la camara (F8) | [barcode.md](barcode.md) |
+| `fleet` | Vehiculos, combustible, mantenimiento vencido, documentos y multas (F8) | [fleet.md](fleet.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -90,7 +91,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y cuatro cubiertos.** 538 pruebas contra Postgres real
+- **RLS: los treinta y cinco cubiertos.** 554 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -101,7 +102,7 @@ patrones que `sales-orders` ya habia corregido.
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
-  `barcode`). La numeración
+  `barcode` + 16 de `fleet`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -143,7 +144,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_programacion_conteo_ajena`, `impedir_conteo_ajeno`,
   `impedir_referencia_ajena_linea_conteo`, `impedir_editar_conteo_resuelto`,
   `impedir_editar_linea_conteo_no_editable`, `impedir_escaneo_ajeno`,
-  `impedir_editar_escaneo`) se
+  `impedir_editar_escaneo`, `impedir_vehiculo_ajeno`,
+  `impedir_referencia_ajena_vehiculo`, `impedir_referencia_ajena_combustible`,
+  `impedir_editar_combustible`, `impedir_editar_mantenimiento`,
+  `impedir_editar_multa_resuelta`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -385,7 +389,23 @@ patrones que `sales-orders` ya habia corregido.
   vivo: generados dos EAN-13 reales (validados de nuevo con
   `codigoEan13Valido()`), etiquetas con las barras dibujadas
   correctamente, y un escaneo manual encontrando el producto correcto
-  con su existencia por almacén.
+  con su existencia por almacén. `fleet` reutiliza infraestructura en
+  vez de reinventarla dos veces más: `documentoVehiculoVigente()` es
+  literalmente `certificadoVigente()` de `training.ts` reexportada con
+  otro nombre, y la pantalla de detalle reutiliza `loteProximoAVencer()`
+  de `lots-serials.ts` -una función genérica de umbral de días- para la
+  alerta "por vencer", aunque el nombre mencione lotes. El mantenimiento
+  vencido se detecta por kilometraje o por fecha, cada uno con su propia
+  función pura, y el rendimiento de combustible se calcula entre cada
+  carga y la anterior, no se declara a mano. Las multas tienen un flujo
+  real (`pending → paid | disputed`, `disputed → paid | dismissed`),
+  verificado en vivo pagando una multa real, confirmando que queda
+  inmutable, y restaurándola a `pending` para no romper el escenario de
+  demo. Es el primer módulo con documentación de vehículo (`vehicles`,
+  `vehicle_documents`) sin trigger de inmutabilidad -mismo criterio que
+  `product_lots`- mientras que `fuel_logs`/`maintenance_records` sí son
+  hechos históricos inmutables desde el insert, mismo criterio que
+  `benefit_loan_payments`.
 
 ---
 

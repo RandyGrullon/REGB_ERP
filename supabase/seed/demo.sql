@@ -148,7 +148,8 @@ begin
          (v_med, 'lots-serials', 'active', true),
          (v_med, 'transfers', 'active', true),
          (v_med, 'stock-counts', 'active', true),
-         (v_med, 'barcode', 'active', true)
+         (v_med, 'barcode', 'active', true),
+         (v_med, 'fleet', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -725,6 +726,62 @@ begin
   if not exists (select 1 from public.barcode_scans where tenant_id = v_med and product_id = v_cemento) then
     insert into public.barcode_scans (tenant_id, product_id, scanned_code, scanned_at)
     values (v_med, v_cemento, '2000000000015', now() - interval '3 hours');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Flota (modulo 54): un vehiculo con conductor asignado, tres
+--  documentos con los tres estados de vigencia posibles (vigente, por
+--  vencer, vencido), dos cargas de combustible reales para que el
+--  rendimiento se calcule solo, un mantenimiento cuyo proximo servicio
+--  ya se alcanzo -para ver la alerta sin interactuar primero-, y una
+--  multa pendiente.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_conductor uuid;
+  v_vehiculo  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_conductor from public.employees where tenant_id = v_med and first_name = 'Anthony';
+  if v_conductor is null then return; end if;
+
+  insert into public.vehicles (tenant_id, plate, brand, model, year, assigned_driver_id, odometer_km)
+  values (v_med, 'A123456', 'Toyota', 'Hilux', 2022, v_conductor, 45000)
+  on conflict (tenant_id, plate) do nothing
+  returning id into v_vehiculo;
+  if v_vehiculo is null then
+    select id into v_vehiculo from public.vehicles where tenant_id = v_med and plate = 'A123456';
+  end if;
+
+  if not exists (select 1 from public.vehicle_documents where tenant_id = v_med and vehicle_id = v_vehiculo) then
+    insert into public.vehicle_documents (tenant_id, vehicle_id, doc_type, expiry_date)
+    values
+      (v_med, v_vehiculo, 'license', current_date + 10),
+      (v_med, v_vehiculo, 'insurance', current_date - 5),
+      (v_med, v_vehiculo, 'inspection', current_date + 200);
+  end if;
+
+  if not exists (select 1 from public.fuel_logs where tenant_id = v_med and vehicle_id = v_vehiculo) then
+    insert into public.fuel_logs (tenant_id, vehicle_id, driver_id, filled_at, liters, cost, odometer_km)
+    values
+      (v_med, v_vehiculo, v_conductor, now() - interval '20 days', 30, 5000.00, 44500),
+      (v_med, v_vehiculo, v_conductor, now() - interval '2 days', 15, 2600.00, 45000);
+  end if;
+
+  if not exists (select 1 from public.maintenance_records where tenant_id = v_med and vehicle_id = v_vehiculo) then
+    insert into public.maintenance_records
+      (tenant_id, vehicle_id, service_date, type, description, cost, odometer_km, next_due_km)
+    values
+      (v_med, v_vehiculo, current_date - 30, 'preventive', 'Cambio de aceite y filtros', 3500.00, 40000, 45000);
+  end if;
+
+  if not exists (select 1 from public.traffic_fines where tenant_id = v_med and vehicle_id = v_vehiculo) then
+    insert into public.traffic_fines (tenant_id, vehicle_id, driver_id, fine_date, amount, reason)
+    values (v_med, v_vehiculo, v_conductor, current_date - 3, 2500.00, 'Exceso de velocidad en la autopista Duarte');
   end if;
 end $$;
 

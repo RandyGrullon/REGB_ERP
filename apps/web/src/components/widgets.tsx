@@ -89,6 +89,7 @@ export interface DatosWidgets {
   transferenciasEnTransito: number
   conteosEsperandoAprobacion: number
   productosSinCodigoBarras: number
+  vehiculosMantenimientoVencido: number
 }
 
 const money = (n: number) =>
@@ -183,6 +184,7 @@ export async function cargarDatosWidgets(
     transferenciasEnTransito: 0,
     conteosEsperandoAprobacion: 0,
     productosSinCodigoBarras: 0,
+    vehiculosMantenimientoVencido: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -891,6 +893,19 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.products
       where tenant_id = ${tenantId} and active and barcode is null`
     vacio.productosSinCodigoBarras = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('fleet-maintenance-due')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.vehicles v
+      join lateral (
+        select next_due_km from public.maintenance_records m
+        where m.vehicle_id = v.id and m.next_due_km is not null
+        order by m.service_date desc limit 1
+      ) ultimo on true
+      where v.tenant_id = ${tenantId} and v.status != 'retired'
+        and v.odometer_km >= ultimo.next_due_km`
+    vacio.vehiculosMantenimientoVencido = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1918,6 +1933,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.productosSinCodigoBarras === 0 ? 'todos tienen codigo' : 'listos para generar'}
+        </span>
+      </p>
+    ),
+  },
+
+  'fleet-maintenance-due': {
+    titulo: 'Vehiculos con mantenimiento vencido',
+    icono: 'local_shipping',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.vehiculosMantenimientoVencido}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.vehiculosMantenimientoVencido === 0 ? 'todo al dia' : 'ya alcanzaron el kilometraje'}
         </span>
       </p>
     ),
