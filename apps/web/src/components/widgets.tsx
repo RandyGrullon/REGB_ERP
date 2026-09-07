@@ -51,6 +51,8 @@ export interface DatosWidgets {
   centrosTotal: number
   tasasHoy: { code: string; rate: number; dias: number }[]
   tasaMasVieja: number | null
+  linksPendientes: { description: string; amount: number }[]
+  recurrentesVencidos: number
 }
 
 const money = (n: number) =>
@@ -102,6 +104,8 @@ export async function cargarDatosWidgets(
     centrosTotal: 0,
     tasasHoy: [],
     tasaMasVieja: null,
+    linksPendientes: [],
+    recurrentesVencidos: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -480,6 +484,24 @@ export async function cargarDatosWidgets(
       dias: daysSinceRate(new Date(`${f.rate_date.slice(0, 10)}T12:00:00`), hoy),
     }))
     vacio.tasaMasVieja = vacio.tasasHoy.length > 0 ? Math.max(...vacio.tasasHoy.map((t) => t.dias)) : null
+  }
+
+  if (pidieron('payment-links-pending')) {
+    vacio.linksPendientes = (
+      await tx<{ description: string; amount: string }[]>`
+        select description, amount::text from public.payment_links
+        where tenant_id = ${tenantId} and status = 'pending'
+        order by created_at desc
+        limit 5`
+    ).map((r) => ({ description: r.description, amount: Number(r.amount) }))
+  }
+
+  if (pidieron('recurring-charges-due')) {
+    const [d] = await tx<{ n: string }[]>`
+      select count(*)::text as n
+      from public.recurring_charges
+      where tenant_id = ${tenantId} and is_active and next_charge_date <= current_date`
+    vacio.recurrentesVencidos = Number(d?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1018,6 +1040,39 @@ const WIDGETS: Record<
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
             desde la captura mas atrasada
+          </span>
+        </p>
+      ),
+  },
+
+  'payment-links-pending': {
+    titulo: 'Links de cobro pendientes',
+    icono: 'payments',
+    render: (d) =>
+      d.linksPendientes.length === 0 ? (
+        <Vacio>Nada pendiente por cobrar.</Vacio>
+      ) : (
+        <ul>
+          {d.linksPendientes.map((l, i) => (
+            <Fila key={i} izq={l.description} der={money(l.amount)} tono="warning" />
+          ))}
+        </ul>
+      ),
+  },
+
+  'recurring-charges-due': {
+    titulo: 'Cobros recurrentes vencidos',
+    icono: 'event_repeat',
+    render: (d) =>
+      d.recurrentesVencidos === 0 ? (
+        <Vacio>Nada vencido todavia.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-warning)]">
+            {d.recurrentesVencidos}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            listo{d.recurrentesVencidos === 1 ? '' : 's'} para generar su link
           </span>
         </p>
       ),

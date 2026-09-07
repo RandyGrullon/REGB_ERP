@@ -128,6 +128,9 @@ importers:
       '@regb/mod-orgs':
         specifier: workspace:*
         version: link:../../modules/orgs
+      '@regb/mod-payments':
+        specifier: workspace:*
+        version: link:../../modules/payments
       '@regb/mod-payroll':
         specifier: workspace:*
         version: link:../../modules/payroll
@@ -449,6 +452,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/orgs:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/payments:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

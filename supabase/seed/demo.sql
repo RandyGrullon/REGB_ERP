@@ -84,6 +84,26 @@ begin
   from public.branches b where b.tenant_id = v_med and b.code = 'SD'
   on conflict (tenant_id, code) do nothing;
 
+  -- ── Clientes: sin esto, ar/sales-orders/pos/payments no tienen a quien
+  --    facturarle. `customers.code` es nullable, asi que un `unique
+  --    (tenant_id, code)` no sirve de "on conflict" aqui -dos NULL nunca
+  --    chocan en Postgres-: se comprueba por nombre, igual que companies
+  --    y branches un poco mas arriba en este mismo archivo. Este es el
+  --    mismo tipo de bug que ya aparecio con warehouses: el archivo
+  --    siempre SELECCIONO estos dos clientes rio abajo (ar, payments) sin
+  --    que nada los hubiera creado nunca -enmascarado por inserts
+  --    manuales de sesiones pasadas hasta el primer reset completo de la
+  --    base en esta sesion-.
+  if not exists (select 1 from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL') then
+    insert into public.customers (tenant_id, name, tax_id, payment_terms)
+    values (v_med, 'Ferreteria El Martillo SRL', '131-22334-5', 30);
+  end if;
+
+  if not exists (select 1 from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL') then
+    insert into public.customers (tenant_id, name, tax_id, payment_terms)
+    values (v_med, 'Constructora Duarte SRL', '131-99887-6', 45);
+  end if;
+
   -- ── El colmado: lo minimo para dejar Excel ───────────────────────────
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
   values (v_pyme, 'pos', 'active', true)
@@ -108,7 +128,8 @@ begin
          (v_med, 'fixed-assets', 'active', true),
          (v_med, 'budgets', 'active', true),
          (v_med, 'cost-centers', 'active', true),
-         (v_med, 'multicurrency', 'active', true)
+         (v_med, 'multicurrency', 'active', true),
+         (v_med, 'payments', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -745,4 +766,48 @@ begin
     (v_med, 'USD', current_date - 15, 58.65),
     (v_med, 'USD', current_date - 2, 58.90)
   on conflict (tenant_id, currency_code, rate_date) do nothing;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Pasarelas de cobro: un link pendiente, uno ya pagado -para ensenar el
+--  estado terminal-, y un cobro recurrente ya vencido -para poder probar
+--  "generar cobros vencidos" en vivo sin esperar un mes-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_martillo uuid;
+  v_duarte   uuid;
+  v_nuevos   boolean := false;
+  v_pagado   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_martillo from public.customers
+    where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_duarte from public.customers
+    where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  if v_martillo is null or v_duarte is null then return; end if;
+
+  if not exists (select 1 from public.payment_links where tenant_id = v_med) then
+    v_nuevos := true;
+
+    insert into public.payment_links (tenant_id, customer_id, amount, description, expires_at)
+    values (v_med, v_martillo, 5000.00, 'Anticipo de pedido especial', current_date + 5);
+
+    insert into public.payment_links (tenant_id, customer_id, amount, description)
+    values (v_med, v_martillo, 2500.00, 'Servicio de instalacion') returning id into v_pagado;
+
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', gen_random_uuid(), 'app_metadata',
+        json_build_object('tenant_id', v_med, 'is_provider', false))::text, true);
+    perform public.mark_payment_link_paid(v_pagado, 2500.00, now() - interval '3 days');
+  end if;
+
+  if v_nuevos and not exists (select 1 from public.recurring_charges where tenant_id = v_med) then
+    insert into public.recurring_charges
+      (tenant_id, customer_id, amount, description, frequency, next_charge_date)
+    values (v_med, v_duarte, 3500.00, 'Mantenimiento mensual de equipos', 'monthly', current_date - 2);
+  end if;
 end $$;

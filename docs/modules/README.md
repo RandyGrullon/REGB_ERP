@@ -25,6 +25,7 @@ documento donde alguien va a buscar la verdad.
 | `budgets` | Presupuesto por cuenta y mes, real vs. plan (F6) | [budgets.md](budgets.md) |
 | `cost-centers` | Distribucion y prorrateo de gasto por centro (F6) | [cost-centers.md](cost-centers.md) |
 | `multicurrency` | Tasas de cambio, conversion y diferencia cambiaria (F6) | [multicurrency.md](multicurrency.md) |
+| `payments` | Links de cobro y cobro recurrente, confirmacion manual (F6) | [payments.md](payments.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -70,29 +71,32 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los catorce cubiertos.** 299 pruebas contra Postgres real (163
+- **RLS: los quince cubiertos.** 312 pruebas contra Postgres real (163
   de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por mora en
   `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
-  `cost-centers` + 8 de `multicurrency`). La numeración de
-  `purchase-orders` y de `accounting` se escribió con la guarda de tenant
-  y módulo activo desde la primera versión — el agujero que `sales-orders`
-  tuvo que tapar despues con la 0031 no llegó a existir en ninguna de las
-  dos. `accounting` sí encontró su propia variante al escribir el test de
-  aislamiento: colar una línea con el tenant propio pero apuntando a un
-  asiento o cuenta ajenos, tapada con una comprobación cruzada en el
-  trigger de inmutabilidad. `ap`, `treasury`, `bank-rec`, `fixed-assets`,
-  `budgets` y `cost-centers` aprendieron la lección de una vez: sus
-  triggers equivalentes (`impedir_pago_a_factura_ajena`,
-  `impedir_transaccion_cuenta_ajena`, `impedir_transferencia_cuenta_ajena`,
-  `impedir_import_cuenta_ajena`, `impedir_linea_ajena`,
-  `impedir_activo_ajeno`, `impedir_linea_presupuesto_ajena`,
-  `impedir_asignacion_centro_ajeno`) se escribieron desde el primer día,
-  no como corrección posterior. `multicurrency` encontró su propio
-  descuido -no un agujero de aislamiento, sino `currencies` con RLS
-  activo pero sin `FORCE`- atrapado por la red de seguridad
-  `isolation.test.ts` que corre contra todo el esquema `public`, no por un
-  test propio del módulo.
+  `cost-centers` + 8 de `multicurrency` + 13 de `payments`). La
+  numeración de `purchase-orders` y de `accounting` se escribió con la
+  guarda de tenant y módulo activo desde la primera versión — el agujero
+  que `sales-orders` tuvo que tapar despues con la 0031 no llegó a existir
+  en ninguna de las dos. `accounting` sí encontró su propia variante al
+  escribir el test de aislamiento: colar una línea con el tenant propio
+  pero apuntando a un asiento o cuenta ajenos, tapada con una comprobación
+  cruzada en el trigger de inmutabilidad. `ap`, `treasury`, `bank-rec`,
+  `fixed-assets`, `budgets`, `cost-centers` y `payments` aprendieron la
+  lección de una vez: sus triggers equivalentes
+  (`impedir_pago_a_factura_ajena`, `impedir_transaccion_cuenta_ajena`,
+  `impedir_transferencia_cuenta_ajena`, `impedir_import_cuenta_ajena`,
+  `impedir_linea_ajena`, `impedir_activo_ajeno`,
+  `impedir_linea_presupuesto_ajena`, `impedir_asignacion_centro_ajeno`,
+  `impedir_cliente_ajeno`) se escribieron desde el primer día, no como
+  corrección posterior. `multicurrency` encontró su propio descuido -no
+  un agujero de aislamiento, sino `currencies` con RLS activo pero sin
+  `FORCE`- atrapado por la red de seguridad `isolation.test.ts` que corre
+  contra todo el esquema `public`, no por un test propio del módulo.
+  `payments` destapó otra vez el bug de `demo.sql`: nunca creaba
+  `public.customers` para `distribuidora-caribe`, solo los seleccionaba
+  río abajo -mismo patrón que el bug de `warehouses` encontrado con `ap`.
 
 ---
 
