@@ -104,7 +104,8 @@ begin
          (v_med, 'accounting', 'active', true),
          (v_med, 'ap', 'active', true),
          (v_med, 'treasury', 'active', true),
-         (v_med, 'bank-rec', 'active', true)
+         (v_med, 'bank-rec', 'active', true),
+         (v_med, 'fixed-assets', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -559,4 +560,75 @@ begin
      -18700.00, 'pending', null),
     (v_med, v_import, v_operativa, current_date - 1, 'COMISION MANTENIMIENTO DE CUENTA',
      -150.00, 'pending', null);
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Activos fijos: un vehiculo activo con historial parcial en linea
+--  recta, y un equipo ya dado de baja que uso acelerada -para ensenar los
+--  dos metodos y los dos estados sin exagerar el volumen de datos-.
+--
+--  La depreciacion se inserta directo (no via run_fixed_asset_depreciation)
+--  porque aqui se simula HISTORIAL de meses pasados, no la corrida de hoy
+--  -exactamente la misma razon por la que accounting siembra su asiento ya
+--  contabilizado con draft->post en vez de nacerlo posteado-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med        uuid;
+  v_camioneta  uuid;
+  v_impresora  uuid;
+  v_nuevos     boolean := false;
+  v_periodo    date;
+  v_monto      numeric;
+  i            integer;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_camioneta from public.fixed_assets where tenant_id = v_med and code = 'VEH-001';
+  if v_camioneta is null then
+    insert into public.fixed_assets
+      (tenant_id, code, name, category, acquisition_date, acquisition_cost,
+       salvage_value, useful_life_months, depreciation_method)
+    values (v_med, 'VEH-001', 'Camioneta de reparto', 'vehicle', current_date - interval '10 months',
+            850000.00, 50000.00, 60, 'straight_line')
+    returning id into v_camioneta;
+    v_nuevos := true;
+  end if;
+
+  select id into v_impresora from public.fixed_assets where tenant_id = v_med and code = 'EQ-002';
+  if v_impresora is null then
+    insert into public.fixed_assets
+      (tenant_id, code, name, category, acquisition_date, acquisition_cost,
+       salvage_value, useful_life_months, depreciation_method)
+    values (v_med, 'EQ-002', 'Impresora fiscal anterior', 'equipment',
+            current_date - interval '3 years', 45000.00, 0, 36, 'declining_balance')
+    returning id into v_impresora;
+    v_nuevos := true;
+  end if;
+
+  if v_nuevos then
+    -- 3 meses de historial para la camioneta -sigue activa-.
+    for i in 1..3 loop
+      v_periodo := (date_trunc('month', current_date) - (i - 1) * interval '1 month' - interval '1 day')::date;
+      v_monto := public.fixed_asset_monthly_depreciation(v_camioneta);
+      insert into public.fixed_asset_depreciations (tenant_id, asset_id, period_date, amount)
+      values (v_med, v_camioneta, v_periodo, v_monto);
+    end loop;
+
+    -- 6 meses de historial para la impresora, y despues se da de baja.
+    for i in 1..6 loop
+      v_periodo := (date_trunc('month', current_date - interval '2 years')
+                    - (i - 1) * interval '1 month' - interval '1 day')::date;
+      v_monto := public.fixed_asset_monthly_depreciation(v_impresora);
+      insert into public.fixed_asset_depreciations (tenant_id, asset_id, period_date, amount)
+      values (v_med, v_impresora, v_periodo, v_monto);
+    end loop;
+
+    update public.fixed_assets
+    set status = 'disposed', disposed_at = current_date - interval '1 year',
+        disposed_amount = 2000.00,
+        disposed_reason = 'Cambiada por una impresora fiscal mas nueva, vendida como repuesto'
+    where id = v_impresora;
+  end if;
 end $$;

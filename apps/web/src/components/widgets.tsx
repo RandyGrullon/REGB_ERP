@@ -38,6 +38,8 @@ export interface DatosWidgets {
   flujoEnRojo: { semana: number | null; efectivoFinal: number }
   conciliacionPendiente: { cuenta: string; pendientes: number; monto: number }[]
   ultimoImport: { cuenta: string; hace: number } | null
+  activosValorLibros: number
+  activosPorDepreciarEsteMes: number
 }
 
 const money = (n: number) =>
@@ -81,6 +83,8 @@ export async function cargarDatosWidgets(
     flujoEnRojo: { semana: null, efectivoFinal: 0 },
     conciliacionPendiente: [],
     ultimoImport: null,
+    activosValorLibros: 0,
+    activosPorDepreciarEsteMes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -341,6 +345,28 @@ export async function cargarDatosWidgets(
       order by i.period_end desc, i.created_at desc
       limit 1`
     vacio.ultimoImport = u ? { cuenta: u.cuenta, hace: Number(u.hace) } : null
+  }
+
+  if (pidieron('fixed-assets-book-value')) {
+    const [a] = await tx<{ valor: string }[]>`
+      select coalesce(sum(public.fixed_asset_book_value(id)), 0)::text as valor
+      from public.fixed_assets where tenant_id = ${tenantId} and status = 'active'`
+    vacio.activosValorLibros = Number(a?.valor ?? 0)
+  }
+
+  if (pidieron('fixed-assets-due-this-month')) {
+    const finDeMes = new Date(Date.UTC(new Date().getFullYear(), new Date().getMonth() + 1, 0))
+      .toISOString()
+      .slice(0, 10)
+    const [d] = await tx<{ n: string }[]>`
+      select count(*)::text as n
+      from public.fixed_assets a
+      where a.tenant_id = ${tenantId} and a.status = 'active'
+        and not exists (
+          select 1 from public.fixed_asset_depreciations dep
+          where dep.asset_id = a.id and dep.period_date = ${finDeMes}::date)
+        and public.fixed_asset_monthly_depreciation(a.id) > 0`
+    vacio.activosPorDepreciarEsteMes = Number(d?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -745,6 +771,39 @@ const WIDGETS: Record<
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
             desde el cierre del ultimo import de {d.ultimoImport.cuenta}
+          </span>
+        </p>
+      ),
+  },
+
+  'fixed-assets-book-value': {
+    titulo: 'Activos fijos en libros',
+    icono: 'directions_car',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.activosValorLibros)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          valor en libros de los activos activos
+        </span>
+      </p>
+    ),
+  },
+
+  'fixed-assets-due-this-month': {
+    titulo: 'Depreciacion pendiente este mes',
+    icono: 'event_repeat',
+    render: (d) =>
+      d.activosPorDepreciarEsteMes === 0 ? (
+        <Vacio>Nada pendiente por correr este mes.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-warning)]">
+            {d.activosPorDepreciarEsteMes}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            activo{d.activosPorDepreciarEsteMes === 1 ? '' : 's'} sin depreciar todavia este mes
           </span>
         </p>
       ),
