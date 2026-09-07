@@ -34,6 +34,7 @@ documento donde alguien va a buscar la verdad.
 | `hr-portal` | Autoservicio: volantes, vacaciones, datos personales y anuncios (F7) | [hr-portal.md](hr-portal.md) |
 | `benefits` | Prestamos internos, adelantos y planes de seguro con aporte patronal (F7) | [benefits.md](benefits.md) |
 | `recruiting` | Vacantes, candidatos y pipeline de aplicaciones con maquina de estados (F7) | [recruiting.md](recruiting.md) |
+| `performance` | OKR con progreso derivado, evaluacion 360, 1:1 y planes de mejora (F7) | [performance.md](performance.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -79,14 +80,15 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintitrés cubiertos.** 401 pruebas contra Postgres real
+- **RLS: los veinticuatro cubiertos.** 415 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
   `cost-centers` + 8 de `multicurrency` + 13 de `payments` + 11 de
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
-  `benefits` + 11 de `recruiting`). La numeración de `purchase-orders` y de
+  `benefits` + 11 de `recruiting` + 14 de `performance`). La numeración
+  de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -107,7 +109,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_solicitud_ausencia_ajena`, `impedir_gasto_ajeno`,
   `impedir_prestamo_ajeno`, `impedir_pago_prestamo_ajeno`,
   `impedir_inscripcion_ajena`, `impedir_aplicacion_ajena`,
-  `impedir_entrevista_ajena`) se escribieron desde el primer día, no
+  `impedir_entrevista_ajena`, `impedir_objetivo_ajeno`,
+  `impedir_resultado_clave_ajeno`,
+  `impedir_referencia_ajena_empleado_desempeno`) se escribieron desde
+  el primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
   `insert`, porque `payroll_period_id` se rellena despues de crear la
@@ -178,6 +183,19 @@ patrones que `sales-orders` ya habia corregido.
   catálogo: este esquema nunca otorga acceso a datos de negocio al rol
   `anon` (regla establecida desde `0005_rls_policies.sql`), y una
   página de vacantes sin sesión rompería esa regla directamente-.
+  `performance` es el primer módulo de la serie donde la mayoría de las
+  tablas **no llevan** trigger de inmutabilidad, a propósito: un
+  objetivo se actualiza seguido, una nota de 1:1 se corrige después de
+  la reunión, y forzarlos a comportarse como un asiento contabilizado
+  no reflejaría cómo se usan de verdad. Solo `performance_reviews`
+  (inmutable desde el primer momento, sin condición de estado) y
+  `performance_improvement_plans` (editable mientras está `active`,
+  fijo una vez resuelto) lo necesitan, cada una con su propia razón. Su
+  única sonda de accesibilidad SÍ encontró un fallo real -un input y un
+  botón de guardar sin nombre accesible en la fila de progreso de un
+  resultado clave, el `<Icon>` bastaba visualmente pero no aportaba
+  nombre accesible por ir con `aria-hidden`-, corregido con `aria-label`
+  antes de dar el módulo por terminado.
 
 ---
 

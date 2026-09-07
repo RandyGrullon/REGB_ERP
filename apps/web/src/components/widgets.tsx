@@ -6,6 +6,7 @@ import {
   firstShortfallWeek,
   horaEsperadaEnRD,
   lateMinutes,
+  progresoObjetivo,
   saldoPrestamo,
   totalAportePatronal,
 } from '@regb/operations'
@@ -72,6 +73,8 @@ export interface DatosWidgets {
   costoBeneficiosMensual: number
   vacantesAbiertas: number
   pipelinePorVacante: { title: string; n: number }[]
+  objetivosConProgreso: { title: string; progreso: number }[]
+  planesDeMejoraActivos: number
 }
 
 const money = (n: number) =>
@@ -152,6 +155,8 @@ export async function cargarDatosWidgets(
     costoBeneficiosMensual: 0,
     vacantesAbiertas: 0,
     pipelinePorVacante: [],
+    objetivosConProgreso: [],
+    planesDeMejoraActivos: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -710,6 +715,33 @@ export async function cargarDatosWidgets(
       order by count(a.id) desc
       limit 5`
     vacio.pipelinePorVacante = filas.map((f) => ({ title: f.title, n: Number(f.n) }))
+  }
+
+  if (pidieron('objectives-progress')) {
+    const objetivos = await tx<{ id: string; title: string }[]>`
+      select id, title from public.performance_objectives
+      where tenant_id = ${tenantId} and status = 'active'
+      order by created_at desc limit 5`
+    const krs = await tx<{ objective_id: string; current_value: string; target_value: string }[]>`
+      select objective_id, current_value::text, target_value::text from public.performance_key_results
+      where tenant_id = ${tenantId}`
+    const krsPorObjetivo = new Map<string, { current: number; target: number }[]>()
+    for (const k of krs) {
+      const lista = krsPorObjetivo.get(k.objective_id) ?? []
+      lista.push({ current: Number(k.current_value), target: Number(k.target_value) })
+      krsPorObjetivo.set(k.objective_id, lista)
+    }
+    vacio.objetivosConProgreso = objetivos.map((o) => ({
+      title: o.title,
+      progreso: progresoObjetivo(krsPorObjetivo.get(o.id) ?? []),
+    }))
+  }
+
+  if (pidieron('improvement-plans-active')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.performance_improvement_plans
+      where tenant_id = ${tenantId} and status = 'active'`
+    vacio.planesDeMejoraActivos = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1520,6 +1552,42 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'objectives-progress': {
+    titulo: 'Progreso de objetivos',
+    icono: 'trending_up',
+    render: (d) =>
+      d.objetivosConProgreso.length === 0 ? (
+        <Vacio>Ningun objetivo activo todavia.</Vacio>
+      ) : (
+        <ul>
+          {d.objetivosConProgreso.map((o, i) => (
+            <Fila key={i} izq={o.title} der={`${o.progreso}%`} />
+          ))}
+        </ul>
+      ),
+  },
+
+  'improvement-plans-active': {
+    titulo: 'Planes de mejora activos',
+    icono: 'assignment',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.planesDeMejoraActivos > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.planesDeMejoraActivos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.planesDeMejoraActivos === 0 ? 'nadie en plan de mejora' : 'en seguimiento'}
+        </span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

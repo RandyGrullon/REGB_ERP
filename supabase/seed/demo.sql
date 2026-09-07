@@ -137,7 +137,8 @@ begin
          (v_med, 'expenses', 'active', true),
          (v_med, 'hr-portal', 'active', true),
          (v_med, 'benefits', 'active', true),
-         (v_med, 'recruiting', 'active', true)
+         (v_med, 'recruiting', 'active', true),
+         (v_med, 'performance', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1276,5 +1277,47 @@ begin
 
     insert into public.recruiting_applications (tenant_id, position_id, candidate_id, stage)
     values (v_med, v_vacante, v_candidato2, 'applied');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Desempeno: un objetivo con dos resultados clave en progreso parcial,
+--  un 1:1 agendado, dos evaluaciones del mismo ciclo -para ver el
+--  promedio 360-, y un plan de mejora activo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael
+  v_cajera    uuid; -- Yolanda
+  v_objetivo  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_encargada is null or v_cajera is null then return; end if;
+
+  if not exists (
+    select 1 from public.performance_objectives where tenant_id = v_med and employee_id = v_encargada
+  ) then
+    insert into public.performance_objectives (tenant_id, employee_id, title, period)
+    values (v_med, v_encargada, 'Mejorar la satisfaccion del cliente', '2026-Q3')
+    returning id into v_objetivo;
+
+    insert into public.performance_key_results (tenant_id, objective_id, description, target_value, current_value, unit)
+    values (v_med, v_objetivo, 'Encuestas de satisfaccion completadas', 50, 32, 'encuestas'),
+           (v_med, v_objetivo, 'Calificacion promedio de satisfaccion', 4.5, 4.1, 'estrellas');
+
+    insert into public.performance_one_on_ones (tenant_id, employee_id, scheduled_at)
+    values (v_med, v_encargada, now() + interval '2 days');
+
+    insert into public.performance_reviews (tenant_id, employee_id, cycle, review_type, reviewer_name, rating, comments)
+    values (v_med, v_encargada, '2026-Q3', 'self', 'Rafael Encarnacion', 4, 'Buen trimestre, mejorando la atencion.'),
+           (v_med, v_encargada, '2026-Q3', 'manager', 'Maria Rosario', 5, 'Excelente liderazgo del equipo de ventas.');
+
+    insert into public.performance_improvement_plans (tenant_id, employee_id, reason, goals, start_date, end_date)
+    values (v_med, v_cajera, 'Llegadas tarde recurrentes', 'Llegar a tiempo las proximas 4 semanas', current_date - 5, current_date + 25);
   end if;
 end $$;
