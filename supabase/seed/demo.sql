@@ -153,7 +153,8 @@ begin
          (v_med, 'logistics', 'active', true),
          (v_med, 'bom', 'active', true),
          (v_med, 'manufacturing', 'active', true),
-         (v_med, 'mrp', 'active', true)
+         (v_med, 'mrp', 'active', true),
+         (v_med, 'quality', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -986,6 +987,58 @@ begin
       (v_run, v_med, v_var_ref, 'produce', 20),
       (v_run, v_med, v_varilla, 'purchase', 20),
       (v_run, v_med, v_pintura, 'purchase', 4.5);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Control de calidad (modulo 58): un plan de inspeccion de recepcion
+--  para el cemento con dos criterios -uno critico-, y una inspeccion
+--  real ya reprobada por el criterio critico (empaque humedo), con su
+--  no conformidad abierta en 'investigating' -lista para crear el CAPA
+--  en vivo, sin resolver nada de antemano-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_cemento     uuid;
+  v_plan        uuid;
+  v_crit_empaque uuid;
+  v_crit_fecha  uuid;
+  v_inspeccion  uuid;
+  v_nc          uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  if v_cemento is null then return; end if;
+
+  if not exists (select 1 from public.inspection_plans where tenant_id = v_med and name = 'Recepcion de cemento') then
+    insert into public.inspection_plans (tenant_id, name, scope, product_id)
+    values (v_med, 'Recepcion de cemento', 'receiving', v_cemento)
+    returning id into v_plan;
+
+    insert into public.inspection_plan_criteria (plan_id, tenant_id, criterion, is_critical, sort_order)
+    values
+      (v_plan, v_med, 'Empaque sin humedad ni roturas', true, 1)
+      returning id into v_crit_empaque;
+    insert into public.inspection_plan_criteria (plan_id, tenant_id, criterion, is_critical, sort_order)
+    values
+      (v_plan, v_med, 'Fecha de fabricacion legible', false, 2)
+      returning id into v_crit_fecha;
+
+    insert into public.inspections (tenant_id, plan_id, product_id, result, notes)
+    values (v_med, v_plan, v_cemento, 'failed', 'Dos fundas del lote llegaron con el empaque mojado')
+    returning id into v_inspeccion;
+
+    insert into public.inspection_results (inspection_id, tenant_id, criterion, is_critical, passed)
+    values
+      (v_inspeccion, v_med, 'Empaque sin humedad ni roturas', true, false),
+      (v_inspeccion, v_med, 'Fecha de fabricacion legible', false, true);
+
+    insert into public.non_conformances (tenant_id, description, severity, status, inspection_id)
+    values (v_med, 'Cemento recibido con el empaque mojado -riesgo de fragua prematura-', 'major', 'investigating', v_inspeccion)
+    returning id into v_nc;
   end if;
 end $$;
 

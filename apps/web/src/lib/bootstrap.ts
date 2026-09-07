@@ -43,6 +43,7 @@ import logisticsManifest from '@regb/mod-logistics'
 import bomManifest from '@regb/mod-bom'
 import manufacturingManifest from '@regb/mod-manufacturing'
 import mrpManifest from '@regb/mod-mrp'
+import qualityManifest from '@regb/mod-quality'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -130,6 +131,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     bomManifest,
     manufacturingManifest,
     mrpManifest,
+    qualityManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

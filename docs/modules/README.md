@@ -50,6 +50,7 @@ documento donde alguien va a buscar la verdad.
 | `bom` | Costeo multinivel real, versiones y sustitutos de lista de materiales (F8.5) | [bom.md](bom.md) |
 | `manufacturing` | Lanzamiento, consumo real, avance y mermas de ordenes de produccion (F8.5) | [manufacturing.md](manufacturing.md) |
 | `mrp` | Explosion de necesidades multinivel real y sugerencias de comprar o producir, nunca automaticas (F8.5) | [mrp.md](mrp.md) |
+| `quality` | Planes de inspeccion, resultado no binario, no conformidad y CAPA con maquina de estados (F8.5) | [quality.md](quality.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -95,7 +96,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y nueve cubiertos.** 598 pruebas contra Postgres real
+- **RLS: los cuarenta cubiertos.** 614 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -107,7 +108,7 @@ patrones que `sales-orders` ya habia corregido.
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
-  `manufacturing` + 10 de `mrp`). La numeración
+  `manufacturing` + 10 de `mrp` + 16 de `quality`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -161,7 +162,12 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_reporte_ajeno`, `impedir_editar_orden_produccion_resuelta`,
   `impedir_editar_linea_produccion`, `impedir_editar_reporte`,
   `impedir_producto_ajeno_corrida_mrp`, `impedir_referencia_ajena_sugerencia_mrp`,
-  `impedir_editar_corrida_mrp`, `impedir_editar_sugerencia_resuelta`) se
+  `impedir_editar_corrida_mrp`, `impedir_editar_sugerencia_resuelta`,
+  `impedir_referencia_ajena_criterio`, `impedir_referencia_ajena_inspeccion`,
+  `impedir_referencia_ajena_resultado`, `impedir_referencia_ajena_no_conformidad`,
+  `impedir_no_conformidad_ajena_capa`, `impedir_producto_ajeno_certificado`,
+  `impedir_editar_inspeccion`, `impedir_editar_no_conformidad_resuelta`,
+  `impedir_editar_capa_cerrado`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -496,7 +502,30 @@ patrones que `sales-orders` ya habia corregido.
   confirmada abriendo su propio detalle; descartar la de pintura la
   dejó sin ningún efecto -las tres revertidas después, para que la
   corrida sembrada siga siendo el punto de partida de una demostración
-  desde cero-.
+  desde cero-. `quality` cierra F8.5 con un resultado de inspección
+  que deliberadamente NO es binario: `resultadoInspeccion()` reprueba
+  la inspección ENTERA si un criterio marcado como crítico reprueba,
+  pero deja un criterio menor reprobado como "condicional" -aprobada
+  con salvedad, no reprobada de plano-. A diferencia de `mrp`, este
+  módulo NO exige `manufacturing` -una inspección de recepción sirve
+  para cualquier distribuidor, fabrique o no-, solo lo recomienda. Sus
+  dos máquinas de estados se refuerzan entre sí: una no conformidad no
+  se cierra directo -tiene que pasar por un CAPA con causa raíz y
+  acción correctiva-, y un CAPA no se cierra sin verificar primero que
+  la corrección funcionó; cerrar el CAPA cierra su no conformidad en
+  la MISMA transacción, no en dos pasos que alguien podría dejar
+  desincronizados. Verificado en vivo sobre el plan y la no
+  conformidad sembrados (cemento recibido con el empaque mojado,
+  reprobado por el criterio crítico): creado el CAPA -la no
+  conformidad pasó a `capa_created` en el mismo paso-, avanzado
+  `open → in_progress → verified → closed`, con la no conformidad
+  cerrándose sola junto con el CAPA; y una segunda inspección de
+  prueba con ambos criterios aprobados confirmó el otro lado de
+  `resultadoInspeccion()` (`passed`, tasa de aprobación de 0% a 50%).
+  Ambas pruebas revertidas después -el CAPA borrado, la no conformidad
+  devuelta a `investigating`, la inspección de prueba borrada- para
+  que la no conformidad sembrada siga siendo un problema real por
+  resolver, no uno ya resuelto de antemano.
 
 ---
 
