@@ -141,7 +141,9 @@ begin
          (v_med, 'performance', 'active', true),
          (v_med, 'training', 'active', true),
          (v_med, 'suppliers', 'active', true),
-         (v_med, 'price-lists', 'active', true)
+         (v_med, 'price-lists', 'active', true),
+         (v_med, 'requisitions', 'active', true),
+         (v_med, 'rfq', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1469,5 +1471,84 @@ begin
 
     insert into public.price_list_entries (tenant_id, price_list_id, product_id, min_quantity, unit_price)
     values (v_med, v_lista_canal, v_pintura, 1, 1100);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Requisiciones: una pendiente por aprobar, una ya aprobada y
+--  convertida en orden, una rechazada -los tres desenlaces de una vez-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael
+  v_cajera    uuid; -- Yolanda
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_encargada is null or v_cajera is null then return; end if;
+
+  if not exists (select 1 from public.purchase_requisitions where tenant_id = v_med) then
+    insert into public.purchase_requisitions (tenant_id, employee_id, department, description, estimated_amount, status)
+    values (v_med, v_cajera, 'Ventas', 'Papeleria y utiles de oficina para el mes', 3500, 'pending');
+
+    insert into public.purchase_requisitions
+      (tenant_id, employee_id, department, description, estimated_amount, status,
+       approved_by, approved_at, po_reference)
+    values (v_med, v_encargada, 'Operaciones', 'Reposicion de cemento y varillas', 45000, 'converted',
+            v_encargada, now() - interval '5 days', 'OC-2026-00012');
+
+    insert into public.purchase_requisitions
+      (tenant_id, employee_id, department, description, estimated_amount, status,
+       approved_by, approved_at, decision_note)
+    values (v_med, v_cajera, 'Ventas', 'Cambiar el aire acondicionado de la sucursal', 85000, 'rejected',
+            v_encargada, now() - interval '8 days', 'Se pospone para el proximo trimestre, no es urgente.');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  RFQ: un segundo proveedor -para tener con quien comparar-, un RFQ
+--  abierto con dos cotizaciones -donde gana el monto mas bajo aunque no
+--  sea el proveedor ya homologado-, y uno ya adjudicado.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med          uuid;
+  v_prov1        uuid; -- Materiales Del Este SRL, ya homologado
+  v_prov2        uuid;
+  v_rfq_abierto  uuid;
+  v_rfq_cerrado  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_prov1 from public.suppliers where tenant_id = v_med and code = 'PROV-001';
+  if v_prov1 is null then return; end if;
+
+  if not exists (select 1 from public.rfqs where tenant_id = v_med) then
+    insert into public.suppliers (tenant_id, code, name, tax_id)
+    values (v_med, 'PROV-002', 'Ferreteria Central Import SRL', '101-99887-3')
+    returning id into v_prov2;
+
+    insert into public.rfqs (tenant_id, title, description, deadline)
+    values (v_med, 'Cotizacion de cemento y varillas', 'Reposicion de inventario para el proximo trimestre', current_date + 10)
+    returning id into v_rfq_abierto;
+
+    insert into public.rfq_invitations (tenant_id, rfq_id, supplier_id)
+    values (v_med, v_rfq_abierto, v_prov1), (v_med, v_rfq_abierto, v_prov2);
+
+    insert into public.rfq_quotes (tenant_id, rfq_id, supplier_id, total_amount, lead_time_days, notes)
+    values (v_med, v_rfq_abierto, v_prov1, 45000, 10, 'Precio de siempre, entrega en camion propio'),
+           (v_med, v_rfq_abierto, v_prov2, 43000, 15, 'Precio mas bajo pero entrega mas lenta');
+
+    insert into public.rfqs (tenant_id, title, status, awarded_supplier_id, awarded_at)
+    values (v_med, 'Cotizacion de pintura para el segundo trimestre', 'awarded', v_prov1, now() - interval '20 days')
+    returning id into v_rfq_cerrado;
+
+    insert into public.rfq_quotes (tenant_id, rfq_id, supplier_id, total_amount, lead_time_days)
+    values (v_med, v_rfq_cerrado, v_prov1, 12000, 5);
   end if;
 end $$;

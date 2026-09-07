@@ -82,6 +82,8 @@ export interface DatosWidgets {
   proveedoresPendientes: number
   documentosProveedorPorVencer: { name: string; vence: string }[]
   listasPrecioVigentes: number
+  requisicionesPendientes: number
+  rfqsAbiertos: number
 }
 
 const money = (n: number) =>
@@ -169,6 +171,8 @@ export async function cargarDatosWidgets(
     proveedoresPendientes: 0,
     documentosProveedorPorVencer: [],
     listasPrecioVigentes: 0,
+    requisicionesPendientes: 0,
+    rfqsAbiertos: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -828,6 +832,19 @@ export async function cargarDatosWidgets(
         hoy,
       ),
     ).length
+  }
+
+  if (pidieron('requisitions-pending')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.purchase_requisitions
+      where tenant_id = ${tenantId} and status = 'pending'`
+    vacio.requisicionesPendientes = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('rfqs-open')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.rfqs where tenant_id = ${tenantId} and status = 'open'`
+    vacio.rfqsAbiertos = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1749,6 +1766,38 @@ const WIDGETS: Record<
           {d.listasPrecioVigentes}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">activas hoy</span>
+      </p>
+    ),
+  },
+
+  'requisitions-pending': {
+    titulo: 'Requisiciones por aprobar',
+    icono: 'assignment',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.requisicionesPendientes > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.requisicionesPendientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.requisicionesPendientes === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'rfqs-open': {
+    titulo: 'RFQ abiertos',
+    icono: 'compare_arrows',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">{d.rfqsAbiertos}</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">esperando cotizaciones</span>
       </p>
     ),
   },

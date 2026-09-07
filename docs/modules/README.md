@@ -38,6 +38,8 @@ documento donde alguien va a buscar la verdad.
 | `training` | Cursos con aprobacion contra el minimo real, certificados y matriz de competencias (F7) | [training.md](training.md) |
 | `suppliers` | Documentos con vigencia calculada, cuentas bancarias y evaluacion de proveedores (F8) | [suppliers.md](suppliers.md) |
 | `price-lists` | Precio por cliente, canal o volumen con precedencia real (F8) | [price-lists.md](price-lists.md) |
+| `requisitions` | Pedir antes de comprar, con aprobacion por monto real -el limite de cada rol decide- (F8) | [requisitions.md](requisitions.md) |
+| `rfq` | Comparar cotizaciones de proveedores con un ganador que elige siempre la misma regla (F8) | [rfq.md](rfq.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -83,7 +85,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintisiete cubiertos.** 455 pruebas contra Postgres real
+- **RLS: los veintinueve cubiertos.** 478 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -91,7 +93,8 @@ patrones que `sales-orders` ya habia corregido.
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
-  `training` + 14 de `suppliers` + 12 de `price-lists`). La numeración
+  `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
+  `requisitions` + 12 de `rfq`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -119,7 +122,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_inscripcion_curso_ajena`, `impedir_certificado_ajeno`,
   `impedir_competencia_ajena`, `impedir_referencia_ajena_proveedor`,
   `impedir_lista_precio_ajena`, `impedir_entrada_lista_precio_ajena`,
-  `impedir_lista_precio_ajena_en_cliente`) se escribieron desde el
+  `impedir_lista_precio_ajena_en_cliente`, `impedir_requisicion_ajena`,
+  `impedir_editar_requisicion_resuelta`, `impedir_rfq_ajeno`,
+  `impedir_referencia_ajena_rfq`, `impedir_editar_cotizacion`,
+  `impedir_editar_rfq_resuelto`) se escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
@@ -234,6 +240,38 @@ patrones que `sales-orders` ya habia corregido.
   `customers.price_list_id`, la primera vez en la serie 0031-0062 que
   el agujero de referencia cruzada aparece en una columna agregada
   *después* a una tabla que ya existía, no en la tabla original.
+  `requisitions` reutiliza infraestructura en vez de inventar una
+  nueva: aprobar una requisicion llama al mismo mecanismo `max_amount`
+  que ya vive en `@regb/permissions` desde antes de esta fase -si el
+  límite del rol no alcanza, `can()` lo rechaza con
+  `amount-exceeded`; un rol sin ese límite aprueba en su lugar-, así
+  que la "jerarquía de aprobación" del catálogo es el sistema de
+  roles mismo, no una tabla de cadena de aprobación aparte. Pero
+  también encontró un bug real de aplicación, no de seguridad:
+  `approved_by` se definió copiando sin pensar el patrón de
+  `employee_id` -una FK a `public.employees(id)`-, cuando quien
+  aprueba en realidad es el usuario autenticado
+  (`ctx.userId`, de `user_profiles`), casi nunca una fila de
+  `employees`. El resultado: **ningún rol podía aprobar ninguna
+  requisición**, porque el `UPDATE` violaba la FK casi siempre. Se
+  encontró probando el flujo completo en el navegador -Owner
+  intentando aprobar y la fila quedándose en `pending` sin ningún
+  error visible, porque el `<form action>` que envuelve la acción
+  descarta el `ActionResult`-, y se corrigió quitando la FK y la
+  validación cruzada de `approved_by`, adoptando el mismo criterio ya
+  usado en `decided_by` de `time-off` (0054) y `expenses` (0055): un
+  uuid sin FK, porque su tenant ya lo garantiza la sesión bajo la que
+  corre `asUser()`. `rfq` no encontró bugs nuevos, pero sí reafirma
+  dos patrones: `rfq_quotes` es inmutable desde el primer insert, sin
+  condición -una cotización registrada es un hecho histórico de lo
+  que un proveedor ofreció, no un borrador-, y el "portal de
+  proveedor" del catálogo deliberadamente no se construye, por la
+  misma regla de `recruiting`: nunca se otorga acceso a datos de
+  negocio al rol `anon`. Verificado en vivo que el comparativo
+  `mejorCotizacion()` elige siempre el monto más bajo -con dos
+  cotizaciones sembradas a propósito donde la más barata entrega más
+  lento, confirmando que el precio manda sobre el plazo de entrega- y
+  que adjudicar deja el RFQ inmutable.
 
 ---
 

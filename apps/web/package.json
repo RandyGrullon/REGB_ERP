@@ -38,6 +38,8 @@
     "@regb/mod-training": "workspace:*",
     "@regb/mod-suppliers": "workspace:*",
     "@regb/mod-price-lists": "workspace:*",
+    "@regb/mod-requisitions": "workspace:*",
+    "@regb/mod-rfq": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

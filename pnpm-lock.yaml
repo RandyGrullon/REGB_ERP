@@ -167,6 +167,12 @@ importers:
       '@regb/mod-recruiting':
         specifier: workspace:*
         version: link:../../modules/recruiting
+      '@regb/mod-requisitions':
+        specifier: workspace:*
+        version: link:../../modules/requisitions
+      '@regb/mod-rfq':
+        specifier: workspace:*
+        version: link:../../modules/rfq
       '@regb/mod-sales-orders':
         specifier: workspace:*
         version: link:../../modules/sales-orders
@@ -654,6 +660,32 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/recruiting:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/requisitions:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/rfq:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
