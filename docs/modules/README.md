@@ -47,6 +47,7 @@ documento donde alguien va a buscar la verdad.
 | `barcode` | EAN-13 real, etiquetas con el codigo dibujado y escaneo con la camara (F8) | [barcode.md](barcode.md) |
 | `fleet` | Vehiculos, combustible, mantenimiento vencido, documentos y multas (F8) | [fleet.md](fleet.md) |
 | `logistics` | Planificacion de rutas y prueba de entrega real -sin GPS ni optimizacion falsos- (F8) | [logistics.md](logistics.md) |
+| `bom` | Costeo multinivel real, versiones y sustitutos de lista de materiales (F8.5) | [bom.md](bom.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -92,7 +93,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y seis cubiertos.** 564 pruebas contra Postgres real
+- **RLS: los treinta y siete cubiertos.** 575 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -103,7 +104,7 @@ patrones que `sales-orders` ya habia corregido.
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
-  `barcode` + 16 de `fleet` + 10 de `logistics`). La numeración
+  `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -150,7 +151,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_combustible`, `impedir_editar_mantenimiento`,
   `impedir_editar_multa_resuelta`, `impedir_ruta_ajena`,
   `impedir_referencia_ajena_parada`, `impedir_editar_ruta_resuelta`,
-  `impedir_editar_parada_resuelta`) se
+  `impedir_editar_parada_resuelta`, `impedir_bom_ajeno`,
+  `impedir_referencia_ajena_linea_bom`, `impedir_editar_bom_no_borrador`,
+  `impedir_editar_linea_bom_no_borrador`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -425,6 +428,27 @@ patrones que `sales-orders` ya habia corregido.
   en vivo: una parada pendiente resuelta con su prueba de entrega, la
   ruta completada, y una ruta en planificación despachada -todo
   confirmado inmutable después y restaurado al canónico de la siembra-.
+  `bom` cierra el bloque de manufactura declarando costeo MULTINIVEL de
+  verdad: `costoUnitarioMultinivel()` es una función recursiva pura que
+  expande un componente con su propia receta en vez de asumir que todo
+  se compra ya terminado. Verificado en vivo con un caso real de dos
+  niveles (un "kit básico de reparación" que usa una "varilla
+  reforzada" con su propia receta): el costo se calculó en
+  RD$1,081.00, y para confirmar que la recursión era genuina -no una
+  coincidencia entre el costo directo declarado del sub-ensamble y su
+  costo calculado, que se hicieron coincidir a propósito en la
+  siembra- se alteró temporalmente una cantidad dentro de la receta
+  del sub-ensamble: el costo del padre cambió de inmediato a
+  RD$1,793.00, confirmando que de verdad recorre el árbol. Solo una
+  versión por producto puede estar `active` a la vez (índice único
+  parcial), y un BOM deja de ser editable en cuanto sale de `draft`
+  -con una excepción deliberada: la transición `active → obsolete` al
+  activar una versión nueva del mismo producto SÍ se permite, porque
+  es el ciclo de vida esperado, no una corrección-. Un trigger bloquea
+  el caso directo de un producto como componente de sí mismo; ciclos
+  más profundos entre varios productos no se detectan, declarado
+  explícitamente, con un tope de profundidad como red de seguridad en
+  el resolvedor de costo.
 
 ---
 

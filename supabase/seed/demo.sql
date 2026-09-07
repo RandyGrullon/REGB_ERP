@@ -150,7 +150,8 @@ begin
          (v_med, 'stock-counts', 'active', true),
          (v_med, 'barcode', 'active', true),
          (v_med, 'fleet', 'active', true),
-         (v_med, 'logistics', 'active', true)
+         (v_med, 'logistics', 'active', true),
+         (v_med, 'bom', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -833,6 +834,75 @@ begin
 
     insert into public.route_stops (route_id, tenant_id, sequence, address, customer_id)
     values (v_ruta_plan, v_med, 1, 'Av. 27 de Febrero 45, Santo Domingo', v_martillo);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Lista de materiales (modulo 55): un sub-ensamble ya activo (varilla
+--  reforzada, con su PROPIA receta) y un producto terminado -kit
+--  basico de reparacion- cuyo BOM sigue en borrador con sus tres
+--  componentes ya agregados, incluyendo el sub-ensamble -para activar
+--  en vivo y ver el costeo MULTINIVEL resolverse solo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med        uuid;
+  v_cemento    uuid;
+  v_varilla    uuid;
+  v_pintura    uuid;
+  v_var_ref    uuid;
+  v_kit        uuid;
+  v_bom_varref uuid;
+  v_bom_kit    uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  select id into v_varilla from public.products where tenant_id = v_med and sku = 'VAR-200';
+  select id into v_pintura from public.products where tenant_id = v_med and sku = 'PIN-300';
+  if v_cemento is null or v_varilla is null or v_pintura is null then return; end if;
+
+  insert into public.products (tenant_id, sku, name, category, unit, price, cost)
+  values (v_med, 'VAR-REF', 'Varilla reforzada y recubierta', 'Construccion', 'unidad', 380.00, 329.00)
+  on conflict (tenant_id, sku) do nothing
+  returning id into v_var_ref;
+  if v_var_ref is null then
+    select id into v_var_ref from public.products where tenant_id = v_med and sku = 'VAR-REF';
+  end if;
+
+  insert into public.products (tenant_id, sku, name, category, unit, price, cost)
+  values (v_med, 'KIT-100', 'Kit basico de reparacion', 'Construccion', 'kit', 1400.00, 0)
+  on conflict (tenant_id, sku) do nothing
+  returning id into v_kit;
+  if v_kit is null then
+    select id into v_kit from public.products where tenant_id = v_med and sku = 'KIT-100';
+  end if;
+
+  -- Sub-ensamble ya activo: varilla + un poco de pintura como recubrimiento.
+  if not exists (select 1 from public.bill_of_materials where tenant_id = v_med and product_id = v_var_ref) then
+    insert into public.bill_of_materials (tenant_id, product_id, version, status, output_qty)
+    values (v_med, v_var_ref, 1, 'active', 1)
+    returning id into v_bom_varref;
+
+    insert into public.bom_lines (bom_id, tenant_id, component_product_id, quantity_per_unit)
+    values
+      (v_bom_varref, v_med, v_varilla, 1),
+      (v_bom_varref, v_med, v_pintura, 0.1);
+  end if;
+
+  -- Kit terminado, todavia en borrador -para activar en vivo-: usa el
+  -- sub-ensamble de arriba, asi que su costo depende de otro BOM.
+  if not exists (select 1 from public.bill_of_materials where tenant_id = v_med and product_id = v_kit) then
+    insert into public.bill_of_materials (tenant_id, product_id, version, status, output_qty)
+    values (v_med, v_kit, 1, 'draft', 1)
+    returning id into v_bom_kit;
+
+    insert into public.bom_lines (bom_id, tenant_id, component_product_id, quantity_per_unit)
+    values
+      (v_bom_kit, v_med, v_cemento, 0.5),
+      (v_bom_kit, v_med, v_var_ref, 2),
+      (v_bom_kit, v_med, v_pintura, 0.25);
   end if;
 end $$;
 
