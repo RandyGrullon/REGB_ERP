@@ -3,6 +3,7 @@ import {
   buildBudgetVsActual,
   buildCashFlowProjection,
   daysSinceRate,
+  equipoRequiereMantenimiento,
   firstShortfallWeek,
   horaEsperadaEnRD,
   lateMinutes,
@@ -95,6 +96,7 @@ export interface DatosWidgets {
   ordenesProduccionEnProgreso: number
   sugerenciasMrpPendientes: number
   capasAbiertosCalidad: number
+  equiposMantenimientoVencido: number
 }
 
 const money = (n: number) =>
@@ -195,6 +197,7 @@ export async function cargarDatosWidgets(
     ordenesProduccionEnProgreso: 0,
     sugerenciasMrpPendientes: 0,
     capasAbiertosCalidad: 0,
+    equiposMantenimientoVencido: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -951,6 +954,34 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.capas
       where tenant_id = ${tenantId} and status != 'closed'`
     vacio.capasAbiertosCalidad = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('maintenance-overdue-equipment')) {
+    const equipos = await tx<
+      {
+        usage_hours: string
+        last_service_usage: string | null
+        maintenance_interval_usage: string | null
+        last_service_at: string | null
+        maintenance_interval_days: number | null
+      }[]
+    >`
+      select usage_hours::text, last_service_usage::text, maintenance_interval_usage::text,
+             last_service_at::text, maintenance_interval_days
+      from public.equipment where tenant_id = ${tenantId} and status = 'active'`
+    vacio.equiposMantenimientoVencido = equipos.filter((e) => {
+      const fechaLimite =
+        e.maintenance_interval_days && e.last_service_at
+          ? new Date(new Date(e.last_service_at).getTime() + e.maintenance_interval_days * 86_400_000)
+          : null
+      return equipoRequiereMantenimiento(
+        Number(e.usage_hours),
+        Number(e.last_service_usage ?? 0),
+        Number(e.maintenance_interval_usage ?? Infinity),
+        fechaLimite,
+        new Date(),
+      )
+    }).length
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2066,6 +2097,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.capasAbiertosCalidad === 0 ? 'nada pendiente de verificar' : 'sin verificar o cerrar'}
+        </span>
+      </p>
+    ),
+  },
+
+  'maintenance-overdue-equipment': {
+    titulo: 'Equipos con mantenimiento vencido',
+    icono: 'build',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.equiposMantenimientoVencido}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.equiposMantenimientoVencido === 0 ? 'todo al dia' : 'por uso o por fecha'}
         </span>
       </p>
     ),

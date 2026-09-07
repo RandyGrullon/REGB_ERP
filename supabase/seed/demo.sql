@@ -154,7 +154,8 @@ begin
          (v_med, 'bom', 'active', true),
          (v_med, 'manufacturing', 'active', true),
          (v_med, 'mrp', 'active', true),
-         (v_med, 'quality', 'active', true)
+         (v_med, 'quality', 'active', true),
+         (v_med, 'maintenance', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1039,6 +1040,43 @@ begin
     insert into public.non_conformances (tenant_id, description, severity, status, inspection_id)
     values (v_med, 'Cemento recibido con el empaque mojado -riesgo de fragua prematura-', 'major', 'investigating', v_inspeccion)
     returning id into v_nc;
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Mantenimiento / CMMS (modulo 59): un compresor con mantenimiento
+--  YA VENCIDO por uso (1,200 horas acumuladas contra un intervalo de
+--  1,000 desde el ultimo servicio), dos fallas correctivas historicas
+--  ya completadas -para que el MTBF tenga con que calcularse- y una
+--  orden correctiva ABIERTA real, lista para trabajar en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med    uuid;
+  v_equipo uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.equipment where tenant_id = v_med and code = 'CMP-01') then
+    insert into public.equipment
+      (tenant_id, code, name, location, usage_hours, last_service_at, last_service_usage,
+       maintenance_interval_usage, maintenance_interval_days)
+    values
+      (v_med, 'CMP-01', 'Compresor de aire', 'Almacen Santo Domingo', 1200,
+       current_date - 90, 100, 1000, 180)
+    returning id into v_equipo;
+
+    insert into public.work_orders
+      (tenant_id, equipment_id, type, status, priority, description, opened_at, completed_at)
+    values
+      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Correa floja -tensada-',
+       now() - interval '75 days', now() - interval '75 days' + interval '2 hours'),
+      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Filtro de aire obstruido -reemplazado-',
+       now() - interval '30 days', now() - interval '30 days' + interval '1 hour');
+
+    insert into public.work_orders (tenant_id, equipment_id, type, priority, description)
+    values (v_med, v_equipo, 'corrective', 'high', 'Fuga de aceite visible en la base del compresor');
   end if;
 end $$;
 

@@ -51,6 +51,7 @@ documento donde alguien va a buscar la verdad.
 | `manufacturing` | Lanzamiento, consumo real, avance y mermas de ordenes de produccion (F8.5) | [manufacturing.md](manufacturing.md) |
 | `mrp` | Explosion de necesidades multinivel real y sugerencias de comprar o producir, nunca automaticas (F8.5) | [mrp.md](mrp.md) |
 | `quality` | Planes de inspeccion, resultado no binario, no conformidad y CAPA con maquina de estados (F8.5) | [quality.md](quality.md) |
+| `maintenance` | Ordenes de trabajo, vencimiento por uso o fecha y MTBF real entre fallas (F8.5) | [maintenance.md](maintenance.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -96,7 +97,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta cubiertos.** 614 pruebas contra Postgres real
+- **RLS: los cuarenta y uno cubiertos.** 625 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -108,7 +109,8 @@ patrones que `sales-orders` ya habia corregido.
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
-  `manufacturing` + 10 de `mrp` + 16 de `quality`). La numeración
+  `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
+  `maintenance`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -167,7 +169,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_resultado`, `impedir_referencia_ajena_no_conformidad`,
   `impedir_no_conformidad_ajena_capa`, `impedir_producto_ajeno_certificado`,
   `impedir_editar_inspeccion`, `impedir_editar_no_conformidad_resuelta`,
-  `impedir_editar_capa_cerrado`) se
+  `impedir_editar_capa_cerrado`, `impedir_equipo_ajeno_orden`,
+  `impedir_referencia_ajena_parte`, `impedir_editar_orden_resuelta`,
+  `impedir_editar_parte`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -525,7 +529,29 @@ patrones que `sales-orders` ya habia corregido.
   Ambas pruebas revertidas después -el CAPA borrado, la no conformidad
   devuelta a `investigating`, la inspección de prueba borrada- para
   que la no conformidad sembrada siga siendo un problema real por
-  resolver, no uno ya resuelto de antemano.
+  resolver, no uno ya resuelto de antemano. `maintenance` cierra S53
+  reutilizando el vencimiento de `fleet` una CUARTA vez -después de
+  `lots-serials`, `quality` y el propio `fleet`-:
+  `mantenimientoEquipoVencidoPorFecha`/`PorUso` son alias directos de
+  `mantenimientoVencidoPorFecha()`/`PorKm()`, la misma pregunta ("ya
+  toca?") sea un vehículo con kilometraje o una máquina con horas de
+  uso. Su aporte propio es `calcularMtbfDias()`: promedia los
+  intervalos ENTRE fallas correctivas consecutivas, nunca desde la
+  primera falla hasta hoy -eso mediría antigüedad del equipo, no
+  frecuencia de fallas-. Deliberadamente sin ningún `requires`: el
+  equipo a mantener es propio del módulo, no depende de
+  `fixed-assets` (financiero) ni de `fleet` (vehículos); solo
+  recomienda `inventory`, y ni siquiera ahí descuenta stock
+  automáticamente -`inventory_movements` exige el módulo `inventory`
+  activo en su propia RLS, y escribir ahí en silencio para un tenant
+  sin `inventory` violaría la regla del registry-. Verificado en vivo
+  con un compresor sembrado con 1,200 horas acumuladas contra un
+  intervalo de 1,000: marcado "Vencido" automáticamente, con MTBF de
+  37.5 días calculado sobre sus tres fallas correctivas (45 y 30 días
+  de intervalo). El ciclo completo de una orden -repuesto registrado,
+  `open → in_progress → completed`, confirmando que completada ya no
+  admite cambios- se probó en vivo y se revirtió después, para que la
+  orden sembrada siga siendo un problema real por resolver.
 
 ---
 

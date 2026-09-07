@@ -51,6 +51,7 @@
     "@regb/mod-manufacturing": "workspace:*",
     "@regb/mod-mrp": "workspace:*",
     "@regb/mod-quality": "workspace:*",
+    "@regb/mod-maintenance": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",
