@@ -149,7 +149,8 @@ begin
          (v_med, 'transfers', 'active', true),
          (v_med, 'stock-counts', 'active', true),
          (v_med, 'barcode', 'active', true),
-         (v_med, 'fleet', 'active', true)
+         (v_med, 'fleet', 'active', true),
+         (v_med, 'logistics', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -782,6 +783,56 @@ begin
   if not exists (select 1 from public.traffic_fines where tenant_id = v_med and vehicle_id = v_vehiculo) then
     insert into public.traffic_fines (tenant_id, vehicle_id, driver_id, fine_date, amount, reason)
     values (v_med, v_vehiculo, v_conductor, current_date - 3, 2500.00, 'Exceso de velocidad en la autopista Duarte');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Logistica y rutas (modulo 53): una ruta ya en progreso con una
+--  parada entregada de verdad (con prueba de entrega) y una pendiente
+--  -para completar la ruta en vivo-, y una ruta todavia en
+--  planificacion con una parada -para despachar en vivo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med         uuid;
+  v_conductor   uuid;
+  v_martillo    uuid;
+  v_duarte      uuid;
+  v_ruta_activa uuid;
+  v_ruta_plan   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_conductor from public.employees where tenant_id = v_med and first_name = 'Anthony';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_duarte from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  if v_conductor is null then return; end if;
+
+  if not exists (
+    select 1 from public.delivery_routes where tenant_id = v_med and status = 'in_progress'
+  ) then
+    insert into public.delivery_routes
+      (tenant_id, driver_id, vehicle_plate, route_date, status, started_at)
+    values (v_med, v_conductor, 'A123456', current_date - 1, 'in_progress', now() - interval '3 hours')
+    returning id into v_ruta_activa;
+
+    insert into public.route_stops (route_id, tenant_id, sequence, address, customer_id, status, recipient_name, delivered_at)
+    values (v_ruta_activa, v_med, 1, 'Av. 27 de Febrero 45, Santo Domingo', v_martillo, 'delivered', 'Pedro Martinez', now() - interval '2 hours');
+
+    insert into public.route_stops (route_id, tenant_id, sequence, address, customer_id)
+    values (v_ruta_activa, v_med, 2, 'Calle El Sol 12, Santiago', v_duarte);
+  end if;
+
+  if not exists (
+    select 1 from public.delivery_routes where tenant_id = v_med and status = 'planned'
+  ) then
+    insert into public.delivery_routes (tenant_id, driver_id, vehicle_plate, route_date)
+    values (v_med, v_conductor, 'A123456', current_date + 1)
+    returning id into v_ruta_plan;
+
+    insert into public.route_stops (route_id, tenant_id, sequence, address, customer_id)
+    values (v_ruta_plan, v_med, 1, 'Av. 27 de Febrero 45, Santo Domingo', v_martillo);
   end if;
 end $$;
 

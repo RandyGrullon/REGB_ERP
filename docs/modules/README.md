@@ -46,6 +46,7 @@ documento donde alguien va a buscar la verdad.
 | `stock-counts` | Clasificacion ABC real, conteo ciego y ajuste con aprobacion (F8) | [stock-counts.md](stock-counts.md) |
 | `barcode` | EAN-13 real, etiquetas con el codigo dibujado y escaneo con la camara (F8) | [barcode.md](barcode.md) |
 | `fleet` | Vehiculos, combustible, mantenimiento vencido, documentos y multas (F8) | [fleet.md](fleet.md) |
+| `logistics` | Planificacion de rutas y prueba de entrega real -sin GPS ni optimizacion falsos- (F8) | [logistics.md](logistics.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -91,7 +92,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y cinco cubiertos.** 554 pruebas contra Postgres real
+- **RLS: los treinta y seis cubiertos.** 564 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -102,7 +103,7 @@ patrones que `sales-orders` ya habia corregido.
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
-  `barcode` + 16 de `fleet`). La numeración
+  `barcode` + 16 de `fleet` + 10 de `logistics`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -147,7 +148,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_escaneo`, `impedir_vehiculo_ajeno`,
   `impedir_referencia_ajena_vehiculo`, `impedir_referencia_ajena_combustible`,
   `impedir_editar_combustible`, `impedir_editar_mantenimiento`,
-  `impedir_editar_multa_resuelta`) se
+  `impedir_editar_multa_resuelta`, `impedir_ruta_ajena`,
+  `impedir_referencia_ajena_parada`, `impedir_editar_ruta_resuelta`,
+  `impedir_editar_parada_resuelta`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -405,7 +408,23 @@ patrones que `sales-orders` ya habia corregido.
   `vehicle_documents`) sin trigger de inmutabilidad -mismo criterio que
   `product_lots`- mientras que `fuel_logs`/`maintenance_records` sí son
   hechos históricos inmutables desde el insert, mismo criterio que
-  `benefit_loan_payments`.
+  `benefit_loan_payments`. `logistics` completa el sprint declarando
+  honestamente lo que el catálogo promete y no construye: "seguimiento
+  GPS" y "optimización de rutas" no existen -ningún dispositivo está
+  conectado, y el orden de las paradas lo decide quien planifica, no un
+  motor de rutas-. Lo real es la máquina de estados
+  (`transicionValidaRuta()`) y la prueba de entrega -el nombre de quien
+  recibió, no una firma digital-. Deliberadamente NO tiene acoplamiento
+  duro con `fleet`: el vehículo de una ruta es texto libre (la placa),
+  porque `logistics` solo RECOMIENDA `sales-orders`, y una referencia
+  silenciosa a una tabla de otro módulo violaría la regla del registry
+  de que el core no conoce los módulos. `rutaCompleta()` exige que
+  ninguna parada siga `pending` antes de cerrar la ruta, y
+  `tasaEntregaExitosa()` se calcula solo sobre las paradas ya resueltas
+  -las pendientes no cuentan ni para arriba ni para abajo-. Verificado
+  en vivo: una parada pendiente resuelta con su prueba de entrega, la
+  ruta completada, y una ruta en planificación despachada -todo
+  confirmado inmutable después y restaurado al canónico de la siembra-.
 
 ---
 

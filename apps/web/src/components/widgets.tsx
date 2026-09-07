@@ -90,6 +90,7 @@ export interface DatosWidgets {
   conteosEsperandoAprobacion: number
   productosSinCodigoBarras: number
   vehiculosMantenimientoVencido: number
+  rutasEnProgreso: number
 }
 
 const money = (n: number) =>
@@ -185,6 +186,7 @@ export async function cargarDatosWidgets(
     conteosEsperandoAprobacion: 0,
     productosSinCodigoBarras: 0,
     vehiculosMantenimientoVencido: 0,
+    rutasEnProgreso: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -906,6 +908,13 @@ export async function cargarDatosWidgets(
       where v.tenant_id = ${tenantId} and v.status != 'retired'
         and v.odometer_km >= ultimo.next_due_km`
     vacio.vehiculosMantenimientoVencido = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('routes-in-progress')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.delivery_routes
+      where tenant_id = ${tenantId} and status = 'in_progress'`
+    vacio.rutasEnProgreso = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1948,6 +1957,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.vehiculosMantenimientoVencido === 0 ? 'todo al dia' : 'ya alcanzaron el kilometraje'}
+        </span>
+      </p>
+    ),
+  },
+
+  'routes-in-progress': {
+    titulo: 'Rutas en progreso',
+    icono: 'route',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.rutasEnProgreso}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.rutasEnProgreso === 0 ? 'nada en reparto' : 'en reparto ahora'}
         </span>
       </p>
     ),
