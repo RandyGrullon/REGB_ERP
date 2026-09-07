@@ -1,5 +1,5 @@
 import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, Mono } from '@regb/ui'
-import { buildCashFlowProjection, firstShortfallWeek } from '@regb/operations'
+import { buildBudgetVsActual, buildCashFlowProjection, firstShortfallWeek } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
 
 /**
@@ -40,6 +40,8 @@ export interface DatosWidgets {
   ultimoImport: { cuenta: string; hace: number } | null
   activosValorLibros: number
   activosPorDepreciarEsteMes: number
+  presupuestoAlertas: number
+  presupuestoYtd: { presupuestado: number; real: number }
 }
 
 const money = (n: number) =>
@@ -85,6 +87,8 @@ export async function cargarDatosWidgets(
     ultimoImport: null,
     activosValorLibros: 0,
     activosPorDepreciarEsteMes: 0,
+    presupuestoAlertas: 0,
+    presupuestoYtd: { presupuestado: 0, real: 0 },
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -367,6 +371,69 @@ export async function cargarDatosWidgets(
           where dep.asset_id = a.id and dep.period_date = ${finDeMes}::date)
         and public.fixed_asset_monthly_depreciation(a.id) > 0`
     vacio.activosPorDepreciarEsteMes = Number(d?.n ?? 0)
+  }
+
+  if (pidieron('budget-alerts', 'budget-ytd-variance')) {
+    const anoActual = new Date().getFullYear()
+    const mesActual = new Date().getMonth() + 1
+    const [b] = await tx<{ id: string }[]>`
+      select id from public.budgets
+      where tenant_id = ${tenantId} and fiscal_year = ${anoActual}
+      order by (status = 'active') desc, created_at desc
+      limit 1`
+
+    if (b) {
+      const filas = await tx<{
+        account_id: string
+        month: number
+        budgeted: string
+        total_debit: string
+        total_credit: string
+        type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+      }[]>`
+        with lineas as (
+          select account_id, period_month, amount
+          from public.budget_lines where budget_id = ${b.id} and tenant_id = ${tenantId}
+            and period_month <= ${mesActual}
+        ),
+        real as (
+          select je.account_id, extract(month from e.entry_date)::int as mes,
+                 sum(je.debit) as debito, sum(je.credit) as credito
+          from public.journal_entry_lines je
+          join public.journal_entries e on e.id = je.entry_id and e.status = 'posted'
+          where je.tenant_id = ${tenantId} and extract(year from e.entry_date) = ${anoActual}
+            and extract(month from e.entry_date) <= ${mesActual}
+          group by je.account_id, mes
+        ),
+        combinado as (
+          select coalesce(l.account_id, r.account_id) as account_id,
+                 coalesce(l.period_month, r.mes) as month,
+                 coalesce(l.amount, 0) as budgeted,
+                 coalesce(r.debito, 0) as total_debit,
+                 coalesce(r.credito, 0) as total_credit
+          from lineas l
+          full outer join real r on r.account_id = l.account_id and r.mes = l.period_month
+        )
+        select c.account_id, c.month, c.budgeted::text, c.total_debit::text, c.total_credit::text, a.type
+        from combinado c
+        join public.accounts a on a.id = c.account_id`
+
+      const comparativo = buildBudgetVsActual(
+        filas.map((f) => ({
+          accountId: f.account_id,
+          accountType: f.type,
+          month: f.month,
+          budgeted: Number(f.budgeted),
+          totalDebit: Number(f.total_debit),
+          totalCredit: Number(f.total_credit),
+        })),
+      )
+      vacio.presupuestoAlertas = comparativo.filter((r) => r.status !== 'ok').length
+      vacio.presupuestoYtd = {
+        presupuestado: comparativo.reduce((a, r) => a + r.budgeted, 0),
+        real: comparativo.reduce((a, r) => a + r.actual, 0),
+      }
+    }
   }
 
   if (pidieron('catalog-completeness')) {
@@ -807,6 +874,38 @@ const WIDGETS: Record<
           </span>
         </p>
       ),
+  },
+
+  'budget-alerts': {
+    titulo: 'Cuentas cerca o sobre presupuesto',
+    icono: 'warning',
+    render: (d) =>
+      d.presupuestoAlertas === 0 ? (
+        <Vacio>Nada en alerta este ano.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-warning)]">
+            {d.presupuestoAlertas}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            cuenta-mes cerca o por encima de lo planeado
+          </span>
+        </p>
+      ),
+  },
+
+  'budget-ytd-variance': {
+    titulo: 'Presupuesto del ano hasta hoy',
+    icono: 'savings',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
+          {money(d.presupuestoYtd.real)}
+        </span>
+        <span className="text-xs text-[var(--color-text-muted)]"> de {money(d.presupuestoYtd.presupuestado)}</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">real contra presupuestado</span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

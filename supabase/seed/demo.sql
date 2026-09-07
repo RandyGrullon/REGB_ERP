@@ -105,7 +105,8 @@ begin
          (v_med, 'ap', 'active', true),
          (v_med, 'treasury', 'active', true),
          (v_med, 'bank-rec', 'active', true),
-         (v_med, 'fixed-assets', 'active', true)
+         (v_med, 'fixed-assets', 'active', true),
+         (v_med, 'budgets', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -630,5 +631,52 @@ begin
         disposed_amount = 2000.00,
         disposed_reason = 'Cambiada por una impresora fiscal mas nueva, vendida como repuesto'
     where id = v_impresora;
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Presupuestos: compara contra el asiento AS-DEMO-0001 que accounting ya
+--  sembro -sin inventar una segunda entrada solo para esto-. Una linea
+--  queda sobrepasada (ventas presupuestadas por debajo de lo real), una
+--  sana (costo sin gasto real todavia) y una del mes siguiente, todavia
+--  vacia -el caso de "plan sin ejecutar aun", distinto de "sin plan".
+--
+--  El mes se deriva de la MISMA fecha que uso el asiento (current_date-3),
+--  no de current_date a secas, para que los dos siempre caigan en el mismo
+--  mes sin importar cuando corra este script.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med            uuid;
+  v_presupuesto    uuid;
+  v_ventas         uuid;
+  v_costo          uuid;
+  v_ano            smallint;
+  v_mes_actual     smallint;
+  v_mes_siguiente  smallint;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_ventas from public.accounts where tenant_id = v_med and code = '4101';
+  select id into v_costo from public.accounts where tenant_id = v_med and code = '5101';
+  if v_ventas is null or v_costo is null then return; end if;
+
+  v_ano           := extract(year  from (current_date - 3))::smallint;
+  v_mes_actual    := extract(month from (current_date - 3))::smallint;
+  v_mes_siguiente := (v_mes_actual % 12) + 1;
+
+  select id into v_presupuesto from public.budgets
+    where tenant_id = v_med and fiscal_year = v_ano and name = 'Presupuesto anual';
+  if v_presupuesto is null then
+    insert into public.budgets (tenant_id, name, fiscal_year, status)
+    values (v_med, 'Presupuesto anual', v_ano, 'active')
+    returning id into v_presupuesto;
+
+    insert into public.budget_lines (tenant_id, budget_id, account_id, period_month, amount)
+    values
+      (v_med, v_presupuesto, v_ventas, v_mes_actual, 8000.00),
+      (v_med, v_presupuesto, v_costo, v_mes_actual, 5000.00),
+      (v_med, v_presupuesto, v_ventas, v_mes_siguiente, 15000.00);
   end if;
 end $$;
