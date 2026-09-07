@@ -136,7 +136,8 @@ begin
          (v_med, 'time-off', 'active', true),
          (v_med, 'expenses', 'active', true),
          (v_med, 'hr-portal', 'active', true),
-         (v_med, 'benefits', 'active', true)
+         (v_med, 'benefits', 'active', true),
+         (v_med, 'recruiting', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1229,5 +1230,51 @@ begin
     insert into public.benefit_enrollments
       (tenant_id, employee_id, plan_name, employee_contribution, employer_contribution, effective_date)
     values (v_med, v_cajera, 'Seguro Salud Basico', 500, 1200, current_date - 200);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Reclutamiento: una vacante abierta con dos candidatos en distinta
+--  etapa del pipeline -uno con entrevista ya agendada-, y una vacante ya
+--  cerrada -para ver los dos estados en la lista-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med        uuid;
+  v_vacante    uuid;
+  v_cerrada    uuid;
+  v_candidato1 uuid;
+  v_candidato2 uuid;
+  v_aplicacion uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.recruiting_positions where tenant_id = v_med) then
+    insert into public.recruiting_positions (tenant_id, title, department, description)
+    values (v_med, 'Vendedor de Piso', 'Ventas', 'Atencion al cliente y ventas en la sucursal de Santo Domingo.')
+    returning id into v_vacante;
+
+    insert into public.recruiting_positions (tenant_id, title, department, status)
+    values (v_med, 'Contador', 'Administracion', 'closed')
+    returning id into v_cerrada;
+
+    insert into public.recruiting_candidates (tenant_id, first_name, last_name, email, source)
+    values (v_med, 'Carla', 'Jimenez', 'carla.jimenez@correo.do', 'website')
+    returning id into v_candidato1;
+
+    insert into public.recruiting_candidates (tenant_id, first_name, last_name, email, source)
+    values (v_med, 'Miguel', 'Santana', 'miguel.santana@correo.do', 'referral')
+    returning id into v_candidato2;
+
+    insert into public.recruiting_applications (tenant_id, position_id, candidate_id, stage)
+    values (v_med, v_vacante, v_candidato1, 'interview')
+    returning id into v_aplicacion;
+
+    insert into public.recruiting_interviews (tenant_id, application_id, scheduled_at, interviewer_name)
+    values (v_med, v_aplicacion, now() + interval '3 days', 'Rafael Encarnacion');
+
+    insert into public.recruiting_applications (tenant_id, position_id, candidate_id, stage)
+    values (v_med, v_vacante, v_candidato2, 'applied');
   end if;
 end $$;

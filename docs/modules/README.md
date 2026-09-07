@@ -33,6 +33,7 @@ documento donde alguien va a buscar la verdad.
 | `expenses` | Gastos y reembolsos con ITBIS deducible calculado por NCF (F7) | [expenses.md](expenses.md) |
 | `hr-portal` | Autoservicio: volantes, vacaciones, datos personales y anuncios (F7) | [hr-portal.md](hr-portal.md) |
 | `benefits` | Prestamos internos, adelantos y planes de seguro con aporte patronal (F7) | [benefits.md](benefits.md) |
+| `recruiting` | Vacantes, candidatos y pipeline de aplicaciones con maquina de estados (F7) | [recruiting.md](recruiting.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -78,14 +79,14 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintidós cubiertos.** 390 pruebas contra Postgres real
+- **RLS: los veintitrés cubiertos.** 401 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
   `cost-centers` + 8 de `multicurrency` + 13 de `payments` + 11 de
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
-  `benefits`). La numeración de `purchase-orders` y de
+  `benefits` + 11 de `recruiting`). La numeración de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -105,7 +106,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_geocerca_ajena`, `impedir_marcaje_ajeno`,
   `impedir_solicitud_ausencia_ajena`, `impedir_gasto_ajeno`,
   `impedir_prestamo_ajeno`, `impedir_pago_prestamo_ajeno`,
-  `impedir_inscripcion_ajena`) se escribieron desde el primer día, no
+  `impedir_inscripcion_ajena`, `impedir_aplicacion_ajena`,
+  `impedir_entrevista_ajena`) se escribieron desde el primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
   `insert`, porque `payroll_period_id` se rellena despues de crear la
@@ -168,7 +170,14 @@ patrones que `sales-orders` ya habia corregido.
   es inmutable **desde el primer momento**, sin condición de estado
   -ni siquiera con el préstamo todavía activo se puede editar un pago
   ya registrado-, la única tabla de la serie con un trigger de
-  inmutabilidad incondicional.
+  inmutabilidad incondicional. `recruiting` es el primer módulo cuya
+  tabla puente referencia **dos** tablas de tenant a la vez
+  (`position_id` y `candidate_id` en `recruiting_applications`), así
+  que su trigger de referencia cruzada valida ambas, no solo una -y,
+  deliberadamente, no construye el "portal de empleo" público del
+  catálogo: este esquema nunca otorga acceso a datos de negocio al rol
+  `anon` (regla establecida desde `0005_rls_policies.sql`), y una
+  página de vacantes sin sesión rompería esa regla directamente-.
 
 ---
 

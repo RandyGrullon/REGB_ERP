@@ -70,6 +70,8 @@ export interface DatosWidgets {
   anunciosRecientes: { title: string; publicado: string }[]
   prestamosPendientes: number
   costoBeneficiosMensual: number
+  vacantesAbiertas: number
+  pipelinePorVacante: { title: string; n: number }[]
 }
 
 const money = (n: number) =>
@@ -148,6 +150,8 @@ export async function cargarDatosWidgets(
     anunciosRecientes: [],
     prestamosPendientes: 0,
     costoBeneficiosMensual: 0,
+    vacantesAbiertas: 0,
+    pipelinePorVacante: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -686,6 +690,26 @@ export async function cargarDatosWidgets(
     vacio.costoBeneficiosMensual = totalAportePatronal(
       inscripciones.map((i) => ({ status: i.status, employer_contribution: Number(i.employer_contribution) })),
     )
+  }
+
+  if (pidieron('open-positions')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.recruiting_positions
+      where tenant_id = ${tenantId} and status = 'open'`
+    vacio.vacantesAbiertas = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('pipeline-summary')) {
+    const filas = await tx<{ title: string; n: string }[]>`
+      select p.title, count(a.id)::text as n
+      from public.recruiting_positions p
+      join public.recruiting_applications a on a.position_id = p.id
+      where p.tenant_id = ${tenantId} and p.status = 'open'
+        and a.stage not in ('hired', 'rejected')
+      group by p.id, p.title
+      order by count(a.id) desc
+      limit 5`
+    vacio.pipelinePorVacante = filas.map((f) => ({ title: f.title, n: Number(f.n) }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1466,6 +1490,36 @@ const WIDGETS: Record<
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">aporte patronal mensual</span>
       </p>
     ),
+  },
+
+  'open-positions': {
+    titulo: 'Vacantes abiertas',
+    icono: 'work',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.vacantesAbiertas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.vacantesAbiertas === 0 ? 'ninguna vacante abierta' : 'buscando candidatos'}
+        </span>
+      </p>
+    ),
+  },
+
+  'pipeline-summary': {
+    titulo: 'Candidatos en proceso',
+    icono: 'groups',
+    render: (d) =>
+      d.pipelinePorVacante.length === 0 ? (
+        <Vacio>Ninguna vacante abierta tiene candidatos en proceso.</Vacio>
+      ) : (
+        <ul>
+          {d.pipelinePorVacante.map((p, i) => (
+            <Fila key={i} izq={p.title} der={String(p.n)} />
+          ))}
+        </ul>
+      ),
   },
 
   'draft-entries-pending': {
