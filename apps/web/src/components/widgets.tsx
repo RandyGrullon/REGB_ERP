@@ -1,5 +1,10 @@
 import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, Mono } from '@regb/ui'
-import { buildBudgetVsActual, buildCashFlowProjection, firstShortfallWeek } from '@regb/operations'
+import {
+  buildBudgetVsActual,
+  buildCashFlowProjection,
+  daysSinceRate,
+  firstShortfallWeek,
+} from '@regb/operations'
 import type { TransactionSql } from 'postgres'
 
 /**
@@ -44,6 +49,8 @@ export interface DatosWidgets {
   presupuestoYtd: { presupuestado: number; real: number }
   centrosTop: { name: string; total: number }[]
   centrosTotal: number
+  tasasHoy: { code: string; rate: number; dias: number }[]
+  tasaMasVieja: number | null
 }
 
 const money = (n: number) =>
@@ -93,6 +100,8 @@ export async function cargarDatosWidgets(
     presupuestoYtd: { presupuestado: 0, real: 0 },
     centrosTop: [],
     centrosTotal: 0,
+    tasasHoy: [],
+    tasaMasVieja: null,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -456,6 +465,21 @@ export async function cargarDatosWidgets(
       from public.cost_center_allocations a
       where a.tenant_id = ${tenantId}`
     vacio.centrosTotal = Number(t?.total ?? 0)
+  }
+
+  if (pidieron('exchange-rate-today', 'rate-staleness')) {
+    const filas = await tx<{ code: string; rate: string; rate_date: string }[]>`
+      select distinct on (currency_code) currency_code as code, rate::text, rate_date::text
+      from public.exchange_rates
+      where tenant_id = ${tenantId}
+      order by currency_code, rate_date desc`
+    const hoy = new Date()
+    vacio.tasasHoy = filas.map((f) => ({
+      code: f.code,
+      rate: Number(f.rate),
+      dias: daysSinceRate(new Date(`${f.rate_date.slice(0, 10)}T12:00:00`), hoy),
+    }))
+    vacio.tasaMasVieja = vacio.tasasHoy.length > 0 ? Math.max(...vacio.tasasHoy.map((t) => t.dias)) : null
   }
 
   if (pidieron('catalog-completeness')) {
@@ -958,6 +982,45 @@ const WIDGETS: Record<
         </span>
       </p>
     ),
+  },
+
+  'exchange-rate-today': {
+    titulo: 'Ultimas tasas capturadas',
+    icono: 'currency_exchange',
+    render: (d) =>
+      d.tasasHoy.length === 0 ? (
+        <Vacio>Ninguna tasa capturada todavia.</Vacio>
+      ) : (
+        <ul>
+          {d.tasasHoy.map((t, i) => (
+            <Fila key={i} izq={t.code} der={money(t.rate)} />
+          ))}
+        </ul>
+      ),
+  },
+
+  'rate-staleness': {
+    titulo: 'Tasa mas atrasada',
+    icono: 'schedule',
+    render: (d) =>
+      d.tasaMasVieja === null ? (
+        <Vacio>Sin tasas para medir.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span
+            className={`tabular text-2xl font-semibold ${
+              d.tasaMasVieja > 7
+                ? 'text-[var(--color-semantic-text-warning)]'
+                : 'text-[var(--color-text-primary)]'
+            }`}
+          >
+            {d.tasaMasVieja} dias
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            desde la captura mas atrasada
+          </span>
+        </p>
+      ),
   },
 
   'draft-entries-pending': {

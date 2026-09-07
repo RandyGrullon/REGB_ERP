@@ -107,7 +107,8 @@ begin
          (v_med, 'bank-rec', 'active', true),
          (v_med, 'fixed-assets', 'active', true),
          (v_med, 'budgets', 'active', true),
-         (v_med, 'cost-centers', 'active', true)
+         (v_med, 'cost-centers', 'active', true),
+         (v_med, 'multicurrency', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -724,4 +725,24 @@ begin
       (v_med, v_sti, 15000.00, 'Alquiler y servicios de septiembre', current_date - 5),
       (v_med, v_sd, 8500.00, 'Publicidad en redes sociales', current_date - 2);
   end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Multimoneda: tres tasas de USD en fechas distintas -para que el
+--  historial se vea real y la diferencia cambiaria tenga algo que
+--  comparar-, capturadas a mano como el modulo de verdad funciona.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  insert into public.exchange_rates (tenant_id, currency_code, rate_date, rate)
+  values
+    (v_med, 'USD', current_date - 30, 58.20),
+    (v_med, 'USD', current_date - 15, 58.65),
+    (v_med, 'USD', current_date - 2, 58.90)
+  on conflict (tenant_id, currency_code, rate_date) do nothing;
 end $$;
