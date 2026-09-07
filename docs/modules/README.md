@@ -36,6 +36,7 @@ documento donde alguien va a buscar la verdad.
 | `recruiting` | Vacantes, candidatos y pipeline de aplicaciones con maquina de estados (F7) | [recruiting.md](recruiting.md) |
 | `performance` | OKR con progreso derivado, evaluacion 360, 1:1 y planes de mejora (F7) | [performance.md](performance.md) |
 | `training` | Cursos con aprobacion contra el minimo real, certificados y matriz de competencias (F7) | [training.md](training.md) |
+| `suppliers` | Documentos con vigencia calculada, cuentas bancarias y evaluacion de proveedores (F8) | [suppliers.md](suppliers.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -81,7 +82,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veinticinco cubiertos.** 429 pruebas contra Postgres real
+- **RLS: los veintiséis cubiertos.** 443 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -89,7 +90,7 @@ patrones que `sales-orders` ya habia corregido.
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
-  `training`). La numeración de `purchase-orders` y de
+  `training` + 14 de `suppliers`). La numeración de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -114,7 +115,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_resultado_clave_ajeno`,
   `impedir_referencia_ajena_empleado_desempeno`,
   `impedir_inscripcion_curso_ajena`, `impedir_certificado_ajeno`,
-  `impedir_competencia_ajena`) se escribieron desde el primer día, no
+  `impedir_competencia_ajena`, `impedir_referencia_ajena_proveedor`) se
+  escribieron desde el primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
   `insert`, porque `payroll_period_id` se rellena despues de crear la
@@ -205,7 +207,22 @@ patrones que `sales-orders` ya habia corregido.
   nada a medio aplicar porque el archivo corre como una sola transacción
   implícita-. Renombrada a `impedir_inscripcion_curso_ajena` antes de
   reintentar, aplicando desde entonces la lección de la propia sonda de
-  accesibilidad de `performance`.
+  accesibilidad de `performance`. `suppliers` encontró el hallazgo más
+  serio de esta serie: no un bug de su propio código nuevo, sino uno ya
+  **en producción** desde que `ap` se publicó. `public.suppliers`
+  (0038, dueño original `purchase-orders`) traía un comentario que
+  anticipaba este momento -"vive aquí... hasta que exista `ap` o
+  `suppliers`"-, pero cuando `ap` (0042) se construyó y referenció
+  `suppliers` desde `supplier_invoices`, nadie volvió a tocar su RLS:
+  seguía exigiendo solo `purchase-orders` activo, aunque el catálogo de
+  `ap` no lo requiere (`requires: {}`). Un tenant con SOLO `ap` activo
+  -un caso perfectamente válido- veía su factura de proveedor con el
+  nombre en `null`: la fila de `suppliers` quedaba invisible bajo RLS.
+  No es un agujero de seguridad -nadie veía datos de otro tenant-, pero
+  sí un bug de correctitud real. Reproducido contra Docker local antes
+  de tocar nada, y corregido ampliando la política -nunca reduciendo el
+  acceso ya existente- para que `purchase-orders`, `ap` o `suppliers`
+  desbloqueen la ficha básica.
 
 ---
 

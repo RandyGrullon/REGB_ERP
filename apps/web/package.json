@@ -36,6 +36,7 @@
     "@regb/mod-recruiting": "workspace:*",
     "@regb/mod-performance": "workspace:*",
     "@regb/mod-training": "workspace:*",
+    "@regb/mod-suppliers": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

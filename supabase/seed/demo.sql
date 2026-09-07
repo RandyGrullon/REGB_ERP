@@ -139,7 +139,8 @@ begin
          (v_med, 'benefits', 'active', true),
          (v_med, 'recruiting', 'active', true),
          (v_med, 'performance', 'active', true),
-         (v_med, 'training', 'active', true)
+         (v_med, 'training', 'active', true),
+         (v_med, 'suppliers', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1382,5 +1383,37 @@ begin
     insert into public.training_employee_competencies (tenant_id, employee_id, competency_id, level)
     values (v_med, v_encargada, v_competencia, 5),
            (v_med, v_cajera, v_competencia, 4);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Proveedores: la MISMA ficha que ya usan compras y cuentas por pagar
+--  (Materiales Del Este SRL) -homologada, con un documento vigente, uno
+--  por vencer pronto, una cuenta bancaria y dos evaluaciones-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_proveedor uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_proveedor from public.suppliers where tenant_id = v_med and code = 'PROV-001';
+  if v_proveedor is null then return; end if;
+
+  if not exists (select 1 from public.supplier_documents where tenant_id = v_med and supplier_id = v_proveedor) then
+    update public.suppliers set qualification_status = 'qualified' where id = v_proveedor;
+
+    insert into public.supplier_documents (tenant_id, supplier_id, doc_type, doc_number, issued_at, expires_at)
+    values (v_med, v_proveedor, 'rnc_certificate', 'RNC-88112233', current_date - 300, current_date + 300),
+           (v_med, v_proveedor, 'insurance', 'POL-55221', current_date - 335, current_date + 25);
+
+    insert into public.supplier_bank_accounts (tenant_id, supplier_id, bank_name, account_number, account_type, currency)
+    values (v_med, v_proveedor, 'Banco Popular Dominicano', '840012345678', 'checking', 'DOP');
+
+    insert into public.supplier_evaluations (tenant_id, supplier_id, score, comments, evaluated_by, evaluated_at)
+    values (v_med, v_proveedor, 4, 'Entrega puntual, calidad consistente.', 'Rafael Encarnacion', now() - interval '60 days'),
+           (v_med, v_proveedor, 5, 'Resolvio un reclamo de calidad muy rapido.', 'Rafael Encarnacion', now() - interval '10 days');
   end if;
 end $$;

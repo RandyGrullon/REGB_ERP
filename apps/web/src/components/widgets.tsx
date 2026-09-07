@@ -78,6 +78,8 @@ export interface DatosWidgets {
   planesDeMejoraActivos: number
   inscripcionesEnCurso: number
   certificadosPorVencer: { name: string; vence: string }[]
+  proveedoresPendientes: number
+  documentosProveedorPorVencer: { name: string; vence: string }[]
 }
 
 const money = (n: number) =>
@@ -162,6 +164,8 @@ export async function cargarDatosWidgets(
     planesDeMejoraActivos: 0,
     inscripcionesEnCurso: 0,
     certificadosPorVencer: [],
+    proveedoresPendientes: 0,
+    documentosProveedorPorVencer: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -771,6 +775,27 @@ export async function cargarDatosWidgets(
       .filter((f) => certificadoVigente(new Date(f.expires_at!), hoy))
       .filter((f) => (new Date(f.expires_at!).getTime() - hoy.getTime()) / 86_400_000 <= 30)
       .map((f) => ({ name: `${f.employee_name} · ${f.course_title}`, vence: f.expires_at! }))
+      .slice(0, 5)
+  }
+
+  if (pidieron('suppliers-pending-qualification')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.suppliers
+      where tenant_id = ${tenantId} and is_active and qualification_status = 'pending'`
+    vacio.proveedoresPendientes = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('suppliers-expiring-docs')) {
+    const filas = await tx<{ supplier_name: string; doc_type: string; expires_at: string | null }[]>`
+      select s.name as supplier_name, d.doc_type, d.expires_at::text
+      from public.supplier_documents d
+      join public.suppliers s on s.id = d.supplier_id
+      where d.tenant_id = ${tenantId} and d.expires_at is not null`
+    const hoy = new Date()
+    vacio.documentosProveedorPorVencer = filas
+      .filter((f) => certificadoVigente(new Date(f.expires_at!), hoy))
+      .filter((f) => (new Date(f.expires_at!).getTime() - hoy.getTime()) / 86_400_000 <= 30)
+      .map((f) => ({ name: `${f.supplier_name} · ${f.doc_type}`, vence: f.expires_at! }))
       .slice(0, 5)
   }
 
@@ -1643,6 +1668,42 @@ const WIDGETS: Record<
         <ul>
           {d.certificadosPorVencer.map((c, i) => (
             <Fila key={i} izq={c.name} der={fechaCortaUTC(c.vence.slice(0, 10))} tono="warning" />
+          ))}
+        </ul>
+      ),
+  },
+
+  'suppliers-pending-qualification': {
+    titulo: 'Proveedores por homologar',
+    icono: 'local_shipping',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.proveedoresPendientes > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.proveedoresPendientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.proveedoresPendientes === 0 ? 'todos homologados' : 'pendientes de revisar'}
+        </span>
+      </p>
+    ),
+  },
+
+  'suppliers-expiring-docs': {
+    titulo: 'Documentos de proveedor por vencer',
+    icono: 'description',
+    render: (d) =>
+      d.documentosProveedorPorVencer.length === 0 ? (
+        <Vacio>Ningun documento vence en los proximos 30 dias.</Vacio>
+      ) : (
+        <ul>
+          {d.documentosProveedorPorVencer.map((doc, i) => (
+            <Fila key={i} izq={doc.name} der={fechaCortaUTC(doc.vence.slice(0, 10))} tono="warning" />
           ))}
         </ul>
       ),
