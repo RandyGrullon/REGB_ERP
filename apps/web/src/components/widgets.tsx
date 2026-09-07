@@ -85,6 +85,7 @@ export interface DatosWidgets {
   requisicionesPendientes: number
   rfqsAbiertos: number
   recepcionesConDiscrepancias: number
+  lotesPorVencer: number
 }
 
 const money = (n: number) =>
@@ -175,6 +176,7 @@ export async function cargarDatosWidgets(
     requisicionesPendientes: 0,
     rfqsAbiertos: 0,
     recepcionesConDiscrepancias: 0,
+    lotesPorVencer: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -854,6 +856,14 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.goods_receipts
       where tenant_id = ${tenantId} and status = 'with_discrepancies'`
     vacio.recepcionesConDiscrepancias = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('lots-expiring-soon')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.product_lots
+      where tenant_id = ${tenantId} and expiry_date is not null
+        and expiry_date >= current_date and expiry_date <= current_date + interval '30 days'`
+    vacio.lotesPorVencer = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1821,6 +1831,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.recepcionesConDiscrepancias === 0 ? 'todo coincidio' : 'llego distinto a lo esperado'}
+        </span>
+      </p>
+    ),
+  },
+
+  'lots-expiring-soon': {
+    titulo: 'Lotes por vencer',
+    icono: 'qr_code_2',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.lotesPorVencer}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.lotesPorVencer === 0 ? 'nada por vencer en 30 dias' : 'vencen en 30 dias o menos'}
         </span>
       </p>
     ),

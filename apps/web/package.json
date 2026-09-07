@@ -41,6 +41,7 @@
     "@regb/mod-requisitions": "workspace:*",
     "@regb/mod-rfq": "workspace:*",
     "@regb/mod-receipts": "workspace:*",
+    "@regb/mod-lots-serials": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

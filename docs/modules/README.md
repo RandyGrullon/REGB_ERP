@@ -41,6 +41,7 @@ documento donde alguien va a buscar la verdad.
 | `requisitions` | Pedir antes de comprar, con aprobacion por monto real -el limite de cada rol decide- (F8) | [requisitions.md](requisitions.md) |
 | `rfq` | Comparar cotizaciones de proveedores con un ganador que elige siempre la misma regla (F8) | [rfq.md](rfq.md) |
 | `receipts` | Inspeccion real al recibir -aceptado contra rechazado-, discrepancia y devolucion al proveedor (F8) | [receipts.md](receipts.md) |
+| `lots-serials` | Trazabilidad por lote/serie, FEFO como algoritmo, alertas de vencimiento y recall (F8) | [lots-serials.md](lots-serials.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -86,7 +87,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta cubiertos.** 494 pruebas contra Postgres real
+- **RLS: los treinta y uno cubiertos.** 507 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -95,7 +96,8 @@ patrones que `sales-orders` ya habia corregido.
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
-  `requisitions` + 12 de `rfq` + 16 de `receipts`). La numeración
+  `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
+  `lots-serials`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -128,7 +130,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_rfq`, `impedir_editar_cotizacion`,
   `impedir_editar_rfq_resuelto`, `impedir_recepcion_ajena`,
   `impedir_referencia_ajena_linea_recepcion`, `impedir_devolucion_ajena`,
-  `impedir_editar_recepcion`, `impedir_editar_devolucion_resuelta`) se
+  `impedir_editar_recepcion`, `impedir_editar_devolucion_resuelta`,
+  `impedir_lote_ajeno`, `impedir_referencia_ajena_lot_stock`,
+  `impedir_recall_ajeno`, `impedir_editar_recall_cerrado`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -296,7 +300,25 @@ patrones que `sales-orders` ya habia corregido.
   registrar nunca**, revirtiendo la transacción entera con un error de
   servidor. Corregido restructurando la acción para calcular el estado
   final de todas las líneas ANTES de insertar el encabezado, para que
-  nunca exista un update posterior al insert.
+  nunca exista un update posterior al insert. `lots-serials` no
+  reinventa "esto ya venció?" -`loteVigente()` es literalmente
+  `certificadoVigente()` de `training.ts` reexportada con otro
+  nombre-, y agrega FEFO como un algoritmo real
+  (`seleccionFefo()`/`consumirFefo()`) en vez de una tabla que alguien
+  revisa a mano: verificado en vivo consumiendo 10 unidades con tres
+  lotes disponibles (3 ya vencidas, 8 por vencer, 20 lejanas), y el
+  sistema tomó las 3 vencidas y 7 de las por vencer sin tocar la lejana
+  -confirmado en `inventory_movements` y en la tabla nueva `lot_stock`-.
+  Es el primer módulo de la serie 0031-0066 donde la tabla principal
+  (`product_lots`) NO lleva trigger de inmutabilidad a propósito -un
+  lote es un registro vivo, corregir una fecha de vencimiento mal
+  capturada es una corrección de datos legítima, mismo criterio que los
+  objetivos de OKR en `performance`-, mientras que `product_recalls` sí
+  es un flujo con estados (`open` editable, `closed` terminal),
+  verificado abriendo y cerrando un recall real sobre el lote vencido
+  sembrado. Un item serializado deliberadamente no es un concepto
+  aparte: es un lote de cantidad 1 cuyo número de lote ES el número de
+  serie, para no duplicar la idea en dos columnas.
 
 ---
 

@@ -144,7 +144,8 @@ begin
          (v_med, 'price-lists', 'active', true),
          (v_med, 'requisitions', 'active', true),
          (v_med, 'rfq', 'active', true),
-         (v_med, 'receipts', 'active', true)
+         (v_med, 'receipts', 'active', true),
+         (v_med, 'lots-serials', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -492,6 +493,80 @@ begin
 
     insert into public.supplier_returns (tenant_id, goods_receipt_line_id, supplier_id, qty, reason)
     values (v_med, v_linea_recepcion, v_proveedor, 5, 'Sacos rotos por humedad, devueltos al proveedor');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Lotes, series y vencimientos (modulo 49): tres lotes de la misma
+--  pintura -uno por vencer, uno ya vencido con un recall abierto de
+--  verdad, uno lejano sin problema- para que las alertas y el recall
+--  tengan algo real que mostrar sin interactuar primero.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_alm      uuid;
+  v_pintura  uuid;
+  v_lote_por_vencer uuid;
+  v_lote_vencido    uuid;
+  v_lote_lejano     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_pintura from public.products where tenant_id = v_med and sku = 'PIN-300';
+  if v_alm is null or v_pintura is null then return; end if;
+
+  update public.products set tracks_lots = true where id = v_pintura;
+
+  insert into public.product_lots (tenant_id, product_id, lot_number, expiry_date)
+  values (v_med, v_pintura, 'PIN-2026-A', current_date + 10)
+  on conflict (tenant_id, product_id, lot_number) do nothing
+  returning id into v_lote_por_vencer;
+  if v_lote_por_vencer is null then
+    select id into v_lote_por_vencer from public.product_lots
+      where tenant_id = v_med and product_id = v_pintura and lot_number = 'PIN-2026-A';
+  end if;
+
+  insert into public.product_lots (tenant_id, product_id, lot_number, expiry_date)
+  values (v_med, v_pintura, 'PIN-2025-C', current_date - 15)
+  on conflict (tenant_id, product_id, lot_number) do nothing
+  returning id into v_lote_vencido;
+  if v_lote_vencido is null then
+    select id into v_lote_vencido from public.product_lots
+      where tenant_id = v_med and product_id = v_pintura and lot_number = 'PIN-2025-C';
+  end if;
+
+  insert into public.product_lots (tenant_id, product_id, lot_number, expiry_date)
+  values (v_med, v_pintura, 'PIN-2026-Z', current_date + 200)
+  on conflict (tenant_id, product_id, lot_number) do nothing
+  returning id into v_lote_lejano;
+  if v_lote_lejano is null then
+    select id into v_lote_lejano from public.product_lots
+      where tenant_id = v_med and product_id = v_pintura and lot_number = 'PIN-2026-Z';
+  end if;
+
+  insert into public.lot_stock (tenant_id, warehouse_id, lot_id, qty_on_hand)
+  values (v_med, v_alm, v_lote_por_vencer, 8),
+         (v_med, v_alm, v_lote_vencido, 3),
+         (v_med, v_alm, v_lote_lejano, 20)
+  on conflict (tenant_id, warehouse_id, lot_id) do nothing;
+
+  if not exists (
+    select 1 from public.inventory_movements where reference_type = 'product_lot' and lot_id = v_lote_por_vencer
+  ) then
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost, lot_id, reference_type, notes, created_at)
+    values
+      (v_med, v_alm, v_pintura, 'adjustment_in', 8, 620.00, v_lote_por_vencer, 'product_lot', 'Registro inicial de lote', now() - interval '20 days'),
+      (v_med, v_alm, v_pintura, 'adjustment_in', 3, 620.00, v_lote_vencido, 'product_lot', 'Registro inicial de lote', now() - interval '90 days'),
+      (v_med, v_alm, v_pintura, 'adjustment_in', 20, 620.00, v_lote_lejano, 'product_lot', 'Registro inicial de lote', now() - interval '5 days');
+  end if;
+
+  if not exists (select 1 from public.product_recalls where tenant_id = v_med and lot_id = v_lote_vencido) then
+    insert into public.product_recalls (tenant_id, product_id, lot_id, reason)
+    values (v_med, v_pintura, v_lote_vencido, 'Lote vencido todavia en el almacen: retirar y no vender.');
   end if;
 end $$;
 
