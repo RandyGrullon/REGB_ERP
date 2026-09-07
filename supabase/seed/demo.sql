@@ -106,7 +106,8 @@ begin
          (v_med, 'treasury', 'active', true),
          (v_med, 'bank-rec', 'active', true),
          (v_med, 'fixed-assets', 'active', true),
-         (v_med, 'budgets', 'active', true)
+         (v_med, 'budgets', 'active', true),
+         (v_med, 'cost-centers', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -678,5 +679,49 @@ begin
       (v_med, v_presupuesto, v_ventas, v_mes_actual, 8000.00),
       (v_med, v_presupuesto, v_costo, v_mes_actual, 5000.00),
       (v_med, v_presupuesto, v_ventas, v_mes_siguiente, 15000.00);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Centros de costo: las dos sucursales reales que branches ya sembro
+--  (Santo Domingo y Santiago), con un gasto prorrateado entre las dos
+--  -calculado con splitAmount(), no a mano- y uno asignado manual a una
+--  sola.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med    uuid;
+  v_sd     uuid;
+  v_sti    uuid;
+  v_nuevos boolean := false;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_sd from public.cost_centers where tenant_id = v_med and code = 'SD';
+  if v_sd is null then
+    insert into public.cost_centers (tenant_id, code, name)
+    values (v_med, 'SD', 'Sucursal Santo Domingo') returning id into v_sd;
+    v_nuevos := true;
+  end if;
+
+  select id into v_sti from public.cost_centers where tenant_id = v_med and code = 'STI';
+  if v_sti is null then
+    insert into public.cost_centers (tenant_id, code, name)
+    values (v_med, 'STI', 'Sucursal Santiago') returning id into v_sti;
+    v_nuevos := true;
+  end if;
+
+  if v_nuevos then
+    -- Alquiler y servicios: se reparte 2 a 1 -Santo Domingo es la sucursal
+    -- mas grande-. 45000 * 2/3 = 30000.00 y 45000 * 1/3 = 15000.00: cuadra
+    -- exacto sin necesitar el ajuste del ultimo centro, pero se calcula
+    -- con la misma splitAmount() de siempre.
+    insert into public.cost_center_allocations
+      (tenant_id, cost_center_id, amount, description, allocation_date)
+    values
+      (v_med, v_sd, 30000.00, 'Alquiler y servicios de septiembre', current_date - 5),
+      (v_med, v_sti, 15000.00, 'Alquiler y servicios de septiembre', current_date - 5),
+      (v_med, v_sd, 8500.00, 'Publicidad en redes sociales', current_date - 2);
   end if;
 end $$;

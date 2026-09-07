@@ -23,6 +23,7 @@ documento donde alguien va a buscar la verdad.
 | `bank-rec` | Import de estados de cuenta y conciliacion asistida (F6) | [bank-rec.md](bank-rec.md) |
 | `fixed-assets` | Alta, depreciacion, revaluo y baja de activos (F6) | [fixed-assets.md](fixed-assets.md) |
 | `budgets` | Presupuesto por cuenta y mes, real vs. plan (F6) | [budgets.md](budgets.md) |
+| `cost-centers` | Distribucion y prorrateo de gasto por centro (F6) | [cost-centers.md](cost-centers.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -68,22 +69,23 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los doce cubiertos.** 283 pruebas contra Postgres real (163 de
+- **RLS: los trece cubiertos.** 291 pruebas contra Postgres real (163 de
   los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por mora en `ar`
   + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de `bank-rec` +
-  18 de `fixed-assets` + 11 de `budgets`). La numeración de
-  `purchase-orders` y de `accounting` se escribió con la guarda de tenant
-  y módulo activo desde la primera versión — el agujero que `sales-orders`
-  tuvo que tapar despues con la 0031 no llegó a existir en ninguna de las
-  dos. `accounting` sí encontró su propia variante al escribir el test de
-  aislamiento: colar una línea con el tenant propio pero apuntando a un
-  asiento o cuenta ajenos, tapada con una comprobación cruzada en el
-  trigger de inmutabilidad. `ap`, `treasury`, `bank-rec`, `fixed-assets` y
-  `budgets` aprendieron la lección de una vez: sus triggers equivalentes
-  (`impedir_pago_a_factura_ajena`, `impedir_transaccion_cuenta_ajena`,
-  `impedir_transferencia_cuenta_ajena`, `impedir_import_cuenta_ajena`,
-  `impedir_linea_ajena`, `impedir_activo_ajeno`,
-  `impedir_linea_presupuesto_ajena`) se escribieron desde el primer día,
+  18 de `fixed-assets` + 11 de `budgets` + 8 de `cost-centers`). La
+  numeración de `purchase-orders` y de `accounting` se escribió con la
+  guarda de tenant y módulo activo desde la primera versión — el agujero
+  que `sales-orders` tuvo que tapar despues con la 0031 no llegó a existir
+  en ninguna de las dos. `accounting` sí encontró su propia variante al
+  escribir el test de aislamiento: colar una línea con el tenant propio
+  pero apuntando a un asiento o cuenta ajenos, tapada con una comprobación
+  cruzada en el trigger de inmutabilidad. `ap`, `treasury`, `bank-rec`,
+  `fixed-assets`, `budgets` y `cost-centers` aprendieron la lección de una
+  vez: sus triggers equivalentes (`impedir_pago_a_factura_ajena`,
+  `impedir_transaccion_cuenta_ajena`, `impedir_transferencia_cuenta_ajena`,
+  `impedir_import_cuenta_ajena`, `impedir_linea_ajena`,
+  `impedir_activo_ajeno`, `impedir_linea_presupuesto_ajena`,
+  `impedir_asignacion_centro_ajeno`) se escribieron desde el primer día,
   no como corrección posterior.
 
 ---

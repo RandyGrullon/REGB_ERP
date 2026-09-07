@@ -42,6 +42,8 @@ export interface DatosWidgets {
   activosPorDepreciarEsteMes: number
   presupuestoAlertas: number
   presupuestoYtd: { presupuestado: number; real: number }
+  centrosTop: { name: string; total: number }[]
+  centrosTotal: number
 }
 
 const money = (n: number) =>
@@ -89,6 +91,8 @@ export async function cargarDatosWidgets(
     activosPorDepreciarEsteMes: 0,
     presupuestoAlertas: 0,
     presupuestoYtd: { presupuestado: 0, real: 0 },
+    centrosTop: [],
+    centrosTotal: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -434,6 +438,24 @@ export async function cargarDatosWidgets(
         real: comparativo.reduce((a, r) => a + r.actual, 0),
       }
     }
+  }
+
+  if (pidieron('cost-center-top', 'cost-center-total')) {
+    const filas = await tx<{ name: string; total: string }[]>`
+      select cc.name, coalesce(sum(a.amount), 0)::text as total
+      from public.cost_centers cc
+      left join public.cost_center_allocations a on a.cost_center_id = cc.id
+      where cc.tenant_id = ${tenantId} and cc.is_active
+      group by cc.id, cc.name
+      order by sum(a.amount) desc nulls last
+      limit 5`
+    vacio.centrosTop = filas.map((r) => ({ name: r.name, total: Number(r.total) }))
+
+    const [t] = await tx<{ total: string }[]>`
+      select coalesce(sum(a.amount), 0)::text as total
+      from public.cost_center_allocations a
+      where a.tenant_id = ${tenantId}`
+    vacio.centrosTotal = Number(t?.total ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -904,6 +926,36 @@ const WIDGETS: Record<
         </span>
         <span className="text-xs text-[var(--color-text-muted)]"> de {money(d.presupuestoYtd.presupuestado)}</span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">real contra presupuestado</span>
+      </p>
+    ),
+  },
+
+  'cost-center-top': {
+    titulo: 'Centros con mas gasto',
+    icono: 'call_split',
+    render: (d) =>
+      d.centrosTop.length === 0 ? (
+        <Vacio>Nada asignado todavia.</Vacio>
+      ) : (
+        <ul>
+          {d.centrosTop.map((c, i) => (
+            <Fila key={i} izq={c.name} der={money(c.total)} />
+          ))}
+        </ul>
+      ),
+  },
+
+  'cost-center-total': {
+    titulo: 'Total asignado a centros',
+    icono: 'account_tree',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.centrosTotal)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          repartido entre {d.centrosTop.length} centro{d.centrosTop.length === 1 ? '' : 's'}
+        </span>
       </p>
     ),
   },

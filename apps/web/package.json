@@ -24,6 +24,7 @@
     "@regb/mod-bank-rec": "workspace:*",
     "@regb/mod-fixed-assets": "workspace:*",
     "@regb/mod-budgets": "workspace:*",
+    "@regb/mod-cost-centers": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",
