@@ -43,6 +43,7 @@ documento donde alguien va a buscar la verdad.
 | `receipts` | Inspeccion real al recibir -aceptado contra rechazado-, discrepancia y devolucion al proveedor (F8) | [receipts.md](receipts.md) |
 | `lots-serials` | Trazabilidad por lote/serie, FEFO como algoritmo, alertas de vencimiento y recall (F8) | [lots-serials.md](lots-serials.md) |
 | `transfers` | Traslado entre almacenes con estado de transito real y discrepancia visible (F8) | [transfers.md](transfers.md) |
+| `stock-counts` | Clasificacion ABC real, conteo ciego y ajuste con aprobacion (F8) | [stock-counts.md](stock-counts.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -88,7 +89,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y dos cubiertos.** 519 pruebas contra Postgres real
+- **RLS: los treinta y tres cubiertos.** 531 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -98,7 +99,7 @@ patrones que `sales-orders` ya habia corregido.
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
-  `lots-serials` + 12 de `transfers`). La numeración
+  `lots-serials` + 12 de `transfers` + 12 de `stock-counts`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -136,7 +137,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_recall_ajeno`, `impedir_editar_recall_cerrado`,
   `impedir_transferencia_ajena`, `impedir_referencia_ajena_linea_transferencia`,
   `impedir_editar_linea_transferencia_resuelta`,
-  `impedir_borrar_linea_transferencia_despachada`) se
+  `impedir_borrar_linea_transferencia_despachada`,
+  `impedir_programacion_conteo_ajena`, `impedir_conteo_ajeno`,
+  `impedir_referencia_ajena_linea_conteo`, `impedir_editar_conteo_resuelto`,
+  `impedir_editar_linea_conteo_no_editable`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -340,7 +344,27 @@ patrones que `sales-orders` ya habia corregido.
   `transfer_out`/`transfer_in` quedaron confirmados en
   `inventory_movements`, y un intento posterior de editar
   `qty_received` por SQL directo fue rechazado por el trigger de
-  inmutabilidad.
+  inmutabilidad. `stock-counts` agrega las tres cosas que
+  `stock_counts` de `inventory` (0019) no tiene, sin tocarla:
+  clasificación ABC real (`clasificarAbc()`, un Pareto 80/15/5 sobre el
+  valor acumulado ANTES de cada producto, no después -así el producto
+  que por sí solo empuja el acumulado más allá del 80% sigue siendo
+  A-), conteo CIEGO de verdad (la pantalla mientras se cuenta ni
+  siquiera trae `system_qty` en la consulta, no es una columna oculta
+  con CSS), y un ajuste que espera aprobación
+  (`transicionValidaConteo()`: `counting → pending_approval →
+  approved | rejected`, nunca salta directo). Encontró un bug real en
+  su propia prueba unitaria, antes de tocar la base: la primera versión
+  de `clasificarAbc()` acumulaba el valor DESPUÉS de cada producto, así
+  que un producto que por sí solo es el 90% del valor total quedaba
+  clasificado como B -su propio acumulado ya superaba el corte de 80%
+  para A-, contradiciendo el propósito mismo de un análisis ABC (el
+  producto de mayor valor siempre debería ser A). El test "un solo
+  producto domina" lo encontró antes de escribir una sola línea de SQL.
+  Verificado en vivo: un conteo real aprobado con su ajuste confirmado
+  en `inventory_movements`/`stock_levels`, y un conteo nuevo contado a
+  ciegas -confirmado que `system_qty` nunca aparece en esa pantalla-,
+  enviado a aprobación y rechazado sin tocar el inventario.
 
 ---
 

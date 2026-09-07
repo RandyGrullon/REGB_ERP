@@ -146,7 +146,8 @@ begin
          (v_med, 'rfq', 'active', true),
          (v_med, 'receipts', 'active', true),
          (v_med, 'lots-serials', 'active', true),
-         (v_med, 'transfers', 'active', true)
+         (v_med, 'transfers', 'active', true),
+         (v_med, 'stock-counts', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -644,6 +645,58 @@ begin
        'Despacho a Santiago', now() - interval '6 days'),
       (v_med, v_alm_stgo, v_cemento, 'transfer_in', 8, 'transfer_order', v_recibida,
        'Llegaron 2 sacos menos de los despachados', now() - interval '5 days');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Conteos ciclicos (modulo 51): clasificacion ABC ya calculada sobre
+--  los tres productos -para no obligar a correr "recalcular" antes de
+--  ver algo-, y un conteo real esperando aprobacion con una
+--  discrepancia -para probar "aprobar y ajustar" en vivo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_alm_sd    uuid;
+  v_cemento   uuid;
+  v_pintura   uuid;
+  v_varilla   uuid;
+  v_conteo    uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm_sd from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  select id into v_pintura from public.products where tenant_id = v_med and sku = 'PIN-300';
+  select id into v_varilla from public.products where tenant_id = v_med and sku = 'VAR-200';
+  if v_alm_sd is null or v_cemento is null then return; end if;
+
+  insert into public.count_schedules (tenant_id, product_id, abc_class, frequency_days, last_counted_at)
+  values (v_med, v_cemento, 'A', 30, now() - interval '45 days')
+  on conflict (tenant_id, product_id) do nothing;
+
+  if v_pintura is not null then
+    insert into public.count_schedules (tenant_id, product_id, abc_class, frequency_days, last_counted_at)
+    values (v_med, v_pintura, 'B', 90, null)
+    on conflict (tenant_id, product_id) do nothing;
+  end if;
+
+  if v_varilla is not null then
+    insert into public.count_schedules (tenant_id, product_id, abc_class, frequency_days, last_counted_at)
+    values (v_med, v_varilla, 'C', 180, now() - interval '10 days')
+    on conflict (tenant_id, product_id) do nothing;
+  end if;
+
+  if not exists (
+    select 1 from public.cycle_counts where tenant_id = v_med and warehouse_id = v_alm_sd and status = 'pending_approval'
+  ) then
+    insert into public.cycle_counts (tenant_id, warehouse_id, status, started_at, submitted_at)
+    values (v_med, v_alm_sd, 'pending_approval', now() - interval '2 hours', now() - interval '1 hour')
+    returning id into v_conteo;
+
+    insert into public.cycle_count_lines (count_id, tenant_id, product_id, system_qty, counted_qty, unit_cost)
+    values (v_conteo, v_med, v_cemento, 55, 53, 411.50);
   end if;
 end $$;
 

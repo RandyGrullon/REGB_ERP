@@ -87,6 +87,7 @@ export interface DatosWidgets {
   recepcionesConDiscrepancias: number
   lotesPorVencer: number
   transferenciasEnTransito: number
+  conteosEsperandoAprobacion: number
 }
 
 const money = (n: number) =>
@@ -179,6 +180,7 @@ export async function cargarDatosWidgets(
     recepcionesConDiscrepancias: 0,
     lotesPorVencer: 0,
     transferenciasEnTransito: 0,
+    conteosEsperandoAprobacion: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -873,6 +875,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.transfer_orders
       where tenant_id = ${tenantId} and status = 'in_transit'`
     vacio.transferenciasEnTransito = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('cycle-counts-pending-approval')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.cycle_counts
+      where tenant_id = ${tenantId} and status = 'pending_approval'`
+    vacio.conteosEsperandoAprobacion = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1870,6 +1879,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.transferenciasEnTransito === 0 ? 'nada en camino' : 'esperando confirmar recepcion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'cycle-counts-pending-approval': {
+    titulo: 'Conteos esperando aprobacion',
+    icono: 'checklist',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.conteosEsperandoAprobacion}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.conteosEsperandoAprobacion === 0 ? 'nada pendiente' : 'esperando revisar la diferencia'}
         </span>
       </p>
     ),
