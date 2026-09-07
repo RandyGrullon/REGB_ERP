@@ -131,7 +131,8 @@ begin
          (v_med, 'multicurrency', 'active', true),
          (v_med, 'payments', 'active', true),
          (v_med, 'employees', 'active', true),
-         (v_med, 'payroll', 'active', true)
+         (v_med, 'payroll', 'active', true),
+         (v_med, 'attendance', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -945,5 +946,67 @@ begin
   ) then
     insert into public.payroll_periods (tenant_id, period_start, period_end, pay_date)
     values (v_med, v_inicio_mes_actual, v_fin_mes_actual, v_fin_mes_actual);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Asistencia: una geocerca real para la sucursal Santo Domingo, un
+--  marcaje de ayer ya cerrado -con hora extra real- y uno de hoy todavia
+--  abierto -con una leve tardanza-, dentro del radio de la geocerca.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med          uuid;
+  v_sucursal     uuid;
+  v_vendedor     uuid;
+  v_encargada    uuid;
+  v_hoy_rd       date;
+  v_entrada_hoy  timestamptz;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_sucursal from public.branches where tenant_id = v_med and code = 'SD';
+  select id into v_vendedor from public.employees where tenant_id = v_med and code = 'E-003';
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_sucursal is null or v_vendedor is null or v_encargada is null then return; end if;
+
+  insert into public.attendance_geofences (tenant_id, branch_id, latitude, longitude, radius_meters)
+  values (v_med, v_sucursal, 18.486058, -69.931212, 150)
+  on conflict (tenant_id, branch_id) do nothing;
+
+  -- RD es siempre UTC-4 (sin horario de verano). `current_date` usa la zona
+  -- de la sesion de Postgres (UTC en Docker/Supabase) -entre las 8pm y la
+  -- medianoche hora de RD, UTC ya cambio de fecha y "hoy" quedaria un dia
+  -- adelantado, generando un marcaje en el futuro que la salida real (now())
+  -- nunca podria cerrar-. Se calcula el dia calendario real de RD restando
+  -- el offset antes de truncar a fecha.
+  v_hoy_rd := (now() - interval '4 hours')::date;
+
+  if not exists (
+    select 1 from public.attendance_records where tenant_id = v_med and employee_id = v_encargada
+  ) then
+    -- Ayer (de RD): entro a tiempo, salio dos horas tarde -hora extra real-.
+    insert into public.attendance_records
+      (tenant_id, employee_id, check_in, check_out, check_in_method, check_in_lat, check_in_lng, within_geofence)
+    values (v_med, v_encargada,
+            ((v_hoy_rd - 1)::text || ' 08:02:00-04')::timestamptz,
+            ((v_hoy_rd - 1)::text || ' 18:15:00-04')::timestamptz,
+            'geofence', 18.486100, -69.931250, true);
+  end if;
+
+  if not exists (
+    select 1 from public.attendance_records where tenant_id = v_med and employee_id = v_vendedor
+  ) then
+    -- Hoy (de RD): todavia abierto -sin salida-, con una leve tardanza.
+    -- Si en RD todavia no son las 8:17am, usar ayer -si no, el marcaje
+    -- quedaria en el futuro y ningun check-out podria cerrarlo todavia-.
+    v_entrada_hoy := (v_hoy_rd::text || ' 08:17:00-04')::timestamptz;
+    if v_entrada_hoy > now() then
+      v_entrada_hoy := v_entrada_hoy - interval '1 day';
+    end if;
+    insert into public.attendance_records
+      (tenant_id, employee_id, check_in, check_in_method, check_in_lat, check_in_lng, within_geofence)
+    values (v_med, v_vendedor, v_entrada_hoy, 'geofence', 18.486070, -69.931200, true);
   end if;
 end $$;

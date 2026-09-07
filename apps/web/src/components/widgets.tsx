@@ -4,6 +4,7 @@ import {
   buildCashFlowProjection,
   daysSinceRate,
   firstShortfallWeek,
+  lateMinutes,
 } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
 
@@ -57,6 +58,8 @@ export interface DatosWidgets {
   nuevosIngresos: { name: string; hace: number }[]
   proximaNomina: { periodo: string; diasFaltan: number } | null
   costoNominaMesActual: number
+  marcajesHoy: number
+  tardanzasHoy: { name: string; minutos: number }[]
 }
 
 const money = (n: number) =>
@@ -114,6 +117,8 @@ export async function cargarDatosWidgets(
     nuevosIngresos: [],
     proximaNomina: null,
     costoNominaMesActual: 0,
+    marcajesHoy: 0,
+    tardanzasHoy: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -557,6 +562,31 @@ export async function cargarDatosWidgets(
       where l.tenant_id = ${tenantId}
         and date_trunc('month', pp.period_end) = date_trunc('month', current_date)`
     vacio.costoNominaMesActual = Number(c?.total ?? 0)
+  }
+
+  if (pidieron('attendance-today')) {
+    const [a] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.attendance_records
+      where tenant_id = ${tenantId} and check_in >= date_trunc('day', now())`
+    vacio.marcajesHoy = Number(a?.n ?? 0)
+  }
+
+  if (pidieron('late-arrivals')) {
+    const filas = await tx<{ name: string; check_in: string }[]>`
+      select e.first_name || ' ' || e.last_name as name, ar.check_in::text
+      from public.attendance_records ar
+      join public.employees e on e.id = ar.employee_id
+      where ar.tenant_id = ${tenantId} and ar.check_in >= date_trunc('day', now())
+      order by ar.check_in`
+    vacio.tardanzasHoy = filas
+      .map((f) => {
+        const entrada = new Date(f.check_in)
+        const esperado = new Date(entrada)
+        esperado.setHours(8, 0, 0, 0)
+        return { name: f.name, minutos: lateMinutes(entrada, esperado) }
+      })
+      .filter((f) => f.minutos > 0)
+      .slice(0, 5)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1196,6 +1226,34 @@ const WIDGETS: Record<
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">neto pagado este mes</span>
       </p>
     ),
+  },
+
+  'attendance-today': {
+    titulo: 'Marcajes de hoy',
+    icono: 'fingerprint',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.marcajesHoy}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">entradas y salidas hoy</span>
+      </p>
+    ),
+  },
+
+  'late-arrivals': {
+    titulo: 'Tardanzas de hoy',
+    icono: 'schedule',
+    render: (d) =>
+      d.tardanzasHoy.length === 0 ? (
+        <Vacio>Nadie llego tarde hoy.</Vacio>
+      ) : (
+        <ul>
+          {d.tardanzasHoy.map((t, i) => (
+            <Fila key={i} izq={t.name} der={`${t.minutos} min`} tono="danger" />
+          ))}
+        </ul>
+      ),
   },
 
   'draft-entries-pending': {

@@ -28,6 +28,7 @@
     "@regb/mod-multicurrency": "workspace:*",
     "@regb/mod-payments": "workspace:*",
     "@regb/mod-employees": "workspace:*",
+    "@regb/mod-attendance": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",
