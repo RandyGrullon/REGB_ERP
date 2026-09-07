@@ -24,6 +24,7 @@ import employeesManifest from '@regb/mod-employees'
 import attendanceManifest from '@regb/mod-attendance'
 import timeOffManifest from '@regb/mod-time-off'
 import expensesManifest from '@regb/mod-expenses'
+import hrPortalManifest from '@regb/mod-hr-portal'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -92,6 +93,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     attendanceManifest,
     timeOffManifest,
     expensesManifest,
+    hrPortalManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

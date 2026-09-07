@@ -134,7 +134,8 @@ begin
          (v_med, 'payroll', 'active', true),
          (v_med, 'attendance', 'active', true),
          (v_med, 'time-off', 'active', true),
-         (v_med, 'expenses', 'active', true)
+         (v_med, 'expenses', 'active', true),
+         (v_med, 'hr-portal', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1129,5 +1130,40 @@ begin
     values (v_med, v_vendedor, 'meals', current_date - 15, 650,
             'Colmado Los Hermanos', 'Almuerzo con un cliente en visita de venta',
             'reimbursed', now() - interval '13 days', now() - interval '10 days', 'transfer');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Portal del Empleado: dos anuncios -uno reciente, uno viejo, para ver
+--  la insignia "Nuevo" en accion- y el correo de Rafael enlazado al del
+--  usuario demo, para que /portal muestre un expediente de verdad -sin
+--  ese correo coincidente, el portal solo mostraria el estado vacio-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  if v_encargada is null then return; end if;
+
+  -- El usuario demo (Owner) inicia sesion como maria.rosario@demo.do -ver
+  -- 0009/bootstrap-. Sin este correo en el expediente de Rafael, el
+  -- portal de demo no encontraria a quien mostrar.
+  update public.employees set email = 'maria.rosario@demo.do'
+  where id = v_encargada and email is null;
+
+  if not exists (select 1 from public.hr_announcements where tenant_id = v_med) then
+    insert into public.hr_announcements (tenant_id, title, body, published_at)
+    values
+      (v_med, 'Horario especial fin de mes',
+       'El viernes de cierre de mes trabajamos hasta las 5:00pm -una hora menos que lo usual- para el corte de caja.',
+       now() - interval '3 days'),
+      (v_med, 'Nueva politica de vacaciones',
+       'A partir de este año, las vacaciones se solicitan con al menos 2 semanas de anticipacion desde el portal.',
+       now() - interval '25 days');
   end if;
 end $$;

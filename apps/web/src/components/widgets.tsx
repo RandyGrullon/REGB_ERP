@@ -65,6 +65,7 @@ export interface DatosWidgets {
   fueraHoy: { name: string; tipo: string; regresa: string }[]
   gastosPorAprobar: number
   gastosPorReembolsar: number
+  anunciosRecientes: { title: string; publicado: string }[]
 }
 
 const money = (n: number) =>
@@ -140,6 +141,7 @@ export async function cargarDatosWidgets(
     fueraHoy: [],
     gastosPorAprobar: 0,
     gastosPorReembolsar: 0,
+    anunciosRecientes: [],
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -643,6 +645,13 @@ export async function cargarDatosWidgets(
       select coalesce(sum(amount), 0)::text as total from public.expenses
       where tenant_id = ${tenantId} and status = 'approved'`
     vacio.gastosPorReembolsar = Number(o?.total ?? 0)
+  }
+
+  if (pidieron('recent-announcements')) {
+    const filas = await tx<{ title: string; published_at: string }[]>`
+      select title, published_at::text from public.hr_announcements
+      where tenant_id = ${tenantId} order by published_at desc limit 5`
+    vacio.anunciosRecientes = filas.map((f) => ({ title: f.title, publicado: f.published_at }))
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1382,6 +1391,21 @@ const WIDGETS: Record<
         </span>
       </p>
     ),
+  },
+
+  'recent-announcements': {
+    titulo: 'Anuncios recientes',
+    icono: 'campaign',
+    render: (d) =>
+      d.anunciosRecientes.length === 0 ? (
+        <Vacio>Todavia no hay ningun anuncio.</Vacio>
+      ) : (
+        <ul>
+          {d.anunciosRecientes.map((a, i) => (
+            <Fila key={i} izq={a.title} der={fechaCortaUTC(a.publicado.slice(0, 10))} />
+          ))}
+        </ul>
+      ),
   },
 
   'draft-entries-pending': {
