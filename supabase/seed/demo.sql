@@ -151,7 +151,8 @@ begin
          (v_med, 'barcode', 'active', true),
          (v_med, 'fleet', 'active', true),
          (v_med, 'logistics', 'active', true),
-         (v_med, 'bom', 'active', true)
+         (v_med, 'bom', 'active', true),
+         (v_med, 'manufacturing', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -903,6 +904,37 @@ begin
       (v_bom_kit, v_med, v_cemento, 0.5),
       (v_bom_kit, v_med, v_var_ref, 2),
       (v_bom_kit, v_med, v_pintura, 0.25);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Ordenes de produccion (modulo 56): una orden en borrador sobre el
+--  BOM activo del kit basico de reparacion -para liberar en vivo y ver
+--  la explosion de materiales consumir el inventario de verdad-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med    uuid;
+  v_alm_sd uuid;
+  v_kit    uuid;
+  v_bom    uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm_sd from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_kit from public.products where tenant_id = v_med and sku = 'KIT-100';
+  if v_alm_sd is null or v_kit is null then return; end if;
+
+  select id into v_bom from public.bill_of_materials
+    where tenant_id = v_med and product_id = v_kit and status = 'active';
+  if v_bom is null then return; end if;
+
+  if not exists (
+    select 1 from public.production_orders where tenant_id = v_med and bom_id = v_bom
+  ) then
+    insert into public.production_orders (tenant_id, bom_id, warehouse_id, qty_planned)
+    values (v_med, v_bom, v_alm_sd, 5);
   end if;
 end $$;
 

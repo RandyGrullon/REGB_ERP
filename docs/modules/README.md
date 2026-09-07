@@ -48,6 +48,7 @@ documento donde alguien va a buscar la verdad.
 | `fleet` | Vehiculos, combustible, mantenimiento vencido, documentos y multas (F8) | [fleet.md](fleet.md) |
 | `logistics` | Planificacion de rutas y prueba de entrega real -sin GPS ni optimizacion falsos- (F8) | [logistics.md](logistics.md) |
 | `bom` | Costeo multinivel real, versiones y sustitutos de lista de materiales (F8.5) | [bom.md](bom.md) |
+| `manufacturing` | Lanzamiento, consumo real, avance y mermas de ordenes de produccion (F8.5) | [manufacturing.md](manufacturing.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -93,7 +94,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los treinta y siete cubiertos.** 575 pruebas contra Postgres real
+- **RLS: los treinta y ocho cubiertos.** 588 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -104,7 +105,8 @@ patrones que `sales-orders` ya habia corregido.
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
   `requisitions` + 12 de `rfq` + 16 de `receipts` + 13 de
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
-  `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom`). La numeración
+  `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
+  `manufacturing`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -153,7 +155,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_parada`, `impedir_editar_ruta_resuelta`,
   `impedir_editar_parada_resuelta`, `impedir_bom_ajeno`,
   `impedir_referencia_ajena_linea_bom`, `impedir_editar_bom_no_borrador`,
-  `impedir_editar_linea_bom_no_borrador`) se
+  `impedir_editar_linea_bom_no_borrador`,
+  `impedir_orden_produccion_ajena`, `impedir_referencia_ajena_linea_produccion`,
+  `impedir_reporte_ajeno`, `impedir_editar_orden_produccion_resuelta`,
+  `impedir_editar_linea_produccion`, `impedir_editar_reporte`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -448,7 +453,25 @@ patrones que `sales-orders` ya habia corregido.
   el caso directo de un producto como componente de sí mismo; ciclos
   más profundos entre varios productos no se detectan, declarado
   explícitamente, con un tope de profundidad como red de seguridad en
-  el resolvedor de costo.
+  el resolvedor de costo. `manufacturing` cierra el bloque de
+  manufactura reutilizando infraestructura dos veces más:
+  `explotarCantidad()` -la misma función de `bom.ts`- calcula el
+  consumo real al liberar una orden, y `progresoResultadoClave()` -la
+  misma función de `performance.ts` que ya mide el avance de un
+  resultado clave de OKR- mide el avance de la orden, la misma
+  pregunta sin importar la meta. El consumo es "backflush al liberar"
+  -todo de una vez, no proporcional al avance-, una simplificación
+  deliberada que trae una consecuencia honesta: una orden liberada ya
+  no se cancela, porque el inventario ya salió. `ordenCompleta()`
+  cierra la orden sola cuando lo completado más lo mermado ya cubre lo
+  planificado, y cada reporte de avance es un hecho histórico
+  inmutable, igual que una carga de combustible de `fleet`. Verificado
+  en vivo liberando una orden real de dos niveles -los tres consumos
+  coincidieron exactamente con la explosión multinivel de `bom`-, y
+  completándola con dos reportes reales (uno con merma genuina), con
+  las entradas de producto terminado confirmadas en
+  `inventory_movements` y la inmutabilidad de la receta verificada
+  incluso ya completada.
 
 ---
 

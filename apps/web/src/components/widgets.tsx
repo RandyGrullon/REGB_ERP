@@ -92,6 +92,7 @@ export interface DatosWidgets {
   vehiculosMantenimientoVencido: number
   rutasEnProgreso: number
   bomsActivos: number
+  ordenesProduccionEnProgreso: number
 }
 
 const money = (n: number) =>
@@ -189,6 +190,7 @@ export async function cargarDatosWidgets(
     vehiculosMantenimientoVencido: 0,
     rutasEnProgreso: 0,
     bomsActivos: 0,
+    ordenesProduccionEnProgreso: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -924,6 +926,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.bill_of_materials
       where tenant_id = ${tenantId} and status = 'active'`
     vacio.bomsActivos = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('production-orders-in-progress')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.production_orders
+      where tenant_id = ${tenantId} and status in ('released', 'in_progress')`
+    vacio.ordenesProduccionEnProgreso = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1995,6 +2004,21 @@ const WIDGETS: Record<
           {d.bomsActivos}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">recetas en uso</span>
+      </p>
+    ),
+  },
+
+  'production-orders-in-progress': {
+    titulo: 'Ordenes de produccion en progreso',
+    icono: 'precision_manufacturing',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.ordenesProduccionEnProgreso}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.ordenesProduccionEnProgreso === 0 ? 'nada en piso' : 'produciendo ahora'}
+        </span>
       </p>
     ),
   },
