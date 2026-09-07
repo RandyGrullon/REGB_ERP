@@ -130,7 +130,8 @@ begin
          (v_med, 'cost-centers', 'active', true),
          (v_med, 'multicurrency', 'active', true),
          (v_med, 'payments', 'active', true),
-         (v_med, 'employees', 'active', true)
+         (v_med, 'employees', 'active', true),
+         (v_med, 'payroll', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -881,5 +882,68 @@ begin
     from public.employees where tenant_id = v_med and code = 'E-003';
 
     v_nuevos := true;
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Nomina: un periodo del mes pasado ya PROCESADO -con las lineas de
+--  Rafael y Yolanda calculadas a mano con la misma formula de
+--  calculatePayrollLine(), para que el volante muestre numeros reales sin
+--  reimplementar la aritmetica de TSS/ISR en SQL- y uno del mes actual en
+--  BORRADOR, para poder probar /payroll/run en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med        uuid;
+  v_gerente    uuid;
+  v_encargada  uuid;
+  v_periodo    uuid;
+  v_inicio_mes_pasado date := date_trunc('month', current_date - interval '1 month')::date;
+  v_fin_mes_pasado    date := (date_trunc('month', current_date) - interval '1 day')::date;
+  v_inicio_mes_actual date := date_trunc('month', current_date)::date;
+  v_fin_mes_actual    date := (date_trunc('month', current_date) + interval '1 month - 1 day')::date;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_gerente from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-002';
+  if v_gerente is null or v_encargada is null then return; end if;
+
+  if not exists (
+    select 1 from public.payroll_periods
+    where tenant_id = v_med and period_start = v_inicio_mes_pasado
+  ) then
+    -- Nace en 'draft' -la inmutabilidad no distingue "recien creado" de
+    -- "de hace meses", mismo motivo que el asiento demo de accounting
+    -- nace en draft y se contabiliza despues, nunca al reves-.
+    insert into public.payroll_periods (tenant_id, period_start, period_end, pay_date)
+    values (v_med, v_inicio_mes_pasado, v_fin_mes_pasado, v_fin_mes_pasado)
+    returning id into v_periodo;
+
+    -- Rafael, 85000: TSS 85000*0.0591=5023.50; ISR mensual 8577.06
+    -- (anualizado 959718 cae en el tramo de 25%: 79776+(959718-867123)*0.25=102924.75, /12).
+    insert into public.payroll_lines
+      (tenant_id, period_id, employee_id, gross_salary, tss_deduction, income_tax, net_salary)
+    values (v_med, v_periodo, v_gerente, 85000.00, 5023.50, 8577.06, 71399.44);
+
+    -- Yolanda, con su salario de ANTES de la promocion (25000, el mes
+    -- pasado): TSS 25000*0.0591=1477.50; dentro del tramo exento, ISR 0.
+    insert into public.payroll_lines
+      (tenant_id, period_id, employee_id, gross_salary, tss_deduction, income_tax, net_salary)
+    values (v_med, v_periodo, v_encargada, 25000.00, 1477.50, 0, 23522.50);
+
+    update public.payroll_periods
+    set status = 'processed',
+        tax_params = '{"afpEmployeeRate":0.0287,"sfsEmployeeRate":0.0304,"contributionCap":415492}'::jsonb
+    where id = v_periodo;
+  end if;
+
+  if not exists (
+    select 1 from public.payroll_periods
+    where tenant_id = v_med and period_start = v_inicio_mes_actual
+  ) then
+    insert into public.payroll_periods (tenant_id, period_start, period_end, pay_date)
+    values (v_med, v_inicio_mes_actual, v_fin_mes_actual, v_fin_mes_actual);
   end if;
 end $$;

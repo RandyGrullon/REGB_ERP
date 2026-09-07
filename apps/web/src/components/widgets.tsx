@@ -55,6 +55,8 @@ export interface DatosWidgets {
   recurrentesVencidos: number
   headcount: number
   nuevosIngresos: { name: string; hace: number }[]
+  proximaNomina: { periodo: string; diasFaltan: number } | null
+  costoNominaMesActual: number
 }
 
 const money = (n: number) =>
@@ -110,6 +112,8 @@ export async function cargarDatosWidgets(
     recurrentesVencidos: 0,
     headcount: 0,
     nuevosIngresos: [],
+    proximaNomina: null,
+    costoNominaMesActual: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -526,6 +530,33 @@ export async function cargarDatosWidgets(
         order by hire_date desc
         limit 5`
     ).map((r) => ({ name: r.name, hace: Number(r.hace) }))
+  }
+
+  if (pidieron('payroll-next-run')) {
+    const [p] = await tx<{ period_start: string; period_end: string; pay_date: string }[]>`
+      select period_start::text, period_end::text, pay_date::text
+      from public.payroll_periods
+      where tenant_id = ${tenantId} and status = 'draft'
+      order by period_end
+      limit 1`
+    vacio.proximaNomina = p
+      ? {
+          periodo: `${p.period_start.slice(0, 10)} – ${p.period_end.slice(0, 10)}`,
+          diasFaltan: Math.round(
+            (new Date(`${p.pay_date.slice(0, 10)}T00:00:00`).getTime() - Date.now()) / 86_400_000,
+          ),
+        }
+      : null
+  }
+
+  if (pidieron('payroll-cost')) {
+    const [c] = await tx<{ total: string }[]>`
+      select coalesce(sum(l.net_salary), 0)::text as total
+      from public.payroll_lines l
+      join public.payroll_periods pp on pp.id = l.period_id
+      where l.tenant_id = ${tenantId}
+        and date_trunc('month', pp.period_end) = date_trunc('month', current_date)`
+    vacio.costoNominaMesActual = Number(c?.total ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1128,6 +1159,43 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'payroll-next-run': {
+    titulo: 'Proximo periodo de nomina',
+    icono: 'event',
+    render: (d) =>
+      d.proximaNomina === null ? (
+        <Vacio>Nada en borrador todavia.</Vacio>
+      ) : (
+        <p className="py-2">
+          <span
+            className={`tabular text-2xl font-semibold ${
+              d.proximaNomina.diasFaltan <= 3
+                ? 'text-[var(--color-semantic-text-warning)]'
+                : 'text-[var(--color-text-primary)]'
+            }`}
+          >
+            {d.proximaNomina.diasFaltan} dias
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            para pagar {d.proximaNomina.periodo}
+          </span>
+        </p>
+      ),
+  },
+
+  'payroll-cost': {
+    titulo: 'Costo de nomina este mes',
+    icono: 'group',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.costoNominaMesActual)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">neto pagado este mes</span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

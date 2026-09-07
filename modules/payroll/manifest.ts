@@ -1,10 +1,16 @@
 import { defineModule } from '@regb/module-registry'
 
 /**
- * Nomina — modulo 62 del catalogo (§5.6).
+ * Nomina — modulo 62 del catalogo (§5.6, F7/S37-38).
  *
  * No corre en movil a proposito: nadie cierra una nomina de 300 empleados
  * desde el celular, y exponerla ahi solo agrega superficie de riesgo.
+ *
+ * Requiere `employees` de verdad -payroll_lines referencia
+ * public.employees, sin empleados no hay a quien pagarle-. El scaffold
+ * original de este manifest traia requires vacio porque se escribio
+ * antes de que existiera employees; corregido en la 0052, mismo criterio
+ * que la 0043/0047 ya aplicaron para accounting/ap/budgets.
  */
 export default defineModule({
   id: 'payroll',
@@ -23,7 +29,7 @@ export default defineModule({
     perUser: { pyme: 0, mediano: 2, grande: 2 },
   },
 
-  requires: [],
+  requires: ['employees'],
   recommends: ['accounting'],
 
   permissions: [
@@ -40,7 +46,8 @@ export default defineModule({
     { path: '/payroll/reports', label: 'TSS y reportes', perm: 'payroll.export' },
   ],
 
-  dashboardWidgets: ['payroll-next-run'],
+  dashboardWidgets: ['payroll-next-run', 'payroll-cost'],
+  reports: ['payroll-summary', 'tss-report'],
   events: { emits: ['payroll.period.closed'], listens: [] },
 
   platforms: { web: true, desktop: true, mobile: false },
