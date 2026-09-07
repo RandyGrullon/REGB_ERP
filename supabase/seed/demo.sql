@@ -133,7 +133,8 @@ begin
          (v_med, 'employees', 'active', true),
          (v_med, 'payroll', 'active', true),
          (v_med, 'attendance', 'active', true),
-         (v_med, 'time-off', 'active', true)
+         (v_med, 'time-off', 'active', true),
+         (v_med, 'expenses', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1073,5 +1074,60 @@ begin
       (tenant_id, employee_id, leave_type, start_date, end_date, business_days, status, reason, decided_at, decision_note)
     values (v_med, v_cajera, 'personal', v_inicio, v_inicio, 1, 'rejected',
             'Cita personal', now() - interval '19 days', 'Coincide con el cierre de mes, se reagenda.');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Gastos & Reembolsos: uno reportado por aprobar, uno aprobado esperando
+--  reembolso -con NCF valido, para ver el ITBIS deducible-, y uno ya
+--  reembolsado -para ver los cuatro estados de una vez-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_encargada uuid; -- Rafael
+  v_cajera    uuid; -- Yolanda
+  v_vendedor  uuid; -- Anthony
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
+  select id into v_cajera    from public.employees where tenant_id = v_med and code = 'E-002';
+  select id into v_vendedor  from public.employees where tenant_id = v_med and code = 'E-003';
+  if v_encargada is null or v_cajera is null or v_vendedor is null then return; end if;
+
+  if not exists (
+    select 1 from public.expenses where tenant_id = v_med and employee_id = v_cajera
+  ) then
+    -- Reportado, todavia sin resolver -sin NCF, un taxi de carrera-.
+    insert into public.expenses
+      (tenant_id, employee_id, category, expense_date, amount, vendor_name, receipt_note)
+    values (v_med, v_cajera, 'transport', current_date - 3, 850,
+            'Taxi Uber', 'Carrera al banco a depositar el cierre de caja');
+  end if;
+
+  if not exists (
+    select 1 from public.expenses where tenant_id = v_med and employee_id = v_encargada
+  ) then
+    -- Aprobado, esperando reembolso -con NCF fiscal valido: es deducible de ITBIS-.
+    insert into public.expenses
+      (tenant_id, employee_id, category, expense_date, amount, vendor_name, vendor_tax_id, ncf,
+       receipt_note, status, decided_at)
+    values (v_med, v_encargada, 'supplies', current_date - 10, 3200,
+            'Office Depot Dominicana', '101-88776-5', 'B0100004521',
+            'Resmas de papel y tinta para la impresora de la oficina', 'approved', now() - interval '8 days');
+  end if;
+
+  if not exists (
+    select 1 from public.expenses where tenant_id = v_med and employee_id = v_vendedor
+  ) then
+    -- Reportado, aprobado y ya reembolsado por transferencia -sin NCF: no es deducible-.
+    insert into public.expenses
+      (tenant_id, employee_id, category, expense_date, amount, vendor_name, receipt_note,
+       status, decided_at, reimbursed_at, reimbursement_method)
+    values (v_med, v_vendedor, 'meals', current_date - 15, 650,
+            'Colmado Los Hermanos', 'Almuerzo con un cliente en visita de venta',
+            'reimbursed', now() - interval '13 days', now() - interval '10 days', 'transfer');
   end if;
 end $$;

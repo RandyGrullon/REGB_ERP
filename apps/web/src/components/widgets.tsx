@@ -63,6 +63,8 @@ export interface DatosWidgets {
   tardanzasHoy: { name: string; minutos: number }[]
   solicitudesPendientes: number
   fueraHoy: { name: string; tipo: string; regresa: string }[]
+  gastosPorAprobar: number
+  gastosPorReembolsar: number
 }
 
 const money = (n: number) =>
@@ -136,6 +138,8 @@ export async function cargarDatosWidgets(
     tardanzasHoy: [],
     solicitudesPendientes: 0,
     fueraHoy: [],
+    gastosPorAprobar: 0,
+    gastosPorReembolsar: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -625,6 +629,20 @@ export async function cargarDatosWidgets(
       tipo: f.leave_type,
       regresa: f.end_date,
     }))
+  }
+
+  if (pidieron('expenses-pending')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.expenses
+      where tenant_id = ${tenantId} and status = 'submitted'`
+    vacio.gastosPorAprobar = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('expenses-owed')) {
+    const [o] = await tx<{ total: string }[]>`
+      select coalesce(sum(amount), 0)::text as total from public.expenses
+      where tenant_id = ${tenantId} and status = 'approved'`
+    vacio.gastosPorReembolsar = Number(o?.total ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1328,6 +1346,42 @@ const WIDGETS: Record<
           ))}
         </ul>
       ),
+  },
+
+  'expenses-pending': {
+    titulo: 'Gastos por aprobar',
+    icono: 'receipt_long',
+    render: (d) => (
+      <p className="py-2">
+        <span
+          className={`tabular text-2xl font-semibold ${
+            d.gastosPorAprobar > 0
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          {d.gastosPorAprobar}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.gastosPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'expenses-owed': {
+    titulo: 'Por reembolsar',
+    icono: 'payments',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {money(d.gastosPorReembolsar)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          aprobado, todavia sin pagar
+        </span>
+      </p>
+    ),
   },
 
   'draft-entries-pending': {

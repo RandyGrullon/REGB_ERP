@@ -30,6 +30,7 @@ documento donde alguien va a buscar la verdad.
 | `payroll` | TSS, ISR, regalia y volantes por periodo (F7) | [payroll.md](payroll.md) |
 | `attendance` | Marcaje con geocerca real, horas extra y tardanza calculadas (F7) | [attendance.md](attendance.md) |
 | `time-off` | Vacaciones y permisos con saldo calculado -Codigo de Trabajo Art. 177- (F7) | [time-off.md](time-off.md) |
+| `expenses` | Gastos y reembolsos con ITBIS deducible calculado por NCF (F7) | [expenses.md](expenses.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -75,13 +76,13 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los diecinueve cubiertos.** 358 pruebas contra Postgres real
+- **RLS: los veinte cubiertos.** 370 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
   `cost-centers` + 8 de `multicurrency` + 13 de `payments` + 11 de
   `employees` + 11 de `payroll` + 12 de `attendance` + 12 de
-  `time-off`). La numeración de `purchase-orders` y de
+  `time-off` + 12 de `expenses`). La numeración de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
   despues con la 0031 no llegó a existir en ninguna de las dos.
@@ -90,8 +91,8 @@ patrones que `sales-orders` ya habia corregido.
   asiento o cuenta ajenos, tapada con una comprobación cruzada en el
   trigger de inmutabilidad. `ap`, `treasury`, `bank-rec`, `fixed-assets`,
   `budgets`, `cost-centers`, `payments`, `employees`, `payroll`,
-  `attendance` y `time-off` aprendieron la lección de una vez: sus
-  triggers equivalentes (`impedir_pago_a_factura_ajena`,
+  `attendance`, `time-off` y `expenses` aprendieron la lección de una
+  vez: sus triggers equivalentes (`impedir_pago_a_factura_ajena`,
   `impedir_transaccion_cuenta_ajena`,
   `impedir_transferencia_cuenta_ajena`, `impedir_import_cuenta_ajena`,
   `impedir_linea_ajena`, `impedir_activo_ajeno`,
@@ -99,8 +100,12 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_cliente_ajeno`, `impedir_referencia_ajena_empleado`,
   `impedir_contrato_ajeno`, `impedir_linea_nomina_ajena`,
   `impedir_geocerca_ajena`, `impedir_marcaje_ajeno`,
-  `impedir_solicitud_ausencia_ajena`) se escribieron desde el primer
-  día, no como corrección posterior. `multicurrency`
+  `impedir_solicitud_ausencia_ajena`, `impedir_gasto_ajeno`) se
+  escribieron desde el primer día, no como corrección posterior.
+  `expenses` tiene una variante nueva en el patron: valida la
+  referencia cruzada tambien en `update`, no solo `insert`, porque
+  `payroll_period_id` se rellena despues de crear la fila, al momento
+  de reembolsar -la unica vez en la serie que hace falta-. `multicurrency`
   encontró su propio descuido -no un agujero de aislamiento, sino
   `currencies` con RLS activo pero sin `FORCE`- atrapado por la red de
   seguridad `isolation.test.ts` que corre contra todo el esquema
@@ -141,7 +146,10 @@ patrones que `sales-orders` ya habia corregido.
   de inmutabilidad sin lanzar ningún error. Corregido copiando el patrón
   ya usado en `payroll.test.ts` (`disable trigger` antes de borrar,
   `enable trigger` después) y reactivando el trigger a mano en la base
-  que había quedado así.
+  que había quedado así. `expenses` no encontró ni un bug de aplicación
+  ni uno de pruebas -el patrón de disable/enable trigger alrededor del
+  delete de limpieza se copió directo del arreglo de `time-off`, y el
+  módulo pasó limpio en su primera corrida completa de `gate:f0`-.
 
 ---
 
