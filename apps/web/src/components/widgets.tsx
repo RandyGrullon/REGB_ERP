@@ -84,6 +84,7 @@ export interface DatosWidgets {
   listasPrecioVigentes: number
   requisicionesPendientes: number
   rfqsAbiertos: number
+  recepcionesConDiscrepancias: number
 }
 
 const money = (n: number) =>
@@ -173,6 +174,7 @@ export async function cargarDatosWidgets(
     listasPrecioVigentes: 0,
     requisicionesPendientes: 0,
     rfqsAbiertos: 0,
+    recepcionesConDiscrepancias: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -845,6 +847,13 @@ export async function cargarDatosWidgets(
     const [p] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.rfqs where tenant_id = ${tenantId} and status = 'open'`
     vacio.rfqsAbiertos = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('receipts-with-discrepancies')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.goods_receipts
+      where tenant_id = ${tenantId} and status = 'with_discrepancies'`
+    vacio.recepcionesConDiscrepancias = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -1798,6 +1807,21 @@ const WIDGETS: Record<
       <p className="py-2">
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">{d.rfqsAbiertos}</span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">esperando cotizaciones</span>
+      </p>
+    ),
+  },
+
+  'receipts-with-discrepancies': {
+    titulo: 'Recepciones con discrepancia',
+    icono: 'inventory_2',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.recepcionesConDiscrepancias}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.recepcionesConDiscrepancias === 0 ? 'todo coincidio' : 'llego distinto a lo esperado'}
+        </span>
       </p>
     ),
   },

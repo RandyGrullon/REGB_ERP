@@ -40,6 +40,7 @@ documento donde alguien va a buscar la verdad.
 | `price-lists` | Precio por cliente, canal o volumen con precedencia real (F8) | [price-lists.md](price-lists.md) |
 | `requisitions` | Pedir antes de comprar, con aprobacion por monto real -el limite de cada rol decide- (F8) | [requisitions.md](requisitions.md) |
 | `rfq` | Comparar cotizaciones de proveedores con un ganador que elige siempre la misma regla (F8) | [rfq.md](rfq.md) |
+| `receipts` | Inspeccion real al recibir -aceptado contra rechazado-, discrepancia y devolucion al proveedor (F8) | [receipts.md](receipts.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -85,7 +86,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los veintinueve cubiertos.** 478 pruebas contra Postgres real
+- **RLS: los treinta cubiertos.** 494 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -94,7 +95,7 @@ patrones que `sales-orders` ya habia corregido.
   `time-off` + 12 de `expenses` + 8 de `hr-portal` + 13 de
   `benefits` + 11 de `recruiting` + 14 de `performance` + 14 de
   `training` + 14 de `suppliers` + 12 de `price-lists` + 11 de
-  `requisitions` + 12 de `rfq`). La numeración
+  `requisitions` + 12 de `rfq` + 16 de `receipts`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -125,7 +126,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_lista_precio_ajena_en_cliente`, `impedir_requisicion_ajena`,
   `impedir_editar_requisicion_resuelta`, `impedir_rfq_ajeno`,
   `impedir_referencia_ajena_rfq`, `impedir_editar_cotizacion`,
-  `impedir_editar_rfq_resuelto`) se escribieron desde el
+  `impedir_editar_rfq_resuelto`, `impedir_recepcion_ajena`,
+  `impedir_referencia_ajena_linea_recepcion`, `impedir_devolucion_ajena`,
+  `impedir_editar_recepcion`, `impedir_editar_devolucion_resuelta`) se
+  escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
   patron: valida la referencia cruzada tambien en `update`, no solo
@@ -271,7 +275,28 @@ patrones que `sales-orders` ya habia corregido.
   `mejorCotizacion()` elige siempre el monto más bajo -con dos
   cotizaciones sembradas a propósito donde la más barata entrega más
   lento, confirmando que el precio manda sobre el plazo de entrega- y
-  que adjudicar deja el RFQ inmutable.
+  que adjudicar deja el RFQ inmutable. `receipts` no reinventa lo que
+  `purchase-orders` ya hace -reutiliza `pendingReceipt()`,
+  `validateReceipt()` y `costVariance()` de `procurement.ts` tal
+  cual-, y agrega lo que a la orden de compra le faltaba: un documento
+  de recepción que agrupa varias líneas de un mismo camión, inspección
+  real (aceptado contra rechazado, no solo "cuánto llegó"),
+  discrepancia detectada sola contra lo esperado, y devolución al
+  proveedor con su propio movimiento de inventario en sentido
+  contrario (`return_to_supplier`, un tipo nuevo agregado al check
+  constraint existente de `inventory_movements` sin tocar el trigger
+  que ya proyecta el kardex). Encontró un bug real de aplicación
+  probando el flujo completo en el navegador, no en el review de
+  código: `goods_receipts` se diseñó inmutable desde el primer insert
+  -mismo criterio que `rfq_quotes`-, pero la primera versión de la
+  acción insertaba el encabezado SIN el estado derivado y luego
+  intentaba un `UPDATE` separado para fijarlo, exactamente lo que el
+  propio trigger de inmutabilidad bloquea incluso dentro de la misma
+  transacción del insert. El resultado: **ninguna recepción se podía
+  registrar nunca**, revirtiendo la transacción entera con un error de
+  servidor. Corregido restructurando la acción para calcular el estado
+  final de todas las líneas ANTES de insertar el encabezado, para que
+  nunca exista un update posterior al insert.
 
 ---
 

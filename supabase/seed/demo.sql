@@ -143,7 +143,8 @@ begin
          (v_med, 'suppliers', 'active', true),
          (v_med, 'price-lists', 'active', true),
          (v_med, 'requisitions', 'active', true),
-         (v_med, 'rfq', 'active', true)
+         (v_med, 'rfq', 'active', true),
+         (v_med, 'receipts', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -393,6 +394,104 @@ begin
       (v_med, v_alm, v_cemento, 'receipt', 60, 415.00,
        'purchase_order', v_orden, 'Recepcion parcial OC-DEMO-0001',
        now() - interval '2 days');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Recepciones (modulo 46): una orden pendiente de recibir con el flujo
+--  nuevo -para probar el modulo en vivo-, y una orden ya recibida con
+--  discrepancia real y una devolucion pendiente -para que las tres
+--  secciones de /recepciones tengan algo que mostrar sin interactuar
+--  primero-. No toca OC-DEMO-0001 -esa se recibio con el mecanismo viejo
+--  de purchase-orders, antes de que este modulo existiera-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med             uuid;
+  v_alm             uuid;
+  v_cemento         uuid;
+  v_proveedor       uuid;
+  v_orden_pendiente uuid;
+  v_orden_recibida  uuid;
+  v_linea_recibida  uuid;
+  v_recepcion       uuid;
+  v_linea_recepcion uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  select id into v_proveedor from public.suppliers where tenant_id = v_med and code = 'PROV-001';
+  if v_alm is null or v_cemento is null or v_proveedor is null then return; end if;
+
+  -- Confirmada, nada recibido todavia: la que se recibe EN VIVO al probar el modulo.
+  insert into public.purchase_orders
+    (tenant_id, number, supplier_id, warehouse_id, status, order_date,
+     subtotal, tax, total, confirmed_at)
+  values
+    (v_med, 'OC-DEMO-0002', v_proveedor, v_alm, 'confirmed',
+     current_date - 1, 20050.00, 3609.00, 23659.00, now() - interval '1 day')
+  on conflict (tenant_id, number) do nothing
+  returning id into v_orden_pendiente;
+  if v_orden_pendiente is not null then
+    insert into public.purchase_order_lines
+      (order_id, tenant_id, product_id, qty_ordered, qty_received, unit_cost, tax_rate, line_total)
+    values (v_orden_pendiente, v_med, v_cemento, 50, 0, 401.00, 0.18, 23659.00);
+  end if;
+
+  -- Ya recibida CON el flujo de receipts: llegaron 25 de 30, y 5 de esas
+  -- 25 se rechazaron por sacos rotos -discrepancia real y una devolucion
+  -- pendiente de verdad, no solo un estado de ejemplo-.
+  insert into public.purchase_orders
+    (tenant_id, number, supplier_id, warehouse_id, status, order_date,
+     subtotal, tax, total, confirmed_at)
+  values
+    (v_med, 'OC-DEMO-0003', v_proveedor, v_alm, 'partially_received',
+     current_date - 3, 12030.00, 2165.40, 14195.40, now() - interval '3 days')
+  on conflict (tenant_id, number) do nothing
+  returning id into v_orden_recibida;
+  if v_orden_recibida is null then
+    select id into v_orden_recibida from public.purchase_orders
+      where tenant_id = v_med and number = 'OC-DEMO-0003';
+  end if;
+
+  select id into v_linea_recibida from public.purchase_order_lines
+    where order_id = v_orden_recibida and product_id = v_cemento;
+  if v_linea_recibida is null then
+    insert into public.purchase_order_lines
+      (order_id, tenant_id, product_id, qty_ordered, qty_received, unit_cost, tax_rate, line_total)
+    values (v_orden_recibida, v_med, v_cemento, 30, 25, 401.00, 0.18, 14195.40)
+    returning id into v_linea_recibida;
+  end if;
+
+  if not exists (
+    select 1 from public.goods_receipts where tenant_id = v_med and purchase_order_id = v_orden_recibida
+  ) then
+    insert into public.goods_receipts
+      (tenant_id, purchase_order_id, warehouse_id, supplier_id, received_at, notes, status)
+    values
+      (v_med, v_orden_recibida, v_alm, v_proveedor, now() - interval '3 days',
+       'Llegaron 5 sacos rotos, se rechazaron', 'with_discrepancies')
+    returning id into v_recepcion;
+
+    insert into public.goods_receipt_lines
+      (receipt_id, tenant_id, purchase_order_line_id, product_id,
+       qty_expected, qty_received, qty_accepted, qty_rejected, rejection_reason, unit_cost)
+    values
+      (v_recepcion, v_med, v_linea_recibida, v_cemento, 30, 25, 20, 5,
+       'Sacos rotos por humedad', 401.00)
+    returning id into v_linea_recepcion;
+
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost,
+       reference_type, reference_id, notes, created_at)
+    values
+      (v_med, v_alm, v_cemento, 'receipt', 20, 401.00,
+       'goods_receipt', v_recepcion, 'OC-DEMO-0003: aceptado', now() - interval '3 days');
+
+    insert into public.supplier_returns (tenant_id, goods_receipt_line_id, supplier_id, qty, reason)
+    values (v_med, v_linea_recepcion, v_proveedor, 5, 'Sacos rotos por humedad, devueltos al proveedor');
   end if;
 end $$;
 
