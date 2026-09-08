@@ -107,6 +107,8 @@ export interface DatosWidgets {
   comisionesPendientesAprobar: number
   portalInvitesActivas: number
   ticketsAbiertos: number
+  cuponesActivos: number
+  campanasEnCurso: number
 }
 
 const money = (n: number) =>
@@ -217,6 +219,8 @@ export async function cargarDatosWidgets(
     comisionesPendientesAprobar: 0,
     portalInvitesActivas: 0,
     ticketsAbiertos: 0,
+    cuponesActivos: 0,
+    campanasEnCurso: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1066,6 +1070,20 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.tickets
       where tenant_id = ${tenantId} and status != 'closed' and status != 'resolved'`
     vacio.ticketsAbiertos = Number(t?.n ?? 0)
+  }
+
+  if (pidieron('loyalty-active-coupons')) {
+    const [c] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.loyalty_coupons
+      where tenant_id = ${tenantId} and status = 'active'`
+    vacio.cuponesActivos = Number(c?.n ?? 0)
+  }
+
+  if (pidieron('marketing-campaigns-in-progress')) {
+    const [c] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.campaigns
+      where tenant_id = ${tenantId} and status in ('draft', 'scheduled')`
+    vacio.campanasEnCurso = Number(c?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2329,6 +2347,36 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.ticketsAbiertos === 0 ? 'nada pendiente' : 'esperando respuesta'}
+        </span>
+      </p>
+    ),
+  },
+
+  'loyalty-active-coupons': {
+    titulo: 'Cupones activos',
+    icono: 'confirmation_number',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.cuponesActivos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.cuponesActivos === 0 ? 'ninguno todavia' : 'listos para redimir'}
+        </span>
+      </p>
+    ),
+  },
+
+  'marketing-campaigns-in-progress': {
+    titulo: 'Campanas en curso',
+    icono: 'campaign',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.campanasEnCurso}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.campanasEnCurso === 0 ? 'nada en curso' : 'en borrador o programadas'}
         </span>
       </p>
     ),

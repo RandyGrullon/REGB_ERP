@@ -167,12 +167,18 @@ importers:
       '@regb/mod-lots-serials':
         specifier: workspace:*
         version: link:../../modules/lots-serials
+      '@regb/mod-loyalty':
+        specifier: workspace:*
+        version: link:../../modules/loyalty
       '@regb/mod-maintenance':
         specifier: workspace:*
         version: link:../../modules/maintenance
       '@regb/mod-manufacturing':
         specifier: workspace:*
         version: link:../../modules/manufacturing
+      '@regb/mod-marketing':
+        specifier: workspace:*
+        version: link:../../modules/marketing
       '@regb/mod-mrp':
         specifier: workspace:*
         version: link:../../modules/mrp
@@ -735,6 +741,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/loyalty:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/maintenance:
     dependencies:
       '@regb/module-registry':
@@ -749,6 +768,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/manufacturing:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/marketing:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

@@ -165,7 +165,9 @@ begin
          (v_med, 'contracts', 'active', true),
          (v_med, 'commissions', 'active', true),
          (v_med, 'customer-portal', 'active', true),
-         (v_med, 'helpdesk', 'active', true)
+         (v_med, 'helpdesk', 'active', true),
+         (v_med, 'loyalty', 'active', true),
+         (v_med, 'marketing', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1346,6 +1348,74 @@ begin
 
     insert into public.ticket_messages (tenant_id, ticket_id, author_type, body)
     values (v_med, v_ticket, 'customer', 'Buenas, la caja llego mojada y como el 20% de los tornillos tienen oxido. Necesitamos reposicion antes del viernes.');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Fidelizacion (modulo 38): Constructora Duarte SRL ya con puntos de
+--  compras reales -suficientes para nivel plata- y El Martillo con un
+--  cupon activo y un referido pendiente, listo para completarse en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_duarte    uuid;
+  v_martillo  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_duarte   from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  if v_duarte is null or v_martillo is null then return; end if;
+
+  if not exists (select 1 from public.loyalty_transactions where tenant_id = v_med and customer_id = v_duarte) then
+    insert into public.loyalty_transactions (tenant_id, customer_id, points, reason, source_type)
+    values
+      (v_med, v_duarte, 300, 'Compra FAC-DEMO-0002', 'purchase'),
+      (v_med, v_duarte, 250, 'Compra de material adicional', 'purchase'),
+      (v_med, v_duarte, -100, 'Redimio descuento en caja', 'redemption');
+  end if;
+
+  if not exists (select 1 from public.loyalty_transactions where tenant_id = v_med and customer_id = v_martillo) then
+    insert into public.loyalty_transactions (tenant_id, customer_id, points, reason, source_type)
+    values (v_med, v_martillo, 80, 'Compra FAC-DEMO-0001', 'purchase');
+  end if;
+
+  if not exists (select 1 from public.loyalty_coupons where tenant_id = v_med and code = 'BIENVENIDA10') then
+    insert into public.loyalty_coupons (tenant_id, code, customer_id, discount_type, discount_value, expires_at)
+    values (v_med, 'BIENVENIDA10', v_martillo, 'percentage', 0.10, current_date + interval '30 days');
+  end if;
+
+  if not exists (select 1 from public.loyalty_referrals where tenant_id = v_med and referrer_customer_id = v_duarte) then
+    insert into public.loyalty_referrals (tenant_id, referrer_customer_id, referred_customer_id, bonus_points)
+    values (v_med, v_duarte, v_martillo, 100);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Marketing & Campanas (modulo 37): una campana real en BORRADOR
+--  segmentada por fuente 'referral' -que hoy solo cumple el lead
+--  Ferreteria El Progreso-, lista para enviarse en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferreteria El Progreso') then
+    return;
+  end if;
+
+  if not exists (select 1 from public.campaigns where tenant_id = v_med and name = 'Promo cemento fin de mes') then
+    insert into public.campaigns
+      (tenant_id, name, channel, subject, message, target_source, utm_source, utm_medium, utm_campaign)
+    values
+      (v_med, 'Promo cemento fin de mes', 'email', 'Precio especial en cemento',
+       '10% de descuento en cemento para clientes referidos este fin de mes.',
+       'referral', 'crm', 'email', 'promo-cemento-fin-de-mes');
   end if;
 end $$;
 

@@ -54,6 +54,8 @@ import contractsManifest from '@regb/mod-contracts'
 import commissionsManifest from '@regb/mod-commissions'
 import customerPortalManifest from '@regb/mod-customer-portal'
 import helpdeskManifest from '@regb/mod-helpdesk'
+import loyaltyManifest from '@regb/mod-loyalty'
+import marketingManifest from '@regb/mod-marketing'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -152,6 +154,8 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     commissionsManifest,
     customerPortalManifest,
     helpdeskManifest,
+    loyaltyManifest,
+    marketingManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

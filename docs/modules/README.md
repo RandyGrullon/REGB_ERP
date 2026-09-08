@@ -61,6 +61,8 @@ documento donde alguien va a buscar la verdad.
 | `commissions` | Una formula por plan, liquidacion con aprobacion real -el bug que su propia prueba encontro- (F9) | [commissions.md](commissions.md) |
 | `customer-portal` | Acceso por token sin contraseña -la primera ruta publica del proyecto, sin sesion de empleado- (F9) | [customer-portal.md](customer-portal.md) |
 | `helpdesk` | Un ticket resuelto se puede reabrir; uno cerrado es terminal de verdad (F9) | [helpdesk.md](helpdesk.md) |
+| `loyalty` | El nivel se gana con puntos de por vida -redimir un premio nunca baja de nivel- (F9) | [loyalty.md](loyalty.md) |
+| `marketing` | Honesto sobre lo que es: toma la foto de a quien se le envio, no manda el correo (F9) | [marketing.md](marketing.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -106,7 +108,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta cubiertos.** 709 pruebas contra Postgres real
+- **RLS: los cincuenta y dos cubiertos.** 735 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -121,8 +123,8 @@ patrones que `sales-orders` ya habia corregido.
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
-  de `commissions` + 10 de `customer-portal` + 10 de `helpdesk`). La
-  numeración
+  de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
+  de `loyalty` + 11 de `marketing`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -199,7 +201,12 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_invitacion_ajena_acceso`, `impedir_editar_invitacion_revocada`,
   `impedir_editar_acceso`, `impedir_cliente_ajeno_ticket`,
   `impedir_ticket_ajeno_mensaje`, `impedir_editar_ticket_cerrado`,
-  `impedir_editar_mensaje`) se
+  `impedir_editar_mensaje`, `impedir_cliente_ajeno_transaccion_puntos`,
+  `impedir_cliente_ajeno_cupon`, `impedir_cliente_ajeno_referido`,
+  `impedir_editar_transaccion_puntos`, `impedir_editar_cupon_resuelto`,
+  `impedir_editar_referido_resuelto`, `impedir_lead_ajeno_destinatario`,
+  `impedir_editar_campana_resuelta`, `impedir_editar_destinatario`,
+  `impedir_borrar_destinatario`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -721,7 +728,34 @@ patrones que `sales-orders` ya habia corregido.
   vez cerrado la pantalla ya no ofrece ningun boton ni formulario de
   respuesta; revertido despues -ticket devuelto a `open`, mensaje de
   prueba borrado- para que la demo siga teniendo un caso real por
-  resolver.
+  resolver. `loyalty` abre S59 con el mismo criterio de "se deriva,
+  nunca se guarda" que ya usan `bank_account_balance()` de `treasury`
+  y `fixed_asset_book_value()` de `fixed-assets`: el saldo de puntos se
+  suma directo del historial completo de transacciones, y el nivel
+  -bronce, plata, oro- se decide por los puntos GANADOS de por vida,
+  no por el saldo actual, para que redimir un premio nunca degrade a
+  un cliente fiel. Verificado en vivo: completar el referido sembrado
+  (Constructora Duarte SRL → Ferreteria El Martillo, bono de 100
+  puntos) acredito el bono en el MISMO movimiento que congelo la fila
+  -saldo de Duarte subiendo de 450 a 550 exacto-, y redimir el cupon
+  `BIENVENIDA10` lo dejo sin boton para volver a redimirlo. Ambos
+  revertidos despues. `marketing` cierra S59 con el mismo criterio de
+  honestidad que `e-sign`: no manda ningun correo ni WhatsApp de
+  verdad todavia -"enviar" una campana toma la foto real de los leads
+  que hoy cumplen el segmento (una FK autentica hacia `crm`, modulo que
+  SI requiere) y crea un destinatario por cada uno-. Encontro su propio
+  bug real: la maquina de estados original solo permitia enviar desde
+  `scheduled`, pero la pantalla ofrece "Enviar ahora" directo desde
+  borrador -verificado en vivo, el primer intento no hizo nada porque
+  la transicion `draft → sent` devolvia `false`-, corregido para
+  permitir el envio directo desde borrador (un flujo legitimo que no
+  depende de programar primero). Vuelto a probar en vivo: la campana
+  sembrada, segmentada por fuente `referral`, encontro exactamente el
+  lead que cumplia el filtro, y marcar apertura y clic movio la tasa de
+  "—" a 100%/0% y luego a 100%/100%, exacto sobre un solo destinatario.
+  Revertido despues -destinatario borrado, atribucion del lead
+  limpiada, campana devuelta a borrador- para que la demo siga
+  teniendo una campana real por enviar.
 
 ---
 
