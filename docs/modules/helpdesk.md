@@ -7,7 +7,7 @@ se calcula contra una fecha limite real, no de memoria.
 **Categoria:** `standard` · **Precio:** 150/600/1800 instalacion ·
 19/69/190 mes · **Requiere:** nada · **Recomienda:** `customer-portal`
 
-Segundo modulo de S58 (F9) — cierra F9 con `customer-portal`.
+Segundo modulo de S58 (F9) — cierra el sprint junto con `customer-portal`.
 
 ---
 

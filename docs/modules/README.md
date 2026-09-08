@@ -707,7 +707,7 @@ patrones que `sales-orders` ya habia corregido.
   revocar la invitacion desde el panel de staff invalido el mismo token
   real en el mismo segundo -tambien confirmado con un 404-. Revertido
   despues -invitacion devuelta a `active`- para que la demo siga
-  teniendo un enlace real por visitar. `helpdesk` cierra F9 con el mismo
+  teniendo un enlace real por visitar. `helpdesk` cierra S58 con el mismo
   criterio de "terminal de verdad" que ya aplicaron `commissions` y los
   CAPA de `quality`: un ticket resuelto puede reabrirse si el cliente
   responde que el problema sigue, pero uno cerrado no tiene marcha
