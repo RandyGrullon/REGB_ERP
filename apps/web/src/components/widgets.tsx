@@ -97,6 +97,7 @@ export interface DatosWidgets {
   sugerenciasMrpPendientes: number
   capasAbiertosCalidad: number
   equiposMantenimientoVencido: number
+  sesionesActivasPisoDePlanta: number
 }
 
 const money = (n: number) =>
@@ -198,6 +199,7 @@ export async function cargarDatosWidgets(
     sugerenciasMrpPendientes: 0,
     capasAbiertosCalidad: 0,
     equiposMantenimientoVencido: 0,
+    sesionesActivasPisoDePlanta: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -982,6 +984,13 @@ export async function cargarDatosWidgets(
         new Date(),
       )
     }).length
+  }
+
+  if (pidieron('shopfloor-active-sessions')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.shopfloor_sessions
+      where tenant_id = ${tenantId} and clocked_out_at is null`
+    vacio.sesionesActivasPisoDePlanta = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2112,6 +2121,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.equiposMantenimientoVencido === 0 ? 'todo al dia' : 'por uso o por fecha'}
+        </span>
+      </p>
+    ),
+  },
+
+  'shopfloor-active-sessions': {
+    titulo: 'Operarios marcados ahora',
+    icono: 'precision_manufacturing',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.sesionesActivasPisoDePlanta}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.sesionesActivasPisoDePlanta === 0 ? 'nadie marcado' : 'en el terminal ahora'}
         </span>
       </p>
     ),

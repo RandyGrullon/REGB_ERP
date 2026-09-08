@@ -155,7 +155,8 @@ begin
          (v_med, 'manufacturing', 'active', true),
          (v_med, 'mrp', 'active', true),
          (v_med, 'quality', 'active', true),
-         (v_med, 'maintenance', 'active', true)
+         (v_med, 'maintenance', 'active', true),
+         (v_med, 'shopfloor', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1077,6 +1078,52 @@ begin
 
     insert into public.work_orders (tenant_id, equipment_id, type, priority, description)
     values (v_med, v_equipo, 'corrective', 'high', 'Fuga de aceite visible en la base del compresor');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Piso de planta / OEE (modulo 60): una orden de produccion propia
+--  -sobre el sub-ensamble VAR-REF, que ya tiene su propio BOM activo-
+--  liberada hace 6 horas, con un paro YA CERRADO de 45 minutos y una
+--  sesion de operario YA CERRADA, para que el OEE tenga con que
+--  calcularse desde el primer vistazo. Sin sesion ni paro abiertos
+--  -listo para que la demo marque entrada o inicie un paro desde cero-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_alm     uuid;
+  v_var_ref uuid;
+  v_bom     uuid;
+  v_orden   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_var_ref from public.products where tenant_id = v_med and sku = 'VAR-REF';
+  if v_alm is null or v_var_ref is null then return; end if;
+
+  select id into v_bom from public.bill_of_materials
+    where tenant_id = v_med and product_id = v_var_ref and status = 'active';
+  if v_bom is null then return; end if;
+
+  if not exists (
+    select 1 from public.production_orders
+    where tenant_id = v_med and bom_id = v_bom and ideal_cycle_hours is not null
+  ) then
+    insert into public.production_orders
+      (tenant_id, bom_id, warehouse_id, status, qty_planned, qty_completed, qty_scrapped,
+       ideal_cycle_hours, released_at)
+    values
+      (v_med, v_bom, v_alm, 'in_progress', 50, 30, 2, 0.08, now() - interval '6 hours')
+    returning id into v_orden;
+
+    insert into public.shopfloor_downtime (tenant_id, production_order_id, reason, started_at, ended_at)
+    values (v_med, v_orden, 'Cambio de rollo de material', now() - interval '4 hours', now() - interval '3 hours 15 minutes');
+
+    insert into public.shopfloor_sessions (tenant_id, production_order_id, operator_id, clocked_in_at, clocked_out_at)
+    values (v_med, v_orden, '00000000-0000-0000-0000-000000000001', now() - interval '6 hours', now() - interval '2 hours');
   end if;
 end $$;
 

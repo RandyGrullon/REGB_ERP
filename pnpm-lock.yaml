@@ -212,6 +212,9 @@ importers:
       '@regb/mod-settings':
         specifier: workspace:*
         version: link:../../modules/settings
+      '@regb/mod-shopfloor':
+        specifier: workspace:*
+        version: link:../../modules/shopfloor
       '@regb/mod-stock-counts':
         specifier: workspace:*
         version: link:../../modules/stock-counts
@@ -891,6 +894,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/settings:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/shopfloor:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

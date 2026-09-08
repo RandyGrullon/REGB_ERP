@@ -52,6 +52,7 @@ documento donde alguien va a buscar la verdad.
 | `mrp` | Explosion de necesidades multinivel real y sugerencias de comprar o producir, nunca automaticas (F8.5) | [mrp.md](mrp.md) |
 | `quality` | Planes de inspeccion, resultado no binario, no conformidad y CAPA con maquina de estados (F8.5) | [quality.md](quality.md) |
 | `maintenance` | Ordenes de trabajo, vencimiento por uso o fecha y MTBF real entre fallas (F8.5) | [maintenance.md](maintenance.md) |
+| `shopfloor` | Terminal tactil, marcaje de tiempos y OEE calculado -no estimado- (F8.5) | [shopfloor.md](shopfloor.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -97,7 +98,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y uno cubiertos.** 625 pruebas contra Postgres real
+- **RLS: los cuarenta y dos cubiertos.** 633 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -110,7 +111,7 @@ patrones que `sales-orders` ya habia corregido.
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
-  `maintenance`). La numeración
+  `maintenance` + 8 de `shopfloor`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -171,7 +172,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_inspeccion`, `impedir_editar_no_conformidad_resuelta`,
   `impedir_editar_capa_cerrado`, `impedir_equipo_ajeno_orden`,
   `impedir_referencia_ajena_parte`, `impedir_editar_orden_resuelta`,
-  `impedir_editar_parte`) se
+  `impedir_editar_parte`, `impedir_orden_ajena_sesion`,
+  `impedir_editar_sesion_cerrada`, `impedir_editar_paro_cerrado`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -552,6 +554,27 @@ patrones que `sales-orders` ya habia corregido.
   `open → in_progress → completed`, confirmando que completada ya no
   admite cambios- se probó en vivo y se revirtió después, para que la
   orden sembrada siga siendo un problema real por resolver.
+  `shopfloor` cierra F8 -18/18- con OEE calculado, no estimado:
+  `calcularOee()` multiplica disponibilidad x rendimiento x calidad,
+  cada factor recortado a `[0,1]` ANTES de multiplicar, para que un
+  ciclo ideal mal estimado no pueda inflar el número final por encima
+  de 100%. El tiempo trabajado reutiliza `workedHours()` de
+  `attendance.ts` -la misma resta entre entrada y salida que ya usa el
+  marcaje de asistencia de empleados-; la calidad reutiliza
+  `tasaMerma()` de `manufacturing.ts` con el signo invertido, la misma
+  pregunta resuelta dos veces. Es el único módulo de F8.5 que SÍ
+  declara `requires: manufacturing` -el terminal marca tiempos sobre
+  una orden de producción real, no existe sin ella-, y por eso su
+  migración altera directamente `production_orders` para agregarle
+  `ideal_cycle_hours`, el mismo criterio que `lots-serials` usó para
+  alterar `inventory_movements`/`products`. Verificado en vivo con una
+  orden sembrada (VAR-REF, liberada hace 6 horas, con un paro de 45
+  minutos ya cerrado): disponibilidad 88%, rendimiento 49%, calidad
+  94%, OEE 40% -confirmado como el producto exacto de los tres-. El
+  ciclo completo del terminal -marcar entrada, iniciar un paro,
+  terminarlo, marcar salida- se probó en vivo sobre esa misma orden y
+  se revirtió después, para que quede exactamente como la sembró la
+  demo.
 
 ---
 
