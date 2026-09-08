@@ -163,7 +163,9 @@ begin
          (v_med, 'e-sign', 'active', true),
          (v_med, 'sales-orders', 'active', true),
          (v_med, 'contracts', 'active', true),
-         (v_med, 'commissions', 'active', true)
+         (v_med, 'commissions', 'active', true),
+         (v_med, 'customer-portal', 'active', true),
+         (v_med, 'helpdesk', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1293,6 +1295,57 @@ begin
 
     insert into public.commission_entries (tenant_id, plan_id, sales_order_id, salesperson_id, base_amount, commission_amount)
     values (v_med, v_plan, v_orden, v_maria, 25000, 1250);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Portal de clientes (modulo 39): una invitacion YA ACTIVA para El
+--  Martillo -que ya tiene facturas reales (FAC-DEMO-0001/0003)-, lista
+--  para entrar a /portal-cliente/[token] sin necesitar sesion.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_martillo  uuid;
+  v_maria     constant uuid := '00000000-0000-0000-0000-000000000001';
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  if v_martillo is null then return; end if;
+
+  if not exists (select 1 from public.portal_invites where tenant_id = v_med and customer_id = v_martillo) then
+    insert into public.portal_invites (tenant_id, customer_id, email, token, status, created_by, activated_at)
+    values (v_med, v_martillo, 'compras@elmartillo.do', 'demo-martillo-portal-2026', 'active', v_maria, now() - interval '3 days');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Mesa de ayuda (modulo 40): un ticket real ABIERTO -con un mensaje ya
+--  cambiado-, listo para tomarlo, responder y resolverlo en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_martillo uuid;
+  v_ticket   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  if v_martillo is null then return; end if;
+
+  if not exists (select 1 from public.tickets where tenant_id = v_med and subject = 'El pedido llego con una caja de tornillos danada') then
+    insert into public.tickets (tenant_id, customer_id, subject, description, priority, status, sla_due_at)
+    values (v_med, v_martillo, 'El pedido llego con una caja de tornillos danada',
+            'La caja de tornillos de 3 pulgadas llego mojada y varias unidades tienen oxido. Piden reposicion.',
+            'high', 'open', now() + interval '4 hours')
+    returning id into v_ticket;
+
+    insert into public.ticket_messages (tenant_id, ticket_id, author_type, body)
+    values (v_med, v_ticket, 'customer', 'Buenas, la caja llego mojada y como el 20% de los tornillos tienen oxido. Necesitamos reposicion antes del viernes.');
   end if;
 end $$;
 

@@ -59,6 +59,8 @@
     "@regb/mod-e-sign": "workspace:*",
     "@regb/mod-contracts": "workspace:*",
     "@regb/mod-commissions": "workspace:*",
+    "@regb/mod-customer-portal": "workspace:*",
+    "@regb/mod-helpdesk": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

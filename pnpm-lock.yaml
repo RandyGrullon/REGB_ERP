@@ -122,6 +122,9 @@ importers:
       '@regb/mod-crm':
         specifier: workspace:*
         version: link:../../modules/crm
+      '@regb/mod-customer-portal':
+        specifier: workspace:*
+        version: link:../../modules/customer-portal
       '@regb/mod-dashboard':
         specifier: workspace:*
         version: link:../../modules/dashboard
@@ -143,6 +146,9 @@ importers:
       '@regb/mod-fleet':
         specifier: workspace:*
         version: link:../../modules/fleet
+      '@regb/mod-helpdesk':
+        specifier: workspace:*
+        version: link:../../modules/helpdesk
       '@regb/mod-hr-portal':
         specifier: workspace:*
         version: link:../../modules/hr-portal
@@ -534,6 +540,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/customer-portal:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/dashboard:
     dependencies:
       '@regb/module-registry':
@@ -613,6 +632,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/fleet:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/helpdesk:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

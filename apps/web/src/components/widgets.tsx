@@ -105,6 +105,8 @@ export interface DatosWidgets {
   solicitudesFirmaPendientes: number
   contratosVencenPronto: number
   comisionesPendientesAprobar: number
+  portalInvitesActivas: number
+  ticketsAbiertos: number
 }
 
 const money = (n: number) =>
@@ -213,6 +215,8 @@ export async function cargarDatosWidgets(
     solicitudesFirmaPendientes: 0,
     contratosVencenPronto: 0,
     comisionesPendientesAprobar: 0,
+    portalInvitesActivas: 0,
+    ticketsAbiertos: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1048,6 +1052,20 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.commission_entries
       where tenant_id = ${tenantId} and status = 'pending'`
     vacio.comisionesPendientesAprobar = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('portal-active-invites')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.portal_invites
+      where tenant_id = ${tenantId} and status = 'active'`
+    vacio.portalInvitesActivas = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('helpdesk-open-tickets')) {
+    const [t] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.tickets
+      where tenant_id = ${tenantId} and status != 'closed' and status != 'resolved'`
+    vacio.ticketsAbiertos = Number(t?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2281,6 +2299,36 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.comisionesPendientesAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'portal-active-invites': {
+    titulo: 'Invitaciones activas al portal',
+    icono: 'open_in_new',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.portalInvitesActivas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.portalInvitesActivas === 0 ? 'ninguna todavia' : 'clientes con acceso'}
+        </span>
+      </p>
+    ),
+  },
+
+  'helpdesk-open-tickets': {
+    titulo: 'Tickets abiertos',
+    icono: 'support_agent',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.ticketsAbiertos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.ticketsAbiertos === 0 ? 'nada pendiente' : 'esperando respuesta'}
         </span>
       </p>
     ),

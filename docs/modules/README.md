@@ -59,6 +59,8 @@ documento donde alguien va a buscar la verdad.
 | `e-sign` | Firma con rastro de auditoria real -hash e IP-, honesto sobre no ser PKI certificado (F9) | [e-sign.md](e-sign.md) |
 | `contracts` | Renovacion que crea un contrato nuevo con escalamiento de precio, nunca sobrescribe (F9) | [contracts.md](contracts.md) |
 | `commissions` | Una formula por plan, liquidacion con aprobacion real -el bug que su propia prueba encontro- (F9) | [commissions.md](commissions.md) |
+| `customer-portal` | Acceso por token sin contraseña -la primera ruta publica del proyecto, sin sesion de empleado- (F9) | [customer-portal.md](customer-portal.md) |
+| `helpdesk` | Un ticket resuelto se puede reabrir; uno cerrado es terminal de verdad (F9) | [helpdesk.md](helpdesk.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -104,7 +106,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y ocho cubiertos.** 689 pruebas contra Postgres real
+- **RLS: los cincuenta cubiertos.** 709 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -119,7 +121,8 @@ patrones que `sales-orders` ya habia corregido.
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
-  de `commissions`). La numeración
+  de `commissions` + 10 de `customer-portal` + 10 de `helpdesk`). La
+  numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -192,7 +195,11 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_solicitud_firma_resuelta`, `impedir_editar_evento`,
   `impedir_referencia_ajena_contrato`, `impedir_editar_contrato_activo`,
   `impedir_referencia_ajena_comision`,
-  `impedir_editar_comision_resuelta`) se
+  `impedir_editar_comision_resuelta`, `impedir_cliente_ajeno_invitacion`,
+  `impedir_invitacion_ajena_acceso`, `impedir_editar_invitacion_revocada`,
+  `impedir_editar_acceso`, `impedir_cliente_ajeno_ticket`,
+  `impedir_ticket_ajeno_mensaje`, `impedir_editar_ticket_cerrado`,
+  `impedir_editar_mensaje`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -682,7 +689,39 @@ patrones que `sales-orders` ya habia corregido.
   RD$25,000 calculó RD$1,250.00 exacto, y el flujo completo
   pendiente → aprobada → pagada se completó sin errores, revertido
   después para que la demo siga teniendo una comision real por
-  aprobar.
+  aprobar. `customer-portal` cierra S58 abriendo una categoria nueva:
+  es el primer modulo de todo el proyecto cuya pantalla real de cliente
+  NO vive dentro del `Shell` autenticado. `/portal-cliente/[token]` es
+  una ruta publica de verdad -sin `modulePage()`, sin rol, sin tenant en
+  la URL- que usa la conexion de servicio `db()` (documentada en
+  `lib/db.ts` como la que NO aplica RLS por si sola) para resolver
+  exactamente el token recibido, y de ahi en adelante filtra cada
+  consulta por el `tenant_id`/`customer_id` que ESA busqueda devolvio,
+  nunca por un parametro que mande el cliente. El manifest lo refleja:
+  su `routes[]` solo declara la pantalla de staff, la publica queda
+  deliberadamente fuera del sistema de RBAC porque nadie con sesion de
+  tenant la visita. Verificado en vivo de punta a punta: la invitacion
+  sembrada para Ferreteria El Martillo mostro sus dos facturas reales
+  (RD$21,830 abierta + RD$11,564 vencida = RD$33,394 pendiente, exacto)
+  sin ninguna sesion abierta; un token inventado dio 404 limpio; y
+  revocar la invitacion desde el panel de staff invalido el mismo token
+  real en el mismo segundo -tambien confirmado con un 404-. Revertido
+  despues -invitacion devuelta a `active`- para que la demo siga
+  teniendo un enlace real por visitar. `helpdesk` cierra F9 con el mismo
+  criterio de "terminal de verdad" que ya aplicaron `commissions` y los
+  CAPA de `quality`: un ticket resuelto puede reabrirse si el cliente
+  responde que el problema sigue, pero uno cerrado no tiene marcha
+  atras -reforzado por `no_editar_ticket_cerrado`, no solo por la UI-.
+  El vencimiento del SLA reutiliza `certificadoVigente()` de
+  `training.ts` como `slaVigente()` -**septima vez** que esa funcion se
+  reusa en el proyecto-, y `diasAbierto()` de `quality.ts` se reusa tal
+  cual para saber cuanto lleva abierto un caso. Verificado en vivo la
+  secuencia completa open -> in_progress -> resolved (5/5 satisfaccion)
+  -> in_progress (reabierto) -> resolved -> closed, confirmando que una
+  vez cerrado la pantalla ya no ofrece ningun boton ni formulario de
+  respuesta; revertido despues -ticket devuelto a `open`, mensaje de
+  prueba borrado- para que la demo siga teniendo un caso real por
+  resolver.
 
 ---
 
