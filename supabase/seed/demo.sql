@@ -158,7 +158,8 @@ begin
          (v_med, 'maintenance', 'active', true),
          (v_med, 'shopfloor', 'active', true),
          (v_med, 'crm', 'active', true),
-         (v_med, 'pipeline', 'active', true)
+         (v_med, 'pipeline', 'active', true),
+         (v_med, 'quotes', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1165,6 +1166,36 @@ begin
     insert into public.opportunities (tenant_id, lead_id, name, amount, stage, probability, expected_close_date)
     values (v_med, v_lead2, 'Suministro de materiales - Torre Vega Real', 850000, 'negotiation', 0.75, current_date + 15)
     returning id into v_op;
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Cotizaciones (modulo 31, F9): una cotizacion real en borrador para
+--  un cliente existente, con una linea real de cemento -lista para
+--  agregar mas lineas y enviarla en vivo, sin nada resuelto de
+--  antemano-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_duarte  uuid;
+  v_cemento uuid;
+  v_cot     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_duarte  from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  if v_duarte is null or v_cemento is null then return; end if;
+
+  if not exists (select 1 from public.quotes where tenant_id = v_med and quote_number = 'COT-0001') then
+    insert into public.quotes (tenant_id, quote_number, customer_id, terms, valid_until, subtotal, discount, tax, total)
+    values (v_med, 'COT-0001', v_duarte, 'Neto 45 dias', current_date + 30, 46500, 0, 8370, 54870)
+    returning id into v_cot;
+
+    insert into public.quote_lines (quote_id, tenant_id, product_id, quantity, unit_price, discount_pct, tax_rate, line_total)
+    values (v_cot, v_med, v_cemento, 100, 465.00, 0, 0.18, 54870);
   end if;
 end $$;
 

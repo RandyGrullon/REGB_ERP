@@ -101,6 +101,7 @@ export interface DatosWidgets {
   sesionesActivasPisoDePlanta: number
   leadsSinAsignar: number
   forecastPonderadoPipeline: number
+  cotizacionesEsperandoAprobacion: number
 }
 
 const money = (n: number) =>
@@ -205,6 +206,7 @@ export async function cargarDatosWidgets(
     sesionesActivasPisoDePlanta: 0,
     leadsSinAsignar: 0,
     forecastPonderadoPipeline: 0,
+    cotizacionesEsperandoAprobacion: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1012,6 +1014,13 @@ export async function cargarDatosWidgets(
     vacio.forecastPonderadoPipeline = forecastPonderado(
       abiertas.map((o) => ({ amount: Number(o.amount), probability: Number(o.probability) })),
     )
+  }
+
+  if (pidieron('quotes-pending-approval')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.quotes
+      where tenant_id = ${tenantId} and status = 'sent'`
+    vacio.cotizacionesEsperandoAprobacion = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2186,6 +2195,21 @@ const WIDGETS: Record<
           RD$ {d.forecastPonderadoPipeline.toLocaleString('es-DO', { maximumFractionDigits: 0 })}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">monto x probabilidad</span>
+      </p>
+    ),
+  },
+
+  'quotes-pending-approval': {
+    titulo: 'Cotizaciones esperando aprobacion',
+    icono: 'description',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.cotizacionesEsperandoAprobacion}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.cotizacionesEsperandoAprobacion === 0 ? 'nada pendiente' : 'esperando respuesta'}
+        </span>
       </p>
     ),
   },

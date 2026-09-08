@@ -55,6 +55,7 @@ documento donde alguien va a buscar la verdad.
 | `shopfloor` | Terminal tactil, marcaje de tiempos y OEE calculado -no estimado- (F8.5) | [shopfloor.md](shopfloor.md) |
 | `crm` | Puntaje explicable de leads y asignacion automatica en round-robin (F9) | [crm.md](crm.md) |
 | `pipeline` | Kanban de etapas, forecast ponderado y motivo de perdida obligatorio (F9) | [pipeline.md](pipeline.md) |
+| `quotes` | Versiones reales, contenido congelado al enviar, mismos totales que pedidos/POS/facturas (F9) | [quotes.md](quotes.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -100,7 +101,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y cuatro cubiertos.** 648 pruebas contra Postgres real
+- **RLS: los cuarenta y cinco cubiertos.** 660 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -114,7 +115,7 @@ patrones que `sales-orders` ya habia corregido.
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
-  `pipeline`). La numeración
+  `pipeline` + 12 de `quotes`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -179,7 +180,11 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_sesion_cerrada`, `impedir_editar_paro_cerrado`,
   `impedir_lead_ajeno_actividad`, `impedir_editar_actividad`,
   `impedir_lead_ajeno_oportunidad`,
-  `impedir_editar_oportunidad_resuelta`) se
+  `impedir_editar_oportunidad_resuelta`,
+  `impedir_referencia_ajena_cotizacion`,
+  `impedir_referencia_ajena_linea_cotizacion`,
+  `impedir_editar_cotizacion_no_borrador`,
+  `impedir_editar_linea_cotizacion`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -607,6 +612,27 @@ patrones que `sales-orders` ya habia corregido.
   inmediato. Todo revertido después -lead devuelto a `new` sin
   asignar, actividad borrada, oportunidad devuelta a `negotiation`-
   para que la demo siga teniendo un pendiente real que resolver.
+  `quotes` cierra S56 sin escribir una sola formula de dinero nueva:
+  `documentTotals()`/`lineTotals()` de `documents.ts` -las MISMAS
+  funciones que ya usan pedidos, POS y facturas- calculan cada total
+  aqui tambien, respetando la puerta F5 (`grep` de una formula de
+  dinero, una sola ocurrencia en `packages/`). Su aporte real son las
+  versiones: revisar una cotizacion enviada nunca la edita -crea una
+  fila nueva con `supersedes_id` apuntando a la anterior, que se marca
+  `superseded`-, asi que el historial completo de que se cotizo cada
+  vez queda intacto. Un trigger de campo por campo (mismo patron que
+  `bom`) congela `customer_id`/`terms`/totales en cuanto sale de
+  `draft`, pero sus propias lineas son mas estrictas -se congelan por
+  completo, no campo por campo, en cuanto la cotizacion padre deja
+  `draft`-. Deliberadamente sin FK a `leads`: recomienda `crm`, no lo
+  exige, mismo criterio que `logistics` con el vehiculo de `fleet`.
+  Verificado en vivo sobre la cotizacion sembrada (Constructora Duarte
+  SRL, RD$54,870): agregar una segunda linea real (20 unidades a
+  RD$380) confirmo el subtotal, el ITBIS y el total combinados
+  exactos; enviarla y crear una version nueva produjo una v2 real en
+  borrador enlazada de vuelta a la v1 ya `superseded`. Todo revertido
+  despues -v2 borrada, v1 devuelta a `draft`- para que la demo siga
+  teniendo una cotizacion real por enviar desde cero.
 
 ---
 
