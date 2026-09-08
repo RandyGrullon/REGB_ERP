@@ -109,6 +109,7 @@ export interface DatosWidgets {
   ticketsAbiertos: number
   cuponesActivos: number
   campanasEnCurso: number
+  pedidosCanalPorImportar: number
 }
 
 const money = (n: number) =>
@@ -221,6 +222,7 @@ export async function cargarDatosWidgets(
     ticketsAbiertos: 0,
     cuponesActivos: 0,
     campanasEnCurso: 0,
+    pedidosCanalPorImportar: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1084,6 +1086,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.campaigns
       where tenant_id = ${tenantId} and status in ('draft', 'scheduled')`
     vacio.campanasEnCurso = Number(c?.n ?? 0)
+  }
+
+  if (pidieron('ecommerce-orders-pending')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.channel_orders
+      where tenant_id = ${tenantId} and status = 'received'`
+    vacio.pedidosCanalPorImportar = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2377,6 +2386,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.campanasEnCurso === 0 ? 'nada en curso' : 'en borrador o programadas'}
+        </span>
+      </p>
+    ),
+  },
+
+  'ecommerce-orders-pending': {
+    titulo: 'Pedidos de canal por importar',
+    icono: 'storefront',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.pedidosCanalPorImportar}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.pedidosCanalPorImportar === 0 ? 'nada pendiente' : 'esperando importarse'}
         </span>
       </p>
     ),

@@ -63,6 +63,7 @@
     "@regb/mod-helpdesk": "workspace:*",
     "@regb/mod-loyalty": "workspace:*",
     "@regb/mod-marketing": "workspace:*",
+    "@regb/mod-ecommerce": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

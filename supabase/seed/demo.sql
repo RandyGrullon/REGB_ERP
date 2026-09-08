@@ -167,7 +167,8 @@ begin
          (v_med, 'customer-portal', 'active', true),
          (v_med, 'helpdesk', 'active', true),
          (v_med, 'loyalty', 'active', true),
-         (v_med, 'marketing', 'active', true)
+         (v_med, 'marketing', 'active', true),
+         (v_med, 'ecommerce', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1416,6 +1417,45 @@ begin
       (v_med, 'Promo cemento fin de mes', 'email', 'Precio especial en cemento',
        '10% de descuento en cemento para clientes referidos este fin de mes.',
        'referral', 'crm', 'email', 'promo-cemento-fin-de-mes');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  E-commerce sync (modulo 36): una tienda Shopify conectada con el
+--  cemento ya vinculado, y un pedido real RECIBIDO -listo para
+--  importarse en vivo, con su total tal cual lo calculo Shopify-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_cemento  uuid;
+  v_canal    uuid;
+  v_pedido   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
+  if v_cemento is null then return; end if;
+
+  if not exists (select 1 from public.sales_channels where tenant_id = v_med and name = 'Tienda Shopify') then
+    insert into public.sales_channels (tenant_id, name, platform, store_url)
+    values (v_med, 'Tienda Shopify', 'shopify', 'distribuidora-caribe.myshopify.com')
+    returning id into v_canal;
+
+    insert into public.channel_product_links (tenant_id, channel_id, product_id, external_sku, synced_at)
+    values (v_med, v_canal, v_cemento, 'cemento-gris-425kg', now() - interval '2 hours');
+  else
+    select id into v_canal from public.sales_channels where tenant_id = v_med and name = 'Tienda Shopify';
+  end if;
+
+  if v_canal is not null and not exists (select 1 from public.channel_orders where tenant_id = v_med and channel_id = v_canal and external_order_id = '#SHOP-1042') then
+    insert into public.channel_orders (tenant_id, channel_id, external_order_id, customer_name, customer_email, total, received_at)
+    values (v_med, v_canal, '#SHOP-1042', 'Yolanda Perez', 'yolanda.perez@example.do', 2325.00, now() - interval '3 hours')
+    returning id into v_pedido;
+
+    insert into public.channel_order_lines (tenant_id, order_id, product_id, external_sku, quantity, unit_price)
+    values (v_med, v_pedido, v_cemento, 'cemento-gris-425kg', 5, 465.00);
   end if;
 end $$;
 

@@ -63,6 +63,7 @@ documento donde alguien va a buscar la verdad.
 | `helpdesk` | Un ticket resuelto se puede reabrir; uno cerrado es terminal de verdad (F9) | [helpdesk.md](helpdesk.md) |
 | `loyalty` | El nivel se gana con puntos de por vida -redimir un premio nunca baja de nivel- (F9) | [loyalty.md](loyalty.md) |
 | `marketing` | Honesto sobre lo que es: toma la foto de a quien se le envio, no manda el correo (F9) | [marketing.md](marketing.md) |
+| `ecommerce` | Honesto sobre lo que es: registra el pedido tal cual llego, no inventa su propio total (F9) | [ecommerce.md](ecommerce.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -108,7 +109,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y dos cubiertos.** 735 pruebas contra Postgres real
+- **RLS: los cincuenta y tres cubiertos.** 747 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -124,7 +125,7 @@ patrones que `sales-orders` ya habia corregido.
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
-  de `loyalty` + 11 de `marketing`). La numeración
+  de `loyalty` + 11 de `marketing` + 12 de `ecommerce`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -206,7 +207,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_transaccion_puntos`, `impedir_editar_cupon_resuelto`,
   `impedir_editar_referido_resuelto`, `impedir_lead_ajeno_destinatario`,
   `impedir_editar_campana_resuelta`, `impedir_editar_destinatario`,
-  `impedir_borrar_destinatario`) se
+  `impedir_borrar_destinatario`, `impedir_producto_ajeno_vinculo`,
+  `impedir_canal_ajeno_pedido`, `impedir_pedido_ajeno_linea`,
+  `impedir_editar_pedido_canal_resuelto`,
+  `impedir_editar_linea_pedido_canal`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -755,7 +759,22 @@ patrones que `sales-orders` ya habia corregido.
   "—" a 100%/0% y luego a 100%/100%, exacto sobre un solo destinatario.
   Revertido despues -destinatario borrado, atribucion del lead
   limpiada, campana devuelta a borrador- para que la demo siga
-  teniendo una campana real por enviar.
+  teniendo una campana real por enviar. `ecommerce` es el unico modulo
+  de S60 y aplica la misma disciplina de honestidad que `marketing`:
+  no llama a la API de Shopify/WooCommerce/Tiendanube de verdad, y un
+  pedido entrante se registra TAL CUAL llegaria por un webhook -su
+  total nunca se recalcula con una formula propia, porque ya lo
+  calculo el canal externo, y reinventar esa cuenta aqui podria
+  mostrar un numero distinto al que el cliente realmente pago-. Un
+  vinculo de catalogo es una FK real hacia `products` (que SI
+  requiere), y "sincronizar" solo registra la fecha -sin ninguna
+  llamada de red real-. Verificado en vivo: el pedido sembrado
+  `#SHOP-1042` (Yolanda Perez, RD$2,325.00 exacto = 5 sacos de cemento
+  a RD$465) paso de "Recibido" a "Importado" y perdio sus botones de
+  transicion -terminal de verdad-, y sincronizar el vinculo de
+  "Cemento gris 42.5 kg" actualizo su fecha al instante. Ambos
+  revertidos despues para que la demo siga teniendo un pedido real por
+  importar.
 
 ---
 
