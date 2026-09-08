@@ -113,6 +113,9 @@ importers:
       '@regb/mod-cost-centers':
         specifier: workspace:*
         version: link:../../modules/cost-centers
+      '@regb/mod-crm':
+        specifier: workspace:*
+        version: link:../../modules/crm
       '@regb/mod-dashboard':
         specifier: workspace:*
         version: link:../../modules/dashboard
@@ -176,6 +179,9 @@ importers:
       '@regb/mod-performance':
         specifier: workspace:*
         version: link:../../modules/performance
+      '@regb/mod-pipeline':
+        specifier: workspace:*
+        version: link:../../modules/pipeline
       '@regb/mod-pos':
         specifier: workspace:*
         version: link:../../modules/pos
@@ -477,6 +483,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/crm:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/dashboard:
     dependencies:
       '@regb/module-registry':
@@ -738,6 +757,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/performance:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/pipeline:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

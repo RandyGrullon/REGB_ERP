@@ -1,0 +1,149 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import postgres from 'postgres'
+
+/**
+ * CRM / Leads (modulo 29, F9) contra Postgres real.
+ *
+ * Cubre lo que solo se puede comprobar hablandole a la base
+ * directamente:
+ *
+ *  1. Aislamiento normal entre clientes.
+ *  2. B no puede colar una actividad con el lead de A usando su
+ *     PROPIO tenant_id. Mismo patron que 0031-0077.
+ *  3. Una actividad es inmutable desde el primer insert.
+ */
+
+const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
+const sql = postgres(URL, { max: 8, onnotice: () => {} })
+
+const RUN = crypto.randomUUID().slice(0, 8)
+const userA = crypto.randomUUID()
+const userB = crypto.randomUUID()
+let tenantA: string
+let tenantB: string
+let leadA: string
+let leadB: string
+
+const claims = (userId: string, tenantId: string) =>
+  JSON.stringify({ sub: userId, app_metadata: { tenant_id: tenantId, is_provider: false } })
+
+async function as<T>(
+  userId: string,
+  tenantId: string,
+  fn: (tx: postgres.TransactionSql) => Promise<T>,
+): Promise<T> {
+  return sql.begin(async (tx) => {
+    await tx`select set_config('request.jwt.claims', ${claims(userId, tenantId)}, true)`
+    await tx.unsafe('set local role authenticated')
+    return fn(tx)
+  }) as Promise<T>
+}
+
+async function modulo(tenant: string, id: string, encendido: boolean) {
+  await sql`
+    update regb.tenant_modules set enabled = ${encendido}
+    where tenant_id = ${tenant} and module_id = ${id}`
+}
+
+beforeAll(async () => {
+  const [a] = await sql`
+    insert into regb.tenants (slug, legal_name, tier, status)
+    values (${`crm-a-${RUN}`}, 'Ventas CRM A SRL', 'pyme', 'active') returning id`
+  const [b] = await sql`
+    insert into regb.tenants (slug, legal_name, tier, status)
+    values (${`crm-b-${RUN}`}, 'Ventas CRM B SRL', 'pyme', 'active') returning id`
+  tenantA = a!.id
+  tenantB = b!.id
+
+  for (const t of [tenantA, tenantB]) {
+    await sql`
+      insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
+      values (${t}, 'crm', 'active', true)
+      on conflict (tenant_id, module_id) do update set enabled = true, status = 'active'`
+  }
+
+  const [la] = await sql`
+    insert into public.leads (tenant_id, name, source) values (${tenantA}, 'Lead A', 'web') returning id`
+  const [lb] = await sql`
+    insert into public.leads (tenant_id, name, source) values (${tenantB}, 'Lead B', 'web') returning id`
+  leadA = la!.id
+  leadB = lb!.id
+})
+
+afterAll(async () => {
+  const ts = [tenantA, tenantB]
+  await sql.unsafe('alter table public.lead_activities disable trigger no_editar_actividad')
+  await sql`delete from public.lead_activities where tenant_id in ${sql(ts)}`
+  await sql.unsafe('alter table public.lead_activities enable trigger no_editar_actividad')
+  await sql`delete from public.leads where tenant_id in ${sql(ts)}`
+  await sql`delete from audit.log where tenant_id in ${sql(ts)}`
+  await sql`delete from regb.tenants where id in ${sql(ts)}`
+  await sql.end()
+})
+
+describe('Aislamiento entre clientes', () => {
+  it('A ve su propio lead normalmente', async () => {
+    const filas = await as(userA, tenantA, (tx) => tx<{ id: string }[]>`select id from public.leads`)
+    expect(filas).toHaveLength(1)
+  })
+
+  it('B no ve el lead de A ni apuntando a su tenant_id', async () => {
+    const filas = await as(
+      userB,
+      tenantB,
+      (tx) => tx<{ id: string }[]>`select id from public.leads where tenant_id = ${tenantA}`,
+    )
+    expect(filas).toHaveLength(0)
+  })
+
+  it('B no puede colar una actividad con el lead de A usando su PROPIO tenant_id', async () => {
+    await expect(
+      as(
+        userB,
+        tenantB,
+        (tx) => tx`
+          insert into public.lead_activities (tenant_id, lead_id, type, notes)
+          values (${tenantB}, ${leadA}, 'call', 'x')`,
+      ),
+    ).rejects.toThrow(/no pertenece a esta cuenta/)
+  })
+})
+
+describe('Inmutabilidad', () => {
+  it('una actividad se registra normalmente pero nunca se puede editar', async () => {
+    const [act] = await as(
+      userB,
+      tenantB,
+      (tx) => tx<{ id: string }[]>`
+        insert into public.lead_activities (tenant_id, lead_id, type, notes)
+        values (${tenantB}, ${leadB}, 'call', 'Primera llamada') returning id`,
+    )
+    await expect(
+      as(userB, tenantB, (tx) => tx`update public.lead_activities set notes = 'x' where id = ${act!.id}`),
+    ).rejects.toThrow(/no se edita ni se borra/)
+  })
+})
+
+describe('Modulo apagado', () => {
+  afterAll(async () => await modulo(tenantB, 'crm', true))
+
+  it('sin el modulo, los leads dan cero filas', async () => {
+    await modulo(tenantB, 'crm', false)
+    const filas = await as(userB, tenantB, (tx) => tx<{ id: string }[]>`select id from public.leads`)
+    expect(filas).toHaveLength(0)
+  })
+})
+
+describe('Lo que la tabla no deja pasar', () => {
+  it('una fuente de lead inventada se rechaza', async () => {
+    await expect(
+      sql`insert into public.leads (tenant_id, name, source) values (${tenantA}, 'x', 'invalido')`,
+    ).rejects.toThrow(/violates check constraint/)
+  })
+
+  it('un puntaje fuera de 0-100 se rechaza', async () => {
+    await expect(
+      sql`insert into public.leads (tenant_id, name, source, score) values (${tenantA}, 'x', 'web', 150)`,
+    ).rejects.toThrow(/violates check constraint/)
+  })
+})

@@ -53,6 +53,8 @@ documento donde alguien va a buscar la verdad.
 | `quality` | Planes de inspeccion, resultado no binario, no conformidad y CAPA con maquina de estados (F8.5) | [quality.md](quality.md) |
 | `maintenance` | Ordenes de trabajo, vencimiento por uso o fecha y MTBF real entre fallas (F8.5) | [maintenance.md](maintenance.md) |
 | `shopfloor` | Terminal tactil, marcaje de tiempos y OEE calculado -no estimado- (F8.5) | [shopfloor.md](shopfloor.md) |
+| `crm` | Puntaje explicable de leads y asignacion automatica en round-robin (F9) | [crm.md](crm.md) |
+| `pipeline` | Kanban de etapas, forecast ponderado y motivo de perdida obligatorio (F9) | [pipeline.md](pipeline.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -98,7 +100,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y dos cubiertos.** 633 pruebas contra Postgres real
+- **RLS: los cuarenta y cuatro cubiertos.** 648 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -111,7 +113,8 @@ patrones que `sales-orders` ya habia corregido.
   `lots-serials` + 12 de `transfers` + 12 de `stock-counts` + 7 de
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
-  `maintenance` + 8 de `shopfloor`). La numeración
+  `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
+  `pipeline`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -173,7 +176,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_capa_cerrado`, `impedir_equipo_ajeno_orden`,
   `impedir_referencia_ajena_parte`, `impedir_editar_orden_resuelta`,
   `impedir_editar_parte`, `impedir_orden_ajena_sesion`,
-  `impedir_editar_sesion_cerrada`, `impedir_editar_paro_cerrado`) se
+  `impedir_editar_sesion_cerrada`, `impedir_editar_paro_cerrado`,
+  `impedir_lead_ajeno_actividad`, `impedir_editar_actividad`,
+  `impedir_lead_ajeno_oportunidad`,
+  `impedir_editar_oportunidad_resuelta`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -574,7 +580,33 @@ patrones que `sales-orders` ya habia corregido.
   ciclo completo del terminal -marcar entrada, iniciar un paro,
   terminarlo, marcar salida- se probó en vivo sobre esa misma orden y
   se revirtió después, para que quede exactamente como la sembró la
-  demo.
+  demo. `crm` abre F9 (Ventas avanzado, BI e inteligencia) con un
+  puntaje de lead que es una regla fija -40 puntos por email, 20 por
+  teléfono, el resto según la calidad de la fuente-, nunca un modelo
+  de IA opaco, y una asignación round-robin que retoma la vuelta
+  desde el último vendedor que recibió un lead en vez de reiniciar
+  siempre desde el primero. `pipeline` -que sí declara `requires: crm`,
+  a diferencia de `crm` mismo, que no exige nada- sigue el mismo
+  patrón de máquina de estados que `recruiting.ts` ya usó para su
+  propio pipeline de contratación (secuencial hacia adelante, con una
+  salida terminal alcanzable desde cualquier etapa no terminal) pero
+  con su propio tipo -no se puede reutilizar la función, solo el
+  criterio-, y reutiliza `diasEnPipeline()` de `recruiting.ts` tal
+  cual bajo el alias `diasEnEtapa`. Su forecast pondera cada monto por
+  SU propia probabilidad -nunca el monto crudo-, y la probabilidad se
+  actualiza sola al avanzar de etapa para que ningún número viejo
+  quede olvidado en el cálculo; un `check` en la base (no solo en la
+  UI) impide marcar una oportunidad perdida sin explicar el motivo.
+  Verificado en vivo con los leads y la oportunidad sembrados: el
+  puntaje de dos leads reales (100 y 90) calzó exacto con la fórmula;
+  la asignación round-robin repartió el lead pendiente al único
+  vendedor activo del tenant demo; el lead avanzó de `new` a
+  `contacted` con una actividad real registrada; la oportunidad
+  sembrada (RD$850,000 en `negotiation`, 75%) confirmó un forecast
+  ponderado de RD$637,500 exacto, y marcarla ganada la congeló de
+  inmediato. Todo revertido después -lead devuelto a `new` sin
+  asignar, actividad borrada, oportunidad devuelta a `negotiation`-
+  para que la demo siga teniendo un pendiente real que resolver.
 
 ---
 

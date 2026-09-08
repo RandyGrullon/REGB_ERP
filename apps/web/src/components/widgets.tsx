@@ -5,6 +5,7 @@ import {
   daysSinceRate,
   equipoRequiereMantenimiento,
   firstShortfallWeek,
+  forecastPonderado,
   horaEsperadaEnRD,
   lateMinutes,
   certificadoVigente,
@@ -98,6 +99,8 @@ export interface DatosWidgets {
   capasAbiertosCalidad: number
   equiposMantenimientoVencido: number
   sesionesActivasPisoDePlanta: number
+  leadsSinAsignar: number
+  forecastPonderadoPipeline: number
 }
 
 const money = (n: number) =>
@@ -200,6 +203,8 @@ export async function cargarDatosWidgets(
     capasAbiertosCalidad: 0,
     equiposMantenimientoVencido: 0,
     sesionesActivasPisoDePlanta: 0,
+    leadsSinAsignar: 0,
+    forecastPonderadoPipeline: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -991,6 +996,22 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.shopfloor_sessions
       where tenant_id = ${tenantId} and clocked_out_at is null`
     vacio.sesionesActivasPisoDePlanta = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('crm-unassigned-leads')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.leads
+      where tenant_id = ${tenantId} and assigned_to is null and status != 'disqualified'`
+    vacio.leadsSinAsignar = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('pipeline-weighted-forecast')) {
+    const abiertas = await tx<{ amount: string; probability: string }[]>`
+      select amount::text, probability::text from public.opportunities
+      where tenant_id = ${tenantId} and stage not in ('won', 'lost')`
+    vacio.forecastPonderadoPipeline = forecastPonderado(
+      abiertas.map((o) => ({ amount: Number(o.amount), probability: Number(o.probability) })),
+    )
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2137,6 +2158,34 @@ const WIDGETS: Record<
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.sesionesActivasPisoDePlanta === 0 ? 'nadie marcado' : 'en el terminal ahora'}
         </span>
+      </p>
+    ),
+  },
+
+  'crm-unassigned-leads': {
+    titulo: 'Leads sin asignar',
+    icono: 'contacts',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.leadsSinAsignar}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.leadsSinAsignar === 0 ? 'todos repartidos' : 'esperando vendedor'}
+        </span>
+      </p>
+    ),
+  },
+
+  'pipeline-weighted-forecast': {
+    titulo: 'Forecast ponderado',
+    icono: 'trending_up',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          RD$ {d.forecastPonderadoPipeline.toLocaleString('es-DO', { maximumFractionDigits: 0 })}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">monto x probabilidad</span>
       </p>
     ),
   },

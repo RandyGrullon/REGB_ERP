@@ -156,7 +156,9 @@ begin
          (v_med, 'mrp', 'active', true),
          (v_med, 'quality', 'active', true),
          (v_med, 'maintenance', 'active', true),
-         (v_med, 'shopfloor', 'active', true)
+         (v_med, 'shopfloor', 'active', true),
+         (v_med, 'crm', 'active', true),
+         (v_med, 'pipeline', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1124,6 +1126,45 @@ begin
 
     insert into public.shopfloor_sessions (tenant_id, production_order_id, operator_id, clocked_in_at, clocked_out_at)
     values (v_med, v_orden, '00000000-0000-0000-0000-000000000001', now() - interval '6 hours', now() - interval '2 hours');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  CRM / Leads y Oportunidades (modulos 29-30, F9): un lead nuevo SIN
+--  asignar -listo para probar la asignacion round-robin en vivo- y
+--  otro ya calificado y asignado, con una oportunidad real en
+--  'negotiation' -lista para marcarse ganada o perdida-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med    uuid;
+  v_maria  constant uuid := '00000000-0000-0000-0000-000000000001';
+  v_lead1  uuid;
+  v_lead2  uuid;
+  v_op     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferreteria El Progreso') then
+    insert into public.leads (tenant_id, name, company, email, phone, source, score, status)
+    values (v_med, 'Ferreteria El Progreso', 'Ferreteria El Progreso SRL', 'compras@elprogreso.do', '809-555-0230', 'referral', 100, 'new')
+    returning id into v_lead1;
+  end if;
+
+  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Constructora Vega Real') then
+    insert into public.leads (tenant_id, name, company, email, phone, source, score, status, assigned_to)
+    values (v_med, 'Constructora Vega Real', 'Constructora Vega Real SRL', 'proyectos@vegareal.do', '809-555-0417', 'event', 90, 'qualified', v_maria)
+    returning id into v_lead2;
+
+    insert into public.lead_activities (tenant_id, lead_id, type, notes, created_by)
+    values
+      (v_med, v_lead2, 'call', 'Primera llamada -interesados en material para la torre residencial-', v_maria),
+      (v_med, v_lead2, 'meeting', 'Reunion en sitio, revisaron cantidades preliminares', v_maria);
+
+    insert into public.opportunities (tenant_id, lead_id, name, amount, stage, probability, expected_close_date)
+    values (v_med, v_lead2, 'Suministro de materiales - Torre Vega Real', 850000, 'negotiation', 0.75, current_date + 15)
+    returning id into v_op;
   end if;
 end $$;
 
