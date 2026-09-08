@@ -122,6 +122,7 @@ begin
          (v_med, 'invoice-capture', 'active', true),
          (v_med, 'purchase-orders', 'active', true),
          (v_med, 'accounting', 'active', true),
+         (v_med, 'ar', 'active', true),
          (v_med, 'ap', 'active', true),
          (v_med, 'treasury', 'active', true),
          (v_med, 'bank-rec', 'active', true),
@@ -168,7 +169,8 @@ begin
          (v_med, 'helpdesk', 'active', true),
          (v_med, 'loyalty', 'active', true),
          (v_med, 'marketing', 'active', true),
-         (v_med, 'ecommerce', 'active', true)
+         (v_med, 'ecommerce', 'active', true),
+         (v_med, 'bi', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1456,6 +1458,44 @@ begin
 
     insert into public.channel_order_lines (tenant_id, order_id, product_id, external_sku, quantity, unit_price)
     values (v_med, v_pedido, v_cemento, 'cemento-gris-425kg', 5, 465.00);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  BI & Reportes (modulo 87): dos reportes reales sobre datos que YA
+--  existen (facturas vencidas, leads por estado), agrupados en un
+--  dashboard, con un export semanal YA VENCIDO -listo para
+--  ejecutarse en vivo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med       uuid;
+  v_rep1      uuid;
+  v_rep2      uuid;
+  v_dashboard uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.report_definitions where tenant_id = v_med and name = 'Facturas vencidas') then
+    insert into public.report_definitions (tenant_id, name, source_key, chart_type)
+    values (v_med, 'Facturas vencidas', 'overdue_invoices', 'table')
+    returning id into v_rep1;
+
+    insert into public.report_definitions (tenant_id, name, source_key, chart_type)
+    values (v_med, 'Leads por estado', 'leads_by_status', 'bar')
+    returning id into v_rep2;
+
+    insert into public.dashboards (tenant_id, name) values (v_med, 'Panel gerencial')
+    returning id into v_dashboard;
+
+    insert into public.dashboard_items (tenant_id, dashboard_id, report_id, position)
+    values
+      (v_med, v_dashboard, v_rep1, 0),
+      (v_med, v_dashboard, v_rep2, 1);
+
+    insert into public.scheduled_exports (tenant_id, report_id, frequency, recipients, next_run_at)
+    values (v_med, v_rep1, 'weekly', 'gerencia@distribuidoracaribe.do', now() - interval '1 day');
   end if;
 end $$;
 

@@ -57,6 +57,7 @@ import helpdeskManifest from '@regb/mod-helpdesk'
 import loyaltyManifest from '@regb/mod-loyalty'
 import marketingManifest from '@regb/mod-marketing'
 import ecommerceManifest from '@regb/mod-ecommerce'
+import biManifest from '@regb/mod-bi'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -158,6 +159,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     loyaltyManifest,
     marketingManifest,
     ecommerceManifest,
+    biManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

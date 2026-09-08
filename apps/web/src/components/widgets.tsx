@@ -110,6 +110,7 @@ export interface DatosWidgets {
   cuponesActivos: number
   campanasEnCurso: number
   pedidosCanalPorImportar: number
+  exportsProgramadosVencidos: number
 }
 
 const money = (n: number) =>
@@ -223,6 +224,7 @@ export async function cargarDatosWidgets(
     cuponesActivos: 0,
     campanasEnCurso: 0,
     pedidosCanalPorImportar: 0,
+    exportsProgramadosVencidos: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1093,6 +1095,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.channel_orders
       where tenant_id = ${tenantId} and status = 'received'`
     vacio.pedidosCanalPorImportar = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('bi-scheduled-exports-due')) {
+    const [e] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.scheduled_exports
+      where tenant_id = ${tenantId} and status = 'active' and next_run_at <= now()`
+    vacio.exportsProgramadosVencidos = Number(e?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2401,6 +2410,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.pedidosCanalPorImportar === 0 ? 'nada pendiente' : 'esperando importarse'}
+        </span>
+      </p>
+    ),
+  },
+
+  'bi-scheduled-exports-due': {
+    titulo: 'Exports programados vencidos',
+    icono: 'schedule_send',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.exportsProgramadosVencidos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.exportsProgramadosVencidos === 0 ? 'todos al dia' : 'listos para ejecutar'}
         </span>
       </p>
     ),

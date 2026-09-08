@@ -64,6 +64,7 @@ documento donde alguien va a buscar la verdad.
 | `loyalty` | El nivel se gana con puntos de por vida -redimir un premio nunca baja de nivel- (F9) | [loyalty.md](loyalty.md) |
 | `marketing` | Honesto sobre lo que es: toma la foto de a quien se le envio, no manda el correo (F9) | [marketing.md](marketing.md) |
 | `ecommerce` | Honesto sobre lo que es: registra el pedido tal cual llego, no inventa su propio total (F9) | [ecommerce.md](ecommerce.md) |
+| `bi` | Un catalogo fijo de reportes ya vetados, no una consola SQL abierta (F9) | [bi.md](bi.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -109,7 +110,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y tres cubiertos.** 747 pruebas contra Postgres real
+- **RLS: los cincuenta y cuatro cubiertos.** 757 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -125,7 +126,8 @@ patrones que `sales-orders` ya habia corregido.
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
-  de `loyalty` + 11 de `marketing` + 12 de `ecommerce`). La numeración
+  de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi`).
+  La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -210,7 +212,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_borrar_destinatario`, `impedir_producto_ajeno_vinculo`,
   `impedir_canal_ajeno_pedido`, `impedir_pedido_ajeno_linea`,
   `impedir_editar_pedido_canal_resuelto`,
-  `impedir_editar_linea_pedido_canal`) se
+  `impedir_editar_linea_pedido_canal`, `impedir_reporte_ajeno_item`,
+  `impedir_reporte_ajeno_export`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -774,7 +777,29 @@ patrones que `sales-orders` ya habia corregido.
   transicion -terminal de verdad-, y sincronizar el vinculo de
   "Cemento gris 42.5 kg" actualizo su fecha al instante. Ambos
   revertidos despues para que la demo siga teniendo un pedido real por
-  importar.
+  importar. `bi` es el unico modulo de S61-62 y resuelve el riesgo mas
+  obvio de un "constructor visual de reportes": nunca acepta SQL libre
+  del tenant. En cambio elige entre un catalogo FIJO de cinco fuentes
+  ya vetadas (ventas por dia, productos mas vendidos, facturas
+  vencidas, leads por estado, tickets por prioridad), cada una una
+  consulta parametrizada ya escrita en la aplicacion -reutilizando la
+  MISMA logica que ya usan los widgets del dashboard para "los mas
+  vendidos" y "facturas vencidas", ningun calculo nuevo-. Ninguna
+  fuente necesita su propia comprobacion de modulo activo: si `crm` no
+  esta activo, `leads_by_status` no devuelve filas porque la RLS de
+  `leads` ya lo exige, el mismo criterio que protege cualquier widget.
+  Sembrar el reporte de facturas vencidas destapó un gap real de una
+  fase anterior: el modulo `ar` nunca se habia activado para
+  `distribuidora-caribe` a pesar de que el tenant ya tenia facturas
+  sembradas -la fuente devolvia cero filas no por un bug de `bi`, sino
+  porque la RLS de `customer_invoices` exige `module_active('ar')`-.
+  Corregido activando `ar` en el seed. Verificado en vivo despues:
+  el reporte mostro las dos facturas vencidas reales (El Martillo
+  RD$12,064/96 dias, Duarte RD$27,200/46 dias); ejecutar el export
+  programado sembrado avanzo su proxima fecha exactamente 7 dias
+  (`proximaEjecucion()`), y pausarlo/reanudarlo alterno el estado sin
+  tocar el calendario -honesto sobre no mandar el correo de verdad,
+  mismo criterio que `marketing`-.
 
 ---
 
