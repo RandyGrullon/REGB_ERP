@@ -102,6 +102,7 @@ export interface DatosWidgets {
   leadsSinAsignar: number
   forecastPonderadoPipeline: number
   cotizacionesEsperandoAprobacion: number
+  solicitudesFirmaPendientes: number
 }
 
 const money = (n: number) =>
@@ -207,6 +208,7 @@ export async function cargarDatosWidgets(
     leadsSinAsignar: 0,
     forecastPonderadoPipeline: 0,
     cotizacionesEsperandoAprobacion: 0,
+    solicitudesFirmaPendientes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1021,6 +1023,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.quotes
       where tenant_id = ${tenantId} and status = 'sent'`
     vacio.cotizacionesEsperandoAprobacion = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('esign-pending-signatures')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.signature_requests
+      where tenant_id = ${tenantId} and status = 'sent'`
+    vacio.solicitudesFirmaPendientes = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2209,6 +2218,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.cotizacionesEsperandoAprobacion === 0 ? 'nada pendiente' : 'esperando respuesta'}
+        </span>
+      </p>
+    ),
+  },
+
+  'esign-pending-signatures': {
+    titulo: 'Firmas pendientes',
+    icono: 'draw',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.solicitudesFirmaPendientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.solicitudesFirmaPendientes === 0 ? 'nada esperando' : 'esperando firma'}
         </span>
       </p>
     ),

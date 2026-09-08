@@ -159,7 +159,8 @@ begin
          (v_med, 'shopfloor', 'active', true),
          (v_med, 'crm', 'active', true),
          (v_med, 'pipeline', 'active', true),
-         (v_med, 'quotes', 'active', true)
+         (v_med, 'quotes', 'active', true),
+         (v_med, 'e-sign', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1196,6 +1197,39 @@ begin
 
     insert into public.quote_lines (quote_id, tenant_id, product_id, quantity, unit_price, discount_pct, tax_rate, line_total)
     values (v_cot, v_med, v_cemento, 100, 465.00, 0, 0.18, 54870);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Firma electronica (modulo 91): una solicitud real ya ENVIADA sobre
+--  un documento "otro" -deliberadamente NO ligada a la cotizacion
+--  sembrada, para demostrar que el modulo funciona sin requerir
+--  quotes- lista para firmarse o rechazarse en vivo, con su rastro de
+--  auditoria ya mostrando "creada" y "enviada".
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med  uuid;
+  v_sol  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (
+    select 1 from public.signature_requests
+    where tenant_id = v_med and document_label = 'Contrato de suministro - Constructora Duarte SRL'
+  ) then
+    insert into public.signature_requests
+      (tenant_id, document_type, document_id, document_label, signer_name, signer_email, status, sent_at)
+    values
+      (v_med, 'other', gen_random_uuid(), 'Contrato de suministro - Constructora Duarte SRL',
+       'Ramon Duarte', 'ramon.duarte@constructoraduarte.do', 'sent', now() - interval '1 day')
+    returning id into v_sol;
+
+    insert into public.signature_events (tenant_id, request_id, event_type, occurred_at)
+    values
+      (v_med, v_sol, 'created', now() - interval '1 day'),
+      (v_med, v_sol, 'sent', now() - interval '1 day');
   end if;
 end $$;
 

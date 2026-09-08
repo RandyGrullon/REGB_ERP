@@ -56,6 +56,7 @@
     "@regb/mod-crm": "workspace:*",
     "@regb/mod-pipeline": "workspace:*",
     "@regb/mod-quotes": "workspace:*",
+    "@regb/mod-e-sign": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

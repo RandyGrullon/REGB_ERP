@@ -56,6 +56,7 @@ documento donde alguien va a buscar la verdad.
 | `crm` | Puntaje explicable de leads y asignacion automatica en round-robin (F9) | [crm.md](crm.md) |
 | `pipeline` | Kanban de etapas, forecast ponderado y motivo de perdida obligatorio (F9) | [pipeline.md](pipeline.md) |
 | `quotes` | Versiones reales, contenido congelado al enviar, mismos totales que pedidos/POS/facturas (F9) | [quotes.md](quotes.md) |
+| `e-sign` | Firma con rastro de auditoria real -hash e IP-, honesto sobre no ser PKI certificado (F9) | [e-sign.md](e-sign.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -101,7 +102,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y cinco cubiertos.** 660 pruebas contra Postgres real
+- **RLS: los cuarenta y seis cubiertos.** 669 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -115,7 +116,7 @@ patrones que `sales-orders` ya habia corregido.
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
-  `pipeline` + 12 de `quotes`). La numeración
+  `pipeline` + 12 de `quotes` + 9 de `e-sign`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -184,7 +185,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_cotizacion`,
   `impedir_referencia_ajena_linea_cotizacion`,
   `impedir_editar_cotizacion_no_borrador`,
-  `impedir_editar_linea_cotizacion`) se
+  `impedir_editar_linea_cotizacion`, `impedir_solicitud_ajena_evento`,
+  `impedir_editar_solicitud_firma_resuelta`, `impedir_editar_evento`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -632,7 +634,25 @@ patrones que `sales-orders` ya habia corregido.
   exactos; enviarla y crear una version nueva produjo una v2 real en
   borrador enlazada de vuelta a la v1 ya `superseded`. Todo revertido
   despues -v2 borrada, v1 devuelta a `draft`- para que la demo siga
-  teniendo una cotizacion real por enviar desde cero.
+  teniendo una cotizacion real por enviar desde cero. `e-sign` cierra
+  S56 siendo honesto sobre lo que NO es: un flujo de clic para firmar
+  con rastro de auditoria real -no una firma criptografica con
+  certificado ni PKI, declarado sin rodeos en el FAQ del marketplace-.
+  Al firmar se calcula un hash SHA-256 real de tipo, folio, etiqueta,
+  correo del firmante y momento exacto, y se captura la IP de origen
+  -verificado en vivo: un hash de 64 caracteres hexadecimales genuino
+  y una IP real (`::1`, la del entorno de desarrollo), no valores de
+  relleno-. Es el unico modulo de F9 hasta ahora sin ningun `requires`
+  Y sin ninguna FK real hacia lo que firma: `document_id` es un `uuid`
+  deliberadamente sin `references`, polimorfico por `document_type`,
+  porque `contracts` (modulo 33) todavia no existe en este catalogo
+  construido y `quotes` solo se recomienda. Verificado en vivo con el
+  caso de honestidad completo: una solicitud de tipo `other` -sin
+  ningun lazo real a `quotes`- se creo, envio y firmo exactamente
+  igual que si hubiera sido sobre una cotizacion real, confirmando que
+  el modulo funciona por su cuenta. Revertido despues -evento de firma
+  borrado, solicitud devuelta a `sent`- para que la demo siga teniendo
+  una firma real por resolver.
 
 ---
 

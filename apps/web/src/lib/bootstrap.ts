@@ -49,6 +49,7 @@ import shopfloorManifest from '@regb/mod-shopfloor'
 import crmManifest from '@regb/mod-crm'
 import pipelineManifest from '@regb/mod-pipeline'
 import quotesManifest from '@regb/mod-quotes'
+import eSignManifest from '@regb/mod-e-sign'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -142,6 +143,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     crmManifest,
     pipelineManifest,
     quotesManifest,
+    eSignManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),
