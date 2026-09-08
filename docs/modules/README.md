@@ -65,6 +65,7 @@ documento donde alguien va a buscar la verdad.
 | `marketing` | Honesto sobre lo que es: toma la foto de a quien se le envio, no manda el correo (F9) | [marketing.md](marketing.md) |
 | `ecommerce` | Honesto sobre lo que es: registra el pedido tal cual llego, no inventa su propio total (F9) | [ecommerce.md](ecommerce.md) |
 | `bi` | Un catalogo fijo de reportes ya vetados, no una consola SQL abierta (F9) | [bi.md](bi.md) |
+| `automations` | Reglas sobre el mismo rastro de eventos que ya usan mas de veinte modulos, sin tocar el despachador real (F9) | [automations.md](automations.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -110,7 +111,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y cuatro cubiertos.** 757 pruebas contra Postgres real
+- **RLS: los cincuenta y cinco cubiertos.** 768 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -126,8 +127,8 @@ patrones que `sales-orders` ya habia corregido.
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
-  de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi`).
-  La numeración
+  de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi` +
+  11 de `automations`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -213,7 +214,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_canal_ajeno_pedido`, `impedir_pedido_ajeno_linea`,
   `impedir_editar_pedido_canal_resuelto`,
   `impedir_editar_linea_pedido_canal`, `impedir_reporte_ajeno_item`,
-  `impedir_reporte_ajeno_export`) se
+  `impedir_reporte_ajeno_export`, `impedir_regla_ajena_ejecucion`,
+  `impedir_editar_ejecucion`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -799,7 +801,31 @@ patrones que `sales-orders` ya habia corregido.
   programado sembrado avanzo su proxima fecha exactamente 7 dias
   (`proximaEjecucion()`), y pausarlo/reanudarlo alterno el estado sin
   tocar el calendario -honesto sobre no mandar el correo de verdad,
-  mismo criterio que `marketing`-.
+  mismo criterio que `marketing`-. `automations` es el unico modulo de
+  S63 y es el primer CONSUMIDOR real del rastro de eventos que ya usan
+  mas de veinte modulos via `emit_event()` -ninguna infraestructura
+  nueva-. `claim_events()`/`settle_event()` estan revocados de
+  `authenticated` a proposito (son del despachador global de fondo,
+  sin filtro de tenant): `automations` nunca los llama. En cambio solo
+  LEE `event_outbox` -su propia RLS ya lo filtra por tenant- y lleva
+  su PROPIA bitacora en `automation_runs`, sin tocar `processed_at` ni
+  interferir con el despachador real; dos consumidores independientes
+  pueden procesar el mismo rastro sin pisarse. La accion tambien es un
+  catalogo FIJO -hoy solo `create_notification`, que escribe en
+  `public.notifications`, una tabla real del core- mismo criterio que
+  `bi` con sus fuentes de reporte. Verificado en vivo: la regla
+  sembrada ("Avisar tickets urgentes resueltos", disparada por
+  `helpdesk.ticket.resolved` con `priority = urgent`) proceso el
+  evento sembrado y creo una notificacion real, visible en
+  `/notificaciones` con su titulo y cuerpo exactos; procesar de nuevo
+  NO duplico nada, exactamente lo que garantiza el `unique(rule_id,
+  event_id)`. Sembrar el evento de prueba destapó un artefacto real:
+  dos eventos `helpdesk.ticket.resolved` ya existian en
+  `distribuidora-caribe` -residuo de una prueba en vivo anterior de
+  `helpdesk` en esta misma sesion, con un payload sin `priority`-, y
+  la regla los evaluo correctamente como "no cumplio la condicion" -el
+  motor funciono bien, el residuo era del dato de prueba, no del
+  modulo-. Limpiado antes de sembrar el evento correcto.
 
 ---
 

@@ -170,7 +170,8 @@ begin
          (v_med, 'loyalty', 'active', true),
          (v_med, 'marketing', 'active', true),
          (v_med, 'ecommerce', 'active', true),
-         (v_med, 'bi', 'active', true)
+         (v_med, 'bi', 'active', true),
+         (v_med, 'automations', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1496,6 +1497,32 @@ begin
 
     insert into public.scheduled_exports (tenant_id, report_id, frequency, recipients, next_run_at)
     values (v_med, v_rep1, 'weekly', 'gerencia@distribuidoracaribe.do', now() - interval '1 day');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Automatizaciones (modulo 88): una regla real que escucha tickets
+--  urgentes resueltos, con un evento YA en el rastro -listo para
+--  procesarse en vivo y crear una notificacion real-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.automation_rules where tenant_id = v_med and name = 'Avisar tickets urgentes resueltos') then
+    insert into public.automation_rules
+      (tenant_id, name, trigger_event_type, condition_field, condition_operator, condition_value, action_type, action_params)
+    values
+      (v_med, 'Avisar tickets urgentes resueltos', 'helpdesk.ticket.resolved', 'priority', 'eq', 'urgent', 'create_notification',
+       '{"title":"Ticket urgente resuelto","body":"Revisa el ticket resuelto y confirma con el cliente."}'::jsonb);
+  end if;
+
+  if not exists (select 1 from public.event_outbox where tenant_id = v_med and type = 'helpdesk.ticket.resolved') then
+    insert into public.event_outbox (tenant_id, type, payload, emitted_by)
+    values (v_med, 'helpdesk.ticket.resolved', '{"ticketId":"demo","priority":"urgent"}'::jsonb, 'helpdesk');
   end if;
 end $$;
 

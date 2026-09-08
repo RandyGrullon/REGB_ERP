@@ -65,6 +65,7 @@
     "@regb/mod-marketing": "workspace:*",
     "@regb/mod-ecommerce": "workspace:*",
     "@regb/mod-bi": "workspace:*",
+    "@regb/mod-automations": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

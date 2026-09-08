@@ -111,6 +111,7 @@ export interface DatosWidgets {
   campanasEnCurso: number
   pedidosCanalPorImportar: number
   exportsProgramadosVencidos: number
+  reglasAutomatizacionActivas: number
 }
 
 const money = (n: number) =>
@@ -225,6 +226,7 @@ export async function cargarDatosWidgets(
     campanasEnCurso: 0,
     pedidosCanalPorImportar: 0,
     exportsProgramadosVencidos: 0,
+    reglasAutomatizacionActivas: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1102,6 +1104,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.scheduled_exports
       where tenant_id = ${tenantId} and status = 'active' and next_run_at <= now()`
     vacio.exportsProgramadosVencidos = Number(e?.n ?? 0)
+  }
+
+  if (pidieron('automations-active-rules')) {
+    const [r] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.automation_rules
+      where tenant_id = ${tenantId} and status = 'active'`
+    vacio.reglasAutomatizacionActivas = Number(r?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2425,6 +2434,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.exportsProgramadosVencidos === 0 ? 'todos al dia' : 'listos para ejecutar'}
+        </span>
+      </p>
+    ),
+  },
+
+  'automations-active-rules': {
+    titulo: 'Reglas de automatizacion activas',
+    icono: 'bolt',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.reglasAutomatizacionActivas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.reglasAutomatizacionActivas === 0 ? 'ninguna todavia' : 'escuchando eventos'}
         </span>
       </p>
     ),
