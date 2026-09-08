@@ -160,7 +160,10 @@ begin
          (v_med, 'crm', 'active', true),
          (v_med, 'pipeline', 'active', true),
          (v_med, 'quotes', 'active', true),
-         (v_med, 'e-sign', 'active', true)
+         (v_med, 'e-sign', 'active', true),
+         (v_med, 'sales-orders', 'active', true),
+         (v_med, 'contracts', 'active', true),
+         (v_med, 'commissions', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1230,6 +1233,66 @@ begin
     values
       (v_med, v_sol, 'created', now() - interval '1 day'),
       (v_med, v_sol, 'sent', now() - interval '1 day');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Contratos & Suscripciones (modulo 33): un contrato real ya ACTIVO
+--  que vence dentro de 20 dias -para que el widget de "vencen en 30
+--  dias" tenga algo real que mostrar, listo para renovarse en vivo-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_martillo uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  if v_martillo is null then return; end if;
+
+  if not exists (select 1 from public.contracts where tenant_id = v_med and contract_number = 'CTR-0001') then
+    insert into public.contracts
+      (tenant_id, contract_number, customer_id, status, billing_frequency, start_date, end_date, base_amount, escalation_pct, auto_renew)
+    values
+      (v_med, 'CTR-0001', v_martillo, 'active', 'monthly', current_date - interval '11 months', current_date + interval '20 days', 15000, 0.05, true);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Comisiones (modulo 34): una orden de venta real -este tenant
+--  normalmente vende por caja (POS), pero activa sales-orders para
+--  esta venta formal a credito- con un plan y una entrada de comision
+--  YA CALCULADA y pendiente de aprobar, lista para resolverse en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med    uuid;
+  v_alm    uuid;
+  v_duarte uuid;
+  v_maria  constant uuid := '00000000-0000-0000-0000-000000000001';
+  v_orden  uuid;
+  v_plan   uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  select id into v_alm    from public.warehouses where tenant_id = v_med order by is_default desc limit 1;
+  select id into v_duarte from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
+  if v_alm is null or v_duarte is null then return; end if;
+
+  if not exists (select 1 from public.sales_orders where tenant_id = v_med and number = 'SO-0001') then
+    insert into public.sales_orders (tenant_id, number, customer_id, warehouse_id, status, total)
+    values (v_med, 'SO-0001', v_duarte, v_alm, 'confirmed', 25000)
+    returning id into v_orden;
+
+    insert into public.commission_plans (tenant_id, name, basis, rate)
+    values (v_med, 'Plan estandar de ventas', 'percentage', 0.05)
+    returning id into v_plan;
+
+    insert into public.commission_entries (tenant_id, plan_id, sales_order_id, salesperson_id, base_amount, commission_amount)
+    values (v_med, v_plan, v_orden, v_maria, 25000, 1250);
   end if;
 end $$;
 

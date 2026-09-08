@@ -103,6 +103,8 @@ export interface DatosWidgets {
   forecastPonderadoPipeline: number
   cotizacionesEsperandoAprobacion: number
   solicitudesFirmaPendientes: number
+  contratosVencenPronto: number
+  comisionesPendientesAprobar: number
 }
 
 const money = (n: number) =>
@@ -209,6 +211,8 @@ export async function cargarDatosWidgets(
     forecastPonderadoPipeline: 0,
     cotizacionesEsperandoAprobacion: 0,
     solicitudesFirmaPendientes: 0,
+    contratosVencenPronto: 0,
+    comisionesPendientesAprobar: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1030,6 +1034,20 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.signature_requests
       where tenant_id = ${tenantId} and status = 'sent'`
     vacio.solicitudesFirmaPendientes = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('contracts-expiring-soon')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.contracts
+      where tenant_id = ${tenantId} and status = 'active' and end_date <= current_date + 30`
+    vacio.contratosVencenPronto = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('commissions-pending-approval')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.commission_entries
+      where tenant_id = ${tenantId} and status = 'pending'`
+    vacio.comisionesPendientesAprobar = Number(p?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2233,6 +2251,36 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.solicitudesFirmaPendientes === 0 ? 'nada esperando' : 'esperando firma'}
+        </span>
+      </p>
+    ),
+  },
+
+  'contracts-expiring-soon': {
+    titulo: 'Contratos que vencen en 30 dias',
+    icono: 'assignment',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.contratosVencenPronto}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.contratosVencenPronto === 0 ? 'nada por vencer' : 'revisar renovacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'commissions-pending-approval': {
+    titulo: 'Comisiones por aprobar',
+    icono: 'percent',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.comisionesPendientesAprobar}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.comisionesPendientesAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
         </span>
       </p>
     ),

@@ -57,6 +57,8 @@ documento donde alguien va a buscar la verdad.
 | `pipeline` | Kanban de etapas, forecast ponderado y motivo de perdida obligatorio (F9) | [pipeline.md](pipeline.md) |
 | `quotes` | Versiones reales, contenido congelado al enviar, mismos totales que pedidos/POS/facturas (F9) | [quotes.md](quotes.md) |
 | `e-sign` | Firma con rastro de auditoria real -hash e IP-, honesto sobre no ser PKI certificado (F9) | [e-sign.md](e-sign.md) |
+| `contracts` | Renovacion que crea un contrato nuevo con escalamiento de precio, nunca sobrescribe (F9) | [contracts.md](contracts.md) |
+| `commissions` | Una formula por plan, liquidacion con aprobacion real -el bug que su propia prueba encontro- (F9) | [commissions.md](commissions.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -102,7 +104,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cuarenta y seis cubiertos.** 669 pruebas contra Postgres real
+- **RLS: los cuarenta y ocho cubiertos.** 689 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -116,7 +118,8 @@ patrones que `sales-orders` ya habia corregido.
   `barcode` + 16 de `fleet` + 10 de `logistics` + 11 de `bom` + 14 de
   `manufacturing` + 10 de `mrp` + 16 de `quality` + 11 de
   `maintenance` + 8 de `shopfloor` + 7 de `crm` + 8 de
-  `pipeline` + 12 de `quotes` + 9 de `e-sign`). La numeración
+  `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
+  de `commissions`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -186,7 +189,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_referencia_ajena_linea_cotizacion`,
   `impedir_editar_cotizacion_no_borrador`,
   `impedir_editar_linea_cotizacion`, `impedir_solicitud_ajena_evento`,
-  `impedir_editar_solicitud_firma_resuelta`, `impedir_editar_evento`) se
+  `impedir_editar_solicitud_firma_resuelta`, `impedir_editar_evento`,
+  `impedir_referencia_ajena_contrato`, `impedir_editar_contrato_activo`,
+  `impedir_referencia_ajena_comision`,
+  `impedir_editar_comision_resuelta`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -652,7 +658,31 @@ patrones que `sales-orders` ya habia corregido.
   igual que si hubiera sido sobre una cotizacion real, confirmando que
   el modulo funciona por su cuenta. Revertido despues -evento de firma
   borrado, solicitud devuelta a `sent`- para que la demo siga teniendo
-  una firma real por resolver.
+  una firma real por resolver. `contracts` cierra S57 con el mismo
+  criterio de versionado que `quotes`: renovar NO edita el contrato
+  actual -lo marca `renewed` (terminal) y crea uno NUEVO con
+  `renewed_from_id` apuntando al anterior-, con `calcularEscalamiento()`
+  decidiendo el monto. Verificado en vivo: renovar el contrato sembrado
+  (RD$15,000/mes, escalamiento 5%, venciendo en 20 dias) produjo un
+  contrato nuevo con RD$15,750.00 exacto y una fecha de fin extendida
+  un año, revertido despues para que la demo siga teniendo un contrato
+  real por renovar. `commissions` -que SI declara `requires:
+  sales-orders`, a diferencia de `contracts`- encontro un bug real en
+  su PROPIO trigger de inmutabilidad: la version original congelaba la
+  fila en cuanto el estado salia de `pending`, pero `approved` NO es
+  terminal -tiene que poder seguir avanzando a `paid`-. Se descubrio
+  probando el flujo en vivo (pagar una comision ya aprobada fallaba con
+  "ya se resolvio"), exactamente el mismo tipo de error que `bom`
+  cometio con su transicion `active → obsolete` -un estado que "ya no
+  es el primero" no siempre es "terminal"-. Corregido para congelar
+  solo en `paid`/`rejected`, con la prueba de RLS reescrita para
+  confirmar la secuencia completa (`pending → approved → paid`) en vez
+  de asumir que `approved` ya era el final. Verificado en vivo después
+  de la corrección: una comision del 5% sobre una orden real de
+  RD$25,000 calculó RD$1,250.00 exacto, y el flujo completo
+  pendiente → aprobada → pagada se completó sin errores, revertido
+  después para que la demo siga teniendo una comision real por
+  aprobar.
 
 ---
 

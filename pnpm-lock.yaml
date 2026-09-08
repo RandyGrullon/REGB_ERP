@@ -110,6 +110,12 @@ importers:
       '@regb/mod-budgets':
         specifier: workspace:*
         version: link:../../modules/budgets
+      '@regb/mod-commissions':
+        specifier: workspace:*
+        version: link:../../modules/commissions
+      '@regb/mod-contracts':
+        specifier: workspace:*
+        version: link:../../modules/contracts
       '@regb/mod-cost-centers':
         specifier: workspace:*
         version: link:../../modules/cost-centers
@@ -464,6 +470,32 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/budgets:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/commissions:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/contracts:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
