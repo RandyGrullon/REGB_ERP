@@ -174,7 +174,9 @@ begin
          (v_med, 'automations', 'active', true),
          (v_med, 'api-webhooks', 'active', true),
          (v_med, 'chat', 'active', true),
-         (v_med, 'ai-copilot', 'active', true)
+         (v_med, 'ai-copilot', 'active', true),
+         (v_med, 'projects', 'active', true),
+         (v_med, 'timesheets', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1580,6 +1582,57 @@ begin
 
     insert into public.chat_messages (tenant_id, channel_id, author_id, body, parent_message_id)
     values (v_med, v_canal, v_maria, 'Entendido, lo dejamos listo antes del viernes.', v_msg);
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Proyectos & Tareas (modulo 71): un proyecto real con tres tareas
+--  encadenadas -la segunda depende de la primera, la tercera de la
+--  segunda-, listo para probar en vivo que el trigger SI bloquea
+--  avanzar con una dependencia abierta. Un hito YA VENCIDO.
+--  Hojas de tiempo (modulo 72): un registro real ENVIADO, listo para
+--  aprobar o rechazar en vivo.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_maria    constant uuid := '00000000-0000-0000-0000-000000000001';
+  v_proy     uuid;
+  v_t1       uuid;
+  v_t2       uuid;
+  v_t3       uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.projects where tenant_id = v_med and name = 'Renovacion bodega principal') then
+    insert into public.projects (tenant_id, name, description, status, start_date, end_date, created_by)
+    values (v_med, 'Renovacion bodega principal', 'Vaciar, pintar e instalar estanteria nueva en la bodega de Bella Vista.',
+            'active', current_date - interval '10 days', current_date + interval '20 days', v_maria)
+    returning id into v_proy;
+
+    insert into public.project_tasks (tenant_id, project_id, name, due_date)
+    values (v_med, v_proy, 'Vaciar bodega', current_date + interval '2 days')
+    returning id into v_t1;
+
+    insert into public.project_tasks (tenant_id, project_id, name, due_date)
+    values (v_med, v_proy, 'Pintar paredes', current_date + interval '7 days')
+    returning id into v_t2;
+
+    insert into public.project_tasks (tenant_id, project_id, name, due_date)
+    values (v_med, v_proy, 'Instalar estanteria nueva', current_date + interval '14 days')
+    returning id into v_t3;
+
+    insert into public.task_dependencies (tenant_id, task_id, depends_on_task_id)
+    values
+      (v_med, v_t2, v_t1),
+      (v_med, v_t3, v_t2);
+
+    insert into public.project_milestones (tenant_id, project_id, name, due_date)
+    values (v_med, v_proy, 'Bodega lista para operar', current_date - interval '5 days');
+
+    insert into public.time_entries (tenant_id, task_id, user_id, entry_date, hours, billable, hourly_rate, status)
+    values (v_med, v_t1, v_maria, current_date, 4, true, 350.00, 'submitted');
   end if;
 end $$;
 

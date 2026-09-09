@@ -62,6 +62,8 @@ import automationsManifest from '@regb/mod-automations'
 import apiWebhooksManifest from '@regb/mod-api-webhooks'
 import chatManifest from '@regb/mod-chat'
 import aiCopilotManifest from '@regb/mod-ai-copilot'
+import projectsManifest from '@regb/mod-projects'
+import timesheetsManifest from '@regb/mod-timesheets'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -168,6 +170,8 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     apiWebhooksManifest,
     chatManifest,
     aiCopilotManifest,
+    projectsManifest,
+    timesheetsManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),

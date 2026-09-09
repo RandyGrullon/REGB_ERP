@@ -69,6 +69,8 @@ documento donde alguien va a buscar la verdad.
 | `api-webhooks` | La llave se ve completa una sola vez; los webhooks SI hacen una llamada HTTP real (F9) | [api-webhooks.md](api-webhooks.md) |
 | `chat` | Un mensaje enviado es un hecho historico -nunca se edita ni se borra despues- (F9) | [chat.md](chat.md) |
 | `ai-copilot` | La fuga entre tenants queda eliminada por construccion: nunca genera SQL libre (F9) | [ai-copilot.md](ai-copilot.md) |
+| `projects` | Una dependencia sin terminar bloquea el avance de verdad, no solo en la pantalla (F10) | [projects.md](projects.md) |
+| `timesheets` | Rechazado se corrige y se reenvia; solo aprobado es terminal de verdad (F10) | [timesheets.md](timesheets.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -114,7 +116,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y ocho cubiertos.** 794 pruebas contra Postgres real
+- **RLS: los sesenta cubiertos.** 814 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -132,7 +134,7 @@ patrones que `sales-orders` ya habia corregido.
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
   de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi` +
   11 de `automations` + 11 de `api-webhooks` + 9 de `chat` + 5 de
-  `ai-copilot`). La numeración
+  `ai-copilot` + 11 de `projects` + 9 de `timesheets`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -222,7 +224,10 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_ejecucion`, `impedir_endpoint_ajeno_entrega`,
   `impedir_editar_entrega`, `impedir_reactivar_llave`,
   `impedir_canal_ajeno_mensaje`, `impedir_editar_mensaje_chat`,
-  `impedir_editar_consulta_copiloto`) se
+  `impedir_editar_consulta_copiloto`, `impedir_proyecto_ajeno_tarea`,
+  `impedir_tarea_ajena_dependencia`,
+  `impedir_avance_con_dependencias_abiertas`,
+  `impedir_tarea_ajena_registro`, `impedir_editar_registro_aprobado`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -881,7 +886,32 @@ patrones que `sales-orders` ya habia corregido.
   "Tienes 2 factura(s) vencida(s) por RD$39,264.00 en total" -exacto:
   RD$12,064 + RD$27,200-; "¿Cuantos leads tengo por estado?" respondio
   "1 en 'new', 1 en 'qualified'" -exacto sobre los leads sembrados de
-  `crm`-. Ambas consultas de prueba revertidas despues.
+  `crm`-. Ambas consultas de prueba revertidas despues. `projects` y
+  `timesheets` **abren F10** (S67) y son genericos, no verticales: la
+  "regla de oro" de §12.1 -que exige un cliente pagando antes de
+  publicar un vertical como `restaurant` o `clinic`- aplica de S70 en
+  adelante, no aqui. `projects` pone la regla de dependencias en DOS
+  capas a proposito: `puedeAvanzarPorDependencias()` en la accion (para
+  dar un mensaje claro) y el trigger
+  `no_avance_con_dependencias_abiertas` (la garantia real que ningun
+  camino de codigo puede saltarse). Esa duplicacion deliberada nacio de
+  un bug real encontrado en vivo: la primera version atrapaba la
+  excepcion del trigger con un `try/catch` dentro de la transaccion,
+  pero Postgres aborta la transaccion entera al primer error -sin un
+  SAVEPOINT no se puede seguir-, asi que el `COMMIT` posterior fallaba
+  y la pantalla moria con "Application error". Un segundo bug aparecio
+  al probar los hitos: un hito vencido mostraba solo la insignia
+  "Vencido" y escondia el boton de completar, dejando un atraso sin
+  forma de cerrarlo -corregido para mostrar ambos, porque llegar tarde
+  no deberia impedir marcar que ya se hizo-. Verificado en vivo la
+  cadena completa: "Pintar paredes" NO avanzo mientras "Vaciar bodega"
+  seguia pendiente, y avanzo en cuanto quedo `done`. `timesheets`
+  cierra S67 exigiendo `projects` de verdad (FK autentica hacia la
+  tarea) y aplicando la leccion que `commissions` aprendio por las
+  malas en F9: `rejected` NO es terminal -se corrige y se reenvia-,
+  solo `approved` lo es. Verificado en vivo: el registro sembrado de 4
+  horas a RD$350 aprobado mostro RD$1,400.00 exacto. Todo revertido
+  despues.
 
 ---
 

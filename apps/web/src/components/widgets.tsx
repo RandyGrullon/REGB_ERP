@@ -114,6 +114,8 @@ export interface DatosWidgets {
   reglasAutomatizacionActivas: number
   entregasWebhookFallidas: number
   mencionesChatRecientes: number
+  hitosProyectoVencidos: number
+  registrosTiempoPorAprobar: number
 }
 
 const money = (n: number) =>
@@ -231,6 +233,8 @@ export async function cargarDatosWidgets(
     reglasAutomatizacionActivas: 0,
     entregasWebhookFallidas: 0,
     mencionesChatRecientes: 0,
+    hitosProyectoVencidos: 0,
+    registrosTiempoPorAprobar: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1130,6 +1134,20 @@ export async function cargarDatosWidgets(
       where tenant_id = ${tenantId} and array_length(mentioned_user_ids, 1) > 0
         and created_at >= now() - interval '24 hours'`
     vacio.mencionesChatRecientes = Number(m?.n ?? 0)
+  }
+
+  if (pidieron('projects-overdue-milestones')) {
+    const [h] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.project_milestones
+      where tenant_id = ${tenantId} and completed_at is null and due_date < current_date`
+    vacio.hitosProyectoVencidos = Number(h?.n ?? 0)
+  }
+
+  if (pidieron('timesheets-pending-approval')) {
+    const [r] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.time_entries
+      where tenant_id = ${tenantId} and status = 'submitted'`
+    vacio.registrosTiempoPorAprobar = Number(r?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2498,6 +2516,36 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.mencionesChatRecientes === 0 ? 'nada nuevo' : 'revisar el canal'}
+        </span>
+      </p>
+    ),
+  },
+
+  'projects-overdue-milestones': {
+    titulo: 'Hitos de proyecto vencidos',
+    icono: 'flag',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.hitosProyectoVencidos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.hitosProyectoVencidos === 0 ? 'todos al dia' : 'revisar proyectos'}
+        </span>
+      </p>
+    ),
+  },
+
+  'timesheets-pending-approval': {
+    titulo: 'Registros de tiempo por aprobar',
+    icono: 'timer',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.registrosTiempoPorAprobar}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.registrosTiempoPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
         </span>
       </p>
     ),

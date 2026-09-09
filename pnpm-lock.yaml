@@ -230,6 +230,9 @@ importers:
       '@regb/mod-products':
         specifier: workspace:*
         version: link:../../modules/products
+      '@regb/mod-projects':
+        specifier: workspace:*
+        version: link:../../modules/projects
       '@regb/mod-purchase-orders':
         specifier: workspace:*
         version: link:../../modules/purchase-orders
@@ -272,6 +275,9 @@ importers:
       '@regb/mod-time-off':
         specifier: workspace:*
         version: link:../../modules/time-off
+      '@regb/mod-timesheets':
+        specifier: workspace:*
+        version: link:../../modules/timesheets
       '@regb/mod-tour':
         specifier: workspace:*
         version: link:../../modules/tour
@@ -1032,6 +1038,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/projects:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/purchase-orders:
     dependencies:
       '@regb/module-registry':
@@ -1202,6 +1221,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/time-off:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/timesheets:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
