@@ -113,6 +113,7 @@ export interface DatosWidgets {
   exportsProgramadosVencidos: number
   reglasAutomatizacionActivas: number
   entregasWebhookFallidas: number
+  mencionesChatRecientes: number
 }
 
 const money = (n: number) =>
@@ -229,6 +230,7 @@ export async function cargarDatosWidgets(
     exportsProgramadosVencidos: 0,
     reglasAutomatizacionActivas: 0,
     entregasWebhookFallidas: 0,
+    mencionesChatRecientes: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1120,6 +1122,14 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.webhook_deliveries
       where tenant_id = ${tenantId} and not success and attempted_at >= now() - interval '7 days'`
     vacio.entregasWebhookFallidas = Number(d?.n ?? 0)
+  }
+
+  if (pidieron('chat-mentions-pending')) {
+    const [m] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.chat_messages
+      where tenant_id = ${tenantId} and array_length(mentioned_user_ids, 1) > 0
+        and created_at >= now() - interval '24 hours'`
+    vacio.mencionesChatRecientes = Number(m?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2473,6 +2483,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.entregasWebhookFallidas === 0 ? 'todas exitosas' : 'revisar el endpoint'}
+        </span>
+      </p>
+    ),
+  },
+
+  'chat-mentions-pending': {
+    titulo: 'Menciones en las ultimas 24h',
+    icono: 'chat',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.mencionesChatRecientes}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.mencionesChatRecientes === 0 ? 'nada nuevo' : 'revisar el canal'}
         </span>
       </p>
     ),

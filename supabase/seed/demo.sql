@@ -172,7 +172,9 @@ begin
          (v_med, 'ecommerce', 'active', true),
          (v_med, 'bi', 'active', true),
          (v_med, 'automations', 'active', true),
-         (v_med, 'api-webhooks', 'active', true)
+         (v_med, 'api-webhooks', 'active', true),
+         (v_med, 'chat', 'active', true),
+         (v_med, 'ai-copilot', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1548,6 +1550,36 @@ begin
   if not exists (select 1 from public.webhook_endpoints where tenant_id = v_med and url = 'https://httpbin.org/post') then
     insert into public.webhook_endpoints (tenant_id, url, event_types, secret)
     values (v_med, 'https://httpbin.org/post', '{"crm.lead.qualified","helpdesk.ticket.resolved"}', 'demo-secret-no-es-real');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Chat interno (modulo 92): un canal general con un mensaje real y
+--  una respuesta -un hilo de verdad-, listo para responder en vivo.
+--  Copiloto IA (modulo 90): sin pregunta sembrada -el visitante la
+--  hace en vivo, la respuesta se calcula sobre datos reales-.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med     uuid;
+  v_maria   constant uuid := '00000000-0000-0000-0000-000000000001';
+  v_canal   uuid;
+  v_msg     uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.chat_channels where tenant_id = v_med and name = 'General') then
+    insert into public.chat_channels (tenant_id, name, scope_type, created_by)
+    values (v_med, 'General', 'general', v_maria)
+    returning id into v_canal;
+
+    insert into public.chat_messages (tenant_id, channel_id, author_id, body)
+    values (v_med, v_canal, v_maria, 'Buenos dias equipo, recuerden confirmar el inventario de fin de mes.')
+    returning id into v_msg;
+
+    insert into public.chat_messages (tenant_id, channel_id, author_id, body, parent_message_id)
+    values (v_med, v_canal, v_maria, 'Entendido, lo dejamos listo antes del viernes.', v_msg);
   end if;
 end $$;
 

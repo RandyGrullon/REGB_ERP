@@ -67,6 +67,8 @@ documento donde alguien va a buscar la verdad.
 | `bi` | Un catalogo fijo de reportes ya vetados, no una consola SQL abierta (F9) | [bi.md](bi.md) |
 | `automations` | Reglas sobre el mismo rastro de eventos que ya usan mas de veinte modulos, sin tocar el despachador real (F9) | [automations.md](automations.md) |
 | `api-webhooks` | La llave se ve completa una sola vez; los webhooks SI hacen una llamada HTTP real (F9) | [api-webhooks.md](api-webhooks.md) |
+| `chat` | Un mensaje enviado es un hecho historico -nunca se edita ni se borra despues- (F9) | [chat.md](chat.md) |
+| `ai-copilot` | La fuga entre tenants queda eliminada por construccion: nunca genera SQL libre (F9) | [ai-copilot.md](ai-copilot.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -112,7 +114,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y seis cubiertos.** 779 pruebas contra Postgres real
+- **RLS: los cincuenta y ocho cubiertos.** 794 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -129,7 +131,8 @@ patrones que `sales-orders` ya habia corregido.
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
   de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi` +
-  11 de `automations` + 11 de `api-webhooks`). La numeración
+  11 de `automations` + 11 de `api-webhooks` + 9 de `chat` + 5 de
+  `ai-copilot`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -217,7 +220,9 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_linea_pedido_canal`, `impedir_reporte_ajeno_item`,
   `impedir_reporte_ajeno_export`, `impedir_regla_ajena_ejecucion`,
   `impedir_editar_ejecucion`, `impedir_endpoint_ajeno_entrega`,
-  `impedir_editar_entrega`, `impedir_reactivar_llave`) se
+  `impedir_editar_entrega`, `impedir_reactivar_llave`,
+  `impedir_canal_ajeno_mensaje`, `impedir_editar_mensaje_chat`,
+  `impedir_editar_consulta_copiloto`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -850,7 +855,33 @@ patrones que `sales-orders` ya habia corregido.
   `Docker\run`, relanzar), sin perder ningun dato: la llave creada
   antes del corte seguia ahi al reconectar-. Ambos artefactos de
   prueba revertidos despues para que la demo siga teniendo un endpoint
-  real listo para probarse.
+  real listo para probarse. `chat` y `ai-copilot` cierran S65-66 -y con
+  ellos, **F9 completa, 16 de 16 modulos**-. `chat` sigue la misma
+  disciplina de "hecho historico inmutable" que ya aplican `helpdesk` y
+  `crm`: un mensaje enviado nunca se edita ni se borra, y un hilo es
+  simplemente un mensaje que apunta a otro. Las menciones se eligen de
+  una lista real de usuarios del tenant -`user_profiles` no tiene un
+  `@handle` unico- en vez de parsearse de texto libre, evitando la
+  ambiguedad de nombres repetidos o con espacios. Verificado en vivo:
+  responder al mensaje sembrado de Maria Rosario creo un hilo real
+  anidado, y mencionarla en un mensaje nuevo la mostro como
+  `@MariaRosario`. `ai-copilot` resuelve de frente el riesgo que el
+  documento maestro senala explicitamente para este modulo -"el mayor
+  riesgo de fuga entre tenants del proyecto"-: nunca genera SQL libre
+  ni llama a un modelo de lenguaje real todavia. `emparejarPregunta()`
+  solo compara palabras clave contra el MISMO catalogo fijo de cinco
+  fuentes que `bi` ya audito, y esa key dispara la MISMA
+  `ejecutarReporte()` que `bi` ya usa -la fuga entre tenants queda
+  eliminada por construccion, no por un filtro en tiempo de ejecucion
+  que pudiera fallar-. Es ademas el unico modulo de todo el proyecto
+  sin el "agujero de siempre" (0031): `copilot_queries` no referencia
+  ninguna otra tabla de negocio, no hay nada que cruzar entre tenants
+  mas alla del aislamiento normal. Verificado en vivo con datos reales
+  de `distribuidora-caribe`: "¿Que facturas estan vencidas?" respondio
+  "Tienes 2 factura(s) vencida(s) por RD$39,264.00 en total" -exacto:
+  RD$12,064 + RD$27,200-; "¿Cuantos leads tengo por estado?" respondio
+  "1 en 'new', 1 en 'qualified'" -exacto sobre los leads sembrados de
+  `crm`-. Ambas consultas de prueba revertidas despues.
 
 ---
 

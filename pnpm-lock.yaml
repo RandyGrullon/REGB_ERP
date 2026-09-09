@@ -74,6 +74,9 @@ importers:
       '@regb/mod-accounting':
         specifier: workspace:*
         version: link:../../modules/accounting
+      '@regb/mod-ai-copilot':
+        specifier: workspace:*
+        version: link:../../modules/ai-copilot
       '@regb/mod-ap':
         specifier: workspace:*
         version: link:../../modules/ap
@@ -119,6 +122,9 @@ importers:
       '@regb/mod-budgets':
         specifier: workspace:*
         version: link:../../modules/budgets
+      '@regb/mod-chat':
+        specifier: workspace:*
+        version: link:../../modules/chat
       '@regb/mod-commissions':
         specifier: workspace:*
         version: link:../../modules/commissions
@@ -350,6 +356,19 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
+  modules/ai-copilot:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
   modules/ap:
     dependencies:
       '@regb/module-registry':
@@ -533,6 +552,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
 
   modules/budgets:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)
+
+  modules/chat:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

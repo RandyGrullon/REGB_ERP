@@ -60,6 +60,8 @@ import ecommerceManifest from '@regb/mod-ecommerce'
 import biManifest from '@regb/mod-bi'
 import automationsManifest from '@regb/mod-automations'
 import apiWebhooksManifest from '@regb/mod-api-webhooks'
+import chatManifest from '@regb/mod-chat'
+import aiCopilotManifest from '@regb/mod-ai-copilot'
 import payrollManifest from '@regb/mod-payroll'
 import invoiceCaptureManifest from '@regb/mod-invoice-capture'
 import authManifest from '@regb/mod-auth'
@@ -164,6 +166,8 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     biManifest,
     automationsManifest,
     apiWebhooksManifest,
+    chatManifest,
+    aiCopilotManifest,
     payrollManifest,
     invoiceCaptureManifest,
   ].map((m) => [m.id, m]),
