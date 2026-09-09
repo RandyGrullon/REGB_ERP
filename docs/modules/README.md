@@ -66,6 +66,7 @@ documento donde alguien va a buscar la verdad.
 | `ecommerce` | Honesto sobre lo que es: registra el pedido tal cual llego, no inventa su propio total (F9) | [ecommerce.md](ecommerce.md) |
 | `bi` | Un catalogo fijo de reportes ya vetados, no una consola SQL abierta (F9) | [bi.md](bi.md) |
 | `automations` | Reglas sobre el mismo rastro de eventos que ya usan mas de veinte modulos, sin tocar el despachador real (F9) | [automations.md](automations.md) |
+| `api-webhooks` | La llave se ve completa una sola vez; los webhooks SI hacen una llamada HTTP real (F9) | [api-webhooks.md](api-webhooks.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -111,7 +112,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los cincuenta y cinco cubiertos.** 768 pruebas contra Postgres real
+- **RLS: los cincuenta y seis cubiertos.** 779 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -128,7 +129,7 @@ patrones que `sales-orders` ya habia corregido.
   `pipeline` + 12 de `quotes` + 9 de `e-sign` + 9 de `contracts` + 11
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
   de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi` +
-  11 de `automations`). La numeración
+  11 de `automations` + 11 de `api-webhooks`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar
@@ -215,7 +216,8 @@ patrones que `sales-orders` ya habia corregido.
   `impedir_editar_pedido_canal_resuelto`,
   `impedir_editar_linea_pedido_canal`, `impedir_reporte_ajeno_item`,
   `impedir_reporte_ajeno_export`, `impedir_regla_ajena_ejecucion`,
-  `impedir_editar_ejecucion`) se
+  `impedir_editar_ejecucion`, `impedir_endpoint_ajeno_entrega`,
+  `impedir_editar_entrega`, `impedir_reactivar_llave`) se
   escribieron desde el
   primer día, no
   como corrección posterior. `expenses` tiene una variante nueva en el
@@ -825,7 +827,30 @@ patrones que `sales-orders` ya habia corregido.
   `helpdesk` en esta misma sesion, con un payload sin `priority`-, y
   la regla los evaluo correctamente como "no cumplio la condicion" -el
   motor funciono bien, el residuo era del dato de prueba, no del
-  modulo-. Limpiado antes de sembrar el evento correcto.
+  modulo-. Limpiado antes de sembrar el evento correcto. `api-webhooks`
+  cierra S64 con una diferencia deliberada frente a `ecommerce` y
+  `marketing`: aqui la URL la configura el propio tenant para SU
+  propio sistema -no hay un tercero que suplantar-, asi que
+  `enviarPrueba()` SI hace una llamada HTTP real con `fetch()`, firmada
+  con HMAC-SHA256 usando el secreto del endpoint. La llave de API se
+  genera con `crypto.randomBytes` y solo se guarda su hash SHA-256 -el
+  mismo `createHash('sha256')` que ya uso `e-sign`-, mostrandose
+  COMPLETA una sola vez mediante el primer componente cliente
+  interactivo de toda la app fuera de la navegacion
+  (`useActionState`). Una llave revocada es terminal a nivel de base
+  de datos, no solo en la UI. Verificado en vivo: crear una llave
+  revelo el valor completo una sola vez -recargar la pagina ya solo
+  mostraba el prefijo-; probar el endpoint sembrado
+  (`https://httpbin.org/post`, un eco publico usado como conveniencia
+  de demo) devolvio un 200 real, registrado en `webhook_deliveries`.
+  A mitad de esta verificacion Docker Desktop volvio a fallar con el
+  mismo bloqueo de archivo `dockerInference` ya documentado en el
+  commit de `shopfloor` semanas atras en esta sesion -resuelto con el
+  mismo procedimiento (matar procesos, `wsl --shutdown`, renombrar
+  `Docker\run`, relanzar), sin perder ningun dato: la llave creada
+  antes del corte seguia ahi al reconectar-. Ambos artefactos de
+  prueba revertidos despues para que la demo siga teniendo un endpoint
+  real listo para probarse.
 
 ---
 

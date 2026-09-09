@@ -66,6 +66,7 @@
     "@regb/mod-ecommerce": "workspace:*",
     "@regb/mod-bi": "workspace:*",
     "@regb/mod-automations": "workspace:*",
+    "@regb/mod-api-webhooks": "workspace:*",
     "@regb/mod-branches": "workspace:*",
     "@regb/mod-dashboard": "workspace:*",
     "@regb/mod-files": "workspace:*",

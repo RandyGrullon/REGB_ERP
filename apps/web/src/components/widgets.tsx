@@ -112,6 +112,7 @@ export interface DatosWidgets {
   pedidosCanalPorImportar: number
   exportsProgramadosVencidos: number
   reglasAutomatizacionActivas: number
+  entregasWebhookFallidas: number
 }
 
 const money = (n: number) =>
@@ -227,6 +228,7 @@ export async function cargarDatosWidgets(
     pedidosCanalPorImportar: 0,
     exportsProgramadosVencidos: 0,
     reglasAutomatizacionActivas: 0,
+    entregasWebhookFallidas: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1111,6 +1113,13 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.automation_rules
       where tenant_id = ${tenantId} and status = 'active'`
     vacio.reglasAutomatizacionActivas = Number(r?.n ?? 0)
+  }
+
+  if (pidieron('api-webhooks-failed-deliveries')) {
+    const [d] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.webhook_deliveries
+      where tenant_id = ${tenantId} and not success and attempted_at >= now() - interval '7 days'`
+    vacio.entregasWebhookFallidas = Number(d?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2449,6 +2458,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.reglasAutomatizacionActivas === 0 ? 'ninguna todavia' : 'escuchando eventos'}
+        </span>
+      </p>
+    ),
+  },
+
+  'api-webhooks-failed-deliveries': {
+    titulo: 'Entregas de webhook fallidas (7 dias)',
+    icono: 'webhook',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.entregasWebhookFallidas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.entregasWebhookFallidas === 0 ? 'todas exitosas' : 'revisar el endpoint'}
         </span>
       </p>
     ),

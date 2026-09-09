@@ -171,7 +171,8 @@ begin
          (v_med, 'marketing', 'active', true),
          (v_med, 'ecommerce', 'active', true),
          (v_med, 'bi', 'active', true),
-         (v_med, 'automations', 'active', true)
+         (v_med, 'automations', 'active', true),
+         (v_med, 'api-webhooks', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1523,6 +1524,30 @@ begin
   if not exists (select 1 from public.event_outbox where tenant_id = v_med and type = 'helpdesk.ticket.resolved') then
     insert into public.event_outbox (tenant_id, type, payload, emitted_by)
     values (v_med, 'helpdesk.ticket.resolved', '{"ticketId":"demo","priority":"urgent"}'::jsonb, 'helpdesk');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  API & Webhooks (modulo 89): una llave revocada -para ver el
+--  candado de "no se reactiva"- y un endpoint real apuntando a
+--  httpbin.org/post -un eco publico- listo para probarse en vivo con
+--  una llamada HTTP de verdad.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  if not exists (select 1 from public.api_keys where tenant_id = v_med and name = 'Integracion contable (antigua)') then
+    insert into public.api_keys (tenant_id, name, key_prefix, key_hash, scopes, status, revoked_at)
+    values (v_med, 'Integracion contable (antigua)', 'regb_demo01', 'seed-hash-no-es-una-llave-real', '{read}', 'revoked', now() - interval '10 days');
+  end if;
+
+  if not exists (select 1 from public.webhook_endpoints where tenant_id = v_med and url = 'https://httpbin.org/post') then
+    insert into public.webhook_endpoints (tenant_id, url, event_types, secret)
+    values (v_med, 'https://httpbin.org/post', '{"crm.lead.qualified","helpdesk.ticket.resolved"}', 'demo-secret-no-es-real');
   end if;
 end $$;
 
