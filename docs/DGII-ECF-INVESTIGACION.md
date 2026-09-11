@@ -709,3 +709,57 @@ tabla de etiquetas madre del PDF de servicios sale desalineada, y `ACECF` /
 **No corrió una pasada adversarial.** Igual que en `DGII-FORMATO-ENVIO.md`. Lo
 de arriba es una sola pasada con fuentes citadas, no un hallazgo verificado en
 contra. Trátese en consecuencia.
+
+---
+
+## 10. Lo que encontró validar contra el XSD de verdad (2026-09-11)
+
+Se descargó `e-CF 32 v.1.0.xsd` (123 KB) de dgii.gov.do y se validó un
+documento generado con `lxml`. Dos hallazgos que **leer el esquema a ojo
+no había dado**, y que se replican con
+`python scripts/validar-ecf-xsd.py`:
+
+### 10.1 La firma es un hijo OBLIGATORIO del documento
+
+Después de `FechaHoraFirma`, el esquema pide:
+
+```xml
+<xs:any processContents="skip" minOccurs="1" maxOccurs="1"/>
+```
+
+`minOccurs="1"`. O sea: **un e-CF sin firmar no valida contra el
+esquema**, por perfecto que esté el resto. La firma no es un paso
+posterior opcional — es parte del documento. Eso cambia el orden de
+trabajo: no se puede "dejar la firma para después" y dar el XML por
+terminado.
+
+### 10.2 `TelefonoEmisor` exige guiones
+
+Patrón `\d{3}-\d{3}-\d{4}`. Un teléfono en dígitos corridos —que es como
+sale de cualquier base de datos— **invalida el documento entero por un
+campo opcional**. El generador ahora lo formatea, y si no cabe en ese
+formato lo omite en vez de romper el e-CF.
+
+### 10.3 Confirmación definitiva del e-NCF de 13 caracteres
+
+`eNCFValidationType` dice `minLength=13, maxLength=13` con patrón
+`([a-z0-9A-Z]{13})`. Cierra la duda de §1.7 desde la fuente primaria: son
+13, y el ejemplo de nombre de archivo del documento de la DGII está
+abreviado.
+
+### 10.4 Valores permitidos, verbatim del esquema
+
+| Campo | Valores |
+|---|---|
+| `TipoeCF` | 31, 32, 33, 34, 41, 43, 44, 45, 46, 47 |
+| `TipoIngresos` | 01–06 |
+| `TipoPago` | 1, 2, 3 |
+| `FormaPago` | 1–8 |
+| `IndicadorFacturacion` | 0–4 |
+| `IndicadorBienoServicio` | 1, 2 |
+| `FechaEmision` | `DD-MM-AAAA` (no ISO) |
+| `FechaHoraFirma` | `DD-MM-AAAA HH:mm:ss` (espacio, no "T") |
+| Montos | `[0-9]{1,16}(\.[0-9]{1,2})?` — sin separador de miles |
+
+El XSD quedó versionado en `supabase/xsd/` para que la validación no
+dependa de que dgii.gov.do esté arriba.
