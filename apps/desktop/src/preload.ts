@@ -1,76 +1,85 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type {
+  Canal,
+  ContratoIpc,
+  EstadoSync,
+  EventosPrincipal,
+  PuenteEscritorio,
+  VentaParaEncolar,
+} from './puente'
 
 /**
  * Puente entre la app web y el escritorio.
  *
- * Deliberadamente estrecho: expone SEIS funciones y ni una mas. La ventana
+ * ⚠️ SOLO se puede importar `electron` y TIPOS. Este preload corre con
+ * `sandbox: true`, y ahi `require` no resuelve archivos del proyecto: si
+ * alguien importa un valor de `./puente` o de cualquier otro modulo local,
+ * la ventana arranca sin puente y la caja deja de imprimir sin decir por
+ * que. El import de arriba es `import type`, que TypeScript borra entero.
+ *
+ * Deliberadamente estrecho: expone ONCE funciones y ni una mas. La ventana
  * carga una pagina remota, asi que todo lo que se ponga aqui queda al
  * alcance de cualquier script que llegue a esa pagina. `ipcRenderer`
  * entero, o cualquier cosa que reciba una ruta de archivo, seria darle el
  * equipo del mostrador a quien logre inyectar un script.
  *
- * Ninguna de estas funciones acepta rutas ni comandos: solo datos de una
- * venta y una ruta relativa del propio ERP.
+ * Ninguna de estas funciones acepta rutas del disco ni comandos: solo datos
+ * de una venta y rutas del propio ERP, que ademas el proceso principal
+ * vuelve a validar antes de usarlas. Lo de aqui es comodidad; la frontera
+ * de verdad esta en `main.ts`.
  */
 
-export interface EstadoSync {
-  pendientes: number
-  atascadas: number
-  ultimoIntento: string | null
-  ultimoError: string | null
-  subiendo: boolean
+/**
+ * Envoltura tipada de `invoke`.
+ *
+ * Existe para que un canal mal escrito sea un error de compilacion. Sin
+ * esto, `ipcRenderer.invoke('sync:etsado')` compila igual y devuelve una
+ * promesa que nunca resuelve: la barra de estado se queda en blanco para
+ * siempre y no hay ni un error en consola.
+ */
+function invocar<C extends Canal>(
+  canal: C,
+  ...args: ContratoIpc[C]['entrada']
+): Promise<ContratoIpc[C]['salida']> {
+  return ipcRenderer.invoke(canal, ...args) as Promise<ContratoIpc[C]['salida']>
 }
 
-export interface VentaParaEncolar {
-  clientRef?: string
-  soldAt: string
-  shiftId: string
-  customerId: string | null
-  cart: unknown
-  payments: unknown
-  tenant?: string
-  rol?: string
+/** Igual, para los avisos que empuja el proceso principal. Devuelve como darse de baja. */
+function escuchar<E extends keyof EventosPrincipal>(
+  evento: E,
+  cb: (dato: EventosPrincipal[E]) => void,
+): () => void {
+  const handler = (_e: unknown, dato: EventosPrincipal[E]): void => cb(dato)
+  ipcRenderer.on(evento, handler)
+  // Devolver la baja y no un `off(evento)` suelto: en React esto se llama
+  // desde el cleanup de un `useEffect`, y dos componentes escuchando lo
+  // mismo no pueden apagarse el uno al otro.
+  return () => {
+    ipcRenderer.off(evento, handler)
+  }
 }
 
-const api = {
-  /** Marca de que corremos en escritorio: la web lo consulta para mostrar lo suyo. */
-  esEscritorio: true as const,
+const api: PuenteEscritorio = {
+  esEscritorio: true,
 
-  /** Manda el ticket al papel sin dialogo. `ruta` es relativa: `/pos/ticket/<id>`. */
-  imprimirTicket: (ruta: string): Promise<{ ok: boolean; error?: string }> =>
-    ipcRenderer.invoke('imprimir:ticket', ruta),
+  imprimirTicket: (ruta: string) => invocar('imprimir:ticket', ruta),
+  abrirGaveta: () => invocar('gaveta:abrir'),
+  encolarVenta: (venta: VentaParaEncolar) => invocar('venta:encolar', venta),
 
-  /** Pulso a la gaveta de efectivo. */
-  abrirGaveta: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('gaveta:abrir'),
+  estadoSync: () => invocar('sync:estado'),
+  sincronizarAhora: () => invocar('sync:ahora'),
+  ventasAtascadas: () => invocar('sync:atascadas'),
+  estadoRed: () => invocar('red:estado'),
+  info: () => invocar('app:info'),
 
-  /**
-   * Guarda la venta para subirla. Devuelve su `clientRef`.
-   *
-   * Se llama SIEMPRE, haya linea o no: es lo que hace que un corte a mitad
-   * del cobro no pueda perder ni duplicar la venta.
-   */
-  encolarVenta: (
-    v: VentaParaEncolar,
-  ): Promise<{ ok: boolean; clientRef: string; pendientes: number }> =>
-    ipcRenderer.invoke('venta:encolar', v),
-
-  estadoSync: (): Promise<EstadoSync> => ipcRenderer.invoke('sync:estado'),
-  sincronizarAhora: (): Promise<EstadoSync> => ipcRenderer.invoke('sync:ahora'),
-  ventasAtascadas: (): Promise<unknown[]> => ipcRenderer.invoke('sync:atascadas'),
-  estadoRed: (): Promise<{ enLinea: boolean }> => ipcRenderer.invoke('red:estado'),
-
-  /** Avisa cuando cambia la cola, para pintar el indicador sin preguntar en bucle. */
-  alCambiarSync: (cb: (e: EstadoSync) => void): (() => void) => {
-    const handler = (_e: unknown, estado: EstadoSync) => cb(estado)
-    ipcRenderer.on('sync:estado', handler)
-    return () => ipcRenderer.off('sync:estado', handler)
-  },
+  alCambiarSync: (cb: (estado: EstadoSync) => void) => escuchar('sync:cambio', cb),
+  alNavegar: (cb: (ruta: string) => void) => escuchar('ventana:navegar', cb),
 }
 
 contextBridge.exposeInMainWorld('regb', api)
 
 declare global {
   interface Window {
-    regb?: typeof api
+    regb?: PuenteEscritorio
   }
 }

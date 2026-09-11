@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "REGB ERP",
+    "slug": "regb-erp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "regb",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "do.regb.erp"
+    },
+    "android": {
+      "package": "do.regb.erp",
+      "adaptiveIcon": { "backgroundColor": "#14161A" }
+    },
+    "plugins": ["expo-router"],
+    "experiments": { "typedRoutes": true }
+  }
+}

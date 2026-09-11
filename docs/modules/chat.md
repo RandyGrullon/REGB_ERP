@@ -36,6 +36,16 @@ un mensaje nuevo la mostro como `@MariaRosario` bajo el mensaje.
 Un mensaje valida que su canal Y su mensaje padre (si responde a un
 hilo) sean del mismo tenant.
 
+## Primer modulo portado a las tres plataformas
+
+`chat` es la prueba de concepto de `apps/mobile`: se eligio porque es
+el caso de uso mas genuinamente movil del catalogo, su esquema son dos
+tablas, y ejercita lectura Y escritura contra RLS. La pantalla nativa
+reusa `formatearMencion()` de `@regb/operations` tal cual -la misma
+funcion que la web-, y `readSession()` de `@regb/sdk` para interpretar
+los claims igual en ambas. Ver [../PLATAFORMAS.md](../PLATAFORMAS.md)
+para el estado honesto de cada plataforma.
+
 ## Lo que NO hace
 
 - No permite editar ni borrar un mensaje enviado -es un hecho

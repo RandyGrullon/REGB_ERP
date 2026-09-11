@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { mkdirSync } from 'node:fs'
+import type { VentaAtascada } from './puente'
 
 /**
  * Cola de ventas pendientes de sincronizar.
@@ -135,4 +136,21 @@ export class ColaVentas {
 
 export function rutaPorDefecto(carpetaDatos: string): string {
   return join(carpetaDatos, 'ventas-pendientes.json')
+}
+
+/**
+ * Deja las atascadas en lo justo que la pantalla necesita pintar.
+ *
+ * El carrito y los pagos se quedan aqui: ya salieron del navegador una vez
+ * y devolverlos seria mandar de vuelta datos que nadie va a mirar. Lo que
+ * el cajero necesita es cual esta trabada y por que.
+ */
+export function resumirAtascadas(ventas: VentaPendiente[]): VentaAtascada[] {
+  return ventas.map((v) => ({
+    clientRef: v.clientRef,
+    soldAt: v.soldAt,
+    shiftId: v.shiftId,
+    intentos: v.intentos,
+    ultimoError: v.ultimoError ?? null,
+  }))
 }
