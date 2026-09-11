@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CAMPOS_606,
   CAMPOS_607,
   CAMPOS_608,
   TIPOS_ANULACION,
+  FORMAS_PAGO_606,
+  TIPOS_GASTO_606,
+  esFormaPago606,
+  esTipoGasto606,
+  generar606,
   generar607,
   generar608,
   nombreArchivo,
@@ -196,5 +202,117 @@ describe('Una cifra grande no se rompe', () => {
     // que la DGII leeria como otro campo en un CSV, o como basura aqui.
     expect(c[7]).toBe('1234567.89')
     expect(c[8]).toBe('222222.22')
+  })
+})
+
+// ── 606 ──────────────────────────────────────────────────────────────────
+
+const COMPRA = {
+  rncProveedor: '130222222',
+  tipoIdentificacion: '1' as const,
+  tipoGasto: '09',
+  ncf: 'B0100000777',
+  fechaComprobante: '20260803',
+  fechaPago: '20260815',
+  montoBienes: 1000,
+  montoFacturado: 1000,
+  itbisFacturado: 180,
+  formaPago: '02',
+}
+
+describe('606 — estructura', () => {
+  it('la cabecera lleva 606, RNC del emisor, periodo y conteo', () => {
+    const txt = generar606('130111111', '202608', [COMPRA])
+    expect(txt.split('\r\n')[0]).toBe('606|130111111|202608|1')
+  })
+
+  it('el detalle lleva exactamente 23 campos', () => {
+    const txt = generar606('130111111', '202608', [COMPRA])
+    const detalle = txt.trimEnd().split('\r\n')[1]!
+    expect(detalle.split('|')).toHaveLength(CAMPOS_606)
+  })
+
+  it('un 606 sin compras sigue siendo un archivo valido', () => {
+    const txt = generar606('130111111', '202608', [])
+    expect(txt).toBe('606|130111111|202608|0\r\n')
+  })
+})
+
+describe('606 — los campos van en su posicion', () => {
+  const campos = generar606('130111111', '202608', [COMPRA]).trimEnd().split('\r\n')[1]!.split('|')
+
+  it('el tipo de gasto es el campo 3', () => {
+    expect(campos[2]).toBe('09')
+  })
+
+  it('la fecha de pago es el campo 7', () => {
+    expect(campos[6]).toBe('20260815')
+  })
+
+  it('bienes va en el 9 y el total facturado en el 10', () => {
+    expect(campos[7]).toBe('') // servicios: vacio, no cero
+    expect(campos[8]).toBe('1000.00')
+    expect(campos[9]).toBe('1000.00')
+  })
+
+  it('la forma de pago es el ultimo campo', () => {
+    expect(campos[22]).toBe('02')
+  })
+})
+
+describe('606 — lo que se rechaza antes de generar un archivo malo', () => {
+  it('una clasificacion de gasto inventada no pasa', () => {
+    expect(() => generar606('130111111', '202608', [{ ...COMPRA, tipoGasto: '99' }])).toThrow(
+      /clasificacion de gasto valida/,
+    )
+  })
+
+  it('un gasto escrito a mano en vez del codigo no pasa', () => {
+    expect(() =>
+      generar606('130111111', '202608', [{ ...COMPRA, tipoGasto: 'Compra de mercancia' }]),
+    ).toThrow(/del 01 al 11/)
+  })
+
+  it('una forma de pago fuera del catalogo no pasa', () => {
+    expect(() => generar606('130111111', '202608', [{ ...COMPRA, formaPago: '09' }])).toThrow(
+      /forma de pago valida/,
+    )
+  })
+
+  it('retencion de ISR sin fecha de pago no pasa', () => {
+    expect(() =>
+      generar606('130111111', '202608', [
+        { ...COMPRA, fechaPago: null, tipoRetencionIsr: '02', retencionRenta: 100 },
+      ]),
+    ).toThrow(/no tiene fecha de pago/)
+  })
+
+  it('un tipo de retencion de ISR desconocido no pasa', () => {
+    expect(() =>
+      generar606('130111111', '202608', [{ ...COMPRA, tipoRetencionIsr: '77' }]),
+    ).toThrow(/retencion de ISR que la DGII no reconoce/)
+  })
+
+  it('el RNC del emisor sigue siendo el del que compra, y se valida', () => {
+    expect(() => generar606('123', '202608', [COMPRA])).toThrow(/RNC del emisor/)
+  })
+})
+
+describe('606 — catalogos de codigos', () => {
+  it('los once tipos de gasto estan completos', () => {
+    expect(Object.keys(TIPOS_GASTO_606)).toHaveLength(11)
+    expect(esTipoGasto606('01')).toBe(true)
+    expect(esTipoGasto606('11')).toBe(true)
+    expect(esTipoGasto606('12')).toBe(false)
+  })
+
+  it('las siete formas de pago estan completas', () => {
+    expect(Object.keys(FORMAS_PAGO_606)).toHaveLength(7)
+    expect(esFormaPago606('07')).toBe(true)
+    expect(esFormaPago606('0')).toBe(false)
+  })
+
+  it('el nombre del archivo sigue el patron de la DGII', () => {
+    expect(nombreArchivo('606', '130111111', '202608')).toBe('DGII_F_606_130111111_202608.TXT')
   })
 })

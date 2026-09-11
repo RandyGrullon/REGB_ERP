@@ -1,9 +1,10 @@
 /**
- * Archivos de envio 607 y 608 de la DGII.
+ * Archivos de envio 606, 607 y 608 de la DGII.
  *
  * Formato tomado de la **Norma General 07-2018 sobre Comprobantes
- * Fiscales**, Anexos B (607) y C (608), y de los instructivos oficiales
- * de la herramienta de envio (607 de dic. 2025, 608 de mar. 2026).
+ * Fiscales**, Anexos A (606), B (607) y C (608), y de los instructivos
+ * oficiales de la herramienta de envio (607 de dic. 2025, 608 de mar.
+ * 2026).
  *
  * ── Lo que la norma dice literalmente ────────────────────────────────
  *
@@ -39,6 +40,8 @@
 const SEP = '|'
 const EOL = '\r\n'
 
+/** Campos del detalle del 606, en el orden del Anexo A. */
+export const CAMPOS_606 = 23
 /** Campos del detalle del 607, en el orden del Anexo B. */
 export const CAMPOS_607 = 23
 /** Campos del detalle del 608, en el orden del Anexo C. */
@@ -197,6 +200,189 @@ function validarCabecera(rncEmisor: string, periodo: string): void {
  * no esta confirmado que la Oficina Virtual lo valide. Se replica porque
  * es lo que el contador espera ver.
  */
-export function nombreArchivo(reporte: '607' | '608', rnc: string, periodo: string): string {
+export function nombreArchivo(reporte: '606' | '607' | '608', rnc: string, periodo: string): string {
   return `DGII_F_${reporte}_${rnc}_${periodo}.TXT`
+}
+
+// ── 606: compras de bienes y servicios ───────────────────────────────────
+
+/**
+ * Clasificacion de costos y gastos del 606 (campo 3).
+ *
+ * Los once codigos y su descripcion salen de la propia Comunidad de
+ * Ayuda de la DGII (CA2438, "¿Cual es la clasificacion de costos y
+ * gastos que tiene el formato 606?"), que a su vez remite a la Norma
+ * 07-18. La DGII pide el CODIGO de dos digitos: un texto escrito a mano
+ * no sirve para declarar, igual que en los motivos de anulacion del 608.
+ */
+export const TIPOS_GASTO_606: Record<string, string> = {
+  '01': 'Gastos de personal',
+  '02': 'Gastos por trabajos, suministros y servicios',
+  '03': 'Arrendamientos',
+  '04': 'Gastos de activos fijos',
+  '05': 'Gastos de representacion',
+  '06': 'Otras deducciones admitidas',
+  '07': 'Gastos financieros',
+  '08': 'Gastos extraordinarios',
+  '09': 'Compras y gastos que forman parte del costo de venta',
+  '10': 'Adquisiciones de activos',
+  '11': 'Gastos de seguros',
+}
+
+/**
+ * Forma de pago del 606 (campo 23).
+ *
+ * Ojo con la diferencia que confunde a todo el mundo: el 607 reparte el
+ * total en COLUMNAS de monto por forma de pago, mientras que el 606 pide
+ * UN codigo. Por eso una compra pagada mitad efectivo y mitad
+ * transferencia va como '07' (mixto) en el 606 y no se puede partir.
+ */
+export const FORMAS_PAGO_606: Record<string, string> = {
+  '01': 'Efectivo',
+  '02': 'Cheque / transferencia / deposito',
+  '03': 'Tarjeta de credito o debito',
+  '04': 'Compra a credito',
+  '05': 'Permuta',
+  '06': 'Nota de credito',
+  '07': 'Mixto',
+}
+
+/**
+ * Tipo de retencion en ISR del 606 (campo 17).
+ *
+ * Solo aplica cuando de verdad se retuvo. La DGII exige que si este
+ * campo viene lleno, la fecha de pago (campo 7) tambien lo este -no se
+ * puede haber retenido de un pago que todavia no ocurrio-, y eso se
+ * valida abajo.
+ */
+export const TIPOS_RETENCION_ISR_606: Record<string, string> = {
+  '01': 'Alquileres',
+  '02': 'Honorarios por servicios',
+  '03': 'Otras rentas',
+  '04': 'Otras rentas (rentas presuntas)',
+  '05': 'Intereses pagados a personas juridicas residentes',
+  '06': 'Intereses pagados a personas fisicas residentes',
+  '07': 'Retencion por proveedores del Estado',
+  '08': 'Juegos telefonicos',
+  '09': 'Retenciones subsector ganaderia de carne bovina',
+}
+
+export function esTipoGasto606(v: string): boolean {
+  return Object.prototype.hasOwnProperty.call(TIPOS_GASTO_606, v)
+}
+
+export function esFormaPago606(v: string): boolean {
+  return Object.prototype.hasOwnProperty.call(FORMAS_PAGO_606, v)
+}
+
+export interface LineaCompra606 {
+  /** RNC o cedula del PROVEEDOR, solo digitos. */
+  rncProveedor: string | null
+  tipoIdentificacion: TipoIdentificacion
+  /** Codigo 01-11 de TIPOS_GASTO_606. */
+  tipoGasto: string
+  ncf: string
+  /** NCF que se modifica, solo en notas de credito o debito. */
+  ncfModificado?: string | null
+  /** AAAAMMDD */
+  fechaComprobante: string
+  /** AAAAMMDD. Vacio si todavia no se ha pagado. */
+  fechaPago?: string | null
+  /** Parte del monto que corresponde a servicios. */
+  montoServicios?: number
+  /** Parte del monto que corresponde a bienes. */
+  montoBienes?: number
+  /** Total facturado sin impuestos. Debe cuadrar con servicios + bienes. */
+  montoFacturado: number
+  itbisFacturado: number
+  itbisRetenido?: number
+  itbisProporcionalidad?: number
+  itbisAlCosto?: number
+  itbisPorAdelantar?: number
+  /** Codigo 01-09 de TIPOS_RETENCION_ISR_606. */
+  tipoRetencionIsr?: string | null
+  retencionRenta?: number
+  selectivoConsumo?: number
+  otrosImpuestos?: number
+  propinaLegal?: number
+  /** Codigo 01-07 de FORMAS_PAGO_606. */
+  formaPago: string
+}
+
+/**
+ * Arma el 606 completo.
+ *
+ * Se valida ANTES de generar, no despues: un archivo que la DGII rechaza
+ * es peor que no generarlo, porque el contribuyente se va creyendo que
+ * declaro. Las tres cosas que se revisan son las que rebotan de verdad:
+ * el codigo de gasto, el de forma de pago, y que la retencion de ISR no
+ * venga sin fecha de pago.
+ *
+ * `rncEmisor` es el del contribuyente que REMITE -el que compro-, no el
+ * del proveedor: el mismo error que en el 607 rebota el archivo entero y
+ * no una linea.
+ */
+export function generar606(rncEmisor: string, periodo: string, compras: LineaCompra606[]): string {
+  validarCabecera(rncEmisor, periodo)
+
+  for (const c of compras) {
+    if (!esTipoGasto606(c.tipoGasto)) {
+      throw new Error(
+        `El NCF ${c.ncf} no tiene una clasificacion de gasto valida para la DGII. ` +
+          `Debe ser un codigo del 01 al 11, no un texto.`,
+      )
+    }
+    if (!esFormaPago606(c.formaPago)) {
+      throw new Error(
+        `El NCF ${c.ncf} no tiene una forma de pago valida para la DGII. ` +
+          `Debe ser un codigo del 01 al 07.`,
+      )
+    }
+    if (c.tipoRetencionIsr) {
+      if (!TIPOS_RETENCION_ISR_606[c.tipoRetencionIsr]) {
+        throw new Error(`El NCF ${c.ncf} tiene un tipo de retencion de ISR que la DGII no reconoce.`)
+      }
+      if (!c.fechaPago) {
+        throw new Error(
+          `El NCF ${c.ncf} declara retencion de ISR pero no tiene fecha de pago. ` +
+            `No se puede haber retenido de un pago que todavia no ocurrio.`,
+        )
+      }
+    }
+  }
+
+  const cabecera = linea(['606', rncEmisor, periodo, String(compras.length)], 4)
+
+  const detalle = compras.map((c) =>
+    linea(
+      [
+        c.rncProveedor ?? '', //        1 RNC/Cedula del proveedor
+        c.tipoIdentificacion, //        2 Tipo de identificacion
+        c.tipoGasto, //                 3 Tipo de bienes y servicios comprados
+        c.ncf, //                       4 NCF
+        c.ncfModificado ?? '', //       5 NCF o documento modificado
+        c.fechaComprobante, //          6 Fecha del comprobante
+        c.fechaPago ?? '', //           7 Fecha de pago
+        monto(c.montoServicios), //     8 Monto facturado en servicios
+        monto(c.montoBienes), //        9 Monto facturado en bienes
+        monto(c.montoFacturado), //    10 Total monto facturado
+        monto(c.itbisFacturado), //    11 ITBIS facturado
+        monto(c.itbisRetenido), //     12 ITBIS retenido
+        monto(c.itbisProporcionalidad), // 13 ITBIS sujeto a proporcionalidad
+        monto(c.itbisAlCosto), //      14 ITBIS llevado al costo
+        monto(c.itbisPorAdelantar), // 15 ITBIS por adelantar
+        '', //                         16 ITBIS percibido en compras
+        c.tipoRetencionIsr ?? '', //   17 Tipo de retencion en ISR
+        monto(c.retencionRenta), //    18 Monto de retencion de renta
+        '', //                         19 ISR percibido en compras
+        monto(c.selectivoConsumo), //  20 Impuesto selectivo al consumo
+        monto(c.otrosImpuestos), //    21 Otros impuestos o tasas
+        monto(c.propinaLegal), //      22 Monto de propina legal
+        c.formaPago, //                23 Forma de pago
+      ],
+      CAMPOS_606,
+    ),
+  )
+
+  return [cabecera, ...detalle].join(EOL) + EOL
 }

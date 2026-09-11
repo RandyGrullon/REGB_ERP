@@ -1,12 +1,18 @@
 import { NextResponse } from 'next/server'
-import { generar607, generar608, nombreArchivo, type TipoIdentificacion } from '@regb/operations'
+import {
+  generar606,
+  generar607,
+  generar608,
+  nombreArchivo,
+  type TipoIdentificacion,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { actionCtx, exigir } from '@/lib/module-page'
 
 export const dynamic = 'force-dynamic'
 
 /**
- * Descarga del 607 y del 608 en CSV.
+ * Descarga del 606, del 607 y del 608 en CSV.
  *
  * Un negocio no solo necesita VER lo que va a declarar: necesita
  * entregarlo. Hasta ahora la pantalla lo enseñaba y ahi se acababa, asi
@@ -21,6 +27,24 @@ export const dynamic = 'force-dynamic'
  * contra un archivo real ya aceptado, se anade como formato adicional sin
  * tocar esto.
  */
+
+const COLUMNAS_606 = [
+  ['rnc_proveedor', 'RNC o cedula del proveedor'],
+  ['proveedor', 'Proveedor'],
+  ['tipo_identificacion', 'Tipo de identificacion (1 RNC, 2 cedula, 3 sin identificar)'],
+  ['tipo_gasto', 'Tipo de bienes y servicios comprados (01-11)'],
+  ['ncf', 'NCF'],
+  ['fecha_comprobante', 'Fecha del comprobante (AAAAMMDD)'],
+  ['fecha_pago', 'Fecha de pago (AAAAMMDD)'],
+  ['monto_servicios', 'Monto facturado en servicios'],
+  ['monto_bienes', 'Monto facturado en bienes'],
+  ['monto_facturado', 'Total facturado sin ITBIS'],
+  ['itbis_facturado', 'ITBIS facturado'],
+  ['itbis_retenido', 'ITBIS retenido'],
+  ['tipo_retencion_isr', 'Tipo de retencion en ISR'],
+  ['retencion_renta', 'Retencion de renta'],
+  ['forma_pago', 'Forma de pago (01-07)'],
+] as const
 
 const COLUMNAS_607 = [
   ['rnc_comprador', 'RNC o cedula del comprador'],
@@ -41,6 +65,18 @@ const COLUMNAS_608 = [
   ['origen', 'Origen (factura o caja)'],
 ] as const
 
+/**
+ * De que modulo es cada reporte, y con que permiso se exporta.
+ *
+ * El 606 son compras (`ap`) y el 607/608 son ventas (`ar`): son negocios
+ * distintos y roles distintos, aunque se declaren el mismo dia.
+ */
+const DUENO: Record<'606' | '607' | '608', { modulo: string; perm: string }> = {
+  '606': { modulo: 'ap', perm: 'ap.export' },
+  '607': { modulo: 'ar', perm: 'ar.export' },
+  '608': { modulo: 'ar', perm: 'ar.export' },
+}
+
 /** Escapa un campo para CSV. Excel en es-DO abre con `;` como separador. */
 function campo(v: unknown): string {
   const s = v === null || v === undefined ? '' : String(v)
@@ -49,8 +85,8 @@ function campo(v: unknown): string {
 
 export async function GET(req: Request, { params }: { params: Promise<{ reporte: string }> }) {
   const { reporte } = await params
-  if (reporte !== '607' && reporte !== '608') {
-    return NextResponse.json({ error: 'Solo 607 o 608.' }, { status: 404 })
+  if (reporte !== '606' && reporte !== '607' && reporte !== '608') {
+    return NextResponse.json({ error: 'Solo 606, 607 o 608.' }, { status: 404 })
   }
 
   const url = new URL(req.url)
@@ -67,15 +103,32 @@ export async function GET(req: Request, { params }: { params: Promise<{ reporte:
   })
   if (!ctx) return NextResponse.json({ error: 'Sesion no valida.' }, { status: 401 })
 
-  // Mismo permiso que la pantalla: descargar es exportar (§8.3).
-  const permiso = exigir(ctx, 'ar', 'ar.export')
+  // Mismo permiso que la pantalla: descargar es exportar (§8.3). El 606
+  // sale de COMPRAS, asi que pide el permiso de `ap`, no el de `ar`: quien
+  // ve lo que se le factura al negocio no tiene por que ver lo que el
+  // negocio le compra a sus proveedores.
+  //
+  // Tabla y no un ternario a proposito: ramificar con `if` sobre un id de
+  // modulo es justo lo que `audit:registry` prohibe en el core, y con
+  // razon -un `if` se multiplica, una tabla se lee-.
+  const permiso = exigir(ctx, DUENO[reporte].modulo, DUENO[reporte].perm)
   if (!permiso.ok) return NextResponse.json({ error: permiso.error }, { status: 403 })
 
   if (formato === 'txt') return archivoDeEnvio(reporte, periodo, ctx)
 
-  const cols = reporte === '607' ? COLUMNAS_607 : COLUMNAS_608
+  const cols = reporte === '606' ? COLUMNAS_606 : reporte === '607' ? COLUMNAS_607 : COLUMNAS_608
   const filas = await asUser(ctx.userId, ctx.tenantId, async (tx) =>
-    reporte === '607'
+    reporte === '606'
+      ? tx<Record<string, unknown>[]>`
+          select rnc_proveedor, proveedor, tipo_identificacion, tipo_gasto, ncf,
+                 fecha_comprobante, fecha_pago,
+                 monto_servicios::text, monto_bienes::text, monto_facturado::text,
+                 itbis_facturado::text, itbis_retenido::text,
+                 tipo_retencion_isr, retencion_renta::text, forma_pago
+          from public.dgii_606
+          where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
+          order by ncf`
+      : reporte === '607'
       ? tx<Record<string, unknown>[]>`
           select rnc_comprador, tipo_identificacion, ncf, fecha_comprobante,
                  monto_facturado::text, itbis_facturado::text, total::text, origen
@@ -116,7 +169,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ reporte:
  * recomendado. Ver docs/DGII-FORMATO-ENVIO.md.
  */
 async function archivoDeEnvio(
-  reporte: '607' | '608',
+  reporte: '606' | '607' | '608',
   periodo: string,
   ctx: Awaited<ReturnType<typeof actionCtx>> & object,
 ) {
@@ -124,7 +177,12 @@ async function archivoDeEnvio(
     ctx.userId,
     ctx.tenantId,
     (tx) => tx<{ tax_id: string | null }[]>`
-      select regexp_replace(tax_id, '\D', '', 'g') as tax_id
+      -- '[^0-9]' y no '\D': en una plantilla de JavaScript la barra
+      -- invertida se pierde antes de llegar a Postgres, asi que el patron
+      -- viajaba como la letra "D" y el RNC salia con guiones. El archivo
+      -- de envio se negaba a generarse con un mensaje que culpaba al RNC
+      -- del cliente. Sin barra invertida no hay nada que perder.
+      select regexp_replace(tax_id, '[^0-9]', '', 'g') as tax_id
       from public.companies
       where tenant_id = ${ctx.tenantId} and is_default and deleted_at is null`,
   )
@@ -139,7 +197,77 @@ async function archivoDeEnvio(
   try {
     let contenido: string
 
-    if (reporte === '607') {
+    if (reporte === '606') {
+      const filas = await asUser(
+        ctx.userId,
+        ctx.tenantId,
+        (tx) => tx<
+          {
+            rnc: string | null
+            tipo: string
+            tipo_gasto: string | null
+            ncf: string
+            ncf_modificado: string | null
+            fecha: string
+            fecha_pago: string | null
+            servicios: string
+            bienes: string
+            monto: string
+            itbis: string
+            itbis_retenido: string
+            tipo_retencion_isr: string | null
+            retencion_renta: string
+            forma_pago: string
+          }[]
+        >`
+          select rnc_proveedor as rnc, tipo_identificacion as tipo, tipo_gasto, ncf,
+                 ncf_modificado, fecha_comprobante as fecha, fecha_pago,
+                 monto_servicios::text as servicios, monto_bienes::text as bienes,
+                 monto_facturado::text as monto, itbis_facturado::text as itbis,
+                 itbis_retenido::text, tipo_retencion_isr, retencion_renta::text, forma_pago
+          from public.dgii_606
+          where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
+          order by ncf`,
+      )
+
+      // Una compra sin clasificar no se puede declarar y tampoco se le
+      // puede inventar un codigo: se dice CUALES faltan, con su NCF, para
+      // que el contador las arregle en vez de adivinar cual fue.
+      const sinClasificar = filas.filter((f) => !f.tipo_gasto).map((f) => f.ncf)
+      if (sinClasificar.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              `Hay ${sinClasificar.length} compra(s) sin clasificar el tipo de gasto. ` +
+              `La DGII rechaza el archivo entero por eso. NCF: ${sinClasificar.slice(0, 10).join(', ')}` +
+              (sinClasificar.length > 10 ? ` y ${sinClasificar.length - 10} mas.` : '.'),
+          },
+          { status: 409 },
+        )
+      }
+
+      contenido = generar606(
+        rnc,
+        periodo,
+        filas.map((f) => ({
+          rncProveedor: f.rnc,
+          tipoIdentificacion: f.tipo as TipoIdentificacion,
+          tipoGasto: f.tipo_gasto!,
+          ncf: f.ncf,
+          ncfModificado: f.ncf_modificado,
+          fechaComprobante: f.fecha,
+          fechaPago: f.fecha_pago,
+          montoServicios: Number(f.servicios),
+          montoBienes: Number(f.bienes),
+          montoFacturado: Number(f.monto),
+          itbisFacturado: Number(f.itbis),
+          itbisRetenido: Number(f.itbis_retenido),
+          tipoRetencionIsr: f.tipo_retencion_isr,
+          retencionRenta: Number(f.retencion_renta),
+          formaPago: f.forma_pago,
+        })),
+      )
+    } else if (reporte === '607') {
       // Las formas de pago vienen de los pagos reales del ticket. La DGII
       // las quiere CON impuestos y sumando el total, que es justo como se
       // guardaron al cobrar.

@@ -14,16 +14,16 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { TIPOS_ANULACION } from '@regb/operations'
+import { FORMAS_PAGO_606, TIPOS_ANULACION, TIPOS_GASTO_606 } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Reportes DGII · REGB ERP' }
 
 /**
- * Reportes 607 (ventas) y 608 (anulados) del periodo.
+ * Reportes 606 (compras), 607 (ventas) y 608 (anulados) del periodo.
  *
  * Se declaran mensualmente. La pantalla existe para que el contador vea lo
  * que va a declarar ANTES de la fecha limite, no el dia 20 corriendo: lo
@@ -33,6 +33,20 @@ export const metadata = { title: 'Reportes DGII · REGB ERP' }
  * Las ventas de caja y las facturas a credito salen juntas: el 607 declara
  * las ventas del periodo, no un tipo de documento.
  */
+
+interface Fila606 {
+  proveedor: string
+  rnc_proveedor: string
+  tipo_identificacion: string
+  /** Codigo DGII 01-11. Nulo si nadie clasifico el gasto. */
+  tipo_gasto: string | null
+  ncf: string
+  fecha_comprobante: string
+  fecha_pago: string | null
+  monto_facturado: string
+  itbis_facturado: string
+  forma_pago: string
+}
 
 interface Fila607 {
   origen: string
@@ -85,7 +99,7 @@ function Descargar({
   qs,
   vacio,
 }: {
-  reporte: '607' | '608'
+  reporte: '606' | '607' | '608'
   periodo: string
   qs: string
   vacio: boolean
@@ -125,7 +139,7 @@ function DescargarTxt({
   qs,
   vacio,
 }: {
-  reporte: '607' | '608'
+  reporte: '606' | '607' | '608'
   periodo: string
   qs: string
   vacio: boolean
@@ -162,7 +176,21 @@ export default async function DgiiPage({
   const periodoActual = `${hoy.getFullYear()}${String(hoy.getMonth() + 1).padStart(2, '0')}`
   const periodo = /^\d{6}$/.test(params.periodo ?? '') ? params.periodo! : periodoActual
 
-  const [ventas, anulados, periodos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  // El 606 sale de COMPRAS: se ensena solo a quien puede exportar `ap`.
+  // Quien ve lo que el negocio factura no tiene por que ver lo que compra.
+  const veCompras = exigir(ctx, 'ap', 'ap.export').ok
+
+  const [compras, ventas, anulados, periodos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const c = veCompras
+      ? await tx<Fila606[]>`
+          select proveedor, rnc_proveedor, tipo_identificacion, tipo_gasto, ncf,
+                 fecha_comprobante, fecha_pago, monto_facturado::text,
+                 itbis_facturado::text, forma_pago
+          from public.dgii_606
+          where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
+          order by ncf`
+      : []
+
     const v = await tx<Fila607[]>`
       select origen, rnc_comprador, tipo_identificacion, ncf, ncf_type,
              fecha_comprobante, monto_facturado::text, itbis_facturado::text, total::text
@@ -182,13 +210,18 @@ export default async function DgiiPage({
       select periodo from public.dgii_607 where tenant_id = ${ctx.tenantId}
       union
       select periodo from public.dgii_608 where tenant_id = ${ctx.tenantId}
+      union
+      select periodo from public.dgii_606 where tenant_id = ${ctx.tenantId}
       order by periodo desc`
-    return [v, a, p] as const
+    return [c, v, a, p] as const
   })
 
   const totalVentas = ventas.reduce((s, f) => s + Number(f.total), 0)
   const totalItbis = ventas.reduce((s, f) => s + Number(f.itbis_facturado), 0)
   const sinClasificar = anulados.filter((a) => a.motivo === null).length
+  const comprasSinClasificar = compras.filter((c) => c.tipo_gasto === null).length
+  const totalCompras = compras.reduce((s, f) => s + Number(f.monto_facturado), 0)
+  const itbisCompras = compras.reduce((s, f) => s + Number(f.itbis_facturado), 0)
   const qs = ctx.demoQs
 
   const legible = (p: string) =>
@@ -207,7 +240,7 @@ export default async function DgiiPage({
         <PageHeader
           icon="account_balance"
           title="Reportes DGII"
-          description="Lo que vas a declarar este periodo: 607 de ventas y 608 de comprobantes anulados."
+          description="Lo que vas a declarar este periodo: 606 de compras, 607 de ventas y 608 de comprobantes anulados."
           crumbs={[{ label: 'Por cobrar', href: `/cobrar${qs}` }, { label: 'Reportes DGII' }]}
         />
 
@@ -230,6 +263,13 @@ export default async function DgiiPage({
         </Toolbar>
 
         <section aria-label="Resumen del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {veCompras && (
+            <StatCard
+              label="Compras"
+              value={`RD$ ${money(totalCompras + itbisCompras)}`}
+              hint={`${compras.length} en el 606`}
+            />
+          )}
           <StatCard label="Comprobantes" value={String(ventas.length)} hint="en el 607" />
           <StatCard label="Ventas" value={`RD$ ${money(totalVentas)}`} hint="con ITBIS" />
           <StatCard label="ITBIS facturado" value={`RD$ ${money(totalItbis)}`} hint="a declarar" />
@@ -269,6 +309,120 @@ export default async function DgiiPage({
             contador antes de subir nada.
           </p>
         </div>
+
+        {veCompras && (
+          <>
+            {comprasSinClasificar > 0 && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] p-3 text-sm"
+              >
+                <Icon
+                  name="error"
+                  size={20}
+                  filled
+                  className="shrink-0 text-[var(--color-semantic-text-danger)]"
+                />
+                <p className="text-[var(--color-text-secondary)]">
+                  Hay{' '}
+                  <strong className="text-[var(--color-text-primary)]">
+                    {comprasSinClasificar}
+                  </strong>{' '}
+                  compra{comprasSinClasificar === 1 ? '' : 's'} sin clasificar el tipo de gasto. La
+                  DGII pide un codigo del 01 al 11 y{' '}
+                  <strong className="text-[var(--color-text-primary)]">
+                    el archivo del 606 no se genera
+                  </strong>{' '}
+                  hasta clasificarlas: no se le puede inventar un codigo a una factura, porque
+                  declarar el alquiler del local como costo de venta es declarar mal.
+                </p>
+              </div>
+            )}
+
+            <section aria-labelledby="t606" className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 id="t606" className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  606 · Compras del periodo
+                </h2>
+                <span className="flex gap-2">
+                  <DescargarTxt
+                    reporte="606"
+                    periodo={periodo}
+                    qs={qs}
+                    vacio={compras.length === 0}
+                  />
+                  <Descargar reporte="606" periodo={periodo} qs={qs} vacio={compras.length === 0} />
+                </span>
+              </div>
+              {compras.length === 0 ? (
+                <EmptyState
+                  icon="shopping_cart"
+                  title="Sin compras en este periodo"
+                  description="Cuando registres facturas de proveedor con NCF, apareceran aqui listas para el 606."
+                />
+              ) : (
+                <Table>
+                  <THead>
+                    <TR>
+                      <TH>NCF</TH>
+                      <TH>Proveedor</TH>
+                      <TH>Tipo de gasto</TH>
+                      <TH>Fecha</TH>
+                      <TH>Pagada</TH>
+                      <TH numeric>Facturado</TH>
+                      <TH numeric>ITBIS</TH>
+                    </TR>
+                  </THead>
+                  <TBody>
+                    {compras.map((f) => (
+                      <TR key={f.ncf}>
+                        <TD>
+                          <Mono>{f.ncf}</Mono>
+                        </TD>
+                        <TD>
+                          {f.proveedor}
+                          <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                            {ID_LABEL[f.tipo_identificacion]}
+                          </span>
+                        </TD>
+                        <TD>
+                          {f.tipo_gasto ? (
+                            <>
+                              <Mono>{f.tipo_gasto}</Mono>{' '}
+                              <span className="text-xs text-[var(--color-text-secondary)]">
+                                {TIPOS_GASTO_606[f.tipo_gasto]}
+                              </span>
+                            </>
+                          ) : (
+                            <Badge tone="danger">sin clasificar</Badge>
+                          )}
+                        </TD>
+                        <TD>{fecha(f.fecha_comprobante)}</TD>
+                        <TD>
+                          {f.fecha_pago === null ? (
+                            <span className="text-xs text-[var(--color-text-muted)]">
+                              a credito
+                            </span>
+                          ) : (
+                            <span className="text-xs text-[var(--color-text-secondary)]">
+                              {fecha(f.fecha_pago)} · {FORMAS_PAGO_606[f.forma_pago]}
+                            </span>
+                          )}
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular">{money(Number(f.monto_facturado))}</span>
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular">{money(Number(f.itbis_facturado))}</span>
+                        </TD>
+                      </TR>
+                    ))}
+                  </TBody>
+                </Table>
+              )}
+            </section>
+          </>
+        )}
 
         <section aria-labelledby="t607" className="space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">

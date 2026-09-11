@@ -1,10 +1,11 @@
-# Formato de envío del 607 y el 608
+# Formato de envío del 606, el 607 y el 608
 
 Lo que sabemos del layout, **de dónde lo sacamos**, y lo que sigue sin
 confirmarse. Se escribe aparte porque es la parte del sistema donde
 equivocarse le rebota una declaración a un negocio real.
 
-Investigado el 4 de agosto de 2026.
+Investigado el 4 de agosto de 2026. El **606 se añadió el 10 de
+septiembre de 2026** — ver su sección al final.
 
 ---
 
@@ -136,3 +137,75 @@ La pasada adversarial que debía refutar los hallazgos **no llegó a
 correr**: se agotó el límite de sesión. Así que lo de arriba es de una sola
 fuente-pass, no verificado en contra. Es una razón más para comparar contra
 un archivo real antes de fiarse.
+
+---
+
+## 606 — Compras de bienes y servicios
+
+Añadido el 10 de septiembre de 2026. Es el que faltaba: el repo tenía el
+607 y el 608 desde F6, pero sin el 606 un cliente **no puede declarar**,
+por muy bien que funcione el mostrador. Vence el día 15 de cada mes.
+
+### De dónde sale
+
+| Fuente | Qué aporta |
+|---|---|
+| **Norma General 07-2018**, Anexo A | El layout |
+| [Comunidad de ayuda DGII, CA3839](https://ayuda.dgii.gov.do/conversations/formatos-de-envo-de-datos/ca3839-cmo-est-compuesto-el-formato-de-compras-de-bienes-y-servicios-606/5f3c17978cd858ce87a1b13d) | Los 23 campos del detalle, en orden, y el encabezado |
+| [Comunidad de ayuda DGII, CA2438](https://ayuda.dgii.gov.do/conversations/formatos-de-envo-de-datos/ca2438-cul-es-la-clasificacin-de-costos-y-gastos-que-tiene-el-formato-606/5f3c17608cd858ce879a2751) | Los once códigos de clasificación de costos y gastos |
+
+### Lo confirmado
+
+- **23 campos** de detalle, el mismo número que el 607 (pero **no** los
+  mismos campos).
+- Encabezado igual en forma al del 607: `606|RNC|AAAAMM|CANTIDAD`.
+- El orden de los 23 campos, verificado contra CA3839 de la DGII.
+- Los once códigos de clasificación de gasto (01 a 11), verificados
+  contra CA2438.
+- Nueve códigos de tipo de retención en ISR (01 a 09).
+
+### La diferencia que confunde a todo el mundo
+
+El **607 reparte el total en columnas de monto** por forma de pago
+(efectivo, cheque, tarjeta, crédito…). El **606 pide UN solo código**
+de forma de pago. Por eso una compra pagada mitad en efectivo y mitad
+por transferencia va como `07` (mixto) en el 606 y **no se puede
+partir**.
+
+### Lo NO confirmado
+
+1. **Que el encabezado lleve el literal `606` como primer campo.** La
+   DGII describe el encabezado como de 3 campos (RNC, período,
+   cantidad), pero describe el del 607 igual — y el 607 del repo sí
+   lleva el literal, tomado de la norma. Se asume la misma convención.
+   Si el primer envío rebota, es lo primero que hay que mirar.
+2. **Los siete códigos de forma de pago.** El conjunto (efectivo,
+   cheque/transferencia/depósito, tarjeta, compra a crédito, permuta,
+   nota de crédito, mixto) está confirmado; **el número exacto que le
+   toca a cada uno no** se pudo verificar contra fuente oficial. Se
+   asignó 01–07 en ese orden.
+3. Las mismas cuatro decisiones sin documentar que el 607: sin pipe
+   final, CRLF, UTF-8 sin BOM, campos vacíos entre pipes.
+
+⚠️ **Igual que el 607: NO verificado contra un archivo real aceptado.**
+
+### Lo que el sistema se niega a hacer
+
+Una compra sin clasificar el tipo de gasto **bloquea el TXT completo** y
+la pantalla dice qué NCF son. No se le pone un código por defecto: marcar
+todo como `09` (costo de venta) declararía el alquiler del local como
+mercancía. Mejor no generar el archivo que generarlo mal.
+
+La forma de pago sí **se deriva** de los pagos reales al proveedor —sin
+pagos es `04` a crédito, un solo método es su código, varios métodos es
+`07` mixto—, porque ese dato ya existe y pedirlo otra vez sería pedirle
+al usuario que repita lo que el sistema ya sabe.
+
+### Un bug que este trabajo destapó
+
+Al probar el 606 en vivo salió que el TXT **del 607 tampoco se generaba**:
+la consulta que limpia el RNC de la empresa usaba `'\D'` dentro de una
+plantilla de JavaScript, y JavaScript se come la barra invertida antes de
+que llegue a Postgres. El patrón viajaba como la letra `D`, el RNC salía
+con guiones y el archivo se negaba a generarse **culpando al RNC del
+cliente**. Corregido a `'[^0-9]'`, que no tiene nada que perder.

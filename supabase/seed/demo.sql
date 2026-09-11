@@ -1756,18 +1756,63 @@ begin
     -- Retencion del 2% de ITBIS -tipico en servicios-, capturada a mano:
     -- el sistema no decide cuando aplica, solo la deja escribir.
     insert into public.supplier_invoices
-      (tenant_id, supplier_id, supplier_invoice_number, issue_date, due_date,
-       subtotal, tax, retention_amount, total)
-    values (v_med, v_prov, 'FACT-0891', current_date - 20, current_date + 10,
-            15000.00, 2700.00, 300.00, 17700.00)
+      (tenant_id, supplier_id, supplier_invoice_number, supplier_ncf, issue_date, due_date,
+       subtotal, tax, retention_amount, isr_retained, expense_type, total)
+    values (v_med, v_prov, 'FACT-0891', 'B0100004471', current_date - 20, current_date + 10,
+            15000.00, 2700.00, 300.00, 0.00, '09', 17700.00)
     returning id into v_factura;
 
     insert into public.supplier_payments (tenant_id, invoice_id, amount, method, reference)
     values (v_med, v_factura, 8000.00, 'transfer', 'TRF-PROV-4471');
   end if;
 
+  -- ── Para el 606 (0099) ──────────────────────────────────────────────
+  --  Tres compras que ensenan las tres caras del reporte sin explicarlas:
+  --  una de servicios pagada en efectivo y con retencion de ISR, una a
+  --  credito sin pagar todavia, y una SIN CLASIFICAR -que es la que hace
+  --  que la pantalla avise y el TXT se niegue a generarse-.
+  if not exists (select 1 from public.supplier_invoices
+                 where tenant_id = v_med and supplier_invoice_number = 'SERV-2210') then
+    insert into public.supplier_invoices
+      (tenant_id, supplier_id, supplier_invoice_number, supplier_ncf, issue_date, due_date,
+       subtotal, services_amount, tax, retention_amount, isr_retained, isr_retention_type,
+       expense_type, total, status)
+    values (v_med, v_prov, 'SERV-2210', 'B0100005512', current_date - 12, current_date - 12,
+            8000.00, 8000.00, 1440.00, 800.00, 800.00, '02', '02', 9440.00, 'paid')
+    returning id into v_factura;
+
+    insert into public.supplier_payments (tenant_id, invoice_id, amount, method, reference)
+    values (v_med, v_factura, 8640.00, 'cash', 'EFEC-2210');
+  end if;
+
+  if not exists (select 1 from public.supplier_invoices
+                 where tenant_id = v_med and supplier_invoice_number = 'ALQ-0090') then
+    insert into public.supplier_invoices
+      (tenant_id, supplier_id, supplier_invoice_number, supplier_ncf, issue_date, due_date,
+       subtotal, services_amount, tax, expense_type, total)
+    values (v_med, v_prov, 'ALQ-0090', 'B0100005530', current_date - 8, current_date + 22,
+            25000.00, 25000.00, 4500.00, '03', 29500.00);
+  end if;
+
+  if not exists (select 1 from public.supplier_invoices
+                 where tenant_id = v_med and supplier_invoice_number = 'FACT-1177') then
+    insert into public.supplier_invoices
+      (tenant_id, supplier_id, supplier_invoice_number, supplier_ncf, issue_date, due_date,
+       subtotal, tax, total)
+    values (v_med, v_prov, 'FACT-1177', 'B0100005544', current_date - 5, current_date + 25,
+            4200.00, 756.00, 4956.00);
+  end if;
+
+  -- Bases sembradas antes de la 0099 tienen esta factura sin NCF ni
+  -- clasificacion: sin eso no entra al 606. Se completa aqui para que la
+  -- demo no dependa de cuando se creo la base.
+  update public.supplier_invoices
+  set supplier_ncf = 'B0100004471', expense_type = '09'
+  where tenant_id = v_med and supplier_invoice_number = 'FACT-0891'
+    and (supplier_ncf is null or expense_type is null);
+
   update public.supplier_invoices set status = 'partially_paid'
-  where id = v_factura and status = 'open';
+  where tenant_id = v_med and supplier_invoice_number = 'FACT-0891' and status = 'open';
 end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
