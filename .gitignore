@@ -45,3 +45,6 @@ apps/desktop/release/
 
 # expo
 apps/mobile/.expo/
+
+# Respaldos de la base: nunca al repositorio.
+respaldos/

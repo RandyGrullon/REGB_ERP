@@ -28,13 +28,20 @@
     "gate:f0": "pnpm typecheck && pnpm lint && pnpm test && pnpm audit:secrets && pnpm audit:registry && pnpm audit:manifests",
     "db:limpiar-pruebas": "node scripts/limpiar-tenants-de-prueba.mjs",
     "db:migrar-remoto": "node scripts/aplicar-migraciones.mjs",
+    "db:respaldar": "node scripts/respaldo.mjs --docker regb-test-db",
+    "db:restaurar": "node scripts/restaurar.mjs",
+    "db:verificar-respaldo": "node scripts/verificar-ultimo-respaldo.mjs",
     "test:coverage": "turbo run test:coverage"
   },
   "pnpm": {
     "overrides": {
       "@types/react": "19.0.14",
       "@types/react-dom": "19.0.4"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "electron",
+      "esbuild"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

@@ -41,9 +41,22 @@ la ventana, que sale por el papel) esta cubierto por pruebas puras.
 
 ### Lo que falta, dicho claro
 
-- **La ventana de Electron nunca se ha abierto de verdad.** El shell
-  compila y su logica esta probada; nadie ha visto el ERP dentro de la
-  ventana, ni la pantalla de error, ni los atajos F2/F4.
+- ~~La ventana de Electron nunca se ha abierto.~~ **ABIERTA el
+  2026-09-11.** La ventana levanta y carga el ERP real: el titulo dice
+  "Caja · REGB ERP" y el servidor registra la navegacion de `/pos`,
+  `/pos/shifts`, `/pos/reports` y `/products` desde ella.
+
+  Por que nunca habia abierto: **pnpm nunca descargo el binario de
+  Electron**. Desde pnpm 10 los scripts de postinstall no corren salvo
+  que el paquete este en `onlyBuiltDependencies`, asi que
+  `node_modules/electron` tenia el JavaScript pero no el ejecutable, y
+  fallaba con "Electron failed to install correctly". Ya esta declarado
+  en el `package.json` de la raiz, asi que una instalacion limpia lo
+  baja sola. No era un problema del codigo del escritorio: ese estaba
+  bien desde el principio.
+
+  Lo que sigue sin verse: la pantalla de error cuando el servidor no
+  contesta, y los atajos F2/F4.
 - La impresion termica y la gaveta no se han probado contra una
   impresora fisica: `abrirGaveta` depende de que la termica este
   compartida en Windows con un nombre.
