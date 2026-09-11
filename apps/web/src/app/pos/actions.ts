@@ -10,6 +10,7 @@ import {
   type PaymentMethod,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { preciosDeVenta } from '@/lib/precio'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -198,12 +199,28 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
     const porId = new Map(productos.map((p) => [p.id, p]))
     if (carrito.some((l) => !porId.has(l.productId))) return 'producto-invalido'
 
+    // El precio sale de la lista que le toque a ESTE cliente en ESTA
+    // cantidad; si no hay lista aplicable, del catalogo. En lote: un
+    // ticket de quince articulos no puede hacer treinta consultas. Y con
+    // el mismo helper que los pedidos, para que el mostrador y el pedido
+    // no cobren distinto por lo mismo.
+    const precios = await preciosDeVenta(
+      tx,
+      ctx.tenantId,
+      carrito.map((l) => ({
+        productId: l.productId,
+        cantidad: l.qty,
+        precioBase: Number(porId.get(l.productId)!.price),
+      })),
+      { customerId, channel: 'pos' },
+    )
+
     const lineasCalc = carrito.map((l) => {
       const p = porId.get(l.productId)!
       return {
         productId: l.productId,
         qty: l.qty,
-        unitPrice: Number(p.price),
+        unitPrice: precios.get(l.productId)?.precio ?? Number(p.price),
         discountPct: l.discountPct ?? 0,
         taxRate: Number(p.tax_rate),
       }

@@ -6,6 +6,9 @@ import {
   computeChange,
   documentTotals,
   paymentsBalance,
+  resolverPrecio,
+  type EntradaLista,
+  type ListaPrecio,
   type PaymentMethod,
 } from '@regb/operations'
 import { cobrarVentaForm } from '@/app/pos/actions'
@@ -36,6 +39,35 @@ export interface PosProduct {
 export interface PosCustomer {
   id: string
   name: string
+}
+
+/**
+ * Listas de precio, tal como viajan al navegador.
+ *
+ * Van en texto y no como `Date` porque lo que cruza del servidor al
+ * cliente se serializa, y una fecha reconstruida a mano no depende de
+ * como Next decida serializarla hoy.
+ *
+ * Viajan al navegador a proposito: el precio de un cliente mayorista
+ * depende de a QUIEN se le vende, y el cajero elige el cliente aqui,
+ * despues de armar el carrito. Si el precio solo se resolviera en el
+ * servidor, la pantalla ensenaria un total y el ticket saldria con otro
+ * -y el cobro se caeria por descuadre-. No hay secreto que proteger: un
+ * precio es justo lo que se le ensena al cliente.
+ */
+/** Una cuota de una lista, con el producto al que pertenece. */
+export interface PosEntrada extends EntradaLista {
+  productId: string
+}
+
+export interface PosLista {
+  id: string
+  scope: string
+  customerId: string | null
+  channel: string | null
+  startDate: string
+  endDate: string | null
+  status: string
 }
 
 interface Linea {
@@ -84,12 +116,16 @@ export function PosTerminal({
   shiftId,
   products,
   customers,
+  listas,
+  entradas,
   puedeDescuento,
   hiddenFields,
 }: {
   shiftId: string
   products: PosProduct[]
   customers: PosCustomer[]
+  listas: PosLista[]
+  entradas: PosEntrada[]
   puedeDescuento: boolean
   hiddenFields: Record<string, string>
 }) {
@@ -109,6 +145,52 @@ export function PosTerminal({
     return products.filter((p) => coincide(p, q)).slice(0, 40)
   }, [busqueda, products])
 
+  const listasParseadas = useMemo<ListaPrecio[]>(
+    () =>
+      listas.map((l) => ({
+        id: l.id,
+        scope: l.scope as ListaPrecio['scope'],
+        customerId: l.customerId,
+        channel: l.channel,
+        startDate: new Date(`${l.startDate}T00:00:00Z`),
+        endDate: l.endDate === null ? null : new Date(`${l.endDate}T23:59:59Z`),
+        status: l.status,
+      })),
+    [listas],
+  )
+
+  const entradasPorProducto = useMemo(() => {
+    const m = new Map<string, EntradaLista[]>()
+    for (const e of entradas) {
+      const acc = m.get(e.productId)
+      if (acc) acc.push(e)
+      else m.set(e.productId, [e])
+    }
+    return m
+  }, [entradas])
+
+  /**
+   * El precio de una linea, con la MISMA funcion que usa el servidor.
+   *
+   * Que el cajero vea 80 y el ticket diga 80 no es cosmetico: si no
+   * coinciden, el servidor rechaza el cobro por descuadre de pagos y el
+   * cliente ya tiene el dinero en la mano.
+   */
+  const precioDe = useMemo(
+    () => (productId: string, cantidad: number) => {
+      const p = porId.get(productId)
+      if (!p) return 0
+      return resolverPrecio(
+        p.price,
+        listasParseadas,
+        entradasPorProducto.get(productId) ?? [],
+        { customerId: customerId || null, channel: 'pos', cantidad },
+        new Date(),
+      ).precio
+    },
+    [porId, listasParseadas, entradasPorProducto, customerId],
+  )
+
   // Mismo motor que usa el servidor: lo que ve el cajero antes de cobrar es
   // exactamente lo que se va a guardar.
   const totales = useMemo(
@@ -118,13 +200,13 @@ export function PosTerminal({
           const p = porId.get(l.productId)!
           return {
             quantity: l.qty,
-            unitPrice: p.price,
+            unitPrice: precioDe(l.productId, l.qty),
             discountPct: l.discountPct,
             taxRate: p.taxRate,
           }
         }),
       ),
-    [lineas, porId],
+    [lineas, porId, precioDe],
   )
 
   const entregado = Number(recibido.replace(/,/g, '')) || 0
@@ -298,7 +380,12 @@ export function PosTerminal({
                 {p.name}
               </span>
               <span className="tabular mt-1 w-full text-sm font-bold text-[var(--color-brand-bright)]">
-                RD$ {money(p.price)}
+                RD$ {money(precioDe(p.id, 1))}
+                {precioDe(p.id, 1) !== p.price && (
+                  <span className="ml-1 text-[10px] font-normal text-[var(--color-text-muted)] line-through">
+                    {money(p.price)}
+                  </span>
+                )}
               </span>
               <span className="flex w-full items-center justify-between text-[10px] text-[var(--color-text-muted)]">
                 <span className="font-[family-name:var(--font-mono)]">{p.sku}</span>
@@ -409,7 +496,7 @@ export function PosTerminal({
                     <Icon name="add" size={16} />
                   </button>
                   <span className="tabular ml-auto text-xs text-[var(--color-text-muted)]">
-                    × {money(p.price)}
+                    × {money(precioDe(l.productId, l.qty))}
                   </span>
                   {puedeDescuento && (
                     <input

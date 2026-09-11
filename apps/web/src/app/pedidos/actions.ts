@@ -12,6 +12,7 @@ import {
   type OrderLineState,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { precioDeVenta } from '@/lib/precio'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -183,8 +184,8 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [order] = await tx<{ status: string }[]>`
-      select status from public.sales_orders
+    const [order] = await tx<{ status: string; customer_id: string | null }[]>`
+      select status, customer_id from public.sales_orders
       where id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!order) return 'no-existe'
     if (order.status !== 'draft') return 'no-borrador'
@@ -194,9 +195,19 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
       where id = ${productId} and tenant_id = ${ctx.tenantId}`
     if (!p) return 'sin-producto'
 
+    // El precio sale de la lista que le toque a ESTE cliente en ESTA
+    // cantidad; si no hay lista aplicable, del catalogo. Antes se cobraba
+    // siempre el catalogo y la lista de precios no servia de nada.
+    const { precio } = await precioDeVenta(
+      tx,
+      ctx.tenantId,
+      { productId, cantidad: qty, precioBase: Number(p.price) },
+      { customerId: order.customer_id, channel: null },
+    )
+
     const totals = lineTotals({
       quantity: qty,
-      unitPrice: Number(p.price),
+      unitPrice: precio,
       discountPct: descuento,
       taxRate: Number(p.tax_rate), // fraccion en toda la base (0021)
     })
@@ -204,7 +215,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
     await tx`
       insert into public.sales_order_lines
         (order_id, tenant_id, product_id, qty_ordered, unit_price, discount_pct, tax_rate, line_total)
-      values (${orderId}, ${ctx.tenantId}, ${productId}, ${qty}, ${p.price},
+      values (${orderId}, ${ctx.tenantId}, ${productId}, ${qty}, ${precio},
               ${descuento}, ${p.tax_rate}, ${totals.total})`
 
     await recalcular(tx, ctx.tenantId, orderId)

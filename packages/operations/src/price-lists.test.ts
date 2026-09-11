@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { listaAplicable, listaVigente, precioPorVolumen, type ListaPrecio } from './price-lists.js'
+import {
+  listaAplicable,
+  listaVigente,
+  precioPorVolumen,
+  resolverPrecio,
+  type ListaPrecio,
+} from './price-lists.js'
 
 const lista = (over: Partial<ListaPrecio>): ListaPrecio => ({
   id: 'x',
@@ -94,5 +100,114 @@ describe('precioPorVolumen', () => {
 
   it('sin ninguna cuota que alcance, no hay precio', () => {
     expect(precioPorVolumen(cuotas, 0.5)).toBeNull()
+  })
+})
+
+describe('resolverPrecio — el precio que de verdad se cobra', () => {
+  const hoy = new Date('2026-09-10T12:00:00Z')
+  const general: ListaPrecio = {
+    id: 'gen',
+    scope: 'general',
+    customerId: null,
+    channel: null,
+    startDate: new Date('2026-01-01T00:00:00Z'),
+    endDate: null,
+    status: 'active',
+  }
+  const mayorista: ListaPrecio = {
+    ...general,
+    id: 'may',
+    scope: 'customer',
+    customerId: 'cli-1',
+  }
+
+  it('sin listas cobra el catalogo -asi se enciende sin romper nada-', () => {
+    expect(resolverPrecio(100, [], [], { customerId: 'cli-1', channel: null, cantidad: 1 }, hoy)).toEqual({
+      precio: 100,
+      listaId: null,
+    })
+  })
+
+  it('la lista del cliente le gana a la general', () => {
+    const r = resolverPrecio(
+      100,
+      [general, mayorista],
+      [
+        { priceListId: 'gen', minQuantity: 1, unitPrice: 95 },
+        { priceListId: 'may', minQuantity: 1, unitPrice: 80 },
+      ],
+      { customerId: 'cli-1', channel: null, cantidad: 1 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 80, listaId: 'may' })
+  })
+
+  it('a mas cantidad, la cuota de mayoreo', () => {
+    const entradas = [
+      { priceListId: 'may', minQuantity: 1, unitPrice: 80 },
+      { priceListId: 'may', minQuantity: 50, unitPrice: 65 },
+    ]
+    const ctx = { customerId: 'cli-1', channel: null, cantidad: 50 }
+    expect(resolverPrecio(100, [mayorista], entradas, ctx, hoy).precio).toBe(65)
+    expect(resolverPrecio(100, [mayorista], entradas, { ...ctx, cantidad: 49 }, hoy).precio).toBe(80)
+  })
+
+  it('una lista que no cubre ESE producto cae al catalogo, no deja la linea sin precio', () => {
+    const r = resolverPrecio(
+      100,
+      [mayorista],
+      [{ priceListId: 'may', minQuantity: 1, unitPrice: 80 }].filter(() => false),
+      { customerId: 'cli-1', channel: null, cantidad: 1 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 100, listaId: null })
+  })
+
+  it('una cantidad por debajo de la cuota minima cae al catalogo', () => {
+    const r = resolverPrecio(
+      100,
+      [mayorista],
+      [{ priceListId: 'may', minQuantity: 12, unitPrice: 80 }],
+      { customerId: 'cli-1', channel: null, cantidad: 3 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 100, listaId: null })
+  })
+
+  it('una lista vencida no cobra: se cae al catalogo', () => {
+    const vencida = { ...mayorista, endDate: new Date('2026-06-30T00:00:00Z') }
+    const r = resolverPrecio(
+      100,
+      [vencida],
+      [{ priceListId: 'may', minQuantity: 1, unitPrice: 80 }],
+      { customerId: 'cli-1', channel: null, cantidad: 1 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 100, listaId: null })
+  })
+
+  it('un cliente sin lista propia usa la general', () => {
+    const r = resolverPrecio(
+      100,
+      [general, mayorista],
+      [
+        { priceListId: 'gen', minQuantity: 1, unitPrice: 95 },
+        { priceListId: 'may', minQuantity: 1, unitPrice: 80 },
+      ],
+      { customerId: 'cli-otro', channel: null, cantidad: 1 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 95, listaId: 'gen' })
+  })
+
+  it('una venta de mostrador sin cliente usa la general', () => {
+    const r = resolverPrecio(
+      100,
+      [general, mayorista],
+      [{ priceListId: 'gen', minQuantity: 1, unitPrice: 95 }],
+      { customerId: null, channel: null, cantidad: 1 },
+      hoy,
+    )
+    expect(r).toEqual({ precio: 95, listaId: 'gen' })
   })
 })

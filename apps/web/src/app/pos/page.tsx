@@ -12,7 +12,12 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { BarraEscritorio } from '@/components/BarraEscritorio'
-import { PosTerminal, type PosProduct } from '@/components/PosTerminal'
+import {
+  PosTerminal,
+  type PosEntrada,
+  type PosLista,
+  type PosProduct,
+} from '@/components/PosTerminal'
 import { abrirTurnoForm } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -26,7 +31,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'pos', 'pos.sell')
 
-  const [turno, productos, clientes, resumen, almacenes, ncfOk] = await asUser(
+  const [turno, productos, clientes, resumen, almacenes, ncfOk, listas, entradas] = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -89,6 +94,20 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         select id, name from public.warehouses
         where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
 
+      // Listas de precio para que el terminal cobre lo mismo que ensena.
+      // Si el modulo esta apagado, RLS deja las dos consultas en cero
+      // filas y todo cae al precio del catalogo: no hace falta preguntar
+      // por el id de ningun modulo.
+      const pl = await tx<PosLista[]>`
+        select id, scope, customer_id as "customerId", channel,
+               start_date::text as "startDate", end_date::text as "endDate", status
+        from public.price_lists where tenant_id = ${ctx.tenantId}`
+
+      const pe = await tx<PosEntrada[]>`
+        select price_list_id as "priceListId", product_id as "productId",
+               min_quantity::float8 as "minQuantity", unit_price::float8 as "unitPrice"
+        from public.price_list_entries where tenant_id = ${ctx.tenantId}`
+
       // Se pregunta ANTES de vender, no despues. Un cajero que descubre
       // que no hay comprobante fiscal cuando el cliente ya pago no puede
       // hacer nada; sabiendolo al abrir la caja, avisa al dueno a tiempo.
@@ -99,7 +118,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             and expires_on >= current_date and next_number <= range_to
         ) as ok`
 
-      return [t, p, c, r, w, n?.ok ?? false] as const
+      return [t, p, c, r, w, n?.ok ?? false, pl, pe] as const
     },
   )
 
@@ -200,6 +219,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               shiftId={turno.id}
               products={items}
               customers={clientes}
+              listas={listas}
+              entradas={entradas}
               puedeDescuento={puedeDescuento}
               hiddenFields={hidden}
             />
