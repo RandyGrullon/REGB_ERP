@@ -118,6 +118,7 @@ export interface DatosWidgets {
   registrosTiempoPorAprobar: number
   proyectosSobrePresupuesto: number
   personasSobrecargadas: number
+  ordenesServicioAbiertas: number
 }
 
 const money = (n: number) =>
@@ -239,6 +240,7 @@ export async function cargarDatosWidgets(
     registrosTiempoPorAprobar: 0,
     proyectosSobrePresupuesto: 0,
     personasSobrecargadas: 0,
+    ordenesServicioAbiertas: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1161,6 +1163,13 @@ export async function cargarDatosWidgets(
         and public.project_budget_total(pr.id) > 0
         and public.project_cost_total(pr.id) > public.project_budget_total(pr.id)`
     vacio.proyectosSobrePresupuesto = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('field-service-open')) {
+    const [f] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.service_orders
+      where tenant_id = ${tenantId} and status in ('scheduled', 'in_progress')`
+    vacio.ordenesServicioAbiertas = Number(f?.n ?? 0)
   }
 
   if (pidieron('resources-overloaded')) {
@@ -2582,6 +2591,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.proyectosSobrePresupuesto === 0 ? 'todos dentro' : 'revisar el costeo'}
+        </span>
+      </p>
+    ),
+  },
+
+  'field-service-open': {
+    titulo: 'Ordenes de servicio abiertas',
+    icono: 'handyman',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.ordenesServicioAbiertas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.ordenesServicioAbiertas === 0 ? 'nada en la calle' : 'agendadas o en curso'}
         </span>
       </p>
     ),

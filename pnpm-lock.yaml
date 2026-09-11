@@ -214,6 +214,9 @@ importers:
       '@regb/mod-expenses':
         specifier: workspace:*
         version: link:../../modules/expenses
+      '@regb/mod-field-service':
+        specifier: workspace:*
+        version: link:../../modules/field-service
       '@regb/mod-files':
         specifier: workspace:*
         version: link:../../modules/files
@@ -766,6 +769,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)(terser@5.51.2)
 
   modules/expenses:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)(terser@5.51.2)
+
+  modules/field-service:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*

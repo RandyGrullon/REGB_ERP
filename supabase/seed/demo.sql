@@ -178,7 +178,8 @@ begin
          (v_med, 'projects', 'active', true),
          (v_med, 'timesheets', 'active', true),
          (v_med, 'project-costing', 'active', true),
-         (v_med, 'resources', 'active', true)
+         (v_med, 'resources', 'active', true),
+         (v_med, 'field-service', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -2823,4 +2824,69 @@ begin
     insert into public.rfq_quotes (tenant_id, rfq_id, supplier_id, total_amount, lead_time_days)
     values (v_med, v_rfq_cerrado, v_prov1, 12000, 5);
   end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Servicio en campo (modulo 74): dos ordenes que cuentan la regla del
+--  modulo sin que nadie la explique.
+--
+--  La primera esta EN SITIO con un paso obligatorio sin marcar: al
+--  abrirla se ve por que todavia no se puede cerrar. La segunda ya esta
+--  cerrada y firmada, que es como se ve una visita que si ocurrio.
+-- ═══════════════════════════════════════════════════════════════════════
+do $$
+declare
+  v_med      uuid;
+  v_cliente  uuid;
+  v_maria    uuid;
+  v_abierta  uuid;
+  v_cerrada  uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+  if exists (select 1 from public.service_orders where tenant_id = v_med) then return; end if;
+
+  select id into v_cliente from public.customers
+  where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  if v_cliente is null then return; end if;
+
+  select user_id into v_maria from public.user_profiles
+  where tenant_id = v_med order by display_name limit 1;
+
+  insert into public.service_orders
+    (tenant_id, code, customer_id, technician_id, description, address, priority,
+     status, scheduled_at, started_at, created_by)
+  values
+    (v_med, 'OS-1', v_cliente, v_maria, 'Mantenimiento del aire acondicionado del almacen',
+     'Av. Estrella Sadhala 120, Santiago', 'high', 'in_progress',
+     now() - interval '2 hours', now() - interval '40 minutes', v_maria)
+  returning id into v_abierta;
+
+  insert into public.service_checklist_items (tenant_id, order_id, position, label, required, done, done_at)
+  values
+    (v_med, v_abierta, 0, 'Cortar corriente del equipo',        true,  true,  now() - interval '35 minutes'),
+    (v_med, v_abierta, 1, 'Lavar filtros y serpentin',          true,  true,  now() - interval '20 minutes'),
+    (v_med, v_abierta, 2, 'Medir presion del gas refrigerante', true,  false, null),
+    (v_med, v_abierta, 3, 'Tomar foto del equipo terminado',    false, false, null);
+
+  insert into public.service_parts (tenant_id, order_id, description, qty, unit_cost, created_by)
+  values (v_med, v_abierta, 'Gas R410a (libra)', 2, 850.00, v_maria);
+
+  insert into public.service_orders
+    (tenant_id, code, customer_id, technician_id, description, address, priority,
+     status, scheduled_at, started_at, completed_at, signed_by, signed_at, created_by)
+  values
+    (v_med, 'OS-2', v_cliente, v_maria, 'Cambio de capacitor en nevera exhibidora',
+     'Av. Estrella Sadhala 120, Santiago', 'normal', 'done',
+     now() - interval '3 days', now() - interval '3 days', now() - interval '3 days' + interval '55 minutes',
+     'Ramon Peralta', now() - interval '3 days' + interval '55 minutes', v_maria)
+  returning id into v_cerrada;
+
+  insert into public.service_checklist_items (tenant_id, order_id, position, label, required, done, done_at)
+  values
+    (v_med, v_cerrada, 0, 'Verificar voltaje de entrada', true, true, now() - interval '3 days'),
+    (v_med, v_cerrada, 1, 'Reemplazar capacitor',         true, true, now() - interval '3 days');
+
+  insert into public.service_parts (tenant_id, order_id, description, qty, unit_cost, created_by)
+  values (v_med, v_cerrada, 'Capacitor 35uF 440V', 1, 1250.00, v_maria);
 end $$;
