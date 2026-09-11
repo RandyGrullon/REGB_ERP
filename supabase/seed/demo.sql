@@ -179,7 +179,8 @@ begin
          (v_med, 'timesheets', 'active', true),
          (v_med, 'project-costing', 'active', true),
          (v_med, 'resources', 'active', true),
-         (v_med, 'field-service', 'active', true)
+         (v_med, 'field-service', 'active', true),
+         (v_med, 'e-invoice', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────

@@ -74,6 +74,7 @@ documento donde alguien va a buscar la verdad.
 | `project-costing` | El margen y el WIP se derivan del historial, nunca se guardan (F10) | [project-costing.md](project-costing.md) |
 | `resources` | Llena no es lo mismo que imposible: la sobrecarga usa mayor estricto (F10) | [resources.md](resources.md) |
 | `field-service` | La orden no cierra sin checklist obligatorio completo ni sin firma -y la regla vive en la base- (F10) | [field-service.md](field-service.md) |
+| `e-invoice` | La DGII tambien te llama a ti: tres URL propias y un token que separa a un cliente de otro (F6) | [e-invoice.md](e-invoice.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -119,7 +120,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los sesenta y cinco cubiertos.** 875 pruebas contra Postgres real
+- **RLS: los sesenta y seis cubiertos.** 894 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de

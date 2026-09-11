@@ -71,6 +71,7 @@
     "@regb/mod-ai-copilot": "workspace:*",
     "@regb/mod-projects": "workspace:*",
     "@regb/mod-timesheets": "workspace:*",
+    "@regb/mod-e-invoice": "workspace:*",
     "@regb/mod-field-service": "workspace:*",
     "@regb/mod-project-costing": "workspace:*",
     "@regb/mod-resources": "workspace:*",

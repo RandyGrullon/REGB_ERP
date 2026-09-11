@@ -64,6 +64,7 @@ import chatManifest from '@regb/mod-chat'
 import aiCopilotManifest from '@regb/mod-ai-copilot'
 import projectsManifest from '@regb/mod-projects'
 import timesheetsManifest from '@regb/mod-timesheets'
+import eInvoiceManifest from '@regb/mod-e-invoice'
 import fieldServiceManifest from '@regb/mod-field-service'
 import projectCostingManifest from '@regb/mod-project-costing'
 import resourcesManifest from '@regb/mod-resources'
@@ -175,6 +176,7 @@ export const MANIFESTS = new Map<string, ModuleManifest>(
     aiCopilotManifest,
     projectsManifest,
     timesheetsManifest,
+    eInvoiceManifest,
     fieldServiceManifest,
     projectCostingManifest,
     resourcesManifest,

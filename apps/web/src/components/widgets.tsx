@@ -119,6 +119,7 @@ export interface DatosWidgets {
   proyectosSobrePresupuesto: number
   personasSobrecargadas: number
   ordenesServicioAbiertas: number
+  ecfPorRemitir: number
 }
 
 const money = (n: number) =>
@@ -241,6 +242,7 @@ export async function cargarDatosWidgets(
     proyectosSobrePresupuesto: 0,
     personasSobrecargadas: 0,
     ordenesServicioAbiertas: 0,
+    ecfPorRemitir: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1163,6 +1165,13 @@ export async function cargarDatosWidgets(
         and public.project_budget_total(pr.id) > 0
         and public.project_cost_total(pr.id) > public.project_budget_total(pr.id)`
     vacio.proyectosSobrePresupuesto = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('ecf-por-remitir')) {
+    const [e] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.ecf_emitidos
+      where tenant_id = ${tenantId} and en_contingencia and remitido_en is null`
+    vacio.ecfPorRemitir = Number(e?.n ?? 0)
   }
 
   if (pidieron('field-service-open')) {
@@ -2591,6 +2600,21 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.proyectosSobrePresupuesto === 0 ? 'todos dentro' : 'revisar el costeo'}
+        </span>
+      </p>
+    ),
+  },
+
+  'ecf-por-remitir': {
+    titulo: 'e-CF sin remitir',
+    icono: 'receipt_long',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.ecfPorRemitir}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.ecfPorRemitir === 0 ? 'todo remitido' : 'hay 72 horas de plazo'}
         </span>
       </p>
     ),

@@ -202,6 +202,9 @@ importers:
       '@regb/mod-dashboard':
         specifier: workspace:*
         version: link:../../modules/dashboard
+      '@regb/mod-e-invoice':
+        specifier: workspace:*
+        version: link:../../modules/e-invoice
       '@regb/mod-e-sign':
         specifier: workspace:*
         version: link:../../modules/e-sign
@@ -717,6 +720,19 @@ importers:
         version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)(terser@5.51.2)
 
   modules/dashboard:
+    dependencies:
+      '@regb/module-registry':
+        specifier: workspace:*
+        version: link:../../packages/module-registry
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.20.1)(lightningcss@1.32.0)(terser@5.51.2)
+
+  modules/e-invoice:
     dependencies:
       '@regb/module-registry':
         specifier: workspace:*
