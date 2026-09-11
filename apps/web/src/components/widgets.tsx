@@ -116,6 +116,8 @@ export interface DatosWidgets {
   mencionesChatRecientes: number
   hitosProyectoVencidos: number
   registrosTiempoPorAprobar: number
+  proyectosSobrePresupuesto: number
+  personasSobrecargadas: number
 }
 
 const money = (n: number) =>
@@ -235,6 +237,8 @@ export async function cargarDatosWidgets(
     mencionesChatRecientes: 0,
     hitosProyectoVencidos: 0,
     registrosTiempoPorAprobar: 0,
+    proyectosSobrePresupuesto: 0,
+    personasSobrecargadas: 0,
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
@@ -1148,6 +1152,23 @@ export async function cargarDatosWidgets(
       select count(*)::text as n from public.time_entries
       where tenant_id = ${tenantId} and status = 'submitted'`
     vacio.registrosTiempoPorAprobar = Number(r?.n ?? 0)
+  }
+
+  if (pidieron('project-costing-over-budget')) {
+    const [p] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.projects pr
+      where pr.tenant_id = ${tenantId}
+        and public.project_budget_total(pr.id) > 0
+        and public.project_cost_total(pr.id) > public.project_budget_total(pr.id)`
+    vacio.proyectosSobrePresupuesto = Number(p?.n ?? 0)
+  }
+
+  if (pidieron('resources-overloaded')) {
+    const [s] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.resource_capacity rc
+      where rc.tenant_id = ${tenantId}
+        and public.resource_allocated_hours(rc.tenant_id, rc.user_id, rc.week_start) > rc.hours_capacity`
+    vacio.personasSobrecargadas = Number(s?.n ?? 0)
   }
 
   if (pidieron('catalog-completeness')) {
@@ -2546,6 +2567,36 @@ const WIDGETS: Record<
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.registrosTiempoPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+        </span>
+      </p>
+    ),
+  },
+
+  'project-costing-over-budget': {
+    titulo: 'Proyectos sobre presupuesto',
+    icono: 'query_stats',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.proyectosSobrePresupuesto}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.proyectosSobrePresupuesto === 0 ? 'todos dentro' : 'revisar el costeo'}
+        </span>
+      </p>
+    ),
+  },
+
+  'resources-overloaded': {
+    titulo: 'Personas sobrecargadas',
+    icono: 'calendar_month',
+    render: (d) => (
+      <p className="py-2">
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.personasSobrecargadas}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          {d.personasSobrecargadas === 0 ? 'nadie sobrecargado' : 'revisar la semana'}
         </span>
       </p>
     ),

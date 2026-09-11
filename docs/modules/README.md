@@ -71,6 +71,8 @@ documento donde alguien va a buscar la verdad.
 | `ai-copilot` | La fuga entre tenants queda eliminada por construccion: nunca genera SQL libre (F9) | [ai-copilot.md](ai-copilot.md) |
 | `projects` | Una dependencia sin terminar bloquea el avance de verdad, no solo en la pantalla (F10) | [projects.md](projects.md) |
 | `timesheets` | Rechazado se corrige y se reenvia; solo aprobado es terminal de verdad (F10) | [timesheets.md](timesheets.md) |
+| `project-costing` | El margen y el WIP se derivan del historial, nunca se guardan (F10) | [project-costing.md](project-costing.md) |
+| `resources` | Llena no es lo mismo que imposible: la sobrecarga usa mayor estricto (F10) | [resources.md](resources.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
@@ -116,7 +118,7 @@ patrones que `sales-orders` ya habia corregido.
   comprobarse es lo que una máquina no decide: orden de foco lógico, si un
   texto alternativo describe de verdad, y si el flujo completo se puede
   hacer solo con teclado. Eso pide una persona y un lector de pantalla.
-- **RLS: los sesenta cubiertos.** 814 pruebas contra Postgres real
+- **RLS: los sesenta y dos cubiertos.** 834 pruebas contra Postgres real
   (163 de los cinco de F4 + 23 de `purchase-orders` + 10 del cargo por
   mora en `ar` + 22 de `accounting` + 8 de `ap` + 15 de `treasury` + 13 de
   `bank-rec` + 18 de `fixed-assets` + 11 de `budgets` + 8 de
@@ -134,7 +136,8 @@ patrones que `sales-orders` ya habia corregido.
   de `commissions` + 10 de `customer-portal` + 10 de `helpdesk` + 15
   de `loyalty` + 11 de `marketing` + 12 de `ecommerce` + 10 de `bi` +
   11 de `automations` + 11 de `api-webhooks` + 9 de `chat` + 5 de
-  `ai-copilot` + 11 de `projects` + 9 de `timesheets`). La numeración
+  `ai-copilot` + 11 de `projects` + 9 de `timesheets` + 11 de
+  `project-costing` + 9 de `resources`). La numeración
   de `purchase-orders` y de
   `accounting` se escribió con la guarda de tenant y módulo activo desde
   la primera versión — el agujero que `sales-orders` tuvo que tapar

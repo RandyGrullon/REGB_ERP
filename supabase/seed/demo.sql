@@ -176,7 +176,9 @@ begin
          (v_med, 'chat', 'active', true),
          (v_med, 'ai-copilot', 'active', true),
          (v_med, 'projects', 'active', true),
-         (v_med, 'timesheets', 'active', true)
+         (v_med, 'timesheets', 'active', true),
+         (v_med, 'project-costing', 'active', true),
+         (v_med, 'resources', 'active', true)
   on conflict do nothing;
 
   -- ── Suscripciones ────────────────────────────────────────────────────
@@ -1633,6 +1635,36 @@ begin
 
     insert into public.time_entries (tenant_id, task_id, user_id, entry_date, hours, billable, hourly_rate, status)
     values (v_med, v_t1, v_maria, current_date, 4, true, 350.00, 'submitted');
+
+    -- ── Costeo (modulo 73): presupuesto real y dos costos, uno de ellos
+    --    ya facturado, para que el WIP no sea igual al gasto total.
+    insert into public.project_budgets (tenant_id, project_id, concept, category, amount, created_by)
+    values
+      (v_med, v_proy, 'Mano de obra de pintura', 'labor', 45000.00, v_maria),
+      (v_med, v_proy, 'Estanteria metalica', 'materials', 120000.00, v_maria),
+      (v_med, v_proy, 'Alquiler de andamios', 'equipment', 18000.00, v_maria);
+
+    insert into public.project_costs (tenant_id, project_id, budget_id, concept, amount, incurred_on, billed, created_by)
+    select v_med, v_proy, pb.id, 'Anticipo a la brigada de pintura', 20000.00, current_date - interval '3 days', true, v_maria
+    from public.project_budgets pb
+    where pb.tenant_id = v_med and pb.project_id = v_proy and pb.concept = 'Mano de obra de pintura';
+
+    insert into public.project_costs (tenant_id, project_id, budget_id, concept, amount, incurred_on, billed, created_by)
+    select v_med, v_proy, pb.id, 'Compra de andamios (2 semanas)', 22500.00, current_date - interval '1 day', false, v_maria
+    from public.project_budgets pb
+    where pb.tenant_id = v_med and pb.project_id = v_proy and pb.concept = 'Alquiler de andamios';
+
+    -- ── Recursos (modulo 75): Maria con 40h de capacidad y 46h asignadas
+    --    -sobrecargada de verdad, lista para verse en rojo-.
+    insert into public.resource_capacity (tenant_id, user_id, week_start, hours_capacity)
+    values (v_med, v_maria, date_trunc('week', current_date)::date, 40)
+    on conflict (tenant_id, user_id, week_start) do nothing;
+
+    insert into public.resource_allocations (tenant_id, task_id, user_id, week_start, hours, created_by)
+    values
+      (v_med, v_t1, v_maria, date_trunc('week', current_date)::date, 24, v_maria),
+      (v_med, v_t2, v_maria, date_trunc('week', current_date)::date, 22, v_maria)
+    on conflict (tenant_id, task_id, user_id, week_start) do nothing;
   end if;
 end $$;
 

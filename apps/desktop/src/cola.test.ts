@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { ColaVentas } from './cola'
+import { ColaVentas, validarVentaEntrante } from './cola'
 
 /**
  * La cola es lo unico que separa "se fue la luz" de "perdimos el dia".
@@ -158,5 +158,70 @@ describe('Ocho horas sin linea', () => {
 
     expect(subidas).toBe(300)
     expect(recargada.pendientes).toBe(0)
+  })
+})
+
+describe('Lo que llega por IPC no se cree', () => {
+  /**
+   * El que llama es la app web cargada en la ventana: una pagina remota.
+   * El tipo de TypeScript no existe en tiempo de ejecucion, asi que la
+   * unica frontera de verdad es esta.
+   */
+  const buena = {
+    soldAt: '2026-08-03T12:00:00.000Z',
+    shiftId: 'turno-1',
+    customerId: null,
+    cart: [{ productId: 'p1', qty: 1 }],
+    payments: [{ metodo: 'efectivo', monto: 100 }],
+  }
+
+  it('deja pasar una venta bien formada', () => {
+    expect(validarVentaEntrante(buena)).toEqual(buena)
+  })
+
+  it('rechaza lo que ni siquiera es una venta', () => {
+    for (const basura of [null, undefined, 'venta', 42, [], true]) {
+      expect(validarVentaEntrante(basura)).toBeNull()
+    }
+  })
+
+  it('exige la hora del cobro y el turno: sin eso el arqueo no cuadra', () => {
+    expect(validarVentaEntrante({ ...buena, soldAt: '' })).toBeNull()
+    expect(validarVentaEntrante({ ...buena, soldAt: 123 })).toBeNull()
+    expect(validarVentaEntrante({ ...buena, shiftId: undefined })).toBeNull()
+  })
+
+  it('exige carrito y pagos, aunque su contenido lo valide el servidor', () => {
+    expect(validarVentaEntrante({ ...buena, cart: undefined })).toBeNull()
+    expect(validarVentaEntrante({ ...buena, payments: undefined })).toBeNull()
+  })
+
+  it('un clientRef que no sea texto no puede entrar: es la clave anti-duplicado', () => {
+    expect(validarVentaEntrante({ ...buena, clientRef: { a: 1 } })).toBeNull()
+    expect(validarVentaEntrante({ ...buena, clientRef: 'abc' })?.clientRef).toBe('abc')
+  })
+
+  it('el cliente va o con id o explicitamente en null, no a medias', () => {
+    expect(validarVentaEntrante({ ...buena, customerId: 'c1' })?.customerId).toBe('c1')
+    expect(validarVentaEntrante({ ...buena, customerId: undefined })).toBeNull()
+  })
+
+  it('no deja colar campos de mas hacia el archivo de la cola', () => {
+    // `intentos` lo lleva la cola, no el navegador: si la pagina pudiera
+    // mandarlo, podria esconder una venta trabada del contador.
+    const limpia = validarVentaEntrante({ ...buena, intentos: 99, ultimoError: 'inventado' })
+    expect(limpia).not.toBeNull()
+    expect(Object.keys(limpia ?? {})).not.toContain('intentos')
+    expect(Object.keys(limpia ?? {})).not.toContain('ultimoError')
+  })
+
+  it('la cola de verdad ignora tambien el intentos inventado', () => {
+    const cola = new ColaVentas(join(carpetaTemporal(), 'v.json'))
+    const limpia = validarVentaEntrante({ ...buena, intentos: 99 })
+    expect(limpia).not.toBeNull()
+    if (limpia === null) return
+    cola.encolar(limpia)
+    expect(cola.atascadas().length).toBe(0)
+    expect(cola.siguientes()[0]?.intentos).toBe(0)
   })
 })

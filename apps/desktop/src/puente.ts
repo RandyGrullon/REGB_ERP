@@ -29,9 +29,11 @@ export interface ResultadoOperacion {
 
 export interface ResultadoEncolado {
   ok: boolean
-  /** Clave de idempotencia de la venta. La caja la guarda por si acaso. */
+  /** Clave de idempotencia de la venta. Cadena vacia si no se encolo. */
   clientRef: string
   pendientes: number
+  /** Por que no se encolo. Solo cuando `ok` es `false`. */
+  error?: string
 }
 
 export interface EstadoSync {

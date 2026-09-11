@@ -131,6 +131,14 @@ describe('Que se manda al papel', () => {
   it('sin servidor no hay nada que imprimir', () => {
     expect(urlDeTicket('/pos/ticket/1', null)).toBeNull()
   })
+
+  it('lo que llega por IPC sin ser texto se rechaza, no revienta', () => {
+    // La ruta viene de una pagina remota: puede llegar un numero o un
+    // objeto. Tiene que devolver `null`, no lanzar.
+    for (const basura of [null, undefined, 42, {}, ['/pos/ticket/1']]) {
+      expect(urlDeTicket(basura as unknown as string, base)).toBeNull()
+    }
+  })
 })
 
 describe('Ya estamos en esa pantalla', () => {

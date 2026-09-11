@@ -1,0 +1,13 @@
+// El tsconfig de build excluye `**/*.test.ts` a proposito: los tests no
+// pueden acabar en `dist/` ni dentro del paquete que se instala en el
+// mostrador. El efecto secundario era que NADIE los revisaba con tsc, y un
+// test que llama a una funcion con la firma cambiada pasaba igual porque
+// vitest solo transpila, no chequea. Este archivo los chequea aparte.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

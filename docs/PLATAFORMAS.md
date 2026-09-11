@@ -35,6 +35,24 @@ ya existia de F5 (`cola.ts`, `impresora.ts`, `sincronizador.ts`) es
 logica pura con sus pruebas; lo que faltaba era la ventana que
 finalmente carga el ERP.
 
+Lo verificado: `typecheck`, `lint` y las 53 pruebas de `apps/desktop`
+estan en verde, y `servidor.ts` (a que servidor se conecta, que entra en
+la ventana, que sale por el papel) esta cubierto por pruebas puras.
+
+### Lo que falta, dicho claro
+
+- **La ventana de Electron nunca se ha abierto de verdad.** El shell
+  compila y su logica esta probada; nadie ha visto el ERP dentro de la
+  ventana, ni la pantalla de error, ni los atajos F2/F4.
+- La impresion termica y la gaveta no se han probado contra una
+  impresora fisica: `abrirGaveta` depende de que la termica este
+  compartida en Windows con un nombre.
+- La ruta `/api/pos/sync` de `apps/web` existe y su contrato cuadra con
+  el del sincronizador (`{ventas}` → `{aceptadas, rechazadas,
+  resultados}`), pero nadie ha subido una venta real por ahi desde el
+  escritorio.
+- No hay UI para escribir `servidor.json`: hoy se escribe a mano.
+
 ## Movil (`apps/mobile`) — prueba de concepto honesta
 
 Expo + expo-router. **No replica el ERP completo, y no debe hacerlo**:

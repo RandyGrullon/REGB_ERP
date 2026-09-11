@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { readFileSync, writeFileSync, renameSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { mkdirSync } from 'node:fs'
-import type { VentaAtascada } from './puente'
+import type { VentaAtascada, VentaParaEncolar } from './puente'
 
 /**
  * Cola de ventas pendientes de sincronizar.
@@ -131,6 +131,44 @@ export class ColaVentas {
   /** Las que llevan muchos intentos: son las que hay que mirar a mano. */
   atascadas(desde = 5): VentaPendiente[] {
     return this.ventas.filter((v) => v.intentos >= desde)
+  }
+}
+
+/**
+ * Valida lo que llega por IPC antes de que toque el archivo de la cola.
+ *
+ * El tipo `VentaParaEncolar` no protege nada en tiempo de ejecucion: el
+ * que llama es una pagina web remota y puede mandar cualquier cosa. Si una
+ * venta sin `soldAt` o con `clientRef` de objeto entra al archivo, el
+ * sincronizador se atasca para siempre con ella y ARRASTRA a las demas —
+ * son ventas cobradas que dejan de subir. Se rechaza en la puerta.
+ *
+ * Solo se valida la forma, no el negocio: `cart` y `payments` los valida el
+ * servidor, que es donde vive esa regla.
+ */
+export function validarVentaEntrante(dato: unknown): VentaParaEncolar | null {
+  if (typeof dato !== 'object' || dato === null || Array.isArray(dato)) return null
+  const v = dato as Record<string, unknown>
+
+  const texto = (x: unknown): x is string => typeof x === 'string' && x.trim() !== ''
+  if (!texto(v['soldAt']) || !texto(v['shiftId'])) return null
+  if (v['clientRef'] !== undefined && !texto(v['clientRef'])) return null
+  if (v['customerId'] !== null && !texto(v['customerId'])) return null
+  if (v['tenant'] !== undefined && !texto(v['tenant'])) return null
+  if (v['rol'] !== undefined && !texto(v['rol'])) return null
+  if (v['cart'] === undefined || v['payments'] === undefined) return null // registry:allow -- campo del ticket (lineas de pago), no id de modulo
+
+  // Se copia campo a campo a proposito: asi nada que el navegador haya
+  // colado de mas (un `intentos` a mano, por ejemplo) llega al archivo.
+  return {
+    soldAt: v['soldAt'],
+    shiftId: v['shiftId'],
+    customerId: v['customerId'] === null ? null : (v['customerId'] as string),
+    cart: v['cart'],
+    payments: v['payments'],
+    ...(v['clientRef'] === undefined ? {} : { clientRef: v['clientRef'] as string }),
+    ...(v['tenant'] === undefined ? {} : { tenant: v['tenant'] as string }),
+    ...(v['rol'] === undefined ? {} : { rol: v['rol'] as string }),
   }
 }
 

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain, shell, net, Menu, dialog } from 'electron'
 import { join } from 'node:path'
 import { readFileSync } from 'node:fs'
-import { ColaVentas, rutaPorDefecto, resumirAtascadas } from './cola'
+import { ColaVentas, rutaPorDefecto, resumirAtascadas, validarVentaEntrante } from './cola'
 import { Sincronizador } from './sincronizador'
 import { abrirGaveta } from './impresora'
 import { construirMenu } from './menu'
@@ -224,7 +224,10 @@ function instalarMenu(): void {
                   type: 'warning',
                   title: 'Gaveta de efectivo',
                   message: 'No se pudo abrir la gaveta.',
-                  detail: r.error,
+                  // Va con spread y no como `detail: r.error`: el proyecto
+                  // compila con `exactOptionalPropertyTypes`, asi que un
+                  // `undefined` explicito no es lo mismo que no ponerlo.
+                  ...(r.error === undefined ? {} : { detail: r.error }),
                   buttons: ['Entendido'],
                 })
               }
@@ -335,6 +338,13 @@ manejar('imprimir:ticket', async (ruta) => {
     show: false,
     webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
   })
+  // Aunque solo carga una URL ya validada del ERP, la ventana del ticket
+  // no puede abrir nada ni irse a ningun lado: es papel, no un navegador.
+  oculta.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
+  oculta.webContents.on('will-navigate', (e, destino) => {
+    if (!esNavegacionInterna(destino, BASE)) e.preventDefault()
+  })
+
   try {
     await oculta.loadURL(url)
     await new Promise((r) => setTimeout(r, 250)) // que asienten fuentes e iconos
@@ -359,7 +369,21 @@ manejar('gaveta:abrir', async () =>
 )
 
 manejar('venta:encolar', async (venta) => {
-  const clientRef = cola.encolar(venta)
+  // Se valida aqui por lo mismo que el ticket: quien llama es una pagina
+  // remota y el tipo no es una garantia en tiempo de ejecucion. Una venta
+  // deforme dentro del archivo atasca al sincronizador y con el a todas
+  // las ventas cobradas que vienen detras.
+  const limpia = validarVentaEntrante(venta)
+  if (limpia === null) {
+    return {
+      ok: false,
+      clientRef: '',
+      pendientes: cola.pendientes,
+      error: 'La venta llego incompleta y no se encolo. Vuelve a cobrarla.',
+    }
+  }
+
+  const clientRef = cola.encolar(limpia)
   // Se intenta subir de inmediato: si hay linea, la venta llega antes de
   // que el cajero termine de dar el vuelto y el ticket ya trae su numero.
   void sync.intentar()

@@ -87,6 +87,11 @@ export function esNavegacionInterna(url: string, base: string | null): boolean {
  */
 export function urlDeTicket(ruta: string, base: string | null): string | null {
   if (base === null) return null
+  // El tipo no es una garantia: esto llega por IPC desde una pagina
+  // remota, que puede mandar un numero o un objeto. Sin este guardia,
+  // `ruta.startsWith` lanza y la promesa del preload se rechaza con un
+  // error de Node en vez de con un "no" limpio.
+  if (typeof ruta !== 'string') return null
   // `//otro-sitio.com/x` es una URL protocolo-relativa: `new URL` la
   // resuelve contra OTRO dominio, no contra la base. Fuera de una.
   if (ruta.startsWith('//')) return null
@@ -197,15 +202,14 @@ export function paginaDeError(d: DatosPaginaError): string {
 
   const cuerpo = sinServidor
     ? `<p>Esta copia del programa no tiene configurada la direccion del servidor.</p>
-       <p>Quien instalo el equipo tiene que dejarla en la variable de entorno
-       <code>REGB_URL</code> o en el archivo <code>servidor.json</code> de la
-       carpeta de datos de la aplicacion.</p>`
-    : `<p>El programa esta bien; lo que no contesta es el servidor.</p>
-       <p class="dato">Se intento contra <code>${escaparHtml(d.base ?? '')}</code></p>
-       ${d.detalle === undefined ? '' : `<p class="dato">${escaparHtml(d.detalle)}</p>`}
-       <p>Mientras tanto, <strong>las ventas que ya estaban en la cola no se
-       pierden</strong>: siguen guardadas en este equipo y suben solas cuando
-       el servidor vuelva.</p>`
+<p>Quien instalo el equipo tiene que dejarla en la variable de entorno <code>REGB_URL</code> o en el archivo <code>servidor.json</code> de la carpeta de datos de la aplicacion.</p>`
+    : // Ojo: las frases NO se parten en varias lineas. El salto y la
+      // sangria acaban dentro del HTML, y lo que el cajero lee (y lo que
+      // buscan las pruebas) se convierte en "no se\n       pierden".
+      `<p>El programa esta bien; lo que no contesta es el servidor.</p>
+<p class="dato">Se intento contra <code>${escaparHtml(d.base ?? '')}</code></p>
+${d.detalle === undefined ? '' : `<p class="dato">${escaparHtml(d.detalle)}</p>`}
+<p>Mientras tanto, <strong>las ventas que ya estaban en la cola no se pierden</strong>: siguen guardadas en este equipo y suben solas cuando el servidor vuelva.</p>`
 
   // El boton es un enlace normal, no un script con IPC: asi la pantalla de
   // error no necesita el puente ni una ventana aparte, y `will-navigate` la
@@ -213,7 +217,7 @@ export function paginaDeError(d: DatosPaginaError): string {
   const reintento = sinServidor
     ? ''
     : `<p class="reintento">Reintentando solo cada ${d.segundosReintento} segundos&hellip;</p>
-       <p><a class="boton" href="${escaparHtml(`${d.base ?? ''}${d.rutaInicio}`)}">Reintentar ahora</a></p>`
+<p><a class="boton" href="${escaparHtml(`${d.base ?? ''}${d.rutaInicio}`)}">Reintentar ahora</a></p>`
 
   return `<meta charset="utf-8">
 <title>REGB ERP — sin conexion con el servidor</title>
