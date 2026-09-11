@@ -34,6 +34,8 @@ export interface PosProduct {
   price: number
   taxRate: number
   disponible: number
+  /** false = concepto sin existencias (envio, instalacion). */
+  tracksStock: boolean
 }
 
 export interface PosCustomer {
@@ -389,11 +391,18 @@ export function PosTerminal({
               </span>
               <span className="flex w-full items-center justify-between text-[10px] text-[var(--color-text-muted)]">
                 <span className="font-[family-name:var(--font-mono)]">{p.sku}</span>
-                <span
-                  className={p.disponible <= 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}
-                >
-                  {p.disponible} {p.unit}
-                </span>
+                {p.tracksStock ? (
+                  <span
+                    className={p.disponible <= 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}
+                  >
+                    {p.disponible} {p.unit}
+                  </span>
+                ) : (
+                  // Un envio no tiene existencias que contar. Ensenar "0"
+                  // le diria al cajero que no lo puede vender, que es
+                  // justo al reves.
+                  <span>servicio</span>
+                )}
               </span>
             </button>
           ))}

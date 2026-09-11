@@ -193,8 +193,10 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
     // Precios y tasas SIEMPRE del servidor: lo que mande el navegador es
     // una sugerencia, no un precio (§8.3).
     const ids = carrito.map((l) => l.productId)
-    const productos = await tx<{ id: string; price: string; tax_rate: string }[]>`
-      select id, price::text, tax_rate::text from public.products
+    const productos = await tx<
+      { id: string; price: string; tax_rate: string; tracks_stock: boolean }[]
+    >`
+      select id, price::text, tax_rate::text, tracks_stock from public.products
       where tenant_id = ${ctx.tenantId} and id = any(${ids}) and active`
     const porId = new Map(productos.map((p) => [p.id, p]))
     if (carrito.some((l) => !porId.has(l.productId))) return 'producto-invalido'
@@ -313,6 +315,10 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
         values (${venta!.id}, ${ctx.tenantId}, ${l.productId}, ${l.qty}, ${l.unitPrice},
                 ${l.discountPct}, ${l.taxRate}, ${totales.lines[i]!.total})`
 
+      // Un concepto sin existencias (envio, instalacion) se cobra pero no
+      // sale de ningun almacen: no hay nada que descontar.
+      if (!porId.get(l.productId)!.tracks_stock) continue
+
       // En el mostrador no hay reserva: la mercancia sale ya.
       await tx`
         insert into public.inventory_movements
@@ -385,9 +391,13 @@ export async function anularVenta(fd: FormData): Promise<ActionResult> {
     const [shift] = await tx<{ warehouse_id: string }[]>`
       select warehouse_id from public.pos_shifts where id = ${venta.shift_id}`
 
+    // Solo vuelven al almacen las lineas que salieron de un almacen: un
+    // envio anulado no devuelve nada al estante.
     const lineas = await tx<{ product_id: string; qty: string }[]>`
-      select product_id, qty::text from public.pos_sale_lines
-      where sale_id = ${saleId} and tenant_id = ${ctx.tenantId}`
+      select psl.product_id, psl.qty::text from public.pos_sale_lines psl
+      join public.products p on p.id = psl.product_id
+      where psl.sale_id = ${saleId} and psl.tenant_id = ${ctx.tenantId}
+        and p.tracks_stock`
 
     for (const l of lineas) {
       await tx`

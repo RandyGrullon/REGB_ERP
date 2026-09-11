@@ -280,12 +280,27 @@ export async function confirmarPedido(fd: FormData): Promise<ActionResult> {
     if (!order) return 'no-existe'
     if (order.status !== 'draft') return 'no-borrador'
 
-    const lines = await tx<{ id: string; product_id: string; qty_ordered: string }[]>`
-      select id, product_id, qty_ordered::text from public.sales_order_lines
-      where order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
+    const lines = await tx<
+      { id: string; product_id: string; qty_ordered: string; tracks_stock: boolean }[]
+    >`
+      select sol.id, sol.product_id, sol.qty_ordered::text, p.tracks_stock
+      from public.sales_order_lines sol
+      join public.products p on p.id = sol.product_id
+      where sol.order_id = ${orderId} and sol.tenant_id = ${ctx.tenantId}`
     if (lines.length === 0) return 'sin-lineas'
 
     for (const l of lines) {
+      // Un concepto sin existencias (envio, instalacion) no se reserva
+      // porque no hay nada que apartar. Se marca como servido igual, si
+      // no el pedido se quedaria "parcialmente reservado" para siempre
+      // esperando una mercancia que no existe.
+      if (!l.tracks_stock) {
+        await tx`
+          update public.sales_order_lines set qty_reserved = qty_ordered
+          where id = ${l.id} and tenant_id = ${ctx.tenantId}`
+        continue
+      }
+
       const [nivel] = await tx<{ qty_on_hand: string; qty_reserved: string }[]>`
         select qty_on_hand::text, qty_reserved::text from public.stock_levels
         where tenant_id = ${ctx.tenantId} and warehouse_id = ${order.warehouse_id}
@@ -361,11 +376,19 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
     if (order.status === 'cancelled') return 'cancelado'
 
     const [line] = await tx<
-      { product_id: string; qty_ordered: string; qty_reserved: string; qty_delivered: string }[]
+      {
+        product_id: string
+        qty_ordered: string
+        qty_reserved: string
+        qty_delivered: string
+        tracks_stock: boolean
+      }[]
     >`
-      select product_id, qty_ordered::text, qty_reserved::text, qty_delivered::text
-      from public.sales_order_lines
-      where id = ${lineId} and tenant_id = ${ctx.tenantId}`
+      select sol.product_id, sol.qty_ordered::text, sol.qty_reserved::text,
+             sol.qty_delivered::text, p.tracks_stock
+      from public.sales_order_lines sol
+      join public.products p on p.id = sol.product_id
+      where sol.id = ${lineId} and sol.tenant_id = ${ctx.tenantId}`
     if (!line) return 'sin-linea'
 
     const estado: OrderLineState = {
@@ -376,23 +399,31 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
     const check = validateDelivery(estado, qty)
     if (!check.ok) return check.error
 
-    // Libera lo apartado (hasta lo que se entrega) y saca el fisico.
+    // Lo apartado que se consume al entregar. Se descuenta de la linea
+    // tambien en los conceptos sin existencias -ahi solo es contabilidad
+    // del pedido, no un movimiento de almacen-.
     const liberar = Math.min(qty, estado.qtyReserved)
-    if (liberar > 0) {
+
+    // Un concepto sin existencias se entrega igual -el envio se hizo-
+    // pero no sale de ningun almacen: no hay nada que liberar ni que
+    // descontar en el kardex.
+    if (line.tracks_stock) {
+      if (liberar > 0) {
+        await tx`
+          insert into public.inventory_movements
+            (tenant_id, warehouse_id, product_id, movement_type, qty,
+             reference_type, reference_id, created_by)
+          values (${ctx.tenantId}, ${order.warehouse_id}, ${line.product_id},
+                  'reservation_release', ${liberar}, 'sales_order', ${orderId}, ${ctx.userId})`
+      }
+
       await tx`
         insert into public.inventory_movements
           (tenant_id, warehouse_id, product_id, movement_type, qty,
            reference_type, reference_id, created_by)
         values (${ctx.tenantId}, ${order.warehouse_id}, ${line.product_id},
-                'reservation_release', ${liberar}, 'sales_order', ${orderId}, ${ctx.userId})`
+                'sale', ${-qty}, 'sales_order', ${orderId}, ${ctx.userId})`
     }
-
-    await tx`
-      insert into public.inventory_movements
-        (tenant_id, warehouse_id, product_id, movement_type, qty,
-         reference_type, reference_id, created_by)
-      values (${ctx.tenantId}, ${order.warehouse_id}, ${line.product_id},
-              'sale', ${-qty}, 'sales_order', ${orderId}, ${ctx.userId})`
 
     await tx`
       update public.sales_order_lines
@@ -446,13 +477,25 @@ export async function cancelarPedido(fd: FormData): Promise<ActionResult> {
       where id = ${orderId} and tenant_id = ${ctx.tenantId} for update`
     if (!order || order.status === 'cancelled') return
 
-    const lines = await tx<{ id: string; product_id: string; qty_reserved: string }[]>`
-      select id, product_id, qty_reserved::text from public.sales_order_lines
-      where order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
+    const lines = await tx<
+      { id: string; product_id: string; qty_reserved: string; tracks_stock: boolean }[]
+    >`
+      select sol.id, sol.product_id, sol.qty_reserved::text, p.tracks_stock
+      from public.sales_order_lines sol
+      join public.products p on p.id = sol.product_id
+      where sol.order_id = ${orderId} and sol.tenant_id = ${ctx.tenantId}`
 
     for (const l of lines) {
       const reservado = Number(l.qty_reserved)
       if (reservado <= 0) continue
+      // Un concepto sin existencias tiene qty_reserved lleno para que el
+      // pedido no quede colgado, pero nunca aparto nada: solo se limpia.
+      if (!l.tracks_stock) {
+        await tx`
+          update public.sales_order_lines set qty_reserved = 0
+          where id = ${l.id} and tenant_id = ${ctx.tenantId}`
+        continue
+      }
       await tx`
         insert into public.inventory_movements
           (tenant_id, warehouse_id, product_id, movement_type, qty, reason,

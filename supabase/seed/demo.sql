@@ -230,6 +230,18 @@ begin
     (v_med,  'VAR-200', 'Varilla 3/8 x 20 pies',     'Ferreteria','unidad',  285.00, 240.00),
     (v_med,  'PIN-300', 'Pintura blanca acrilica gl','Pinturas', 'galon',  1150.00, 890.00)
   on conflict do nothing;
+
+  -- Conceptos vendibles SIN existencias (0100): se facturan como
+  -- cualquier producto pero no salen de ningun almacen. Es lo que en
+  -- FACTUSOL se cobra con un codigo aparte, y sin esto habia que
+  -- inventar un producto fantasma que terminaba en existencias con
+  -- numeros negativos creciendo para siempre.
+  insert into public.products (tenant_id, sku, name, category, unit, price, tracks_stock)
+  values
+    (v_med,  'ENVIO',  'Envio a domicilio',        'Servicios', 'servicio',  350.00, false),
+    (v_med,  'INST',   'Instalacion en sitio',     'Servicios', 'servicio',  900.00, false),
+    (v_pyme, 'DELIV',  'Delivery del colmado',     'Servicios', 'servicio',   80.00, false)
+  on conflict (tenant_id, sku) do nothing;
 end $$;
 
 -- Maria es Owner en ambos clientes: su membership hace real el modulo users.

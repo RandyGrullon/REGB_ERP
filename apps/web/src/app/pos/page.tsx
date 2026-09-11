@@ -62,9 +62,11 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               price: string
               tax_rate: string
               disponible: string
+              tracks_stock: boolean
             }[]
           >`
             select pr.id, pr.sku, pr.name, pr.unit, pr.barcode, pr.price::text, pr.tax_rate::text,
+                   pr.tracks_stock,
                    coalesce(sl.qty_on_hand - sl.qty_reserved, 0)::text as disponible
             from public.products pr
             left join public.stock_levels sl
@@ -138,6 +140,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     price: Number(p.price),
     taxRate: Number(p.tax_rate),
     disponible: Number(p.disponible),
+    tracksStock: p.tracks_stock,
   }))
 
   return (

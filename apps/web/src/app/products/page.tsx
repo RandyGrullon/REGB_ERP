@@ -40,6 +40,7 @@ interface ProductRow {
   category_id: string | null
   tax_rate: string
   reorder_point: string | null
+  tracks_stock: boolean
   active: boolean
 }
 
@@ -70,7 +71,7 @@ export default async function ProductsPage({
   const [products, categories, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = await tx<ProductRow[]>`
       select id, sku, name, unit, price::text, cost::text, barcode, category,
-             category_id, tax_rate::text, reorder_point::text, active
+             category_id, tax_rate::text, reorder_point::text, tracks_stock, active
       from public.products
       where tenant_id = ${ctx.tenantId}
         and (${verInactivos} or active)
@@ -226,6 +227,11 @@ export default async function ProductsPage({
                     ) : (
                       `${Math.round(Number(p.tax_rate) * 100)}%`
                     )}
+                    {!p.tracks_stock && (
+                      <Badge tone="info" dot={false} className="ml-2">
+                        sin existencias
+                      </Badge>
+                    )}
                   </TD>
                   {puedeEditar && (
                     <TD>
@@ -320,6 +326,13 @@ export default async function ProductsPage({
                 <label className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]">
                   <input type="checkbox" name="exento" />
                   Exento de ITBIS
+                </label>
+                <label
+                  className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]"
+                  title="Para cobrar envio, instalacion o mano de obra: se factura igual, pero no tiene existencias."
+                >
+                  <input type="checkbox" name="sinStock" />
+                  Sin existencias
                 </label>
                 <button
                   type="submit"

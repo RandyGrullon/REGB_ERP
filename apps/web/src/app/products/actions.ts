@@ -44,6 +44,8 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
   const cost = numeroOpcional(String(fd.get('cost') ?? ''))
   const reorder = numeroOpcional(String(fd.get('reorderPoint') ?? ''))
   const exento = fd.get('exento') === 'on'
+  // Un concepto vendible sin existencias: envio, instalacion, mano de obra.
+  const sinStock = fd.get('sinStock') === 'on'
 
   if (sku.length < 1) return { ok: false, error: 'El codigo es obligatorio.' }
   if (name.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
@@ -63,11 +65,11 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
       await tx`
         insert into public.products
           (tenant_id, sku, name, unit, price, cost, barcode, category_id,
-           category, reorder_point, tax_rate)
+           category, reorder_point, tax_rate, tracks_stock)
         values
           (${ctx.tenantId}, ${sku}, ${name}, ${unit}, ${price ?? 0}, ${cost},
-           ${barcode}, ${categoryId}, ${cat?.name ?? null}, ${reorder},
-           ${exento ? 0 : 0.18})`
+           ${barcode}, ${categoryId}, ${cat?.name ?? null},
+           ${sinStock ? null : reorder}, ${exento ? 0 : 0.18}, ${!sinStock})`
     })
   } catch (e) {
     const msg = String(e)
