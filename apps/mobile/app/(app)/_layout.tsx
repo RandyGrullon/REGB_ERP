@@ -19,7 +19,7 @@ export default function LayoutApp() {
   return (
     <Stack
       screenOptions={{
-        headerStyle: { backgroundColor: tema.color.superficie.deep },
+        headerStyle: { backgroundColor: tema.color.superficie.honda },
         headerTintColor: tema.color.texto.primario,
         contentStyle: { backgroundColor: tema.color.superficie.base },
       }}

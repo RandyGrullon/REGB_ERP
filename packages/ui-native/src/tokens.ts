@@ -230,14 +230,7 @@ export interface EstiloTexto {
 }
 
 export type NombreEscala =
-  | 'display'
-  | 'h1'
-  | 'h2'
-  | 'h3'
-  | 'body'
-  | 'bodySm'
-  | 'caption'
-  | 'overline'
+  'display' | 'h1' | 'h2' | 'h3' | 'body' | 'bodySm' | 'caption' | 'overline'
 
 interface EscalaCruda {
   size: number

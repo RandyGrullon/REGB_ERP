@@ -60,10 +60,17 @@ cada manifest declara su `mobileScope`. Hoy hay exactamente un modulo
 portado, `chat`, elegido por ser el caso de uso mas genuinamente movil
 del catalogo.
 
+Lo verificado: `typecheck` y `lint` en verde en `apps/mobile` y en
+`@regb/ui-native` (6 pruebas, una de ellas vigila que ningun componente
+escriba un color a mano), y `expo export --platform android` genera el
+bundle completo, o sea que Metro resuelve de verdad `@regb/ui-native`,
+`@regb/sdk/native` y `@regb/operations` desde el monorepo con pnpm.
+
 ### Lo que falta, dicho claro
 
 - **Nadie ha corrido la app movil en un dispositivo ni en un simulador
-  todavia.** Compila; no esta probada.
+  todavia.** Compila y empaqueta; no esta probada: ningun login, ningun
+  mensaje enviado desde un telefono de verdad.
 - Los otros ~73 modulos declaran `mobile: true` en su manifest: eso es
   una promesa de diseno, no codigo.
 - Faltan las capacidades que justifican una app nativa: camara, GPS,

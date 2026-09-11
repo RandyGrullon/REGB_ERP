@@ -9,7 +9,8 @@ import { createNativeClient } from '@regb/sdk/native'
  * a mano en el bundle- y son las MISMAS que usa la web: la clave
  * anonima no da ningun privilegio, RLS decide que filas existen (§10).
  */
-const extra = Constants.expoConfig?.extra as { supabaseUrl?: string; supabaseAnonKey?: string } | undefined
+const extra = Constants.expoConfig?.extra as
+  { supabaseUrl?: string | null; supabaseAnonKey?: string | null } | undefined
 
 export const supabase = createNativeClient({
   url: extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL ?? '',

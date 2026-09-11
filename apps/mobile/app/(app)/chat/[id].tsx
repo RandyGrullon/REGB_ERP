@@ -84,7 +84,8 @@ export default function HiloCanal() {
         renderItem={({ item }) => (
           <Tarjeta style={item.parent_message_id ? estilos.respuesta : undefined}>
             <Texto variante="pie" tono="atenuado">
-              {nombres[item.author_id] ?? 'Usuario'} · {new Date(item.created_at).toLocaleString('es-DO')}
+              {nombres[item.author_id] ?? 'Usuario'} ·{' '}
+              {new Date(item.created_at).toLocaleString('es-DO')}
             </Texto>
             <Texto>{item.body}</Texto>
             {item.mentioned_user_ids.length > 0 && (
