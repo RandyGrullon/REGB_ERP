@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -70,8 +71,8 @@ export async function enviarMensaje(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCanalForm(fd: FormData): Promise<void> {
-  await crearCanal(fd)
+  await anotarAviso(await crearCanal(fd), 'crearCanal')
 }
 export async function enviarMensajeForm(fd: FormData): Promise<void> {
-  await enviarMensaje(fd)
+  await anotarAviso(await enviarMensaje(fd), 'enviarMensaje')
 }

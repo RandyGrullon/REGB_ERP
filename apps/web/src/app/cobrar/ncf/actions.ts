@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -65,5 +66,5 @@ export async function registrarSecuencia(fd: FormData): Promise<ActionResult> {
 }
 
 export async function registrarSecuenciaForm(fd: FormData): Promise<void> {
-  await registrarSecuencia(fd)
+  await anotarAviso(await registrarSecuencia(fd), 'registrarSecuencia')
 }

@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import { transicionValidaInvitacion, type EstadoInvitacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -79,8 +80,8 @@ export async function revocarInvitacion(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearInvitacionForm(fd: FormData): Promise<void> {
-  await crearInvitacion(fd)
+  await anotarAviso(await crearInvitacion(fd), 'crearInvitacion')
 }
 export async function revocarInvitacionForm(fd: FormData): Promise<void> {
-  await revocarInvitacion(fd)
+  await anotarAviso(await revocarInvitacion(fd), 'revocarInvitacion')
 }

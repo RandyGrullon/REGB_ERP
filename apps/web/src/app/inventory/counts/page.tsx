@@ -18,6 +18,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { cerrarConteoForm, iniciarConteoForm, registrarLineaConteoForm } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Conteos · REGB ERP' }
@@ -156,12 +157,11 @@ export default async function CountsPage({
                                 placeholder="—"
                                 className={inputCls}
                               />{' '}
-                              <button
-                                type="submit"
-                                className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Guardar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </TD>
                           <TD numeric>
@@ -185,12 +185,11 @@ export default async function CountsPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="countId" value={conteoAbierto.id} />
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Cerrar conteo y ajustar diferencias
-                </button>
+                </BotonEnvio>
               </form>
               <p className="text-xs text-[var(--color-text-muted)]">
                 Las lineas sin contar se ignoran: no se asume que "no contado" es "sin diferencia".
@@ -268,12 +267,11 @@ export default async function CountsPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Iniciar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

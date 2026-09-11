@@ -13,6 +13,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { procesarPeriodoForm } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Procesar nomina · REGB ERP' }
@@ -151,14 +152,13 @@ export default async function ProcesarNominaPage({
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="periodId" value={periodo.id} />
-                      <button
-                        type="submit"
+                      <BotonEnvio
+                        
                         title="Calcula y guarda estas lineas. El periodo queda fijo despues de procesar."
-                        className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                      >
+                        className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                         <Icon name="check" size={18} />
                         Procesar periodo
-                      </button>
+                      </BotonEnvio>
                     </form>
                   )}
                 </CardBody>

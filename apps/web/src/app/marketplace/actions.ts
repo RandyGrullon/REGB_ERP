@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -84,5 +85,5 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
 }
 
 export async function solicitarActivacionForm(fd: FormData): Promise<void> {
-  await solicitarActivacion(fd)
+  await anotarAviso(await solicitarActivacion(fd), 'solicitarActivacion')
 }

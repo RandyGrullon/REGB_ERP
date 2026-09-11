@@ -26,6 +26,7 @@ import {
   reactivarLineaForm,
 } from '../actions'
 import { ESTADO_LINEA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -224,13 +225,12 @@ export default async function ImportConciliacionPage({
                               <form action={desconciliarForm}>
                                 {campos}
                                 <input type="hidden" name="lineId" value={l.id} />
-                                <button
-                                  type="submit"
+                                <BotonEnvio
+                                  
                                   title="Deshacer esta conciliacion"
-                                  className="text-xs text-[var(--color-text-link)] hover:underline"
-                                >
+                                  className="text-xs text-[var(--color-text-link)] hover:underline">
                                   Deshacer
-                                </button>
+                                </BotonEnvio>
                               </form>
                             )}
                           </div>
@@ -239,12 +239,11 @@ export default async function ImportConciliacionPage({
                           <form action={reactivarLineaForm}>
                             {campos}
                             <input type="hidden" name="lineId" value={l.id} />
-                            <button
-                              type="submit"
-                              className="text-xs text-[var(--color-text-link)] hover:underline"
-                            >
+                            <BotonEnvio
+                              
+                              className="text-xs text-[var(--color-text-link)] hover:underline">
                               Reactivar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                         {l.match_status === 'pending' && puedeConfirmar && (
@@ -268,25 +267,23 @@ export default async function ImportConciliacionPage({
                                   </option>
                                 ))}
                               </select>
-                              <button
-                                type="submit"
+                              <BotonEnvio
+                                
                                 title={sugerido ? 'Sugerido por el sistema' : 'Confirmar el emparejamiento elegido'}
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                              >
+                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 {sugerido ? 'Confirmar' : 'Conciliar'}
-                              </button>
+                              </BotonEnvio>
                             </form>
                             <form action={ignorarLineaForm}>
                               {campos}
                               <input type="hidden" name="lineId" value={l.id} />
-                              <button
-                                type="submit"
+                              <BotonEnvio
+                                
                                 title="Esta linea nunca va a tener pareja"
-                                className="text-xs text-[var(--color-text-muted)] hover:underline"
-                              >
+                                className="text-xs text-[var(--color-text-muted)] hover:underline">
                                 Ignorar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </div>
                         )}

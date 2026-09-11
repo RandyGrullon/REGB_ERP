@@ -13,6 +13,7 @@ import {
   transicionarTareaForm,
 } from '../actions'
 import { ESTADO_PROYECTO, ESTADO_TAREA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -124,10 +125,10 @@ export default async function ProyectoDetallePage({
               <form action={transicionarProyectoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Activar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'active' && (
@@ -135,17 +136,17 @@ export default async function ProyectoDetallePage({
                 <form action={transicionarProyectoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="on_hold" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Pausar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarProyectoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="completed" />
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="check_circle" size={14} />
                     Completar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}
@@ -153,9 +154,9 @@ export default async function ProyectoDetallePage({
               <form action={transicionarProyectoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   Reanudar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </div>
@@ -182,13 +183,12 @@ export default async function ProyectoDetallePage({
                           {campos}
                           <input type="hidden" name="taskId" value={t.id} />
                           <input type="hidden" name="siguiente" value={SIGUIENTE[t.status]} />
-                          <button
-                            type="submit"
-                            className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                             <Icon name="arrow_forward" size={12} />
                             {ESTADO_TAREA[SIGUIENTE[t.status]!]}
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                       {puedeGestionar && tareas.length > 1 && (
@@ -205,9 +205,9 @@ export default async function ProyectoDetallePage({
                               </option>
                             ))}
                           </select>
-                          <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                             +Dep.
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -233,10 +233,10 @@ export default async function ProyectoDetallePage({
                   Vence
                   <input type="date" name="dueDate" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -268,9 +268,9 @@ export default async function ProyectoDetallePage({
                           <form action={completarHitoForm}>
                             {campos}
                             <input type="hidden" name="milestoneId" value={h.id} />
-                            <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Completar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                       </div>
@@ -291,10 +291,10 @@ export default async function ProyectoDetallePage({
                   Fecha
                   <input type="date" name="dueDate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
                 </label>
-                <button type="submit" className={botonSecundarioClase}>
+                <BotonEnvio  className={botonSecundarioClase}>
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

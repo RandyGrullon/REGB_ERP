@@ -3,6 +3,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { guardarConfiguracionForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Configuracion · REGB ERP' }
@@ -111,12 +112,11 @@ export default async function ConfiguracionPage({
               </div>
 
               {puedeEditar ? (
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Guardar cambios
-                </button>
+                </BotonEnvio>
               ) : (
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Tu rol &quot;{ctx.roleName}&quot; puede ver la configuracion pero no cambiarla.

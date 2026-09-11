@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { calcularEscalamiento, transicionValidaContrato, type EstadoContrato } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -169,11 +170,11 @@ export async function renovarContrato(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearContratoForm(fd: FormData): Promise<void> {
-  await crearContrato(fd)
+  await anotarAviso(await crearContrato(fd), 'crearContrato')
 }
 export async function transicionarContratoForm(fd: FormData): Promise<void> {
-  await transicionarContrato(fd)
+  await anotarAviso(await transicionarContrato(fd), 'transicionarContrato')
 }
 export async function renovarContratoForm(fd: FormData): Promise<void> {
-  await renovarContrato(fd)
+  await anotarAviso(await renovarContrato(fd), 'renovarContrato')
 }

@@ -12,6 +12,7 @@ import {
   type PaymentMethod,
 } from '@regb/operations'
 import { cobrarVentaForm } from '@/app/pos/actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 /**
  * Terminal tactil de caja (S21).
@@ -598,8 +599,8 @@ export function PosTerminal({
           <input type="hidden" name="customerId" value={customerId} />
           <input type="hidden" name="cart" value={JSON.stringify(lineas)} />
           <input type="hidden" name="payments" value={JSON.stringify(pagos)} />
-          <button
-            type="submit"
+          <BotonEnvio
+            
             disabled={!puedeCobrar}
             onClick={() =>
               setTimeout(() => {
@@ -614,7 +615,7 @@ export function PosTerminal({
           >
             <Icon name="point_of_sale" size={22} />
             Cobrar RD$ {money(totales.total)}
-          </button>
+          </BotonEnvio>
         </form>
 
         {encolada && (

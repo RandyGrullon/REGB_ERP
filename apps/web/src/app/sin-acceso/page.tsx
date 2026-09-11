@@ -1,5 +1,6 @@
 import { currentSession } from '@/lib/supabase'
 import { checkAccess } from '@regb/sdk'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const metadata = { title: 'Sin acceso · REGB ERP' }
 export const dynamic = 'force-dynamic'
@@ -43,12 +44,11 @@ export default async function SinAccesoPage() {
         )}
 
         <form action="/auth/salir" method="post" className="mt-5">
-          <button
-            type="submit"
-            className="text-sm text-[var(--color-text-link)] underline-offset-4 hover:underline"
-          >
+          <BotonEnvio
+            
+            className="text-sm text-[var(--color-text-link)] underline-offset-4 hover:underline">
             Salir y entrar con otra cuenta
-          </button>
+          </BotonEnvio>
         </form>
       </div>
     </main>

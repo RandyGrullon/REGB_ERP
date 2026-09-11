@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de proveedores (modulo 42, F8/S43). */
@@ -146,14 +147,14 @@ export async function registrarEvaluacion(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function cambiarHomologacionForm(fd: FormData): Promise<void> {
-  await cambiarHomologacion(fd)
+  await anotarAviso(await cambiarHomologacion(fd), 'cambiarHomologacion')
 }
 export async function crearDocumentoForm(fd: FormData): Promise<void> {
-  await crearDocumento(fd)
+  await anotarAviso(await crearDocumento(fd), 'crearDocumento')
 }
 export async function crearCuentaBancariaForm(fd: FormData): Promise<void> {
-  await crearCuentaBancaria(fd)
+  await anotarAviso(await crearCuentaBancaria(fd), 'crearCuentaBancaria')
 }
 export async function registrarEvaluacionForm(fd: FormData): Promise<void> {
-  await registrarEvaluacion(fd)
+  await anotarAviso(await registrarEvaluacion(fd), 'registrarEvaluacion')
 }

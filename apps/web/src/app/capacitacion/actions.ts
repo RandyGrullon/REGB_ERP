@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { aproboEvaluacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -218,20 +219,20 @@ export async function asignarNivelCompetencia(fd: FormData): Promise<ActionResul
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCursoForm(fd: FormData): Promise<void> {
-  await crearCurso(fd)
+  await anotarAviso(await crearCurso(fd), 'crearCurso')
 }
 export async function inscribirEmpleadoForm(fd: FormData): Promise<void> {
-  await inscribirEmpleado(fd)
+  await anotarAviso(await inscribirEmpleado(fd), 'inscribirEmpleado')
 }
 export async function registrarNotaForm(fd: FormData): Promise<void> {
-  await registrarNota(fd)
+  await anotarAviso(await registrarNota(fd), 'registrarNota')
 }
 export async function emitirCertificadoForm(fd: FormData): Promise<void> {
-  await emitirCertificado(fd)
+  await anotarAviso(await emitirCertificado(fd), 'emitirCertificado')
 }
 export async function crearCompetenciaForm(fd: FormData): Promise<void> {
-  await crearCompetencia(fd)
+  await anotarAviso(await crearCompetencia(fd), 'crearCompetencia')
 }
 export async function asignarNivelCompetenciaForm(fd: FormData): Promise<void> {
-  await asignarNivelCompetencia(fd)
+  await anotarAviso(await asignarNivelCompetencia(fd), 'asignarNivelCompetencia')
 }

@@ -4,6 +4,7 @@ import { listInvoices } from '@/lib/invoicing'
 import { requireProvider } from '@/lib/provider-guard'
 import { usd } from '@/components/ControlBits'
 import { aplicarDunning, generarFacturasDelMes, registrarPago } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Facturacion · REGB Control' }
@@ -53,21 +54,19 @@ export default async function FacturacionPage() {
         </nav>
         <div className="ml-auto flex gap-2">
           <form action={aplicarDunning}>
-            <button
-              type="submit"
+            <BotonEnvio
+              
               title="Marca vencidas, degrada morosos (5/10/15/30/90) y recupera a quien pago. Idempotente; jamas borra."
-              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
+              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors duration-100 hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
               Aplicar dunning
-            </button>
+            </BotonEnvio>
           </form>
           <form action={generarFacturasDelMes}>
-            <button
-              type="submit"
-              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
+            <BotonEnvio
+              
+              className="flex h-11 items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors duration-100 hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
               Generar facturas del mes
-            </button>
+            </BotonEnvio>
           </form>
         </div>
       </div>
@@ -130,12 +129,11 @@ export default async function FacturacionPage() {
                       {(inv.status === 'sent' || inv.status === 'overdue') && (
                         <form action={registrarPago}>
                           <input type="hidden" name="invoiceId" value={inv.id} />
-                          <button
-                            type="submit"
-                            className="rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors duration-100 hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                             Registrar pago
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                       {inv.status === 'paid' && inv.paidAt && (

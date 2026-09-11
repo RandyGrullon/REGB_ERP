@@ -24,6 +24,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarProductoForm, crearProductoForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Catalogo · REGB ERP' }
@@ -239,12 +240,11 @@ export default async function ProductsPage({
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="id" value={p.id} />
-                        <button
-                          type="submit"
-                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           {p.active ? 'Archivar' : 'Reactivar'}
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </TD>
                   )}
@@ -334,12 +334,11 @@ export default async function ProductsPage({
                   <input type="checkbox" name="sinStock" />
                   Sin existencias
                 </label>
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 ¿Tienes muchos? Subelos de una vez desde{' '}

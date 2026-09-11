@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { agregarPresupuestoForm, marcarFacturadoForm, registrarCostoForm } from '../actions'
 import { CATEGORIA_PRESUPUESTO } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -159,10 +160,10 @@ export default async function CosteoProyectoPage({
                   Monto (RD$)
                   <input name="amount" required inputMode="decimal" className={`${inputClase} tabular`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -194,12 +195,11 @@ export default async function CosteoProyectoPage({
                       <form action={marcarFacturadoForm}>
                         {campos}
                         <input type="hidden" name="costId" value={c.id} />
-                        <button
-                          type="submit"
-                          className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                           Facturar
-                        </button>
+                        </BotonEnvio>
                       </form>
                     ) : (
                       <Badge tone="warning">Sin facturar</Badge>
@@ -235,10 +235,10 @@ export default async function CosteoProyectoPage({
                   Fecha
                   <input type="date" name="incurredOn" className={inputClase} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

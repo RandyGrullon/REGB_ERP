@@ -16,6 +16,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarSucursalForm, crearSucursalForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Sucursales · REGB ERP' }
@@ -100,12 +101,11 @@ export default async function SucursalesPage({
                       <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={b.id} />
-                      <button
-                        type="submit"
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                      >
+                      <BotonEnvio
+                        
+                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         {b.is_active ? 'Cerrar' : 'Reabrir'}
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </TD>
                 )}
@@ -163,12 +163,11 @@ export default async function SucursalesPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Abrir
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

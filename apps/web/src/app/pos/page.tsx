@@ -19,6 +19,7 @@ import {
   type PosProduct,
 } from '@/components/PosTerminal'
 import { abrirTurnoForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Caja · REGB ERP' }
@@ -261,13 +262,12 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="lock_open" size={18} />
                   Abrir caja
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 El fondo es el efectivo con que empiezas. Al cerrar se compara con lo que cuentes.

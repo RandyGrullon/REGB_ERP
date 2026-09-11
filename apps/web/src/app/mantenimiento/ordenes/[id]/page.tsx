@@ -20,6 +20,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { agregarParteForm, transicionarOrdenForm } from '../../actions'
 import { ESTADO_ORDEN, PRIORIDAD_ORDEN, TIPO_ORDEN } from '../../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -148,28 +149,28 @@ export default async function OrdenDetallePage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Empezar a trabajar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'in_progress' && (
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="completed" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Completar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             <form action={transicionarOrdenForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 Cancelar
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}
@@ -228,10 +229,10 @@ export default async function OrdenDetallePage({
                   Cantidad
                   <input name="qtyUsed" required inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

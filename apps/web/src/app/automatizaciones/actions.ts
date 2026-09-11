@@ -8,6 +8,7 @@ import {
   type OperadorCondicion,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -148,11 +149,11 @@ export async function procesarEventosPendientes(fd: FormData): Promise<ActionRes
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearReglaForm(fd: FormData): Promise<void> {
-  await crearRegla(fd)
+  await anotarAviso(await crearRegla(fd), 'crearRegla')
 }
 export async function alternarReglaForm(fd: FormData): Promise<void> {
-  await alternarRegla(fd)
+  await anotarAviso(await alternarRegla(fd), 'alternarRegla')
 }
 export async function procesarEventosPendientesForm(fd: FormData): Promise<void> {
-  await procesarEventosPendientes(fd)
+  await anotarAviso(await procesarEventosPendientes(fd), 'procesarEventosPendientes')
 }

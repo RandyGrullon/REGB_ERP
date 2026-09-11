@@ -20,6 +20,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { anularVentaForm } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cierres · REGB ERP' }
@@ -239,13 +240,12 @@ export default async function CierresPage({
                             aria-label={`Motivo para anular ${v.number}`}
                             className="h-8 w-28 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                           />
-                          <button
-                            type="submit"
+                          <BotonEnvio
+                            
                             aria-label={`Anular ${v.number}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                          >
+                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="block" size={16} />
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>

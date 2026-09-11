@@ -27,6 +27,7 @@ import {
   contabilizarAsientoForm,
   quitarLineaForm,
 } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,32 +133,30 @@ export default async function AsientoDetallePage({
               {enBorrador && puedeContabilizar && (
                 <form action={contabilizarAsientoForm}>
                   {campos}
-                  <button
-                    type="submit"
+                  <BotonEnvio
+                    
                     disabled={!validacion.ok}
                     title={
                       validacion.ok
                         ? 'Deja el asiento inmutable: se corrige con uno inverso, no editando'
                         : validacion.error
                     }
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40">
                     <Icon name="check_circle" size={18} />
                     Contabilizar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {enBorrador && puedeBorrar && (
                 <form action={borrarAsientoForm}>
                   {campos}
-                  <button
-                    type="submit"
+                  <BotonEnvio
+                    
                     title="Solo se puede borrar un borrador; nunca uno ya contabilizado"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                  >
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="delete" size={18} />
                     Borrar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </>
@@ -226,13 +225,12 @@ export default async function AsientoDetallePage({
                       <form action={quitarLineaForm}>
                         {campos}
                         <input type="hidden" name="lineId" value={l.id} />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           aria-label={`Quitar linea de ${l.account_name}`}
-                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                        >
+                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                           <Icon name="delete" size={16} />
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </TD>
                   )}
@@ -292,13 +290,12 @@ export default async function AsientoDetallePage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

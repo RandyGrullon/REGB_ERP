@@ -28,6 +28,7 @@ import {
   registrarNotaForm,
 } from './actions'
 import { ESTADO_INSCRIPCION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Capacitacion · REGB ERP' }
@@ -203,13 +204,12 @@ export default async function CapacitacionPage({
                                 inputMode="numeric"
                                 className={`tabular w-16 ${claseInput}`}
                               />
-                              <button
-                                type="submit"
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 Registrar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           )}
                           {i.status === 'completed' && !i.tiene_certificado && (
@@ -223,13 +223,12 @@ export default async function CapacitacionPage({
                                 aria-label={`Fecha de vencimiento del certificado de ${i.employee_name}`}
                                 className={claseInput}
                               />
-                              <button
-                                type="submit"
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="workspace_premium" size={14} />
                                 Emitir certificado
-                              </button>
+                              </BotonEnvio>
                             </form>
                           )}
                         </TD>
@@ -264,13 +263,12 @@ export default async function CapacitacionPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Inscribir
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -301,13 +299,12 @@ export default async function CapacitacionPage({
                   Minimo para aprobar
                   <input name="passingScore" defaultValue="70" inputMode="numeric" className={`tabular ${claseInput}`} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={14} />
                   Publicar curso
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -358,13 +355,12 @@ export default async function CapacitacionPage({
                     Nueva competencia
                     <input name="name" required className={claseInput} />
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="add" size={14} />
                     Agregar
-                  </button>
+                  </BotonEnvio>
                 </form>
 
                 {competencias.length > 0 && empleados.length > 0 && (
@@ -395,13 +391,12 @@ export default async function CapacitacionPage({
                       Nivel (1-5)
                       <input name="level" inputMode="numeric" required className={`tabular ${claseInput}`} />
                     </label>
-                    <button
-                      type="submit"
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="save" size={14} />
                       Evaluar
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </div>

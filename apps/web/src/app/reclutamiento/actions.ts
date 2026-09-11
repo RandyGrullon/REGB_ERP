@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValida, type EtapaAplicacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -214,20 +215,20 @@ export async function programarEntrevista(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearVacanteForm(fd: FormData): Promise<void> {
-  await crearVacante(fd)
+  await anotarAviso(await crearVacante(fd), 'crearVacante')
 }
 export async function cambiarEstadoVacanteForm(fd: FormData): Promise<void> {
-  await cambiarEstadoVacante(fd)
+  await anotarAviso(await cambiarEstadoVacante(fd), 'cambiarEstadoVacante')
 }
 export async function crearCandidatoForm(fd: FormData): Promise<void> {
-  await crearCandidato(fd)
+  await anotarAviso(await crearCandidato(fd), 'crearCandidato')
 }
 export async function crearAplicacionForm(fd: FormData): Promise<void> {
-  await crearAplicacion(fd)
+  await anotarAviso(await crearAplicacion(fd), 'crearAplicacion')
 }
 export async function cambiarEtapaForm(fd: FormData): Promise<void> {
-  await cambiarEtapa(fd)
+  await anotarAviso(await cambiarEtapa(fd), 'cambiarEtapa')
 }
 export async function programarEntrevistaForm(fd: FormData): Promise<void> {
-  await programarEntrevista(fd)
+  await anotarAviso(await programarEntrevista(fd), 'programarEntrevista')
 }

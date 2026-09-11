@@ -18,6 +18,7 @@ import { loadClientDetail } from '@/lib/control'
 import { requireProvider } from '@/lib/provider-guard'
 import { cycleLabel, InvoiceBreakdown, StatusBadge, TierBadge, usd } from '@/components/ControlBits'
 import { impersonar } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,12 +100,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
               className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
             />
           </label>
-          <button
-            type="submit"
-            className="h-10 rounded-[var(--radius-md)] bg-[var(--color-accent-plum)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
+          <BotonEnvio
+            
+            className="h-10 rounded-[var(--radius-md)] bg-[var(--color-accent-plum)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
             Entrar 60 min
-          </button>
+          </BotonEnvio>
         </form>
       </details>
 

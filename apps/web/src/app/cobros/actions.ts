@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -156,17 +157,17 @@ export async function correrRecurrentes(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearLinkForm(fd: FormData): Promise<void> {
-  await crearLink(fd)
+  await anotarAviso(await crearLink(fd), 'crearLink')
 }
 export async function confirmarPagoForm(fd: FormData): Promise<void> {
-  await confirmarPago(fd)
+  await anotarAviso(await confirmarPago(fd), 'confirmarPago')
 }
 export async function cancelarLinkForm(fd: FormData): Promise<void> {
-  await cancelarLink(fd)
+  await anotarAviso(await cancelarLink(fd), 'cancelarLink')
 }
 export async function crearRecurrenteForm(fd: FormData): Promise<void> {
-  await crearRecurrente(fd)
+  await anotarAviso(await crearRecurrente(fd), 'crearRecurrente')
 }
 export async function correrRecurrentesForm(fd: FormData): Promise<void> {
-  await correrRecurrentes(fd)
+  await anotarAviso(await correrRecurrentes(fd), 'correrRecurrentes')
 }

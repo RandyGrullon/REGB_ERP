@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de cotizacion a proveedores / RFQ (modulo 44, F8/S44). */
@@ -144,14 +145,14 @@ export async function adjudicarRfq(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearRfqForm(fd: FormData): Promise<void> {
-  await crearRfq(fd)
+  await anotarAviso(await crearRfq(fd), 'crearRfq')
 }
 export async function invitarProveedorForm(fd: FormData): Promise<void> {
-  await invitarProveedor(fd)
+  await anotarAviso(await invitarProveedor(fd), 'invitarProveedor')
 }
 export async function registrarCotizacionForm(fd: FormData): Promise<void> {
-  await registrarCotizacion(fd)
+  await anotarAviso(await registrarCotizacion(fd), 'registrarCotizacion')
 }
 export async function adjudicarRfqForm(fd: FormData): Promise<void> {
-  await adjudicarRfq(fd)
+  await anotarAviso(await adjudicarRfq(fd), 'adjudicarRfq')
 }

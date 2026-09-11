@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@regb/ui'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 /**
  * Escaneo con la camara del celular (modulo 52, F8/S48).
@@ -147,13 +148,12 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
             className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
           />
         </label>
-        <button
-          type="submit"
-          className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-        >
+        <BotonEnvio
+          
+          className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
           <Icon name="search" size={18} />
           Buscar
-        </button>
+        </BotonEnvio>
       </form>
     </div>
   )

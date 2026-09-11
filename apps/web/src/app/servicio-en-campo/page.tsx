@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearOrdenForm } from './actions'
 import { ESTADO_ORDEN, PRIORIDAD_ORDEN } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Servicio en campo · REGB ERP' }
@@ -209,10 +210,10 @@ export default async function ServicioEnCampoPage({
                   Agendar para (opcional)
                   <input type="datetime-local" name="scheduledAt" className={inputClase} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Crear orden
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

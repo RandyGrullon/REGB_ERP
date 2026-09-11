@@ -9,6 +9,7 @@ import {
   type EstadoTarea,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -196,23 +197,23 @@ export async function completarHito(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearProyectoForm(fd: FormData): Promise<void> {
-  await crearProyecto(fd)
+  await anotarAviso(await crearProyecto(fd), 'crearProyecto')
 }
 export async function transicionarProyectoForm(fd: FormData): Promise<void> {
-  await transicionarProyecto(fd)
+  await anotarAviso(await transicionarProyecto(fd), 'transicionarProyecto')
 }
 export async function crearTareaForm(fd: FormData): Promise<void> {
-  await crearTarea(fd)
+  await anotarAviso(await crearTarea(fd), 'crearTarea')
 }
 export async function transicionarTareaForm(fd: FormData): Promise<void> {
-  await transicionarTarea(fd)
+  await anotarAviso(await transicionarTarea(fd), 'transicionarTarea')
 }
 export async function agregarDependenciaForm(fd: FormData): Promise<void> {
-  await agregarDependencia(fd)
+  await anotarAviso(await agregarDependencia(fd), 'agregarDependencia')
 }
 export async function crearHitoForm(fd: FormData): Promise<void> {
-  await crearHito(fd)
+  await anotarAviso(await crearHito(fd), 'crearHito')
 }
 export async function completarHitoForm(fd: FormData): Promise<void> {
-  await completarHito(fd)
+  await anotarAviso(await completarHito(fd), 'completarHito')
 }

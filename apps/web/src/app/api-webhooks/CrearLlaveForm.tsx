@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { crearLlave } from './actions'
 import { SCOPES_DISPONIBLES, SCOPE_LABEL } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 /** Formulario para crear una llave de API -es la unica pantalla que la muestra completa-. */
 export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string }) {
@@ -52,13 +53,12 @@ export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string })
             className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
           />
         </label>
-        <button
-          type="submit"
+        <BotonEnvio
+          
           disabled={enviando}
-          className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60"
-        >
+          className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60">
           Crear llave
-        </button>
+        </BotonEnvio>
       </form>
     </div>
   )

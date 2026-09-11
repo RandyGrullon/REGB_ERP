@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { diasLaborablesEntre } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -139,11 +140,11 @@ export async function resolverSolicitud(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function solicitarAusenciaForm(fd: FormData): Promise<void> {
-  await solicitarAusencia(fd)
+  await anotarAviso(await solicitarAusencia(fd), 'solicitarAusencia')
 }
 export async function cancelarSolicitudForm(fd: FormData): Promise<void> {
-  await cancelarSolicitud(fd)
+  await anotarAviso(await cancelarSolicitud(fd), 'cancelarSolicitud')
 }
 export async function resolverSolicitudForm(fd: FormData): Promise<void> {
-  await resolverSolicitud(fd)
+  await anotarAviso(await resolverSolicitud(fd), 'resolverSolicitud')
 }

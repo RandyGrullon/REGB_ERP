@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
 
 /** Acciones del modulo `branches` (S9). */
@@ -58,8 +59,8 @@ export async function alternarSucursal(formData: FormData): Promise<ActionResult
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearSucursalForm(fd: FormData): Promise<void> {
-  await crearSucursal(fd)
+  await anotarAviso(await crearSucursal(fd), 'crearSucursal')
 }
 export async function alternarSucursalForm(fd: FormData): Promise<void> {
-  await alternarSucursal(fd)
+  await anotarAviso(await alternarSucursal(fd), 'alternarSucursal')
 }

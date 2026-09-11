@@ -20,6 +20,7 @@ import {
   programarEntrevistaForm,
 } from '../actions'
 import { ESTADO_VACANTE, ETAPA_APLICACION, RESULTADO_ENTREVISTA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,13 +148,12 @@ export default async function VacanteDetallePage({
                     </option>
                   ))}
                 </select>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
                   Guardar
-                </button>
+                </BotonEnvio>
               </form>
             ) : (
               <Badge tone="neutral">{ESTADO_VACANTE[vacante.status] ?? vacante.status}</Badge>
@@ -189,12 +189,11 @@ export default async function VacanteDetallePage({
                                 <input type="hidden" name="applicationId" value={a.id} />
                                 <input type="hidden" name="positionId" value={vacante.id} />
                                 <input type="hidden" name="stage" value={siguiente} />
-                                <button
-                                  type="submit"
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                                >
+                                <BotonEnvio
+                                  
+                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                   Avanzar a {ETAPA_APLICACION[siguiente]}
-                                </button>
+                                </BotonEnvio>
                               </form>
                             )}
                             <form action={cambiarEtapaForm}>
@@ -203,12 +202,11 @@ export default async function VacanteDetallePage({
                               <input type="hidden" name="applicationId" value={a.id} />
                               <input type="hidden" name="positionId" value={vacante.id} />
                               <input type="hidden" name="stage" value="rejected" />
-                              <button
-                                type="submit"
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </div>
                         )}
@@ -248,13 +246,12 @@ export default async function VacanteDetallePage({
                           Con
                           <input name="interviewerName" className={claseInput} />
                         </label>
-                        <button
-                          type="submit"
-                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="event" size={14} />
                           Agendar
-                        </button>
+                        </BotonEnvio>
                       </form>
                     )}
                   </CardBody>
@@ -288,13 +285,12 @@ export default async function VacanteDetallePage({
                   Nota
                   <input name="notes" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Aplicar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

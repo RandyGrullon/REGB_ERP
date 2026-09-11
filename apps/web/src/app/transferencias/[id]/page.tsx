@@ -27,6 +27,7 @@ import {
   recibirTransferenciaForm,
 } from '../actions'
 import { ESTADO_TRANSFERENCIA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -139,25 +140,23 @@ export default async function TransferenciaDetallePage({
               {enBorrador && puedeDespachar && lineas.length > 0 && (
                 <form action={despacharTransferenciaForm}>
                   {campos}
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="local_shipping" size={14} />
                     Despachar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {enBorrador && puedeCrear && (
                 <form action={cancelarTransferenciaForm}>
                   {campos}
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="cancel" size={14} />
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </div>
@@ -204,13 +203,12 @@ export default async function TransferenciaDetallePage({
                   </TBody>
                 </Table>
                 <div className="border-t border-[var(--color-border)] p-3">
-                  <button
-                    type="submit"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="inventory_2" size={18} />
                     Registrar recepcion
-                  </button>
+                  </BotonEnvio>
                 </div>
               </form>
             </CardBody>
@@ -270,13 +268,12 @@ export default async function TransferenciaDetallePage({
                         <form action={quitarLineaForm}>
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
-                          <button
-                            type="submit"
+                          <BotonEnvio
+                            
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                          >
+                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="delete" size={16} />
-                          </button>
+                          </BotonEnvio>
                         </form>
                       </TD>
                     )}
@@ -313,13 +310,12 @@ export default async function TransferenciaDetallePage({
                   Cantidad
                   <input name="qty" required inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

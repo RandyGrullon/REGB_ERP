@@ -20,6 +20,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { cancelarDevolucionForm, enviarDevolucionForm } from './actions'
 import { ESTADO_RECEPCION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Recepciones · REGB ERP' }
@@ -229,25 +230,23 @@ export default async function RecepcionesPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="devolucionId" value={d.id} />
-                              <button
-                                type="submit"
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="local_shipping" size={14} />
                                 Enviar
-                              </button>
+                              </BotonEnvio>
                             </form>
                             <form action={cancelarDevolucionForm}>
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="devolucionId" value={d.id} />
-                              <button
-                                type="submit"
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="close" size={14} />
                                 Cancelar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </div>
                         </TD>

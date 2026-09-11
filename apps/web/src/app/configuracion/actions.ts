@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
 
 /** Accion del modulo `settings` (S9): lo que el cliente decide solo. */
@@ -53,5 +54,5 @@ export async function guardarConfiguracion(formData: FormData): Promise<ActionRe
 
 // ── Version para <form action> ──────────────────────────────────────────
 export async function guardarConfiguracionForm(fd: FormData): Promise<void> {
-  await guardarConfiguracion(fd)
+  await anotarAviso(await guardarConfiguracion(fd), 'guardarConfiguracion')
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
 
 /** Acciones del modulo `orgs` (multi-empresa, S9). */
@@ -78,11 +79,11 @@ export async function marcarPrincipal(formData: FormData): Promise<ActionResult>
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearEmpresaForm(fd: FormData): Promise<void> {
-  await crearEmpresa(fd)
+  await anotarAviso(await crearEmpresa(fd), 'crearEmpresa')
 }
 export async function editarEmpresaForm(fd: FormData): Promise<void> {
-  await editarEmpresa(fd)
+  await anotarAviso(await editarEmpresa(fd), 'editarEmpresa')
 }
 export async function marcarPrincipalForm(fd: FormData): Promise<void> {
-  await marcarPrincipal(fd)
+  await anotarAviso(await marcarPrincipal(fd), 'marcarPrincipal')
 }

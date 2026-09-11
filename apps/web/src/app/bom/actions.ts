@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -157,14 +158,14 @@ export async function activarBom(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearBomForm(fd: FormData): Promise<void> {
-  await crearBom(fd)
+  await anotarAviso(await crearBom(fd), 'crearBom')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function activarBomForm(fd: FormData): Promise<void> {
-  await activarBom(fd)
+  await anotarAviso(await activarBom(fd), 'activarBom')
 }

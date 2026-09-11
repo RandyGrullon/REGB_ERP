@@ -22,6 +22,7 @@ import { db } from '@/lib/db'
 import { requireProvider } from '@/lib/provider-guard'
 import { cycleLabel, StatusBadge, TierBadge, usd } from '@/components/ControlBits'
 import { activarSolicitud, descartarSolicitud, marcarContactada } from './solicitudes-actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Clientes · REGB Control' }
@@ -242,25 +243,23 @@ export default async function ControlOverviewPage({
                 <span className="flex w-full flex-wrap gap-2 pt-1">
                   <form action={activarSolicitud}>
                     <input type="hidden" name="id" value={s.id} />
-                    <button
-                      type="submit"
+                    <BotonEnvio
+                      
                       title="Enciende los modulos en prueba de 14 dias y avisa al cliente"
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                    >
+                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="rocket_launch" size={14} />
                       Activar en prueba
-                    </button>
+                    </BotonEnvio>
                   </form>
                   <form action={marcarContactada}>
                     <input type="hidden" name="id" value={s.id} />
-                    <button
-                      type="submit"
+                    <BotonEnvio
+                      
                       title="Ya lo llamaste; sale de la lista sin activar nada"
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                    >
+                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="call" size={14} />
                       Ya lo llame
-                    </button>
+                    </BotonEnvio>
                   </form>
                   <form action={descartarSolicitud} className="flex items-center gap-1">
                     <input type="hidden" name="id" value={s.id} />
@@ -270,12 +269,11 @@ export default async function ControlOverviewPage({
                       aria-label="Motivo para descartar la solicitud"
                       className="h-8 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                     />
-                    <button
-                      type="submit"
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] px-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] px-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       Descartar
-                    </button>
+                    </BotonEnvio>
                   </form>
                 </span>
               </li>

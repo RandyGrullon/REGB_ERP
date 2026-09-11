@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -95,11 +96,11 @@ export async function marcarFacturado(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function agregarPresupuestoForm(fd: FormData): Promise<void> {
-  await agregarPresupuesto(fd)
+  await anotarAviso(await agregarPresupuesto(fd), 'agregarPresupuesto')
 }
 export async function registrarCostoForm(fd: FormData): Promise<void> {
-  await registrarCosto(fd)
+  await anotarAviso(await registrarCosto(fd), 'registrarCosto')
 }
 export async function marcarFacturadoForm(fd: FormData): Promise<void> {
-  await marcarFacturado(fd)
+  await anotarAviso(await marcarFacturado(fd), 'marcarFacturado')
 }

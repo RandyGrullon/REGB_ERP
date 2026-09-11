@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -116,17 +117,17 @@ export async function fijarCicloIdeal(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function marcarEntradaForm(fd: FormData): Promise<void> {
-  await marcarEntrada(fd)
+  await anotarAviso(await marcarEntrada(fd), 'marcarEntrada')
 }
 export async function marcarSalidaForm(fd: FormData): Promise<void> {
-  await marcarSalida(fd)
+  await anotarAviso(await marcarSalida(fd), 'marcarSalida')
 }
 export async function iniciarParoForm(fd: FormData): Promise<void> {
-  await iniciarParo(fd)
+  await anotarAviso(await iniciarParo(fd), 'iniciarParo')
 }
 export async function terminarParoForm(fd: FormData): Promise<void> {
-  await terminarParo(fd)
+  await anotarAviso(await terminarParo(fd), 'terminarParo')
 }
 export async function fijarCicloIdealForm(fd: FormData): Promise<void> {
-  await fijarCicloIdeal(fd)
+  await anotarAviso(await fijarCicloIdeal(fd), 'fijarCicloIdeal')
 }

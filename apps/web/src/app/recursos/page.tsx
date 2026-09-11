@@ -20,6 +20,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { asignarForm, fijarCapacidadForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Planificacion de recursos · REGB ERP' }
@@ -196,10 +197,10 @@ export default async function RecursosPage({
                   Horas
                   <input name="hoursCapacity" required inputMode="decimal" defaultValue="40" className={`${inputClase} tabular`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Fijar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -260,10 +261,10 @@ export default async function RecursosPage({
                   Horas
                   <input name="hours" required inputMode="decimal" className={`${inputClase} tabular`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Asignar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

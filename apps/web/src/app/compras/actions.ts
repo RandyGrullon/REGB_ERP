@@ -11,6 +11,7 @@ import {
   type PurchaseLineState,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -411,26 +412,26 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function crearProveedorForm(fd: FormData): Promise<void> {
-  await crearProveedor(fd)
+  await anotarAviso(await crearProveedor(fd), 'crearProveedor')
 }
 export async function alternarProveedorForm(fd: FormData): Promise<void> {
-  await alternarProveedor(fd)
+  await anotarAviso(await alternarProveedor(fd), 'alternarProveedor')
 }
 export async function crearOrdenForm(fd: FormData): Promise<void> {
-  await crearOrden(fd)
+  await anotarAviso(await crearOrden(fd), 'crearOrden')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function confirmarOrdenForm(fd: FormData): Promise<void> {
-  await confirmarOrden(fd)
+  await anotarAviso(await confirmarOrden(fd), 'confirmarOrden')
 }
 export async function recibirLineaForm(fd: FormData): Promise<void> {
-  await recibirLinea(fd)
+  await anotarAviso(await recibirLinea(fd), 'recibirLinea')
 }
 export async function cancelarOrdenForm(fd: FormData): Promise<void> {
-  await cancelarOrden(fd)
+  await anotarAviso(await cancelarOrden(fd), 'cancelarOrden')
 }

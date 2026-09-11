@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaCupon, transicionValidaReferido, type EstadoCupon, type EstadoReferido } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -174,17 +175,17 @@ export async function transicionarReferido(fd: FormData): Promise<ActionResult> 
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function registrarPuntosForm(fd: FormData): Promise<void> {
-  await registrarPuntos(fd)
+  await anotarAviso(await registrarPuntos(fd), 'registrarPuntos')
 }
 export async function crearCuponForm(fd: FormData): Promise<void> {
-  await crearCupon(fd)
+  await anotarAviso(await crearCupon(fd), 'crearCupon')
 }
 export async function transicionarCuponForm(fd: FormData): Promise<void> {
-  await transicionarCupon(fd)
+  await anotarAviso(await transicionarCupon(fd), 'transicionarCupon')
 }
 export async function crearReferidoForm(fd: FormData): Promise<void> {
-  await crearReferido(fd)
+  await anotarAviso(await crearReferido(fd), 'crearReferido')
 }
 export async function transicionarReferidoForm(fd: FormData): Promise<void> {
-  await transicionarReferido(fd)
+  await anotarAviso(await transicionarReferido(fd), 'transicionarReferido')
 }

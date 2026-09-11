@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { marcarEntradaForm, marcarSalidaForm } from './actions'
 import { METODO_MARCAJE } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Asistencia · REGB ERP' }
@@ -179,13 +180,12 @@ export default async function AsistenciaPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="recordId" value={m.id} />
-                            <button
-                              type="submit"
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="logout" size={14} />
                               Salida
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                       </TD>
@@ -235,13 +235,12 @@ export default async function AsistenciaPage({
                   Longitud
                   <input name="lng" inputMode="decimal" placeholder="-69.9312" className={`tabular ${claseInput}`} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="login" size={18} />
                   Marcar
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Latitud/longitud son opcionales -sin ellas, el marcaje queda manual-. La app movil las

@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { enviarCampanaForm, marcarAperturaClicForm, transicionarCampanaForm } from '../actions'
 import { CANAL_CAMPANA, ESTADO_CAMPANA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -110,23 +111,23 @@ export default async function CampanaDetallePage({
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="scheduled" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Programar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={enviarCampanaForm}>
                   {campos}
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="send" size={14} />
                     Enviar ahora
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}
@@ -134,17 +135,17 @@ export default async function CampanaDetallePage({
               <>
                 <form action={enviarCampanaForm}>
                   {campos}
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="send" size={14} />
                     Enviar ahora
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}
@@ -176,9 +177,9 @@ export default async function CampanaDetallePage({
                           {campos}
                           <input type="hidden" name="recipientId" value={d.id} />
                           <input type="hidden" name="tipo" value="opened" />
-                          <button type="submit" className={botonChicoClase}>
+                          <BotonEnvio  className={botonChicoClase}>
                             Marcar abierto
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                       {puedeGestionar && d.opened_at && !d.clicked_at && (
@@ -186,9 +187,9 @@ export default async function CampanaDetallePage({
                           {campos}
                           <input type="hidden" name="recipientId" value={d.id} />
                           <input type="hidden" name="tipo" value="clicked" />
-                          <button type="submit" className={botonChicoClase}>
+                          <BotonEnvio  className={botonChicoClase}>
                             Marcar clic
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </div>

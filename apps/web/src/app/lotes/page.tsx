@@ -25,6 +25,7 @@ import {
   consumirFefoForm,
   registrarLoteForm,
 } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Lotes y series · REGB ERP' }
@@ -187,13 +188,12 @@ export default async function LotesPage({
                     Costo unitario
                     <input name="unitCost" required inputMode="decimal" className={`tabular ${claseInput}`} />
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="add" size={14} />
                     Registrar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>
@@ -233,13 +233,12 @@ export default async function LotesPage({
                     Razon
                     <input name="notes" placeholder="Venta, merma, etc." className={claseInput} />
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="output" size={14} />
                     Consumir
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                   El sistema elige solo de que lote sacar cada unidad -el que vence mas pronto
@@ -295,12 +294,11 @@ export default async function LotesPage({
                               aria-label={`Razon del recall de ${l.product_name} lote ${l.lot_number}`}
                               className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
-                            <button
-                              type="submit"
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Recall
-                            </button>
+                            </BotonEnvio>
                           </form>
                         </TD>
                       )}
@@ -350,12 +348,11 @@ export default async function LotesPage({
                           <form action={cerrarRecallForm}>
                             {campos}
                             <input type="hidden" name="recallId" value={r.id} />
-                            <button
-                              type="submit"
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Cerrar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         </TD>
                       )}

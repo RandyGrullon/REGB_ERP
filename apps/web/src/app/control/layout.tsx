@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { Icon } from '@regb/ui'
 import { ControlNav } from './ControlNav'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const metadata = { title: 'REGB Control' }
 
@@ -51,15 +52,14 @@ export default function ControlLayout({ children }: { children: ReactNode }) {
           </Link>
           <span className="h-6 w-px shrink-0 bg-[var(--color-border)]" aria-hidden />
           <form action="/auth/salir" method="post">
-            <button
-              type="submit"
+            <BotonEnvio
+              
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
-              className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
+              className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
               <Icon name="logout" size={16} />
               <span className="hidden sm:inline">Salir</span>
-            </button>
+            </BotonEnvio>
           </form>
         </div>
       </header>

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { rutaCompleta, transicionValidaRuta, type EstadoRuta } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de logistica y rutas (modulo 53, F8/S49). */
@@ -226,20 +227,20 @@ export async function completarRuta(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearRutaForm(fd: FormData): Promise<void> {
-  await crearRuta(fd)
+  await anotarAviso(await crearRuta(fd), 'crearRuta')
 }
 export async function agregarParadaForm(fd: FormData): Promise<void> {
-  await agregarParada(fd)
+  await anotarAviso(await agregarParada(fd), 'agregarParada')
 }
 export async function despacharRutaForm(fd: FormData): Promise<void> {
-  await despacharRuta(fd)
+  await anotarAviso(await despacharRuta(fd), 'despacharRuta')
 }
 export async function cancelarRutaForm(fd: FormData): Promise<void> {
-  await cancelarRuta(fd)
+  await anotarAviso(await cancelarRuta(fd), 'cancelarRuta')
 }
 export async function resolverParadaForm(fd: FormData): Promise<void> {
-  await resolverParada(fd)
+  await anotarAviso(await resolverParada(fd), 'resolverParada')
 }
 export async function completarRutaForm(fd: FormData): Promise<void> {
-  await completarRuta(fd)
+  await anotarAviso(await completarRuta(fd), 'completarRuta')
 }

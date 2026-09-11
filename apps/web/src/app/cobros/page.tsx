@@ -26,6 +26,7 @@ import {
   crearRecurrenteForm,
 } from './actions'
 import { ESTADO_LINK, FRECUENCIA_LABEL, GATEWAY_LABEL } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cobros · REGB ERP' }
@@ -186,25 +187,23 @@ export default async function CobrosPage({
                                 aria-label={`Monto pagado de ${l.description}`}
                                 className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
                               />
-                              <button
-                                type="submit"
+                              <BotonEnvio
+                                
                                 aria-label={`Confirmar pago de ${l.description}`}
                                 title="Confirma que el pago ya llego -manual, sin pasarela real conectada-"
-                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                              >
+                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                                 <Icon name="check_circle" size={18} />
-                              </button>
+                              </BotonEnvio>
                             </form>
                             <form action={cancelarLinkForm}>
                               {campos}
                               <input type="hidden" name="linkId" value={l.id} />
-                              <button
-                                type="submit"
+                              <BotonEnvio
+                                
                                 aria-label={`Cancelar ${l.description}`}
-                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]"
-                              >
+                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="cancel" size={18} />
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </div>
                         )}
@@ -254,13 +253,12 @@ export default async function CobrosPage({
                   Vence
                   <input name="expiresAt" type="date" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add_link" size={18} />
                   Generar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -304,14 +302,13 @@ export default async function CobrosPage({
             {puedeRecurrente && (
               <form action={correrRecurrentesForm} className="mt-3">
                 {campos}
-                <button
-                  type="submit"
+                <BotonEnvio
+                  
                   title="Genera un link por cada cobro recurrente ya vencido"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="event_repeat" size={16} />
                   Generar cobros vencidos
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -361,13 +358,12 @@ export default async function CobrosPage({
                   Proximo cobro
                   <input name="nextChargeDate" type="date" required className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
                   Configurar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

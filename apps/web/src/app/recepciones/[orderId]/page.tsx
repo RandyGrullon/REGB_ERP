@@ -22,6 +22,7 @@ import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { registrarDevolucionForm, registrarRecepcionForm } from '../actions'
 import { ESTADO_DEVOLUCION } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -253,13 +254,12 @@ export default async function RecibirOrdenPage({
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="fact_check" size={18} />
                     Registrar recepcion
-                  </button>
+                  </BotonEnvio>
                 </div>
               </form>
               <p className="px-3 pb-3 text-xs text-[var(--color-text-muted)]">
@@ -340,12 +340,11 @@ export default async function RecibirOrdenPage({
                                 aria-label={`Razon de la devolucion de ${p.product_name}`}
                                 className="h-8 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                               />
-                              <button
-                                type="submit"
-                                className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Devolver
-                              </button>
+                              </BotonEnvio>
                             </form>
                           )}
                         </TD>

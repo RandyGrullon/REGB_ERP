@@ -22,6 +22,7 @@ import { Shell } from '@/components/Shell'
 import { alternarEndpointForm, crearEndpointForm, enviarPruebaForm, revocarLlaveForm } from './actions'
 import { CrearLlaveForm } from './CrearLlaveForm'
 import { ESTADO_ENDPOINT, ESTADO_LLAVE, SCOPE_LABEL } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'API & Webhooks · REGB ERP' }
@@ -140,12 +141,11 @@ export default async function ApiWebhooksPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="keyId" value={k.id} />
-                            <button
-                              type="submit"
-                              className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Revocar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                       </TD>
@@ -195,25 +195,23 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="endpointId" value={e.id} />
-                              <button
-                                type="submit"
-                                className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="send" size={12} />
                                 Probar
-                              </button>
+                              </BotonEnvio>
                             </form>
                             <form action={alternarEndpointForm}>
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="endpointId" value={e.id} />
                               <input type="hidden" name="siguiente" value={e.status === 'active' ? 'paused' : 'active'} />
-                              <button
-                                type="submit"
-                                className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 {e.status === 'active' ? 'Pausar' : 'Reanudar'}
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </div>
                         )}
@@ -246,13 +244,12 @@ export default async function ApiWebhooksPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

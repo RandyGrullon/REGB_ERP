@@ -4,6 +4,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { editarProductoForm } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -185,12 +186,11 @@ export default async function ProductDetailPage({
               </div>
 
               {puedeEditar ? (
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Guardar cambios
-                </button>
+                </BotonEnvio>
               ) : (
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Tu rol puede ver la ficha pero no modificarla.

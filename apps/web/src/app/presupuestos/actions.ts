@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -145,14 +146,14 @@ export async function activarPresupuesto(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearPresupuestoForm(fd: FormData): Promise<void> {
-  await crearPresupuesto(fd)
+  await anotarAviso(await crearPresupuesto(fd), 'crearPresupuesto')
 }
 export async function ponerLineaPresupuestoForm(fd: FormData): Promise<void> {
-  await ponerLineaPresupuesto(fd)
+  await anotarAviso(await ponerLineaPresupuesto(fd), 'ponerLineaPresupuesto')
 }
 export async function cerrarPresupuestoForm(fd: FormData): Promise<void> {
-  await cerrarPresupuesto(fd)
+  await anotarAviso(await cerrarPresupuesto(fd), 'cerrarPresupuesto')
 }
 export async function activarPresupuestoForm(fd: FormData): Promise<void> {
-  await activarPresupuesto(fd)
+  await anotarAviso(await activarPresupuesto(fd), 'activarPresupuesto')
 }

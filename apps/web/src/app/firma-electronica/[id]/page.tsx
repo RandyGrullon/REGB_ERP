@@ -22,6 +22,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { transicionarSolicitudForm } from '../actions'
 import { ESTADO_FIRMA, TIPO_DOCUMENTO_FIRMA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -156,10 +157,10 @@ export default async function SolicitudDetallePage({
               <form action={transicionarSolicitudForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="sent" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar a firmar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'sent' && (
@@ -167,25 +168,25 @@ export default async function SolicitudDetallePage({
                 <form action={transicionarSolicitudForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="signed" />
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="draw" size={14} />
                     Firmar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarSolicitudForm} className="flex items-end gap-2">
                   {campos}
                   <input type="hidden" name="siguiente" value="declined" />
                   <input name="declinedReason" placeholder="Motivo" className={claseInput} />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Rechazar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarSolicitudForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="expired" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Marcar vencida
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -168,14 +169,14 @@ export async function darDeBajaActivo(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearActivoForm(fd: FormData): Promise<void> {
-  await crearActivo(fd)
+  await anotarAviso(await crearActivo(fd), 'crearActivo')
 }
 export async function correrDepreciacionForm(fd: FormData): Promise<void> {
-  await correrDepreciacion(fd)
+  await anotarAviso(await correrDepreciacion(fd), 'correrDepreciacion')
 }
 export async function revaluarActivoForm(fd: FormData): Promise<void> {
-  await revaluarActivo(fd)
+  await anotarAviso(await revaluarActivo(fd), 'revaluarActivo')
 }
 export async function darDeBajaActivoForm(fd: FormData): Promise<void> {
-  await darDeBajaActivo(fd)
+  await anotarAviso(await darDeBajaActivo(fd), 'darDeBajaActivo')
 }

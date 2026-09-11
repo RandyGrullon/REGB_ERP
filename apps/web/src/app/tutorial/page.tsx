@@ -4,6 +4,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { avanzarPaso, reiniciarTour, retomarTour, retrocederPaso, saltarTour } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Tutorial · REGB ERP' }
@@ -145,9 +146,9 @@ export default async function TutorialPage({
                       {puedeEditar && (
                         <form action={reiniciarTour}>
                           {campos(tour, 0)}
-                          <button type="submit" className={btnSec}>
+                          <BotonEnvio  className={btnSec}>
                             Repasar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -159,9 +160,9 @@ export default async function TutorialPage({
                       {puedeEditar && (
                         <form action={retomarTour}>
                           {campos(tour, step)}
-                          <button type="submit" className={btnPri}>
+                          <BotonEnvio  className={btnPri}>
                             Retomar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -194,25 +195,24 @@ export default async function TutorialPage({
                               {step > 0 && (
                                 <form action={retrocederPaso}>
                                   {campos(tour, step)}
-                                  <button type="submit" className={btnSec}>
+                                  <BotonEnvio  className={btnSec}>
                                     Atras
-                                  </button>
+                                  </BotonEnvio>
                                 </form>
                               )}
                               <form action={avanzarPaso}>
                                 {campos(tour, step)}
-                                <button type="submit" className={btnSec}>
+                                <BotonEnvio  className={btnSec}>
                                   {step + 1 === tour.steps.length ? 'Terminar' : 'Siguiente'}
-                                </button>
+                                </BotonEnvio>
                               </form>
                               <form action={saltarTour} className="ml-auto">
                                 {campos(tour, step)}
-                                <button
-                                  type="submit"
-                                  className="text-xs text-[var(--color-text-muted)] underline"
-                                >
+                                <BotonEnvio
+                                  
+                                  className="text-xs text-[var(--color-text-muted)] underline">
                                   Saltar esta guia
-                                </button>
+                                </BotonEnvio>
                               </form>
                             </>
                           )}

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -198,14 +199,14 @@ export async function crearCategoria(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function crearProductoForm(fd: FormData): Promise<void> {
-  await crearProducto(fd)
+  await anotarAviso(await crearProducto(fd), 'crearProducto')
 }
 export async function editarProductoForm(fd: FormData): Promise<void> {
-  await editarProducto(fd)
+  await anotarAviso(await editarProducto(fd), 'editarProducto')
 }
 export async function alternarProductoForm(fd: FormData): Promise<void> {
-  await alternarProducto(fd)
+  await anotarAviso(await alternarProducto(fd), 'alternarProducto')
 }
 export async function crearCategoriaForm(fd: FormData): Promise<void> {
-  await crearCategoria(fd)
+  await anotarAviso(await crearCategoria(fd), 'crearCategoria')
 }

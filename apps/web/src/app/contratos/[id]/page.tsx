@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { renovarContratoForm, transicionarContratoForm } from '../actions'
 import { ESTADO_CONTRATO, FRECUENCIA_FACTURACION } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,34 +109,34 @@ export default async function ContratoDetallePage({
               <form action={transicionarContratoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Activar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'active' && (
               <>
                 <form action={renovarContratoForm}>
                   {campos}
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="autorenew" size={14} />
                     Renovar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarContratoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarContratoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="expired" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Marcar vencido
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}

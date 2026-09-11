@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearReferidoForm, registrarPuntosForm, transicionarReferidoForm } from '../actions'
 import { ESTADO_REFERIDO, NIVEL_FIDELIDAD } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -143,10 +144,10 @@ export default async function MonederoClientePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -200,17 +201,17 @@ export default async function MonederoClientePage({
                           {campos}
                           <input type="hidden" name="referralId" value={r.id} />
                           <input type="hidden" name="siguiente" value="completed" />
-                          <button type="submit" className={botonSecundarioClase}>
+                          <BotonEnvio  className={botonSecundarioClase}>
                             Completar
-                          </button>
+                          </BotonEnvio>
                         </form>
                         <form action={transicionarReferidoForm}>
                           {campos}
                           <input type="hidden" name="referralId" value={r.id} />
                           <input type="hidden" name="siguiente" value="expired" />
-                          <button type="submit" className={botonSecundarioClase}>
+                          <BotonEnvio  className={botonSecundarioClase}>
                             Expirar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       </>
                     )}
@@ -246,10 +247,10 @@ export default async function MonederoClientePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="person_add" size={14} />
                   Referir
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

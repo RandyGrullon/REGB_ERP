@@ -12,6 +12,7 @@ import {
   overpayment,
 } from '@regb/operations'
 import { asUser, db } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -373,20 +374,20 @@ export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function facturarPedidoForm(fd: FormData): Promise<void> {
-  await facturarPedido(fd)
+  await anotarAviso(await facturarPedido(fd), 'facturarPedido')
 }
 export async function registrarCobroForm(fd: FormData): Promise<void> {
-  await registrarCobro(fd)
+  await anotarAviso(await registrarCobro(fd), 'registrarCobro')
 }
 export async function anularFacturaForm(fd: FormData): Promise<void> {
-  await anularFactura(fd)
+  await anotarAviso(await anularFactura(fd), 'anularFactura')
 }
 export async function aplicarCargoPorMoraForm(fd: FormData): Promise<void> {
-  await aplicarCargoPorMora(fd)
+  await anotarAviso(await aplicarCargoPorMora(fd), 'aplicarCargoPorMora')
 }
 export async function alternarExentoMoraForm(fd: FormData): Promise<void> {
-  await alternarExentoMora(fd)
+  await anotarAviso(await alternarExentoMora(fd), 'alternarExentoMora')
 }
 export async function marcarVencidasForm(fd: FormData): Promise<void> {
-  await marcarVencidas(fd)
+  await anotarAviso(await marcarVencidas(fd), 'marcarVencidas')
 }

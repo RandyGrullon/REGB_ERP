@@ -20,6 +20,7 @@ import { requireProvider } from '@/lib/provider-guard'
 import { despacharAhora } from '../solicitudes-actions'
 import { TEMAS_ATENDIDOS } from '@/lib/despachador'
 import { usd } from '@/components/ControlBits'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Salud · REGB Control' }
@@ -241,13 +242,12 @@ export default async function SaludPage() {
             )}
 
             <form action={despacharAhora} className="mt-3">
-              <button
-                type="submit"
-                className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-              >
+              <BotonEnvio
+                
+                className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                 <Icon name="play_arrow" size={16} />
                 Despachar ahora
-              </button>
+              </BotonEnvio>
             </form>
 
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">

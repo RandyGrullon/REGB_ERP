@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { cuotaPrestamo, saldoPrestamo } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -208,14 +209,14 @@ export async function cancelarInscripcion(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearPrestamoForm(fd: FormData): Promise<void> {
-  await crearPrestamo(fd)
+  await anotarAviso(await crearPrestamo(fd), 'crearPrestamo')
 }
 export async function registrarPagoForm(fd: FormData): Promise<void> {
-  await registrarPago(fd)
+  await anotarAviso(await registrarPago(fd), 'registrarPago')
 }
 export async function crearInscripcionForm(fd: FormData): Promise<void> {
-  await crearInscripcion(fd)
+  await anotarAviso(await crearInscripcion(fd), 'crearInscripcion')
 }
 export async function cancelarInscripcionForm(fd: FormData): Promise<void> {
-  await cancelarInscripcion(fd)
+  await anotarAviso(await cancelarInscripcion(fd), 'cancelarInscripcion')
 }

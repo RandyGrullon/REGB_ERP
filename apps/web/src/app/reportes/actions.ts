@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { fuenteValida, proximaEjecucion, type FrecuenciaExportacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -165,20 +166,20 @@ export async function alternarExport(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearReporteForm(fd: FormData): Promise<void> {
-  await crearReporte(fd)
+  await anotarAviso(await crearReporte(fd), 'crearReporte')
 }
 export async function crearDashboardForm(fd: FormData): Promise<void> {
-  await crearDashboard(fd)
+  await anotarAviso(await crearDashboard(fd), 'crearDashboard')
 }
 export async function agregarItemDashboardForm(fd: FormData): Promise<void> {
-  await agregarItemDashboard(fd)
+  await anotarAviso(await agregarItemDashboard(fd), 'agregarItemDashboard')
 }
 export async function crearExportForm(fd: FormData): Promise<void> {
-  await crearExport(fd)
+  await anotarAviso(await crearExport(fd), 'crearExport')
 }
 export async function ejecutarExportAhoraForm(fd: FormData): Promise<void> {
-  await ejecutarExportAhora(fd)
+  await anotarAviso(await ejecutarExportAhora(fd), 'ejecutarExportAhora')
 }
 export async function alternarExportForm(fd: FormData): Promise<void> {
-  await alternarExport(fd)
+  await anotarAviso(await alternarExport(fd), 'alternarExport')
 }

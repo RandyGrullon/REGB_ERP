@@ -22,6 +22,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarReglaForm, crearReglaForm, procesarEventosPendientesForm } from './actions'
 import { ACCION_LABEL, ESTADO_REGLA, OPERADOR_CONDICION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Automatizaciones · REGB ERP' }
@@ -87,13 +88,12 @@ export default async function AutomatizacionesPage({
               <form action={procesarEventosPendientesForm}>
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="play_arrow" size={14} />
                   Procesar eventos pendientes
-                </button>
+                </BotonEnvio>
               </form>
             )
           }
@@ -149,12 +149,11 @@ export default async function AutomatizacionesPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="ruleId" value={r.id} />
                             <input type="hidden" name="siguiente" value={r.status === 'active' ? 'paused' : 'active'} />
-                            <button
-                              type="submit"
-                              className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               {r.status === 'active' ? 'Pausar' : 'Reanudar'}
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                       </TD>
@@ -244,13 +243,12 @@ export default async function AutomatizacionesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

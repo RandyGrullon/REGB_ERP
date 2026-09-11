@@ -21,6 +21,7 @@ import {
   terminarParoForm,
 } from '../actions'
 import { ESTADO_ORDEN_TERMINAL } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -153,10 +154,10 @@ export default async function TerminalPage({
                   Horas por unidad
                   <input name="idealCycleHours" required inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button type="submit" className="flex h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="check_circle" size={16} />
                   Guardar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -177,19 +178,19 @@ export default async function TerminalPage({
                     <form action={marcarSalidaForm}>
                       {campos}
                       <input type="hidden" name="sesionId" value={sesionAbierta.id} />
-                      <button type="submit" className={botonGrandeDanger}>
+                      <BotonEnvio  className={botonGrandeDanger}>
                         <Icon name="logout" size={20} />
                         Marcar salida
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </div>
                 ) : (
                   <form action={marcarEntradaForm}>
                     {campos}
-                    <button type="submit" className={botonGrande}>
+                    <BotonEnvio  className={botonGrande}>
                       <Icon name="login" size={20} />
                       Marcar entrada
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </CardBody>
@@ -208,10 +209,10 @@ export default async function TerminalPage({
                     <form action={terminarParoForm}>
                       {campos}
                       <input type="hidden" name="paroId" value={paroAbierto.id} />
-                      <button type="submit" className={botonGrande}>
+                      <BotonEnvio  className={botonGrande}>
                         <Icon name="play_arrow" size={20} />
                         Terminar paro
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </div>
                 ) : (
@@ -221,10 +222,10 @@ export default async function TerminalPage({
                       Razon del paro
                       <input name="reason" required className={claseInput} />
                     </label>
-                    <button type="submit" className={botonGrandeDanger}>
+                    <BotonEnvio  className={botonGrandeDanger}>
                       <Icon name="pause" size={20} />
                       Iniciar paro
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </CardBody>

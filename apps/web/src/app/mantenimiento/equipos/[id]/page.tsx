@@ -22,6 +22,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearOrdenForm, registrarServicioForm } from '../../actions'
 import { ESTADO_EQUIPO, ESTADO_ORDEN, TIPO_ORDEN } from '../../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -212,10 +213,10 @@ export default async function EquipoDetallePage({
                     Descripcion
                     <input name="description" required className={claseInput} />
                   </label>
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="add" size={14} />
                     Crear
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>
@@ -231,10 +232,10 @@ export default async function EquipoDetallePage({
                     Lectura de uso actual
                     <input name="usageAtService" required inputMode="decimal" className={`tabular ${claseInput}`} />
                   </label>
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="check_circle" size={14} />
                     Registrar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>

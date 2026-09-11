@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { countVariance, varianceValue } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -291,20 +292,20 @@ export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function ajustarInventarioForm(fd: FormData): Promise<void> {
-  await ajustarInventario(fd)
+  await anotarAviso(await ajustarInventario(fd), 'ajustarInventario')
 }
 export async function crearAlmacenForm(fd: FormData): Promise<void> {
-  await crearAlmacen(fd)
+  await anotarAviso(await crearAlmacen(fd), 'crearAlmacen')
 }
 export async function iniciarConteoForm(fd: FormData): Promise<void> {
-  await iniciarConteo(fd)
+  await anotarAviso(await iniciarConteo(fd), 'iniciarConteo')
 }
 export async function registrarLineaConteoForm(fd: FormData): Promise<void> {
-  await registrarLineaConteo(fd)
+  await anotarAviso(await registrarLineaConteo(fd), 'registrarLineaConteo')
 }
 export async function cerrarConteoForm(fd: FormData): Promise<void> {
-  await cerrarConteo(fd)
+  await anotarAviso(await cerrarConteo(fd), 'cerrarConteo')
 }
 export async function crearTransferenciaForm(fd: FormData): Promise<void> {
-  await crearTransferencia(fd)
+  await anotarAviso(await crearTransferencia(fd), 'crearTransferencia')
 }

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaRequisicion, type EstadoRequisicion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -152,11 +153,11 @@ export async function marcarConvertida(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearRequisicionForm(fd: FormData): Promise<void> {
-  await crearRequisicion(fd)
+  await anotarAviso(await crearRequisicion(fd), 'crearRequisicion')
 }
 export async function resolverRequisicionForm(fd: FormData): Promise<void> {
-  await resolverRequisicion(fd)
+  await anotarAviso(await resolverRequisicion(fd), 'resolverRequisicion')
 }
 export async function marcarConvertidaForm(fd: FormData): Promise<void> {
-  await marcarConvertida(fd)
+  await anotarAviso(await marcarConvertida(fd), 'marcarConvertida')
 }

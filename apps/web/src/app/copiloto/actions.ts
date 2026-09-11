@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { emparejarPregunta } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import { ejecutarReporte, type ResultadoReporte } from '../reportes/reportSources'
 import { CATALOGO_PREGUNTAS } from './estados'
@@ -85,5 +86,5 @@ export async function preguntar(fd: FormData): Promise<ActionResult> {
 }
 
 export async function preguntarForm(fd: FormData): Promise<void> {
-  await preguntar(fd)
+  await anotarAviso(await preguntar(fd), 'preguntar')
 }

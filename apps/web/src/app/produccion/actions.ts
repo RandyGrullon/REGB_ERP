@@ -8,6 +8,7 @@ import {
   type EstadoOrdenProduccion,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -236,14 +237,14 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearOrdenForm(fd: FormData): Promise<void> {
-  await crearOrden(fd)
+  await anotarAviso(await crearOrden(fd), 'crearOrden')
 }
 export async function liberarOrdenForm(fd: FormData): Promise<void> {
-  await liberarOrden(fd)
+  await anotarAviso(await liberarOrden(fd), 'liberarOrden')
 }
 export async function reportarAvanceForm(fd: FormData): Promise<void> {
-  await reportarAvance(fd)
+  await anotarAviso(await reportarAvance(fd), 'reportarAvance')
 }
 export async function cancelarOrdenForm(fd: FormData): Promise<void> {
-  await cancelarOrden(fd)
+  await anotarAviso(await cancelarOrden(fd), 'cancelarOrden')
 }

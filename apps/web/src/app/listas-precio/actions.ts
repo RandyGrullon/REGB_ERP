@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de listas de precios (modulo 41, F8/S43). */
@@ -144,14 +145,14 @@ export async function asignarListaCliente(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearListaForm(fd: FormData): Promise<void> {
-  await crearLista(fd)
+  await anotarAviso(await crearLista(fd), 'crearLista')
 }
 export async function cambiarEstadoListaForm(fd: FormData): Promise<void> {
-  await cambiarEstadoLista(fd)
+  await anotarAviso(await cambiarEstadoLista(fd), 'cambiarEstadoLista')
 }
 export async function crearEntradaForm(fd: FormData): Promise<void> {
-  await crearEntrada(fd)
+  await anotarAviso(await crearEntrada(fd), 'crearEntrada')
 }
 export async function asignarListaClienteForm(fd: FormData): Promise<void> {
-  await asignarListaCliente(fd)
+  await anotarAviso(await asignarListaCliente(fd), 'asignarListaCliente')
 }

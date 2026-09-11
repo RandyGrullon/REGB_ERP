@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -152,11 +153,11 @@ export async function darDeBajaEmpleado(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearEmpleadoForm(fd: FormData): Promise<void> {
-  await crearEmpleado(fd)
+  await anotarAviso(await crearEmpleado(fd), 'crearEmpleado')
 }
 export async function crearContratoForm(fd: FormData): Promise<void> {
-  await crearContrato(fd)
+  await anotarAviso(await crearContrato(fd), 'crearContrato')
 }
 export async function darDeBajaEmpleadoForm(fd: FormData): Promise<void> {
-  await darDeBajaEmpleado(fd)
+  await anotarAviso(await darDeBajaEmpleado(fd), 'darDeBajaEmpleado')
 }

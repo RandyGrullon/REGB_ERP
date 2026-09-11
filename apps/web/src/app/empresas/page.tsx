@@ -19,6 +19,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearEmpresaForm, editarEmpresaForm, marcarPrincipalForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Empresas · REGB ERP' }
@@ -73,12 +74,11 @@ export default async function EmpresasPage({
             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
             <input type="hidden" name="id" value={c.id} />
-            <button
-              type="submit"
-              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-            >
+            <BotonEnvio
+              
+              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
               Hacer principal
-            </button>
+            </BotonEnvio>
           </form>
         ) : (
           '—'
@@ -149,13 +149,12 @@ export default async function EmpresasPage({
                         aria-label={`RNC de ${c.legal_name}`}
                         className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                       />
-                      <button
-                        type="submit"
+                      <BotonEnvio
+                        
                         aria-label={`Guardar cambios de ${c.legal_name}`}
-                        className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                      >
+                        className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                         <Icon name="save" size={16} />
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </TD>
                   {colsComunes(c)}
@@ -216,12 +215,11 @@ export default async function EmpresasPage({
                     <option value="EUR">EUR</option>
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Tu plan{' '}

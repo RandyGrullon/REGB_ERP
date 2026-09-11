@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { registrarActividadForm, transicionarLeadForm } from '../actions'
 import { ESTADO_LEAD, FUENTE_LEAD, TIPO_ACTIVIDAD } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -121,38 +122,38 @@ export default async function LeadDetallePage({
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="contacted" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="call" size={14} />
                   Marcar contactado
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'contacted' && (
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="qualified" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="verified" size={14} />
                   Calificar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'qualified' && (
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="converted" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Convertir
-                </button>
+                </BotonEnvio>
               </form>
             )}
             <form action={transicionarLeadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="disqualified" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 Descalificar
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}
@@ -215,10 +216,10 @@ export default async function LeadDetallePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

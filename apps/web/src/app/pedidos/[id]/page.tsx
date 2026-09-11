@@ -28,6 +28,7 @@ import {
   entregarLineaForm,
   quitarLineaForm,
 } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -165,26 +166,24 @@ export default async function PedidoDetallePage({
               {enBorrador && puedeConfirmar && lines.length > 0 && (
                 <form action={confirmarPedidoForm}>
                   {campos}
-                  <button
-                    type="submit"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="check_circle" size={18} />
                     Confirmar y apartar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {!cancelado && puedeCancelar && (
                 <form action={cancelarPedidoForm}>
                   {campos}
-                  <button
-                    type="submit"
+                  <BotonEnvio
+                    
                     title="Devuelve lo apartado al almacen. Lo ya entregado no se revierte."
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                  >
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="cancel" size={18} />
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </>
@@ -282,13 +281,12 @@ export default async function PedidoDetallePage({
                         <form action={quitarLineaForm} className="inline">
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
-                          <button
-                            type="submit"
+                          <BotonEnvio
+                            
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                          >
+                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="delete" size={16} />
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                       {!enBorrador && !cancelado && pendiente > 0 && puedeEntregar && (
@@ -304,12 +302,11 @@ export default async function PedidoDetallePage({
                             aria-label={`Cantidad a entregar de ${l.name}`}
                             className="h-8 w-16 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                           />
-                          <button
-                            type="submit"
-                            className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
                             Entregar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>
@@ -363,13 +360,12 @@ export default async function PedidoDetallePage({
                     />
                   </label>
                 )}
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 El precio sale del catalogo. Al confirmar se aparta lo que haya; lo que falte queda

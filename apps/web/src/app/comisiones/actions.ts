@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { calcularComision, transicionValidaComision, type EsquemaComision, type EstadoComision } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -130,11 +131,11 @@ export async function transicionarEntrada(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearPlanForm(fd: FormData): Promise<void> {
-  await crearPlan(fd)
+  await anotarAviso(await crearPlan(fd), 'crearPlan')
 }
 export async function crearEntradaForm(fd: FormData): Promise<void> {
-  await crearEntrada(fd)
+  await anotarAviso(await crearEntrada(fd), 'crearEntrada')
 }
 export async function transicionarEntradaForm(fd: FormData): Promise<void> {
-  await transicionarEntrada(fd)
+  await anotarAviso(await transicionarEntrada(fd), 'transicionarEntrada')
 }

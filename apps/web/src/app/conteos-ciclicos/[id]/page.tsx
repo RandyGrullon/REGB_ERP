@@ -26,6 +26,7 @@ import {
   registrarLineaConteoForm,
 } from '../actions'
 import { ESTADO_CONTEO } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -122,38 +123,35 @@ export default async function ConteoDetallePage({
               {contando && puedeContar && (
                 <form action={enviarConteoForm}>
                   {campos}
-                  <button
-                    type="submit"
+                  <BotonEnvio
+                    
                     disabled={!todoContado}
                     title={!todoContado ? 'Todavia hay productos sin contar' : ''}
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
-                  >
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
                     <Icon name="send" size={14} />
                     Enviar a aprobacion
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {esperandoAprobacion && puedeAprobar && (
                 <>
                   <form action={aprobarConteoForm}>
                     {campos}
-                    <button
-                      type="submit"
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
                       <Icon name="check" size={14} />
                       Aprobar y ajustar
-                    </button>
+                    </BotonEnvio>
                   </form>
                   <form action={rechazarConteoForm}>
                     {campos}
-                    <button
-                      type="submit"
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="close" size={14} />
                       Rechazar
-                    </button>
+                    </BotonEnvio>
                   </form>
                 </>
               )}
@@ -193,12 +191,11 @@ export default async function ConteoDetallePage({
                               aria-label={`Cantidad contada de ${l.name}`}
                               className="h-9 w-24 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
-                            <button
-                              type="submit"
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Guardar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         ) : (
                           <span className="tabular">{l.counted_qty ?? '—'}</span>

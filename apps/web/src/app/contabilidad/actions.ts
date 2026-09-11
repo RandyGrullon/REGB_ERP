@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -209,23 +210,23 @@ export async function borrarAsiento(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCuentaForm(fd: FormData): Promise<void> {
-  await crearCuenta(fd)
+  await anotarAviso(await crearCuenta(fd), 'crearCuenta')
 }
 export async function alternarCuentaForm(fd: FormData): Promise<void> {
-  await alternarCuenta(fd)
+  await anotarAviso(await alternarCuenta(fd), 'alternarCuenta')
 }
 export async function crearAsientoForm(fd: FormData): Promise<void> {
-  await crearAsiento(fd)
+  await anotarAviso(await crearAsiento(fd), 'crearAsiento')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function contabilizarAsientoForm(fd: FormData): Promise<void> {
-  await contabilizarAsiento(fd)
+  await anotarAviso(await contabilizarAsiento(fd), 'contabilizarAsiento')
 }
 export async function borrarAsientoForm(fd: FormData): Promise<void> {
-  await borrarAsiento(fd)
+  await anotarAviso(await borrarAsiento(fd), 'borrarAsiento')
 }

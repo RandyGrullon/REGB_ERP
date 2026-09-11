@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearRegistroForm, transicionarRegistroForm } from './actions'
 import { ESTADO_REGISTRO } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Hojas de tiempo · REGB ERP' }
@@ -135,9 +136,9 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="submitted" />
-                            <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Enviar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                         {r.status === 'submitted' && (
@@ -147,18 +148,18 @@ export default async function HojasDeTiempoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="approved" />
-                              <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 Aprobar
-                              </button>
+                              </BotonEnvio>
                             </form>
                             <form action={transicionarRegistroForm}>
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="rejected" />
-                              <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           </>
                         )}
@@ -168,9 +169,9 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="draft" />
-                            <button type="submit" className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Corregir
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                       </div>
@@ -221,13 +222,12 @@ export default async function HojasDeTiempoPage({
                   <input type="checkbox" name="billable" defaultChecked />
                   Facturable
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

@@ -7,6 +7,7 @@ import {
   type EstadoOportunidad,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -95,8 +96,8 @@ export async function transicionarEtapa(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearOportunidadForm(fd: FormData): Promise<void> {
-  await crearOportunidad(fd)
+  await anotarAviso(await crearOportunidad(fd), 'crearOportunidad')
 }
 export async function transicionarEtapaForm(fd: FormData): Promise<void> {
-  await transicionarEtapa(fd)
+  await anotarAviso(await transicionarEtapa(fd), 'transicionarEtapa')
 }

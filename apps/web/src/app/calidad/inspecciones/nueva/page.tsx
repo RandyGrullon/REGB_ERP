@@ -4,6 +4,7 @@ import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { registrarInspeccionForm } from '../../actions'
 import { ALCANCE_PLAN } from '../../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Nueva inspeccion · REGB ERP' }
@@ -106,12 +107,11 @@ export default async function NuevaInspeccionPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                   Cargar criterios
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -195,13 +195,12 @@ export default async function NuevaInspeccionPage({
                     />
                   </label>
 
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="check_circle" size={14} />
                     Registrar inspeccion
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </CardBody>

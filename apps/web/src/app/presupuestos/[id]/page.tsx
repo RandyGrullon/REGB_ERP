@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { activarPresupuestoForm, cerrarPresupuestoForm, ponerLineaPresupuestoForm } from '../actions'
 import { ESTADO_LINEA_PRESUPUESTO, ESTADO_PRESUPUESTO, MESES } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -152,26 +153,24 @@ export default async function PresupuestoDetallePage({
               {head.status === 'draft' && puedeEditar && (
                 <form action={activarPresupuestoForm}>
                   {campos}
-                  <button
-                    type="submit"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="play_arrow" size={18} />
                     Activar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {puedeCerrar && (
                 <form action={cerrarPresupuestoForm}>
                   {campos}
-                  <button
-                    type="submit"
+                  <BotonEnvio
+                    
                     title="Un presupuesto cerrado queda fijo: no se puede volver a editar"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="lock" size={18} />
                     Cerrar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </div>
@@ -226,13 +225,12 @@ export default async function PresupuestoDetallePage({
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="check" size={18} />
                   Guardar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

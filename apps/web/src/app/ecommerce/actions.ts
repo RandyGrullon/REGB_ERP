@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaPedidoCanal, type EstadoPedidoCanal } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -165,17 +166,17 @@ export async function transicionarPedido(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCanalForm(fd: FormData): Promise<void> {
-  await crearCanal(fd)
+  await anotarAviso(await crearCanal(fd), 'crearCanal')
 }
 export async function vincularProductoForm(fd: FormData): Promise<void> {
-  await vincularProducto(fd)
+  await anotarAviso(await vincularProducto(fd), 'vincularProducto')
 }
 export async function sincronizarVinculoForm(fd: FormData): Promise<void> {
-  await sincronizarVinculo(fd)
+  await anotarAviso(await sincronizarVinculo(fd), 'sincronizarVinculo')
 }
 export async function simularPedidoEntranteForm(fd: FormData): Promise<void> {
-  await simularPedidoEntrante(fd)
+  await anotarAviso(await simularPedidoEntrante(fd), 'simularPedidoEntrante')
 }
 export async function transicionarPedidoForm(fd: FormData): Promise<void> {
-  await transicionarPedido(fd)
+  await anotarAviso(await transicionarPedido(fd), 'transicionarPedido')
 }

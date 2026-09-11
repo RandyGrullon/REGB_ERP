@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de desempeno (modulo 66, F7/S42). */
@@ -274,26 +275,26 @@ export async function resolverPlanMejora(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearObjetivoForm(fd: FormData): Promise<void> {
-  await crearObjetivo(fd)
+  await anotarAviso(await crearObjetivo(fd), 'crearObjetivo')
 }
 export async function crearResultadoClaveForm(fd: FormData): Promise<void> {
-  await crearResultadoClave(fd)
+  await anotarAviso(await crearResultadoClave(fd), 'crearResultadoClave')
 }
 export async function actualizarProgresoForm(fd: FormData): Promise<void> {
-  await actualizarProgreso(fd)
+  await anotarAviso(await actualizarProgreso(fd), 'actualizarProgreso')
 }
 export async function crearUnoAUnoForm(fd: FormData): Promise<void> {
-  await crearUnoAUno(fd)
+  await anotarAviso(await crearUnoAUno(fd), 'crearUnoAUno')
 }
 export async function completarUnoAUnoForm(fd: FormData): Promise<void> {
-  await completarUnoAUno(fd)
+  await anotarAviso(await completarUnoAUno(fd), 'completarUnoAUno')
 }
 export async function enviarEvaluacionForm(fd: FormData): Promise<void> {
-  await enviarEvaluacion(fd)
+  await anotarAviso(await enviarEvaluacion(fd), 'enviarEvaluacion')
 }
 export async function crearPlanMejoraForm(fd: FormData): Promise<void> {
-  await crearPlanMejora(fd)
+  await anotarAviso(await crearPlanMejora(fd), 'crearPlanMejora')
 }
 export async function resolverPlanMejoraForm(fd: FormData): Promise<void> {
-  await resolverPlanMejora(fd)
+  await anotarAviso(await resolverPlanMejora(fd), 'resolverPlanMejora')
 }

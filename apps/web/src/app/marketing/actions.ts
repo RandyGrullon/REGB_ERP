@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaCampana, type EstadoCampana } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -148,14 +149,14 @@ export async function marcarAperturaClic(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCampanaForm(fd: FormData): Promise<void> {
-  await crearCampana(fd)
+  await anotarAviso(await crearCampana(fd), 'crearCampana')
 }
 export async function transicionarCampanaForm(fd: FormData): Promise<void> {
-  await transicionarCampana(fd)
+  await anotarAviso(await transicionarCampana(fd), 'transicionarCampana')
 }
 export async function enviarCampanaForm(fd: FormData): Promise<void> {
-  await enviarCampana(fd)
+  await anotarAviso(await enviarCampana(fd), 'enviarCampana')
 }
 export async function marcarAperturaClicForm(fd: FormData): Promise<void> {
-  await marcarAperturaClic(fd)
+  await anotarAviso(await marcarAperturaClic(fd), 'marcarAperturaClic')
 }

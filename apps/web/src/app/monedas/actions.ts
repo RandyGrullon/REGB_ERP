@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de multimoneda (modulo 26, F6/S31). */
@@ -58,5 +59,5 @@ export async function ponerTasa(fd: FormData): Promise<ActionResult> {
 
 // ── Version para <form action> ──────────────────────────────────────────
 export async function ponerTasaForm(fd: FormData): Promise<void> {
-  await ponerTasa(fd)
+  await anotarAviso(await ponerTasa(fd), 'ponerTasa')
 }

@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { transicionarPedidoForm } from '../actions'
 import { ESTADO_PEDIDO_CANAL, PLATAFORMA_CANAL } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,17 +100,17 @@ export default async function PedidoCanalDetallePage({
             <form action={transicionarPedidoForm}>
               {campos}
               <input type="hidden" name="siguiente" value="imported" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 <Icon name="check_circle" size={14} />
                 Importar
-              </button>
+              </BotonEnvio>
             </form>
             <form action={transicionarPedidoForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 Cancelar
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}

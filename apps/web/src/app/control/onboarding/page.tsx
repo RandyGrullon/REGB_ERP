@@ -5,6 +5,7 @@ import { requireProvider } from '@/lib/provider-guard'
 import { TierBadge } from '@/components/ControlBits'
 import { moverEtapa } from './actions'
 import type { TenantTier } from '@regb/core'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Onboarding · REGB Control' }
@@ -96,26 +97,24 @@ export default async function OnboardingPage() {
                       <form action={moverEtapa}>
                         <input type="hidden" name="tenantId" value={c.tenant_id} />
                         <input type="hidden" name="direction" value="prev" />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           disabled={si === 0}
                           aria-label={`Retroceder ${c.legal_name}`}
-                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30"
-                        >
+                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
                           ←
-                        </button>
+                        </BotonEnvio>
                       </form>
                       <form action={moverEtapa}>
                         <input type="hidden" name="tenantId" value={c.tenant_id} />
                         <input type="hidden" name="direction" value="next" />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           disabled={si === STAGES.length - 1}
                           aria-label={`Avanzar ${c.legal_name}`}
-                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30"
-                        >
+                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
                           →
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </div>
                   </Card>

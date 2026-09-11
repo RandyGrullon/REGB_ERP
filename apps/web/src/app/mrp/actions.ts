@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { explotarNecesidadesMrp, necesidadNeta, type NodoExplosionMrp } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import type postgres from 'postgres'
 
@@ -201,11 +202,11 @@ export async function descartarSugerencia(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function correrMrpForm(fd: FormData): Promise<void> {
-  await correrMrp(fd)
+  await anotarAviso(await correrMrp(fd), 'correrMrp')
 }
 export async function aceptarSugerenciaForm(fd: FormData): Promise<void> {
-  await aceptarSugerencia(fd)
+  await anotarAviso(await aceptarSugerencia(fd), 'aceptarSugerencia')
 }
 export async function descartarSugerenciaForm(fd: FormData): Promise<void> {
-  await descartarSugerencia(fd)
+  await anotarAviso(await descartarSugerencia(fd), 'descartarSugerencia')
 }

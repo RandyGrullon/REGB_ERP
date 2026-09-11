@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearContratoForm, darDeBajaEmpleadoForm } from '../actions'
 import { ESTADO_EMPLEADO, TIPO_CONTRATO } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -190,13 +191,12 @@ export default async function EmpleadoDetallePage({
                       Desde
                       <input name="startDate" type="date" className={claseInput} />
                     </label>
-                    <button
-                      type="submit"
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="trending_up" size={18} />
                       Registrar contrato
-                    </button>
+                    </BotonEnvio>
                   </form>
                 </CardBody>
               </Card>
@@ -218,13 +218,12 @@ export default async function EmpleadoDetallePage({
                       Motivo
                       <input name="reason" required minLength={4} placeholder="Renuncia voluntaria" className={claseInput} />
                     </label>
-                    <button
-                      type="submit"
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="person_remove" size={18} />
                       Dar de baja
-                    </button>
+                    </BotonEnvio>
                   </form>
                 </CardBody>
               </Card>

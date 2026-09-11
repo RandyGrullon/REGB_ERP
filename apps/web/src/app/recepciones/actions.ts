@@ -13,6 +13,7 @@ import {
   type PurchaseLineState,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -336,14 +337,14 @@ export async function cancelarDevolucion(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function registrarRecepcionForm(fd: FormData): Promise<void> {
-  await registrarRecepcion(fd)
+  await anotarAviso(await registrarRecepcion(fd), 'registrarRecepcion')
 }
 export async function registrarDevolucionForm(fd: FormData): Promise<void> {
-  await registrarDevolucion(fd)
+  await anotarAviso(await registrarDevolucion(fd), 'registrarDevolucion')
 }
 export async function enviarDevolucionForm(fd: FormData): Promise<void> {
-  await enviarDevolucion(fd)
+  await anotarAviso(await enviarDevolucion(fd), 'enviarDevolucion')
 }
 export async function cancelarDevolucionForm(fd: FormData): Promise<void> {
-  await cancelarDevolucion(fd)
+  await anotarAviso(await cancelarDevolucion(fd), 'cancelarDevolucion')
 }

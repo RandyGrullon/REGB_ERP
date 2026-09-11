@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { documentTotals, lineTotals, transicionValidaCotizacion, type EstadoCotizacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import type postgres from 'postgres'
 
@@ -235,17 +236,17 @@ export async function crearVersionNueva(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCotizacionForm(fd: FormData): Promise<void> {
-  await crearCotizacion(fd)
+  await anotarAviso(await crearCotizacion(fd), 'crearCotizacion')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function transicionarCotizacionForm(fd: FormData): Promise<void> {
-  await transicionarCotizacion(fd)
+  await anotarAviso(await transicionarCotizacion(fd), 'transicionarCotizacion')
 }
 export async function crearVersionNuevaForm(fd: FormData): Promise<void> {
-  await crearVersionNueva(fd)
+  await anotarAviso(await crearVersionNueva(fd), 'crearVersionNueva')
 }

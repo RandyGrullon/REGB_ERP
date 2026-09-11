@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { enviarMensajeForm } from '../actions'
 import { AMBITO_CANAL } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -140,9 +141,9 @@ export default async function CanalChatPage({
                           required
                           className="h-9 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                         />
-                        <button type="submit" className={botonClase}>
+                        <BotonEnvio  className={botonClase}>
                           <Icon name="send" size={14} />
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </details>
                   )}
@@ -172,10 +173,10 @@ export default async function CanalChatPage({
                     ))}
                   </div>
                 </fieldset>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

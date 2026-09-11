@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { transicionarEtapaForm } from '../actions'
 import { ETAPA_OPORTUNIDAD } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -104,10 +105,10 @@ export default async function OportunidadDetallePage({
             <form action={transicionarEtapaForm}>
               {campos}
               <input type="hidden" name="siguiente" value={SIGUIENTE[head.stage]} />
-              <button type="submit" className={botonClase}>
+              <BotonEnvio  className={botonClase}>
                 <Icon name="arrow_forward" size={14} />
                 Avanzar a {ETAPA_OPORTUNIDAD[SIGUIENTE[head.stage]!]}
-              </button>
+              </BotonEnvio>
             </form>
             <form action={transicionarEtapaForm} className="flex items-end gap-2">
               {campos}
@@ -119,9 +120,9 @@ export default async function OportunidadDetallePage({
                   className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                 />
               </label>
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 Marcar perdida
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}

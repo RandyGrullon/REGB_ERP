@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { TASAS_TSS_REFERENCIA_2024, calculatePayrollLine } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -115,8 +116,8 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearPeriodoForm(fd: FormData): Promise<void> {
-  await crearPeriodo(fd)
+  await anotarAviso(await crearPeriodo(fd), 'crearPeriodo')
 }
 export async function procesarPeriodoForm(fd: FormData): Promise<void> {
-  await procesarPeriodo(fd)
+  await anotarAviso(await procesarPeriodo(fd), 'procesarPeriodo')
 }

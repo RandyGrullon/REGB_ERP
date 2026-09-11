@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearPrestamoForm, registrarPagoForm } from './actions'
 import { ESTADO_PRESTAMO, TIPO_PRESTAMO } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Prestamos & Adelantos · REGB ERP' }
@@ -181,13 +182,12 @@ export default async function BeneficiosPage({
                             name="amount"
                             value={Math.min(p.saldo, Number(p.installment_amount))}
                           />
-                          <button
-                            type="submit"
-                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                             <Icon name="payments" size={14} />
                             Registrar cuota
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>
@@ -247,13 +247,12 @@ export default async function BeneficiosPage({
                   Nota (opcional)
                   <input name="notes" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={18} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 La cuota se calcula sola -sin interes por defecto, el caso tipico de un prestamo interno-.

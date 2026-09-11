@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { splitAmount } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -154,11 +155,11 @@ export async function prorratearCosto(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCentroForm(fd: FormData): Promise<void> {
-  await crearCentro(fd)
+  await anotarAviso(await crearCentro(fd), 'crearCentro')
 }
 export async function asignarCostoForm(fd: FormData): Promise<void> {
-  await asignarCosto(fd)
+  await anotarAviso(await asignarCosto(fd), 'asignarCosto')
 }
 export async function prorratearCostoForm(fd: FormData): Promise<void> {
-  await prorratearCosto(fd)
+  await anotarAviso(await prorratearCosto(fd), 'prorratearCosto')
 }

@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { cancelarSolicitudForm, solicitarAusenciaForm } from './actions'
 import { ESTADO_SOLICITUD, TIPO_AUSENCIA } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Vacaciones · REGB ERP' }
@@ -208,13 +209,12 @@ export default async function VacacionesPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={s.id} />
-                          <button
-                            type="submit"
-                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="cancel" size={14} />
                             Cancelar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>
@@ -266,13 +266,12 @@ export default async function VacacionesPage({
                   Motivo (opcional)
                   <input name="reason" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="send" size={18} />
                   Solicitar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

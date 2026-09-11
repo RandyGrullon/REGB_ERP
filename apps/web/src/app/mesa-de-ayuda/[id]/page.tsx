@@ -6,6 +6,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { agregarMensajeForm, transicionarTicketForm } from '../actions'
 import { ESTADO_TICKET, PRIORIDAD_TICKET } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -105,19 +106,19 @@ export default async function TicketDetallePage({
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="autorenew" size={14} />
                   {head.status === 'open' ? 'Tomar' : 'Reabrir'}
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {transicionValidaTicket(head.status, 'waiting_customer' as EstadoTicket) && (
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="waiting_customer" />
-                <button type="submit" className={botonSecundarioClase}>
+                <BotonEnvio  className={botonSecundarioClase}>
                   Esperar al cliente
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {transicionValidaTicket(head.status, 'resolved' as EstadoTicket) && (
@@ -138,19 +139,19 @@ export default async function TicketDetallePage({
                     ))}
                   </select>
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Resolver
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {transicionValidaTicket(head.status, 'closed' as EstadoTicket) && (
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="closed" />
-                <button type="submit" className={botonSecundarioClase}>
+                <BotonEnvio  className={botonSecundarioClase}>
                   Cerrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </div>
@@ -187,10 +188,10 @@ export default async function TicketDetallePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

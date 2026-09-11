@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaRegistroTiempo, type EstadoRegistroTiempo } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -86,8 +87,8 @@ export async function transicionarRegistro(fd: FormData): Promise<ActionResult> 
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearRegistroForm(fd: FormData): Promise<void> {
-  await crearRegistro(fd)
+  await anotarAviso(await crearRegistro(fd), 'crearRegistro')
 }
 export async function transicionarRegistroForm(fd: FormData): Promise<void> {
-  await transicionarRegistro(fd)
+  await anotarAviso(await transicionarRegistro(fd), 'transicionarRegistro')
 }

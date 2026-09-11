@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { iniciarConteoForm, recalcularAbcForm } from './actions'
 import { ESTADO_CONTEO } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Conteos ciclicos · REGB ERP' }
@@ -170,13 +171,12 @@ export default async function ConteosCiclicosPage({
               <form action={recalcularAbcForm} className="border-t border-[var(--color-border)] p-3">
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="refresh" size={14} />
                   Recalcular clasificacion ABC
-                </button>
+                </BotonEnvio>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                   Usa el valor actual en inventario (costo promedio × existencia) de cada
                   producto, no el historial de ventas -esa integracion es un paso futuro-.
@@ -254,13 +254,12 @@ export default async function ConteosCiclicosPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Iniciar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

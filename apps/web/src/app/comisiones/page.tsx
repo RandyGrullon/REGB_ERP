@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearEntradaForm, transicionarEntradaForm } from './actions'
 import { ESTADO_COMISION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Comisiones · REGB ERP' }
@@ -165,21 +166,20 @@ export default async function ComisionesPage({
                           <form action={transicionarEntradaForm}>
                             {campos(e.id)}
                             <input type="hidden" name="siguiente" value="approved" />
-                            <button type="submit" className={botonClase}>
+                            <BotonEnvio  className={botonClase}>
                               <Icon name="check_circle" size={13} />
                               Aprobar
-                            </button>
+                            </BotonEnvio>
                           </form>
                           <form action={transicionarEntradaForm}>
                             {campos(e.id)}
                             <input type="hidden" name="siguiente" value="rejected" />
-                            <button
-                              type="submit"
+                            <BotonEnvio
+                              
                               className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                              aria-label="Rechazar comision"
-                            >
+                              aria-label="Rechazar comision">
                               <Icon name="close" size={16} />
-                            </button>
+                            </BotonEnvio>
                           </form>
                         </div>
                       )}
@@ -187,10 +187,10 @@ export default async function ComisionesPage({
                         <form action={transicionarEntradaForm}>
                           {campos(e.id)}
                           <input type="hidden" name="siguiente" value="paid" />
-                          <button type="submit" className={botonClase}>
+                          <BotonEnvio  className={botonClase}>
                             <Icon name="payments" size={13} />
                             Pagar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>
@@ -240,10 +240,10 @@ export default async function ComisionesPage({
                     ))}
                   </select>
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

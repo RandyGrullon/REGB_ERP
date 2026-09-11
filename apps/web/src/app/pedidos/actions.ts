@@ -12,6 +12,7 @@ import {
   type OrderLineState,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { precioDeVenta } from '@/lib/precio'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
@@ -526,26 +527,26 @@ export async function cancelarPedido(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function crearClienteForm(fd: FormData): Promise<void> {
-  await crearCliente(fd)
+  await anotarAviso(await crearCliente(fd), 'crearCliente')
 }
 export async function alternarClienteForm(fd: FormData): Promise<void> {
-  await alternarCliente(fd)
+  await anotarAviso(await alternarCliente(fd), 'alternarCliente')
 }
 export async function crearPedidoForm(fd: FormData): Promise<void> {
-  await crearPedido(fd)
+  await anotarAviso(await crearPedido(fd), 'crearPedido')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function confirmarPedidoForm(fd: FormData): Promise<void> {
-  await confirmarPedido(fd)
+  await anotarAviso(await confirmarPedido(fd), 'confirmarPedido')
 }
 export async function entregarLineaForm(fd: FormData): Promise<void> {
-  await entregarLinea(fd)
+  await anotarAviso(await entregarLinea(fd), 'entregarLinea')
 }
 export async function cancelarPedidoForm(fd: FormData): Promise<void> {
-  await cancelarPedido(fd)
+  await anotarAviso(await cancelarPedido(fd), 'cancelarPedido')
 }

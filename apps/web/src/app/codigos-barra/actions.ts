@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { generarEan13 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -96,5 +97,5 @@ export async function registrarEscaneoForm(fd: FormData): Promise<void> {
 
 // ── Version para <form action> ──────────────────────────────────────────
 export async function generarCodigosFaltantesForm(fd: FormData): Promise<void> {
-  await generarCodigosFaltantes(fd)
+  await anotarAviso(await generarCodigosFaltantes(fd), 'generarCodigosFaltantes')
 }

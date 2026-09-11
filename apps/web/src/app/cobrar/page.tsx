@@ -32,6 +32,7 @@ import {
   registrarCobroForm,
 } from './actions'
 import { ESTADO_FACTURA } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Por cobrar · REGB ERP' }
@@ -158,14 +159,13 @@ export default async function CobrarPage({
               <form action={marcarVencidasForm}>
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <button
-                  type="submit"
+                <BotonEnvio
+                  
                   title="Marca vencidas las que pasaron su fecha. Se puede pulsar las veces que sea."
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="update" size={18} />
                   Actualizar vencidas
-                </button>
+                </BotonEnvio>
               </form>
             </>
           }
@@ -211,13 +211,12 @@ export default async function CobrarPage({
                     <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                     <input type="hidden" name="orderId" value={o.id} />
-                    <button
-                      type="submit"
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="receipt_long" size={16} />
                       Facturar
-                    </button>
+                    </BotonEnvio>
                   </form>
                 </div>
               ))}
@@ -341,13 +340,12 @@ export default async function CobrarPage({
                                 <option value="check">Cheque</option>
                                 <option value="card">Tarjeta</option>
                               </select>
-                              <button
-                                type="submit"
+                              <BotonEnvio
+                                
                                 aria-label={`Registrar cobro de ${f.number}`}
-                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                              >
+                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                                 <Icon name="payments" size={18} />
-                              </button>
+                              </BotonEnvio>
                             </form>
                           )}
                           {puedeAplicarMora &&
@@ -371,13 +369,12 @@ export default async function CobrarPage({
                                   aria-label={`Cargo por mora de ${f.number}`}
                                   className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
                                 />
-                                <button
-                                  type="submit"
+                                <BotonEnvio
+                                  
                                   aria-label={`Aplicar cargo por mora a ${f.number}`}
-                                  className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-semantic-text-warning)] transition-colors hover:bg-[var(--color-surface-raised)]"
-                                >
+                                  className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-semantic-text-warning)] transition-colors hover:bg-[var(--color-surface-raised)]">
                                   <Icon name="schedule" size={18} />
-                                </button>
+                                </BotonEnvio>
                               </form>
                             )}
                         </div>
@@ -413,10 +410,9 @@ export default async function CobrarPage({
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={c.id} />
-                      <button
-                        type="submit"
-                        className="flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]"
-                      >
+                      <BotonEnvio
+                        
+                        className="flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]">
                         {c.late_fee_exempt ? (
                           <Badge tone="neutral" dot={false}>
                             Exento — quitar
@@ -424,7 +420,7 @@ export default async function CobrarPage({
                         ) : (
                           'Marcar exento'
                         )}
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </li>
                 ))}

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { diasLaborablesEntre } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import { resolverMiEmpleado } from './mi-empleado'
 
@@ -124,11 +125,11 @@ export async function publicarAnuncio(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function editarMiTelefonoForm(fd: FormData): Promise<void> {
-  await editarMiTelefono(fd)
+  await anotarAviso(await editarMiTelefono(fd), 'editarMiTelefono')
 }
 export async function solicitarDesdePortalForm(fd: FormData): Promise<void> {
-  await solicitarDesdePortal(fd)
+  await anotarAviso(await solicitarDesdePortal(fd), 'solicitarDesdePortal')
 }
 export async function publicarAnuncioForm(fd: FormData): Promise<void> {
-  await publicarAnuncio(fd)
+  await anotarAviso(await publicarAnuncio(fd), 'publicarAnuncio')
 }

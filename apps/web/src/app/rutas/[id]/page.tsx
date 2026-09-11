@@ -27,6 +27,7 @@ import {
   resolverParadaForm,
 } from '../actions'
 import { ESTADO_PARADA, ESTADO_RUTA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,28 +139,28 @@ export default async function RutaDetallePage({
               {enPlanificacion && puedeGestionar && paradas.length > 0 && (
                 <form action={despacharRutaForm}>
                   {campos}
-                  <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="local_shipping" size={14} />
                     Despachar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {enPlanificacion && puedeGestionar && (
                 <form action={cancelarRutaForm}>
                   {campos}
-                  <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="cancel" size={14} />
                     Cancelar
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
               {enProgreso && puedeGestionar && completa && (
                 <form action={completarRutaForm}>
                   {campos}
-                  <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
+                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
                     <Icon name="check_circle" size={14} />
                     Completar ruta
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </div>
@@ -214,22 +215,20 @@ export default async function RutaDetallePage({
                           aria-label={`Quien recibio la parada ${p.sequence}`}
                           className="h-8 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                         />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           name="siguiente"
                           value="delivered"
-                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-success)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-success)] hover:bg-[var(--color-surface-raised)]">
                           Entregada
-                        </button>
-                        <button
-                          type="submit"
+                        </BotonEnvio>
+                        <BotonEnvio
+                          
                           name="siguiente"
                           value="failed"
-                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                          className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                           Fallida
-                        </button>
+                        </BotonEnvio>
                       </form>
                     )}
                   </TD>
@@ -262,10 +261,10 @@ export default async function RutaDetallePage({
                   Direccion
                   <input name="address" required className={claseInput} />
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

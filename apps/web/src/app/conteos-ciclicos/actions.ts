@@ -8,6 +8,7 @@ import {
   type EstadoConteoCiclico,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -281,20 +282,20 @@ export async function rechazarConteo(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function recalcularAbcForm(fd: FormData): Promise<void> {
-  await recalcularAbc(fd)
+  await anotarAviso(await recalcularAbc(fd), 'recalcularAbc')
 }
 export async function iniciarConteoForm(fd: FormData): Promise<void> {
-  await iniciarConteo(fd)
+  await anotarAviso(await iniciarConteo(fd), 'iniciarConteo')
 }
 export async function registrarLineaConteoForm(fd: FormData): Promise<void> {
-  await registrarLineaConteo(fd)
+  await anotarAviso(await registrarLineaConteo(fd), 'registrarLineaConteo')
 }
 export async function enviarConteoForm(fd: FormData): Promise<void> {
-  await enviarConteo(fd)
+  await anotarAviso(await enviarConteo(fd), 'enviarConteo')
 }
 export async function aprobarConteoForm(fd: FormData): Promise<void> {
-  await aprobarConteo(fd)
+  await anotarAviso(await aprobarConteo(fd), 'aprobarConteo')
 }
 export async function rechazarConteoForm(fd: FormData): Promise<void> {
-  await rechazarConteo(fd)
+  await anotarAviso(await rechazarConteo(fd), 'rechazarConteo')
 }

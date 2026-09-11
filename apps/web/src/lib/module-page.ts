@@ -5,6 +5,7 @@ import { can, type Role } from '@regb/permissions'
 import { checkAccess } from '@regb/sdk'
 import { bootstrap, listRoles, listTenants, type BootstrapResult } from './bootstrap'
 import { authConfigured, currentSession } from './supabase'
+import { leerAviso } from './aviso'
 import { asUser } from './db'
 import type { ShellProps } from '@/components/Shell'
 import type { SearchEntry } from '@/components/GlobalSearch'
@@ -157,6 +158,9 @@ export async function modulePage(
   const roles = r.demo ? await listRoles(r.ctx.tenantId) : [r.ctx.roleName]
   const [unread, search] = await Promise.all([unreadCount(r.ctx), buildSearchIndex(r)])
   const session = r.demo ? null : await currentSession()
+  // El resultado de la ultima accion. Se lee aqui -por donde pasan TODAS
+  // las pantallas de modulo- para no repetirlo en 141 archivos.
+  const aviso = await leerAviso()
 
   return {
     ctx: r.ctx,
@@ -168,6 +172,7 @@ export async function modulePage(
       activePlatform: platform,
       demoMode: r.demo,
       isProvider: session?.isProvider ?? false,
+      aviso,
       data: {
         tenant: r.data.tenant,
         user: r.data.user,

@@ -13,6 +13,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearOportunidadForm, transicionarEtapaForm } from './actions'
 import { ETAPAS_KANBAN, ETAPA_OPORTUNIDAD } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Oportunidades · REGB ERP' }
@@ -115,13 +116,12 @@ export default async function PipelinePage({
                           <form action={transicionarEtapaForm}>
                             {campos(o.id)}
                             <input type="hidden" name="siguiente" value={siguienteEtapa[o.stage]} />
-                            <button
-                              type="submit"
-                              className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="arrow_forward" size={12} />
                               {ETAPA_OPORTUNIDAD[siguienteEtapa[o.stage]!]}
-                            </button>
+                            </BotonEnvio>
                           </form>
                         </div>
                       )}
@@ -164,13 +164,12 @@ export default async function PipelinePage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

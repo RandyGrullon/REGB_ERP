@@ -15,6 +15,7 @@ import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { reembolsarGastoForm, resolverGastoForm } from '../actions'
 import { CATEGORIA_GASTO } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Aprobar gastos · REGB ERP' }
@@ -126,26 +127,24 @@ export default async function AprobarGastosPage({
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={g.id} />
                           <input type="hidden" name="decision" value="approved" />
-                          <button
-                            type="submit"
-                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                             <Icon name="check" size={14} />
                             Aprobar
-                          </button>
+                          </BotonEnvio>
                         </form>
                         <form action={resolverGastoForm}>
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={g.id} />
                           <input type="hidden" name="decision" value="rejected" />
-                          <button
-                            type="submit"
-                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="close" size={14} />
                             Rechazar
-                          </button>
+                          </BotonEnvio>
                         </form>
                       </div>
                     </TD>
@@ -204,13 +203,12 @@ export default async function AprobarGastosPage({
                             ))}
                           </select>
                         )}
-                        <button
-                          type="submit"
-                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                           <Icon name="payments" size={14} />
                           Reembolsar
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </TD>
                   </TR>

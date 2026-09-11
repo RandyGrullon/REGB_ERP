@@ -15,6 +15,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { enviarAPapelera, restaurarArchivo, subirArchivo } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Archivos · REGB ERP' }
@@ -250,16 +251,15 @@ export default async function ArchivosPage({
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={f.id} />
-                      <button
-                        type="submit"
+                      <BotonEnvio
+                        
                         title={enPapelera ? 'Restaurar' : 'Enviar a la papelera'}
                         aria-label={
                           enPapelera ? `Restaurar ${f.name}` : `Enviar ${f.name} a la papelera`
                         }
-                        className="grid h-9 w-9 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                      >
+                        className="grid h-9 w-9 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                         <Icon name={enPapelera ? 'restore_from_trash' : 'delete'} size={18} />
-                      </button>
+                      </BotonEnvio>
                     </form>
                   )}
                 </li>
@@ -291,12 +291,11 @@ export default async function ArchivosPage({
                   aria-label="Archivo a subir"
                   className="min-w-52 flex-1 text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--color-surface-overlay)] file:px-3 file:py-2 file:text-sm file:text-[var(--color-text-primary)] hover:file:bg-[var(--color-surface-raised)]"
                 />
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   Subir
-                </button>
+                </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
                   Hasta 512 KB por archivo en desarrollo; en produccion el binario vive en Supabase
                   Storage sin ese limite.

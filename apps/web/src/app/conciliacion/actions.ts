@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -207,17 +208,17 @@ export async function reactivarLinea(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearImportForm(fd: FormData): Promise<void> {
-  await crearImport(fd)
+  await anotarAviso(await crearImport(fd), 'crearImport')
 }
 export async function confirmarMatchForm(fd: FormData): Promise<void> {
-  await confirmarMatch(fd)
+  await anotarAviso(await confirmarMatch(fd), 'confirmarMatch')
 }
 export async function desconciliarForm(fd: FormData): Promise<void> {
-  await desconciliar(fd)
+  await anotarAviso(await desconciliar(fd), 'desconciliar')
 }
 export async function ignorarLineaForm(fd: FormData): Promise<void> {
-  await ignorarLinea(fd)
+  await anotarAviso(await ignorarLinea(fd), 'ignorarLinea')
 }
 export async function reactivarLineaForm(fd: FormData): Promise<void> {
-  await reactivarLinea(fd)
+  await anotarAviso(await reactivarLinea(fd), 'reactivarLinea')
 }

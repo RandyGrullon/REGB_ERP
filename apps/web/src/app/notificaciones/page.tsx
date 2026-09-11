@@ -3,6 +3,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { marcarLeida, marcarTodasLeidas } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Notificaciones · REGB ERP' }
@@ -69,13 +70,12 @@ export default async function NotificacionesPage({
               <form action={marcarTodasLeidas}>
                 <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-                <button
-                  type="submit"
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="done_all" size={18} />
                   Marcar todas leidas
-                </button>
+                </BotonEnvio>
               </form>
             ) : undefined
           }
@@ -134,12 +134,11 @@ export default async function NotificacionesPage({
                       <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={n.id} />
-                      <button
-                        type="submit"
-                        className="shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]"
-                      >
+                      <BotonEnvio
+                        
+                        className="shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]">
                         Leida
-                      </button>
+                      </BotonEnvio>
                     </form>
                   )}
                 </div>

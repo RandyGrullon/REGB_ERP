@@ -10,6 +10,7 @@ import {
   type PaymentMethod,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { preciosDeVenta } from '@/lib/precio'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
@@ -427,14 +428,14 @@ export async function anularVenta(fd: FormData): Promise<ActionResult> {
 
 // ── Envoltorios para <form action> ─────────────────────────────────────
 export async function abrirTurnoForm(fd: FormData): Promise<void> {
-  await abrirTurno(fd)
+  await anotarAviso(await abrirTurno(fd), 'abrirTurno')
 }
 export async function cerrarTurnoForm(fd: FormData): Promise<void> {
-  await cerrarTurno(fd)
+  await anotarAviso(await cerrarTurno(fd), 'cerrarTurno')
 }
 export async function anularVentaForm(fd: FormData): Promise<void> {
-  await anularVenta(fd)
+  await anotarAviso(await anularVenta(fd), 'anularVenta')
 }
 export async function cobrarVentaForm(fd: FormData): Promise<void> {
-  await cobrarVenta(fd)
+  await anotarAviso(await cobrarVenta(fd), 'cobrarVenta')
 }

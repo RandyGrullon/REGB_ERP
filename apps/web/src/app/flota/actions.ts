@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaMulta, type EstadoMulta } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /** Acciones de flota y vehiculos (modulo 54, F8/S49). */
@@ -235,20 +236,20 @@ export async function resolverMulta(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearVehiculoForm(fd: FormData): Promise<void> {
-  await crearVehiculo(fd)
+  await anotarAviso(await crearVehiculo(fd), 'crearVehiculo')
 }
 export async function registrarDocumentoForm(fd: FormData): Promise<void> {
-  await registrarDocumento(fd)
+  await anotarAviso(await registrarDocumento(fd), 'registrarDocumento')
 }
 export async function registrarCombustibleForm(fd: FormData): Promise<void> {
-  await registrarCombustible(fd)
+  await anotarAviso(await registrarCombustible(fd), 'registrarCombustible')
 }
 export async function registrarMantenimientoForm(fd: FormData): Promise<void> {
-  await registrarMantenimiento(fd)
+  await anotarAviso(await registrarMantenimiento(fd), 'registrarMantenimiento')
 }
 export async function registrarMultaForm(fd: FormData): Promise<void> {
-  await registrarMulta(fd)
+  await anotarAviso(await registrarMulta(fd), 'registrarMulta')
 }
 export async function resolverMultaForm(fd: FormData): Promise<void> {
-  await resolverMulta(fd)
+  await anotarAviso(await resolverMulta(fd), 'resolverMulta')
 }

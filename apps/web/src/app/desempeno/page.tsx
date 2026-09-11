@@ -30,6 +30,7 @@ import {
   resolverPlanMejoraForm,
 } from './actions'
 import { ESTADO_1ON1, ESTADO_OBJETIVO, ESTADO_PLAN_MEJORA, TIPO_EVALUACION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Desempeno · REGB ERP' }
@@ -238,13 +239,12 @@ export default async function DesempenoPage({
                                     inputMode="decimal"
                                     className={`tabular w-16 ${claseInput}`}
                                   />
-                                  <button
-                                    type="submit"
+                                  <BotonEnvio
+                                    
                                     aria-label={`Guardar progreso de ${k.description}`}
-                                    className="flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                                  >
+                                    className="flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                     <Icon name="save" size={14} />
-                                  </button>
+                                  </BotonEnvio>
                                 </form>
                               )}
                             </span>
@@ -260,13 +260,12 @@ export default async function DesempenoPage({
                         <input name="description" placeholder="Resultado clave" required className={claseInput} />
                         <input name="targetValue" placeholder="Meta" inputMode="decimal" required className={`tabular w-20 ${claseInput}`} />
                         <input name="unit" placeholder="Unidad" className={`w-20 ${claseInput}`} />
-                        <button
-                          type="submit"
-                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="add" size={14} />
                           Agregar KR
-                        </button>
+                        </BotonEnvio>
                       </form>
                     )}
                   </div>
@@ -297,13 +296,12 @@ export default async function DesempenoPage({
                   Periodo
                   <input name="period" placeholder="2026-Q3" required className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Nuevo objetivo
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -355,13 +353,12 @@ export default async function DesempenoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="recordId" value={u.id} />
                               <input name="notes" placeholder="Notas" className={claseInput} />
-                              <button
-                                type="submit"
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                              >
+                              <BotonEnvio
+                                
+                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 Cerrar
-                              </button>
+                              </BotonEnvio>
                             </form>
                           )}
                         </TD>
@@ -390,13 +387,12 @@ export default async function DesempenoPage({
                   Fecha y hora
                   <input type="datetime-local" name="scheduledAt" required className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="event" size={14} />
                   Agendar 1:1
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -476,13 +472,12 @@ export default async function DesempenoPage({
                   Comentarios
                   <input name="comments" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Enviar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -528,24 +523,22 @@ export default async function DesempenoPage({
                                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                                 <input type="hidden" name="recordId" value={p.id} />
                                 <input type="hidden" name="status" value="completed" />
-                                <button
-                                  type="submit"
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90"
-                                >
+                                <BotonEnvio
+                                  
+                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                                   Completar
-                                </button>
+                                </BotonEnvio>
                               </form>
                               <form action={resolverPlanMejoraForm}>
                                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                                 <input type="hidden" name="recordId" value={p.id} />
                                 <input type="hidden" name="status" value="cancelled" />
-                                <button
-                                  type="submit"
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                                >
+                                <BotonEnvio
+                                  
+                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Cancelar
-                                </button>
+                                </BotonEnvio>
                               </form>
                             </div>
                           )}
@@ -583,13 +576,12 @@ export default async function DesempenoPage({
                   Hasta
                   <input type="date" name="endDate" required className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Crear plan
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

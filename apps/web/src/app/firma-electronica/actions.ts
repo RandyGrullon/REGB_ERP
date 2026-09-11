@@ -5,6 +5,7 @@ import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { transicionValidaFirma, type EstadoFirma } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -132,8 +133,8 @@ export async function transicionarSolicitud(fd: FormData): Promise<ActionResult>
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearSolicitudForm(fd: FormData): Promise<void> {
-  await crearSolicitud(fd)
+  await anotarAviso(await crearSolicitud(fd), 'crearSolicitud')
 }
 export async function transicionarSolicitudForm(fd: FormData): Promise<void> {
-  await transicionarSolicitud(fd)
+  await anotarAviso(await transicionarSolicitud(fd), 'transicionarSolicitud')
 }

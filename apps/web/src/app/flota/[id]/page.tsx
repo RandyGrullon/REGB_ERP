@@ -31,6 +31,7 @@ import {
   resolverMultaForm,
 } from '../actions'
 import { ESTADO_MULTA, ESTADO_VEHICULO, TIPO_DOCUMENTO } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -230,10 +231,10 @@ export default async function VehiculoDetallePage({
                   Vencimiento
                   <input type="date" name="expiryDate" required className={claseInput} />
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -308,10 +309,10 @@ export default async function VehiculoDetallePage({
                   Kilometraje
                   <input name="odometerKm" required inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="local_gas_station" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -374,10 +375,10 @@ export default async function VehiculoDetallePage({
                   Proximo a km
                   <input name="nextDueKm" inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="build" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -424,17 +425,17 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="paid" />
-                                <button type="submit" className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio  className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Pagar
-                                </button>
+                                </BotonEnvio>
                               </form>
                               <form action={resolverMultaForm}>
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="disputed" />
-                                <button type="submit" className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio  className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Disputar
-                                </button>
+                                </BotonEnvio>
                               </form>
                             </>
                           )}
@@ -444,17 +445,17 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="paid" />
-                                <button type="submit" className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio  className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Pagar
-                                </button>
+                                </BotonEnvio>
                               </form>
                               <form action={resolverMultaForm}>
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="dismissed" />
-                                <button type="submit" className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio  className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Descartar
-                                </button>
+                                </BotonEnvio>
                               </form>
                             </>
                           )}
@@ -487,10 +488,10 @@ export default async function VehiculoDetallePage({
                   Razon
                   <input name="reason" required className={claseInput} />
                 </label>
-                <button type="submit" className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="receipt_long" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>

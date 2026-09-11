@@ -10,6 +10,7 @@ import {
   type ResultadoCriterio,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -308,29 +309,29 @@ export async function transicionarCapa(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearPlanForm(fd: FormData): Promise<void> {
-  await crearPlan(fd)
+  await anotarAviso(await crearPlan(fd), 'crearPlan')
 }
 export async function agregarCriterioForm(fd: FormData): Promise<void> {
-  await agregarCriterio(fd)
+  await anotarAviso(await agregarCriterio(fd), 'agregarCriterio')
 }
 export async function quitarCriterioForm(fd: FormData): Promise<void> {
-  await quitarCriterio(fd)
+  await anotarAviso(await quitarCriterio(fd), 'quitarCriterio')
 }
 export async function alternarPlanActivoForm(fd: FormData): Promise<void> {
-  await alternarPlanActivo(fd)
+  await anotarAviso(await alternarPlanActivo(fd), 'alternarPlanActivo')
 }
 export async function registrarInspeccionForm(fd: FormData): Promise<void> {
-  await registrarInspeccion(fd)
+  await anotarAviso(await registrarInspeccion(fd), 'registrarInspeccion')
 }
 export async function abrirNoConformidadForm(fd: FormData): Promise<void> {
-  await abrirNoConformidad(fd)
+  await anotarAviso(await abrirNoConformidad(fd), 'abrirNoConformidad')
 }
 export async function transicionarNoConformidadForm(fd: FormData): Promise<void> {
-  await transicionarNoConformidad(fd)
+  await anotarAviso(await transicionarNoConformidad(fd), 'transicionarNoConformidad')
 }
 export async function crearCapaForm(fd: FormData): Promise<void> {
-  await crearCapa(fd)
+  await anotarAviso(await crearCapa(fd), 'crearCapa')
 }
 export async function transicionarCapaForm(fd: FormData): Promise<void> {
-  await transicionarCapa(fd)
+  await anotarAviso(await transicionarCapa(fd), 'transicionarCapa')
 }

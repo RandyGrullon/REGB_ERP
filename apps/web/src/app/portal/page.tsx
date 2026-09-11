@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { editarMiTelefonoForm, solicitarDesdePortalForm } from './actions'
 import { resolverMiEmpleado } from './mi-empleado'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Mi portal · REGB ERP' }
@@ -183,13 +184,12 @@ export default async function PortalPage({
                       Telefono
                       <input name="phone" defaultValue={yo.phone ?? ''} className={claseInput} />
                     </label>
-                    <button
-                      type="submit"
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="save" size={18} />
                       Guardar
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </CardBody>
@@ -293,13 +293,12 @@ export default async function PortalPage({
                       Motivo (opcional)
                       <input name="reason" className={claseInput} />
                     </label>
-                    <button
-                      type="submit"
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                    >
+                    <BotonEnvio
+                      
+                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="send" size={18} />
                       Pedir vacaciones
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </CardBody>

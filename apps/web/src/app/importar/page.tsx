@@ -20,6 +20,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { deshacerImportacion, importarProductos } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Importar · REGB ERP' }
@@ -117,12 +118,11 @@ export default async function ImportarPage({
                   aria-label="Archivo CSV con los productos"
                   className="text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--color-surface-raised)] file:px-3 file:py-2 file:text-sm file:text-[var(--color-text-primary)]"
                 />
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Importar
-                </button>
+                </BotonEnvio>
               </form>
 
               <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
@@ -209,13 +209,12 @@ export default async function ImportarPage({
                           />
                           <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                           <input type="hidden" name="batchId" value={b.id} />
-                          <button
-                            type="submit"
+                          <BotonEnvio
+                            
                             title={`Borra los ${b.inserted} productos que creo esta importacion. No toca ningun otro.`}
-                            className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                          >
+                            className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             Deshacer
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>

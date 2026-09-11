@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -87,8 +88,8 @@ export async function asignar(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function fijarCapacidadForm(fd: FormData): Promise<void> {
-  await fijarCapacidad(fd)
+  await anotarAviso(await fijarCapacidad(fd), 'fijarCapacidad')
 }
 export async function asignarForm(fd: FormData): Promise<void> {
-  await asignar(fd)
+  await anotarAviso(await asignar(fd), 'asignar')
 }

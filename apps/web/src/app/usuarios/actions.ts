@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
 
 /**
@@ -98,11 +99,11 @@ export async function alternarActivo(formData: FormData): Promise<ActionResult> 
 
 // ── Versiones para <form action>: el form no consume el resultado ───────
 export async function invitarMiembroForm(fd: FormData): Promise<void> {
-  await invitarMiembro(fd)
+  await anotarAviso(await invitarMiembro(fd), 'invitarMiembro')
 }
 export async function cambiarRolMiembroForm(fd: FormData): Promise<void> {
-  await cambiarRolMiembro(fd)
+  await anotarAviso(await cambiarRolMiembro(fd), 'cambiarRolMiembro')
 }
 export async function alternarActivoForm(fd: FormData): Promise<void> {
-  await alternarActivo(fd)
+  await anotarAviso(await alternarActivo(fd), 'alternarActivo')
 }

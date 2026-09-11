@@ -16,6 +16,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearAlmacenForm } from '../actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Almacenes · REGB ERP' }
@@ -131,12 +132,11 @@ export default async function WarehousesPage({
                   ))}
                 </select>
               </label>
-              <button
-                type="submit"
-                className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-              >
+              <BotonEnvio
+                
+                className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                 Crear
-              </button>
+              </BotonEnvio>
             </form>
           </CardBody>
         </Card>

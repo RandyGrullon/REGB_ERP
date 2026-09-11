@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaTicket, type EstadoTicket } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import { SLA_HORAS_POR_PRIORIDAD } from './estados'
 
@@ -116,11 +117,11 @@ export async function agregarMensaje(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearTicketForm(fd: FormData): Promise<void> {
-  await crearTicket(fd)
+  await anotarAviso(await crearTicket(fd), 'crearTicket')
 }
 export async function transicionarTicketForm(fd: FormData): Promise<void> {
-  await transicionarTicket(fd)
+  await anotarAviso(await transicionarTicket(fd), 'transicionarTicket')
 }
 export async function agregarMensajeForm(fd: FormData): Promise<void> {
-  await agregarMensaje(fd)
+  await anotarAviso(await agregarMensaje(fd), 'agregarMensaje')
 }

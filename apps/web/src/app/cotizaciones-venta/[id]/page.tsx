@@ -27,6 +27,7 @@ import {
   transicionarCotizacionForm,
 } from '../actions'
 import { ESTADO_COTIZACION } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,10 +170,10 @@ export default async function CotizacionDetallePage({
               <form action={transicionarCotizacionForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="sent" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'sent' && (
@@ -180,35 +181,35 @@ export default async function CotizacionDetallePage({
                 <form action={transicionarCotizacionForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="approved" />
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="check_circle" size={14} />
                     Aprobar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarCotizacionForm} className="flex items-end gap-2">
                   {campos}
                   <input type="hidden" name="siguiente" value="rejected" />
                   <input name="rejectedReason" placeholder="Motivo" className={claseInput} />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Rechazar
-                  </button>
+                  </BotonEnvio>
                 </form>
                 <form action={transicionarCotizacionForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="expired" />
-                  <button type="submit" className={botonSecundarioClase}>
+                  <BotonEnvio  className={botonSecundarioClase}>
                     Marcar vencida
-                  </button>
+                  </BotonEnvio>
                 </form>
               </>
             )}
             {puedeRevisar && (
               <form action={crearVersionNuevaForm}>
                 {campos}
-                <button type="submit" className={botonSecundarioClase}>
+                <BotonEnvio  className={botonSecundarioClase}>
                   <Icon name="difference" size={14} />
                   Crear version nueva
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </div>
@@ -255,13 +256,12 @@ export default async function CotizacionDetallePage({
                       <form action={quitarLineaForm}>
                         {campos}
                         <input type="hidden" name="lineId" value={l.id} />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           aria-label={`Quitar ${l.name}`}
-                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                        >
+                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                           <Icon name="delete" size={16} />
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </TD>
                   )}
@@ -301,10 +301,10 @@ export default async function CotizacionDetallePage({
                   Desc. % (opcional)
                   <input name="discountPct" inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Agregar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

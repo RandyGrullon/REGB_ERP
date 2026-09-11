@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { balanceAfter, deriveInvoiceStatus, dueDateFrom, overpayment } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -223,14 +224,14 @@ export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function registrarFacturaForm(fd: FormData): Promise<void> {
-  await registrarFactura(fd)
+  await anotarAviso(await registrarFactura(fd), 'registrarFactura')
 }
 export async function registrarPagoForm(fd: FormData): Promise<void> {
-  await registrarPago(fd)
+  await anotarAviso(await registrarPago(fd), 'registrarPago')
 }
 export async function anularFacturaForm(fd: FormData): Promise<void> {
-  await anularFactura(fd)
+  await anotarAviso(await anularFactura(fd), 'anularFactura')
 }
 export async function marcarVencidasForm(fd: FormData): Promise<void> {
-  await marcarVencidas(fd)
+  await anotarAviso(await marcarVencidas(fd), 'marcarVencidas')
 }

@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { aceptarSugerenciaForm, descartarSugerenciaForm } from '../actions'
 import { ACCION_SUGERENCIA, ESTADO_SUGERENCIA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -181,37 +182,34 @@ export default async function MrpDetallePage({
                                 </option>
                               ))}
                             </select>
-                            <button
-                              type="submit"
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         ) : (
                           <form action={aceptarSugerenciaForm}>
                             {campos}
                             <input type="hidden" name="suggestionId" value={s.id} />
-                            <button
-                              type="submit"
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         )}
                         <form action={descartarSugerenciaForm}>
                           {campos}
                           <input type="hidden" name="suggestionId" value={s.id} />
-                          <button
-                            type="submit"
+                          <BotonEnvio
+                            
                             aria-label={`Descartar sugerencia de ${s.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                          >
+                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="close" size={16} />
-                          </button>
+                          </BotonEnvio>
                         </form>
                       </div>
                     )}

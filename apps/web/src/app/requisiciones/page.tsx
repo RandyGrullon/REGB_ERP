@@ -20,6 +20,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearRequisicionForm, marcarConvertidaForm, resolverRequisicionForm } from './actions'
 import { ESTADO_REQUISICION } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Requisiciones · REGB ERP' }
@@ -139,26 +140,24 @@ export default async function RequisicionesPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="requisitionId" value={r.id} />
                             <input type="hidden" name="decision" value="approved" />
-                            <button
-                              type="submit"
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                               <Icon name="check" size={14} />
                               Aprobar
-                            </button>
+                            </BotonEnvio>
                           </form>
                           <form action={resolverRequisicionForm}>
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="requisitionId" value={r.id} />
                             <input type="hidden" name="decision" value="rejected" />
-                            <button
-                              type="submit"
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                            >
+                            <BotonEnvio
+                              
+                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="close" size={14} />
                               Rechazar
-                            </button>
+                            </BotonEnvio>
                           </form>
                         </div>
                       )}
@@ -173,12 +172,11 @@ export default async function RequisicionesPage({
                             placeholder="OC-2026-00001"
                             className={claseInput}
                           />
-                          <button
-                            type="submit"
-                            className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             Marcar convertida
-                          </button>
+                          </BotonEnvio>
                         </form>
                       )}
                     </TD>
@@ -220,13 +218,12 @@ export default async function RequisicionesPage({
                   Monto estimado
                   <input name="estimatedAmount" required inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Enviar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

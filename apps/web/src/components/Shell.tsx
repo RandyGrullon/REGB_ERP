@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { dunningBanner } from '@regb/billing'
 import { GlobalSearch, type SearchEntry } from './GlobalSearch'
+import { Aviso } from './Aviso'
+import { Navegacion } from './Navegacion'
+import type { Aviso as AvisoDato } from '@/lib/aviso-comun'
 import {
   Badge,
   Card,
@@ -59,6 +62,8 @@ export interface ShellProps {
   impersonating?: boolean
   /** Ruta actual, para resaltar en el sidebar. */
   activePath?: string
+  /** Resultado de la ultima accion, para confirmarlo o explicar el fallo. */
+  aviso?: AvisoDato | null
   /** Contenido de la pagina. Sin children, pinta el resumen del registry. */
   children?: React.ReactNode
   data: ShellData
@@ -99,6 +104,7 @@ export function Shell({
   isProvider = false,
   impersonating = false,
   activePath = '/',
+  aviso = null,
   children,
   data,
 }: ShellProps) {
@@ -163,6 +169,7 @@ export function Shell({
 
   return (
     <div className="flex h-full flex-col">
+      <Aviso aviso={aviso} />
       <TopBar
         productName="REGB"
         companies={tenants.map((t) => ({
@@ -181,6 +188,7 @@ export function Shell({
         {...(demoMode ? {} : { onSignOut: () => document.forms.namedItem('salir')?.submit() })}
         center={
           <div className="flex items-center gap-2">
+            <Navegacion />
             {data.search && <GlobalSearch index={data.search} qs={qs} />}
             {/* Controles de la demostracion */}
             {demoMode && (

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { alcanzaFefo, seleccionFefo, type LoteDisponible } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -206,14 +207,14 @@ export async function cerrarRecall(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function registrarLoteForm(fd: FormData): Promise<void> {
-  await registrarLote(fd)
+  await anotarAviso(await registrarLote(fd), 'registrarLote')
 }
 export async function consumirFefoForm(fd: FormData): Promise<void> {
-  await consumirFefo(fd)
+  await anotarAviso(await consumirFefo(fd), 'consumirFefo')
 }
 export async function abrirRecallForm(fd: FormData): Promise<void> {
-  await abrirRecall(fd)
+  await anotarAviso(await abrirRecall(fd), 'abrirRecall')
 }
 export async function cerrarRecallForm(fd: FormData): Promise<void> {
-  await cerrarRecall(fd)
+  await anotarAviso(await cerrarRecall(fd), 'cerrarRecall')
 }

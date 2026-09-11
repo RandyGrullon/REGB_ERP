@@ -4,6 +4,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { TIPO_CUENTA } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Mayor · REGB ERP' }
@@ -101,13 +102,12 @@ export default async function MayorPage({
               ))}
             </select>
           </label>
-          <button
-            type="submit"
-            className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-          >
+          <BotonEnvio
+            
+            className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
             <Icon name="search" size={18} />
             Ver
-          </button>
+          </BotonEnvio>
         </form>
 
         {!cuenta ? (

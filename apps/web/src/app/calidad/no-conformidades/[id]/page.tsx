@@ -15,6 +15,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearCapaForm, transicionarCapaForm, transicionarNoConformidadForm } from '../../actions'
 import { ESTADO_CAPA, ESTADO_NC, SEVERIDAD_NC } from '../../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -131,17 +132,17 @@ export default async function NoConformidadDetallePage({
             <form action={transicionarNoConformidadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="investigating" />
-              <button type="submit" className={botonClase}>
+              <BotonEnvio  className={botonClase}>
                 <Icon name="search" size={14} />
                 Empezar a investigar
-              </button>
+              </BotonEnvio>
             </form>
             <form action={transicionarNoConformidadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="dismissed" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 Descartar -no es un defecto real-
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}
@@ -152,9 +153,9 @@ export default async function NoConformidadDetallePage({
               <form action={transicionarNoConformidadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="dismissed" />
-                <button type="submit" className={botonSecundarioClase}>
+                <BotonEnvio  className={botonSecundarioClase}>
                   Descartar -investigado, no era un defecto real-
-                </button>
+                </BotonEnvio>
               </form>
             </div>
             <Card>
@@ -198,10 +199,10 @@ export default async function NoConformidadDetallePage({
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="add_task" size={14} />
                     Crear CAPA
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>
@@ -247,12 +248,12 @@ export default async function NoConformidadDetallePage({
                       capa.status === 'open' ? 'in_progress' : capa.status === 'in_progress' ? 'verified' : 'closed'
                     }
                   />
-                  <button type="submit" className={botonClase}>
+                  <BotonEnvio  className={botonClase}>
                     <Icon name="arrow_forward" size={14} />
                     {capa.status === 'open' && 'Marcar en progreso'}
                     {capa.status === 'in_progress' && 'Marcar verificado'}
                     {capa.status === 'verified' && 'Cerrar CAPA'}
-                  </button>
+                  </BotonEnvio>
                 </form>
               )}
             </CardBody>

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaOrdenTrabajo, type EstadoOrdenTrabajo } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -169,17 +170,17 @@ export async function agregarParte(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearEquipoForm(fd: FormData): Promise<void> {
-  await crearEquipo(fd)
+  await anotarAviso(await crearEquipo(fd), 'crearEquipo')
 }
 export async function registrarServicioForm(fd: FormData): Promise<void> {
-  await registrarServicio(fd)
+  await anotarAviso(await registrarServicio(fd), 'registrarServicio')
 }
 export async function crearOrdenForm(fd: FormData): Promise<void> {
-  await crearOrden(fd)
+  await anotarAviso(await crearOrden(fd), 'crearOrden')
 }
 export async function transicionarOrdenForm(fd: FormData): Promise<void> {
-  await transicionarOrden(fd)
+  await anotarAviso(await transicionarOrden(fd), 'transicionarOrden')
 }
 export async function agregarParteForm(fd: FormData): Promise<void> {
-  await agregarParte(fd)
+  await anotarAviso(await agregarParte(fd), 'agregarParte')
 }

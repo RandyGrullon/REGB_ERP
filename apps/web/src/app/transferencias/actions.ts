@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { transicionValidaTransferencia, type EstadoTransferencia } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -275,20 +276,20 @@ export async function cancelarTransferencia(fd: FormData): Promise<ActionResult>
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearTransferenciaForm(fd: FormData): Promise<void> {
-  await crearTransferencia(fd)
+  await anotarAviso(await crearTransferencia(fd), 'crearTransferencia')
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
-  await agregarLinea(fd)
+  await anotarAviso(await agregarLinea(fd), 'agregarLinea')
 }
 export async function quitarLineaForm(fd: FormData): Promise<void> {
-  await quitarLinea(fd)
+  await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function despacharTransferenciaForm(fd: FormData): Promise<void> {
-  await despacharTransferencia(fd)
+  await anotarAviso(await despacharTransferencia(fd), 'despacharTransferencia')
 }
 export async function recibirTransferenciaForm(fd: FormData): Promise<void> {
-  await recibirTransferencia(fd)
+  await anotarAviso(await recibirTransferencia(fd), 'recibirTransferencia')
 }
 export async function cancelarTransferenciaForm(fd: FormData): Promise<void> {
-  await cancelarTransferencia(fd)
+  await anotarAviso(await cancelarTransferencia(fd), 'cancelarTransferencia')
 }

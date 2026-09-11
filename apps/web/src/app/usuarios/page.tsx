@@ -15,6 +15,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarActivoForm, cambiarRolMiembroForm, invitarMiembroForm } from './actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Usuarios · REGB ERP' }
@@ -113,12 +114,11 @@ export default async function UsuariosPage({
                           </option>
                         ))}
                       </select>{' '}
-                      <button
-                        type="submit"
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                      >
+                      <BotonEnvio
+                        
+                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         Cambiar
-                      </button>
+                      </BotonEnvio>
                     </form>
                   ) : (
                     m.role_name
@@ -140,12 +140,11 @@ export default async function UsuariosPage({
                       <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="userId" value={m.user_id} />
-                      <button
-                        type="submit"
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                      >
+                      <BotonEnvio
+                        
+                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         {m.is_active ? 'Desactivar' : 'Reactivar'}
-                      </button>
+                      </BotonEnvio>
                     </form>
                   </TD>
                 )}
@@ -197,12 +196,11 @@ export default async function UsuariosPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Invitar
-                </button>
+                </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 La invitacion llega por correo. El rol decide que modulos ve desde el primer login.

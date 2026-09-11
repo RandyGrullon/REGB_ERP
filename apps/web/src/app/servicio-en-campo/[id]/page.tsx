@@ -26,6 +26,7 @@ import {
   transicionarOrdenForm,
 } from '../actions'
 import { ESTADO_ORDEN, PRIORIDAD_ORDEN } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -191,29 +192,29 @@ export default async function OrdenServicioPage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="scheduled" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="event" size={14} />
                   Agendar
-                </button>
+                </BotonEnvio>
               </form>
             )}
             {head.status === 'scheduled' && (
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Llegue al sitio
-                </button>
+                </BotonEnvio>
               </form>
             )}
             <form action={transicionarOrdenForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <button type="submit" className={botonSecundarioClase}>
+              <BotonEnvio  className={botonSecundarioClase}>
                 <Icon name="close" size={14} />
                 Cancelar orden
-              </button>
+              </BotonEnvio>
             </form>
           </div>
         )}
@@ -251,14 +252,13 @@ export default async function OrdenServicioPage({
                       <form action={alternarPasoForm}>
                         {campos}
                         <input type="hidden" name="itemId" value={p.id} />
-                        <button
-                          type="submit"
+                        <BotonEnvio
+                          
                           className={p.done ? botonSecundarioClase : botonClase}
-                          aria-label={p.done ? `Desmarcar ${p.label}` : `Marcar ${p.label}`}
-                        >
+                          aria-label={p.done ? `Desmarcar ${p.label}` : `Marcar ${p.label}`}>
                           <Icon name={p.done ? 'undo' : 'check'} size={14} />
                           {p.done ? 'Desmarcar' : 'Marcar'}
-                        </button>
+                        </BotonEnvio>
                       </form>
                     ) : (
                       <Badge tone={p.done ? 'success' : 'neutral'}>{p.done ? 'Hecho' : 'Pendiente'}</Badge>
@@ -279,10 +279,10 @@ export default async function OrdenServicioPage({
                   <input type="checkbox" name="required" defaultChecked />
                   Obligatorio para cerrar
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Agregar paso
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -338,10 +338,10 @@ export default async function OrdenServicioPage({
                   Costo unitario
                   <input name="unitCost" required inputMode="decimal" className={`${inputClase} tabular`} />
                 </label>
-                <button type="submit" className={botonClase}>
+                <BotonEnvio  className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
-                </button>
+                </BotonEnvio>
               </form>
             )}
           </CardBody>
@@ -375,10 +375,10 @@ export default async function OrdenServicioPage({
                       Nombre de quien recibe
                       <input name="signedBy" required className={inputClase} placeholder="Ana Rosario" />
                     </label>
-                    <button type="submit" className={botonClase}>
+                    <BotonEnvio  className={botonClase}>
                       <Icon name="draw" size={14} />
                       Cerrar con firma
-                    </button>
+                    </BotonEnvio>
                   </form>
                 )}
               </>

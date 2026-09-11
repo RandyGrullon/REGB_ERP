@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { asignarRoundRobin, puntuarLead, transicionValidaLead, type EstadoLead, type FuenteLead } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -150,14 +151,14 @@ export async function asignarLeadsPendientes(fd: FormData): Promise<ActionResult
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearLeadForm(fd: FormData): Promise<void> {
-  await crearLead(fd)
+  await anotarAviso(await crearLead(fd), 'crearLead')
 }
 export async function transicionarLeadForm(fd: FormData): Promise<void> {
-  await transicionarLead(fd)
+  await anotarAviso(await transicionarLead(fd), 'transicionarLead')
 }
 export async function registrarActividadForm(fd: FormData): Promise<void> {
-  await registrarActividad(fd)
+  await anotarAviso(await registrarActividad(fd), 'registrarActividad')
 }
 export async function asignarLeadsPendientesForm(fd: FormData): Promise<void> {
-  await asignarLeadsPendientes(fd)
+  await anotarAviso(await asignarLeadsPendientes(fd), 'asignarLeadsPendientes')
 }

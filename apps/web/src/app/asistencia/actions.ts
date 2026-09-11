@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { isWithinGeofence } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -137,11 +138,11 @@ export async function guardarGeocerca(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function marcarEntradaForm(fd: FormData): Promise<void> {
-  await marcarEntrada(fd)
+  await anotarAviso(await marcarEntrada(fd), 'marcarEntrada')
 }
 export async function marcarSalidaForm(fd: FormData): Promise<void> {
-  await marcarSalida(fd)
+  await anotarAviso(await marcarSalida(fd), 'marcarSalida')
 }
 export async function guardarGeocercaForm(fd: FormData): Promise<void> {
-  await guardarGeocerca(fd)
+  await anotarAviso(await guardarGeocerca(fd), 'guardarGeocerca')
 }

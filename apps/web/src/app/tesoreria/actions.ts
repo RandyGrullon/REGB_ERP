@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { validateTransfer } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -162,11 +163,11 @@ export async function registrarTransferencia(fd: FormData): Promise<ActionResult
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearCuentaForm(fd: FormData): Promise<void> {
-  await crearCuenta(fd)
+  await anotarAviso(await crearCuenta(fd), 'crearCuenta')
 }
 export async function registrarMovimientoForm(fd: FormData): Promise<void> {
-  await registrarMovimiento(fd)
+  await anotarAviso(await registrarMovimiento(fd), 'registrarMovimiento')
 }
 export async function registrarTransferenciaForm(fd: FormData): Promise<void> {
-  await registrarTransferencia(fd)
+  await anotarAviso(await registrarTransferencia(fd), 'registrarTransferencia')
 }

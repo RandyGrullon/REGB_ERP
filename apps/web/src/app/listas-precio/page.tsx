@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { asignarListaClienteForm, cambiarEstadoListaForm, crearListaForm } from './actions'
 import { ALCANCE_LISTA, ESTADO_LISTA } from './estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Listas de precio · REGB ERP' }
@@ -164,12 +165,11 @@ export default async function ListasPrecioPage({
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="listId" value={l.id} />
                           <input type="hidden" name="status" value={l.status === 'active' ? 'inactive' : 'active'} />
-                          <button
-                            type="submit"
-                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                          >
+                          <BotonEnvio
+                            
+                            className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             {l.status === 'active' ? 'Desactivar' : 'Activar'}
-                          </button>
+                          </BotonEnvio>
                         </form>
                       </TD>
                     )}
@@ -226,13 +226,12 @@ export default async function ListasPrecioPage({
                   Hasta (opcional)
                   <input type="date" name="endDate" className={claseInput} />
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear lista
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>
@@ -268,13 +267,12 @@ export default async function ListasPrecioPage({
                     ))}
                   </select>
                 </label>
-                <button
-                  type="submit"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                >
+                <BotonEnvio
+                  
+                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
                   Asignar
-                </button>
+                </BotonEnvio>
               </form>
             </CardBody>
           </Card>

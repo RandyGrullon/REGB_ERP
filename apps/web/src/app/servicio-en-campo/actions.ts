@@ -7,6 +7,7 @@ import {
   type EstadoOrdenServicio,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -191,17 +192,17 @@ export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearOrdenForm(fd: FormData): Promise<void> {
-  await crearOrden(fd)
+  await anotarAviso(await crearOrden(fd), 'crearOrden')
 }
 export async function agregarPasoForm(fd: FormData): Promise<void> {
-  await agregarPaso(fd)
+  await anotarAviso(await agregarPaso(fd), 'agregarPaso')
 }
 export async function alternarPasoForm(fd: FormData): Promise<void> {
-  await alternarPaso(fd)
+  await anotarAviso(await alternarPaso(fd), 'alternarPaso')
 }
 export async function registrarRepuestoForm(fd: FormData): Promise<void> {
-  await registrarRepuesto(fd)
+  await anotarAviso(await registrarRepuesto(fd), 'registrarRepuesto')
 }
 export async function transicionarOrdenForm(fd: FormData): Promise<void> {
-  await transicionarOrden(fd)
+  await anotarAviso(await transicionarOrden(fd), 'transicionarOrden')
 }

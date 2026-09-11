@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { adjudicarRfqForm, invitarProveedorForm, registrarCotizacionForm } from '../actions'
 import { ESTADO_RFQ } from '../estados'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,13 +148,12 @@ export default async function RfqDetallePage({
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="rfqId" value={rfq.id} />
                         <input type="hidden" name="supplierId" value={c.supplier_id} />
-                        <button
-                          type="submit"
-                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                        >
+                        <BotonEnvio
+                          
+                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                           <Icon name="emoji_events" size={14} />
                           Adjudicar
-                        </button>
+                        </BotonEnvio>
                       </form>
                     </TD>
                   )}
@@ -184,13 +184,12 @@ export default async function RfqDetallePage({
                       ))}
                     </select>
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="mail" size={14} />
                     Invitar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>
@@ -226,13 +225,12 @@ export default async function RfqDetallePage({
                     Notas
                     <input name="notes" className={claseInput} />
                   </label>
-                  <button
-                    type="submit"
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                  >
+                  <BotonEnvio
+                    
+                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="send" size={14} />
                     Registrar
-                  </button>
+                  </BotonEnvio>
                 </form>
               </CardBody>
             </Card>
