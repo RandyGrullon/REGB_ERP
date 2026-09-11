@@ -22,10 +22,19 @@ export type NcfType =
   | 'B14' // Regimen especial
   | 'B15' // Gubernamental
   | 'B16' // Exportaciones
+  // Los diez tipos de e-CF que publica la DGII. No hay otros: la lista
+  // oficial de proveedores autorizados certifica exactamente para
+  // "31, 32, 33, 34, 41, 43, 44, 45, 46, 47".
   | 'E31' // e-CF credito fiscal
   | 'E32' // e-CF consumo
   | 'E33' // e-CF nota de debito
   | 'E34' // e-CF nota de credito
+  | 'E41' // e-CF compras
+  | 'E43' // e-CF gastos menores
+  | 'E44' // e-CF regimenes especiales
+  | 'E45' // e-CF gubernamental
+  | 'E46' // e-CF exportaciones
+  | 'E47' // e-CF pagos al exterior
 
 export const NCF_LABELS: Record<NcfType, string> = {
   B01: 'Credito fiscal',
@@ -38,6 +47,12 @@ export const NCF_LABELS: Record<NcfType, string> = {
   E32: 'e-CF consumo',
   E33: 'e-CF nota de debito',
   E34: 'e-CF nota de credito',
+  E41: 'e-CF compras',
+  E43: 'e-CF gastos menores',
+  E44: 'e-CF regimenes especiales',
+  E45: 'e-CF gubernamental',
+  E46: 'e-CF exportaciones',
+  E47: 'e-CF pagos al exterior',
 }
 
 /** Los de la serie E son electronicos: se transmiten a la DGII. */
@@ -50,7 +65,14 @@ export function isElectronic(tipo: NcfType): boolean {
  * permite descontarse el ITBIS. Sin RNC solo se puede emitir consumo.
  */
 export function requiresBuyerTaxId(tipo: NcfType): boolean {
-  return tipo === 'B01' || tipo === 'B14' || tipo === 'B15' || tipo === 'E31'
+  return (
+    tipo === 'B01' ||
+    tipo === 'B14' ||
+    tipo === 'B15' ||
+    tipo === 'E31' ||
+    tipo === 'E44' ||
+    tipo === 'E45'
+  )
 }
 
 /**
@@ -69,7 +91,11 @@ export function formatNcf(tipo: NcfType, secuencia: number): string {
   return `${tipo}${String(secuencia).padStart(digitos, '0')}`
 }
 
-const NCF_RE = /^(B0[1245]|B1[456]|E3[1234])(\d{8}|\d{10})$/
+// El e-NCF son 13 caracteres: "E" + 2 de tipo + 10 de secuencia. Ese
+// largo esta confirmado contra la DGII -"la letra E indica la serie, los
+// siguientes 2 digitos el tipo y los ultimos 10 el secuencial"-. El NCF
+// clasico de la serie B lleva 8.
+const NCF_RE = /^(B0[1245]|B1[456]|E3[1234]|E4[134567])(\d{8}|\d{10})$/
 
 /** Valida forma y coherencia: un B lleva 8 digitos, un E lleva 10. */
 export function isValidNcf(ncf: string): boolean {

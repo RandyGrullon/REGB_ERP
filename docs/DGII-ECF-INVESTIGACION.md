@@ -152,6 +152,16 @@ Formato `RNC+e-NCF`, ejemplo `101672919E3100000001.xml`. Fuente: misma sección.
 (Contrasta con el 607, donde el nombre de archivo quedó *sin confirmar* — aquí
 sí está en la norma técnica.)
 
+> **Corrección (2026-09-11).** Ese ejemplo tiene el e-NCF con **8** dígitos de
+> secuencia (`E31`+`00000001`, 11 caracteres). El e-NCF real son **13**
+> caracteres: `E` + 2 de tipo + **10** de secuencia, confirmado contra la DGII
+> —*"la letra E indica la serie, los siguientes 2 dígitos el tipo y los últimos
+> 10 el secuencial"*—. El ejemplo del documento está abreviado o mal; el nombre
+> correcto sería `101672919E310000000001.xml`. El repo ya generaba 10 dígitos
+> (`formatNcf` en `dgii.ts`), o sea que **el código estaba bien y el ejemplo de
+> la investigación es el que induce a error**. Anotado para que nadie lo
+> "arregle" al revés.
+
 ---
 
 ## 2. Firma digital
