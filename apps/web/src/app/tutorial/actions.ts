@@ -3,9 +3,18 @@
 import { revalidatePath } from 'next/cache'
 import { TOURS } from '@regb/core'
 import { asUser } from '@/lib/db'
-import { actionCtx, exigir } from '@/lib/module-page'
+import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
+import { anotarAviso } from '@/lib/aviso'
 
-/** Progreso del tutorial (S13). Se puede completar, saltar y retomar. */
+/**
+ * Progreso del tutorial (S13). Se puede completar, saltar y retomar.
+ *
+ * Avanzar y retroceder NO avisan cuando salen bien: el tour se mueve a
+ * la vista y un "guardamos tu cambio" por cada paso es ruido. Saltar y
+ * reiniciar SI avisan, porque descartan progreso y eso conviene
+ * confirmarlo. Los errores se dicen siempre -sin eso, un permiso
+ * denegado se ve como un boton muerto-.
+ */
 
 function demoDe(formData: FormData) {
   return {
@@ -17,14 +26,15 @@ function demoDe(formData: FormData) {
 async function guardar(
   formData: FormData,
   cambio: (actual: number, total: number) => { step: number; completed: boolean; skipped: boolean },
-): Promise<void> {
+): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return
-  if (!exigir(ctx, 'tour', 'tour.edit').ok) return
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'tour', 'tour.edit')
+  if (!permiso.ok) return permiso
 
   const tourId = String(formData.get('tourId') ?? '')
   const tour = TOURS.find((t) => t.id === tourId)
-  if (!tour) return
+  if (!tour) return { ok: false, error: 'Ese tutorial no existe.' }
 
   const actual = Number(formData.get('step') ?? 0)
   const { step, completed, skipped } = cambio(actual, tour.steps.length)
@@ -46,31 +56,42 @@ async function guardar(
   })
 
   revalidatePath('/tutorial')
+  return { ok: true }
+}
+
+/** Solo habla si algo fallo: el tour ya se mueve a la vista. */
+async function calladoSalvoError(r: ActionResult, accion: string): Promise<void> {
+  if (!r.ok) await anotarAviso(r, accion)
 }
 
 export async function avanzarPaso(formData: FormData): Promise<void> {
-  await guardar(formData, (actual, total) => {
+  const r = await guardar(formData, (actual, total) => {
     const siguiente = actual + 1
     return { step: Math.min(siguiente, total), completed: siguiente >= total, skipped: false }
   })
+  await calladoSalvoError(r, 'avanzarPaso')
 }
 
 export async function retrocederPaso(formData: FormData): Promise<void> {
-  await guardar(formData, (actual) => ({
+  const r = await guardar(formData, (actual) => ({
     step: Math.max(actual - 1, 0),
     completed: false,
     skipped: false,
   }))
+  await calladoSalvoError(r, 'retrocederPaso')
 }
 
 export async function saltarTour(formData: FormData): Promise<void> {
-  await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: true }))
+  const r = await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: true }))
+  await anotarAviso(r, 'saltarTour', 'Listo, saltamos el tutorial. Puedes retomarlo cuando quieras.')
 }
 
 export async function retomarTour(formData: FormData): Promise<void> {
-  await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: false }))
+  const r = await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: false }))
+  await calladoSalvoError(r, 'retomarTour')
 }
 
 export async function reiniciarTour(formData: FormData): Promise<void> {
-  await guardar(formData, () => ({ step: 0, completed: false, skipped: false }))
+  const r = await guardar(formData, () => ({ step: 0, completed: false, skipped: false }))
+  await anotarAviso(r, 'reiniciarTour', 'Listo, el tutorial empieza de nuevo.')
 }

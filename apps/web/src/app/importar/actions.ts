@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { parseCsv, validateProducts, type ImportError } from '@regb/core'
 import { asUser } from '@/lib/db'
-import { actionCtx, exigir } from '@/lib/module-page'
+import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
+import { anotarAviso } from '@/lib/aviso'
 
 /**
  * Importacion de productos desde CSV (S12) con DESHACER.
@@ -27,16 +28,25 @@ function demoDe(formData: FormData) {
   }
 }
 
-export async function importarProductos(formData: FormData): Promise<void> {
+/**
+ * Importa el CSV y devuelve CUANTAS filas entraron y cuantas se
+ * rechazaron. Antes devolvia `void` y un archivo entero mal formado se
+ * veia igual que uno perfecto: no pasaba nada en pantalla.
+ */
+async function importar(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return
-  if (!exigir(ctx, 'imports', 'imports.create').ok) return
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'imports', 'imports.create')
+  if (!permiso.ok) return permiso
   // Importar productos exige poder crear productos: el permiso del modulo
   // destino manda, no solo el de importar.
-  if (!exigir(ctx, 'products', 'products.create').ok) return
+  const pProd = exigir(ctx, 'products', 'products.create')
+  if (!pProd.ok) return pProd
 
   const file = formData.get('archivo')
-  if (!(file instanceof File) || file.size === 0) return
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: 'Elige un archivo CSV primero.' }
+  }
 
   const text = await file.text()
   const rows = parseCsv(text)
@@ -72,16 +82,29 @@ export async function importarProductos(formData: FormData): Promise<void> {
 
   revalidatePath('/importar')
   revalidatePath('/products')
+
+  // Un archivo donde NADA entro no es un exito aunque el proceso corriera:
+  // se dice como error para que nadie cierre la pantalla creyendo que
+  // subio su catalogo.
+  if (valid.length === 0) {
+    return {
+      ok: false,
+      error: `No entro ninguna fila: ${errors.length} rechazada(s). Revisa el detalle abajo.`,
+    }
+  }
+  return { ok: true }
 }
 
-export async function deshacerImportacion(formData: FormData): Promise<void> {
+async function deshacer(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return
-  if (!exigir(ctx, 'imports', 'imports.edit').ok) return
-  if (!exigir(ctx, 'products', 'products.delete').ok) return
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const pImp = exigir(ctx, 'imports', 'imports.edit')
+  if (!pImp.ok) return pImp
+  const pDel = exigir(ctx, 'products', 'products.delete')
+  if (!pDel.ok) return pDel
 
   const batchId = String(formData.get('batchId') ?? '')
-  if (!batchId) return
+  if (!batchId) return { ok: false, error: 'Falta la importacion.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     await tx`
@@ -94,4 +117,13 @@ export async function deshacerImportacion(formData: FormData): Promise<void> {
 
   revalidatePath('/importar')
   revalidatePath('/products')
+  return { ok: true }
+}
+
+// ── Envoltorios para <form action> ──────────────────────────────────────
+export async function importarProductos(fd: FormData): Promise<void> {
+  await anotarAviso(await importar(fd), 'importarProductos', 'Listo, importamos el archivo.')
+}
+export async function deshacerImportacion(fd: FormData): Promise<void> {
+  await anotarAviso(await deshacer(fd), 'deshacerImportacion', 'Listo, deshicimos esa importacion.')
 }

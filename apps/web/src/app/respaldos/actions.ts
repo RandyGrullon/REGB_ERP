@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
 import { actionCtx, exigir } from '@/lib/module-page'
+import { anotarAviso } from '@/lib/aviso'
 
 /**
  * Respaldos (S11): un snapshot JSON de los datos del tenant, hecho bajo
@@ -22,8 +23,15 @@ export async function crearRespaldo(formData: FormData): Promise<void> {
     tenant: String(formData.get('tenant') ?? '') || undefined,
     rol: String(formData.get('rol') ?? '') || undefined,
   })
-  if (!ctx) return
-  if (!exigir(ctx, 'backup', 'backup.create').ok) return
+  if (!ctx) {
+    await anotarAviso({ ok: false, error: 'Sesion no valida.' }, 'crearRespaldo')
+    return
+  }
+  const permiso = exigir(ctx, 'backup', 'backup.create')
+  if (!permiso.ok) {
+    await anotarAviso(permiso, 'crearRespaldo')
+    return
+  }
 
   await asUser(ctx.userId, ctx.tenantId, (tx) => {
     return tx`
@@ -53,4 +61,5 @@ export async function crearRespaldo(formData: FormData): Promise<void> {
   })
 
   revalidatePath('/respaldos')
+  await anotarAviso({ ok: true }, 'crearRespaldo', 'Listo, creamos el respaldo.')
 }

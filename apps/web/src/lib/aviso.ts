@@ -61,9 +61,18 @@ export function textoDeExito(accion: string): string {
  * Devuelve el mismo resultado que recibe para poder encadenarlo sin
  * cambiar el flujo de quien llama.
  */
-export async function anotarAviso(r: ActionResult, accion: string): Promise<ActionResult> {
+export async function anotarAviso(
+  r: ActionResult,
+  accion: string,
+  /**
+   * Texto exacto para cuando el verbo deducido queda mal. Ej.: "enviar a
+   * la papelera" empieza por "enviar" y saldria como "quedo hecho", que
+   * no le dice al usuario que su archivo se fue a la papelera.
+   */
+  texto?: string,
+): Promise<ActionResult> {
   const aviso: Aviso = r.ok
-    ? { tipo: 'ok', texto: textoDeExito(accion) }
+    ? { tipo: 'ok', texto: texto ?? textoDeExito(accion) }
     : { tipo: 'error', texto: r.error }
 
   const jar = await cookies()
