@@ -307,7 +307,12 @@ export function problemasDelCertificado(
     })
   }
 
-  if (rncEsperado != null && rncEsperado !== '' && datos.documentoIdentidad !== null) {
+  if (
+    rncEsperado !== null &&
+    rncEsperado !== undefined &&
+    rncEsperado !== '' &&
+    datos.documentoIdentidad !== null
+  ) {
     const esperado = rncEsperado.replace(/\D/g, '')
     if (esperado !== '' && datos.documentoIdentidad !== esperado) {
       problemas.push({
