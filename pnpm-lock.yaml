@@ -130,6 +130,9 @@ importers:
       '@regb/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@regb/ecf-firma':
+        specifier: workspace:*
+        version: link:../../packages/ecf-firma
       '@regb/mod-accounting':
         specifier: workspace:*
         version: link:../../modules/accounting

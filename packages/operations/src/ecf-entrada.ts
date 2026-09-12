@@ -183,3 +183,105 @@ export function urlsParaDeclarar(base: string, token: string): UrlsDeclaradas {
     autenticacion: `${raiz}/api/ecf/${token}/autenticacion`,
   }
 }
+
+// ── El acuse, como XML ───────────────────────────────────────────────────
+
+/**
+ * Lo que se extrae de un e-CF que entra.
+ *
+ * Se leen SOLO los campos que hacen falta para decidir el acuse y
+ * guardarlo. No se interpreta el documento entero: lo que llega se
+ * archiva tal cual y lo demas se lee cuando alguien lo necesite. Menos
+ * codigo que mantener contra un esquema de 235 elementos que cambia.
+ */
+export interface EcfEntrante {
+  encf: string | null
+  rncEmisor: string | null
+  rncComprador: string | null
+  montoTotal: number | null
+}
+
+/**
+ * El contenido de una etiqueta, buscando por texto y NO con un regex
+ * construido al vuelo.
+ *
+ * Se hace asi por una razon concreta y ya vivida DOS veces en este
+ * repo: una barra invertida dentro de una plantilla de JavaScript se
+ * pierde antes de llegar a donde importa. `new RegExp(`<\w+:?...`)`
+ * escrito con una sola barra deja de buscar `\w` y busca la letra "w",
+ * y el patron nunca casa. Paso antes con el `'\D'` de la consulta del
+ * RNC en la ruta del 607 -que hacia rebotar el archivo entero- y volvio
+ * a pasar aqui, donde dejaba TODOS los campos del e-CF entrante en nulo
+ * y contestaba "error de especificacion" a documentos perfectos.
+ *
+ * Buscando por indices no hay barras que perder. Ademas tolera el
+ * prefijo de espacio de nombres (`ns:eNCF`), que un emisor puede usar.
+ */
+function etiquetaDe(xml: string, nombre: string): string | null {
+  const cierre = `</${nombre}>`
+  const fin = xml.indexOf(cierre)
+  if (fin === -1) return null
+
+  // El inicio es la ultima apertura antes del cierre: asi un `<ns:eNCF>`
+  // se encuentra igual que un `<eNCF>`.
+  const abre = xml.lastIndexOf(`${nombre}>`, fin - 1)
+  if (abre === -1 || abre >= fin) return null
+  const desde = abre + nombre.length + 1
+
+  const v = xml.slice(desde, fin).trim()
+  return v === '' ? null : v
+}
+
+export function leerEcfEntrante(xml: string): EcfEntrante {
+  const monto = etiquetaDe(xml, 'MontoTotal')
+  const n = monto === null ? NaN : Number(monto)
+  return {
+    encf: etiquetaDe(xml, 'eNCF'),
+    rncEmisor: etiquetaDe(xml, 'RNCEmisor'),
+    rncComprador: etiquetaDe(xml, 'RNCComprador'),
+    montoTotal: Number.isFinite(n) ? n : null,
+  }
+}
+
+export interface DatosAcuse {
+  rncEmisor: string
+  rncComprador: string
+  encf: string
+  /** DD-MM-AAAA HH:mm:ss */
+  fechaHora: string
+}
+
+/**
+ * El XML del acuse de recibo (ARECF), contra el esquema oficial.
+ *
+ * El orden es el del XSD -`xs:sequence` es ordenado- y
+ * `CodigoMotivoNoRecibido` va DESPUES de `Estado` y solo cuando no se
+ * recibio: emitirlo siempre invalida el documento.
+ *
+ * Un detalle util de los esquemas del acuse: el e-NCF admite 13, 11 o 9
+ * caracteres, no solo los 13 del e-CF. Es asi porque tambien se acusan
+ * referencias a comprobantes de papel.
+ */
+export function xmlAcuse(d: DatosAcuse, acuse: Acuse): string {
+  const esc = (v: string) =>
+    v.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<ARECF>',
+    '<DetalleAcusedeRecibo>',
+    '<Version>1.0</Version>',
+    `<RNCEmisor>${esc(d.rncEmisor)}</RNCEmisor>`,
+    `<RNCComprador>${esc(d.rncComprador)}</RNCComprador>`,
+    `<eNCF>${esc(d.encf)}</eNCF>`,
+    `<Estado>${acuse.estado}</Estado>`,
+    acuse.codigoMotivo === undefined
+      ? ''
+      : `<CodigoMotivoNoRecibido>${acuse.codigoMotivo}</CodigoMotivoNoRecibido>`,
+    `<FechaHoraAcuseRecibo>${esc(d.fechaHora)}</FechaHoraAcuseRecibo>`,
+    '</DetalleAcusedeRecibo>',
+    '</ARECF>',
+  ]
+    .filter((x) => x !== '')
+    .join('')
+}
