@@ -818,3 +818,40 @@ literalmente— y no toca el documento.
   para Procedimiento Tributario, de **persona física** (Ley 126-02).
 - Que la DGII acepte esta firma. Nuestra verificación es consistente
   consigo misma y con el estándar; la de ellos es la que cuenta.
+
+---
+
+## 12. Transporte construido (2026-09-11)
+
+`@regb/ecf-firma` incluye ahora el cliente: autenticación semilla→token,
+envío y consulta de resultado. 38 pruebas contra un `fetch` inyectado —
+sin red y sin certificado.
+
+**Las cuatro cosas que rompen la primera integración, ya resueltas en
+código:**
+
+1. El envío es **`multipart/form-data` con un campo `xml`**, no un POST
+   con el XML en el cuerpo.
+2. Las facturas de consumo por debajo de RD$250,000 van a **otro
+   dominio** (`fc.dgii.gov.do`). Hay dos funciones de URL, no una, para
+   que no se pueda confundir por descuido.
+3. La autenticación es **en dos pasos con firma**: se pide una semilla,
+   se firma, se cambia por un token. No hay usuario y contraseña.
+4. El POST de envío **no dice aceptado ni rechazado**: devuelve un
+   `trackId`. El veredicto se consulta después.
+
+**Un defecto que encontró una prueba:** con una respuesta que no era
+JSON, el cliente reportaba "respuesta ilegible" y **perdía el código
+HTTP**. Un 503 con una página de error delante quedaba indistinguible de
+un cuerpo corrupto, escondiendo lo único accionable: que el servicio
+está caído. Ahora el código HTTP manda cuando la llamada falla, y el
+motivo de la DGII se conserva al lado si lo hubo.
+
+**El token se cachea** y se descuenta un margen de 60 s a su vigencia:
+uno que expira en diez segundos ya no sirve, porque entre pedirlo y que
+la DGII procese el envío pasa tiempo. La duración (1 hora) **no se
+codifica**: sale de la respuesta, porque el propio documento la da como
+provisional.
+
+⚠️ **Ninguna llamada se ha hecho contra un servidor real.** Hace falta el
+certificado de persona física para dar el primer paso.

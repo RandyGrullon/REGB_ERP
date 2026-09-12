@@ -187,3 +187,8 @@ export function codigoSeguridadDe(xmlFirmado: string): string | null {
   const limpio = m[2].replace(/\s+/g, '')
   return limpio.length < 6 ? null : limpio.slice(0, 6)
 }
+
+// El transporte vive aparte pero se exporta desde aqui: firma y envio
+// son el mismo trabajo -hablarle a la DGII con el certificado del
+// contribuyente- y separarlos en dos importaciones no compra nada.
+export * from './transporte.js'

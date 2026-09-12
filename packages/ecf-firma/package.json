@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Firma digital del e-CF: XMLDSig envolvente con RSA-SHA256, como la exige la DGII. Necesita Node -no es logica pura-.",
+  "description": "Cliente e-CF de la DGII: firma XMLDSig RSA-SHA256, autenticacion semilla-token, envio y consulta. Necesita Node -no es logica pura-.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
