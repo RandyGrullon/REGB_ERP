@@ -7,7 +7,7 @@ import {
   tokenValido,
   xmlAcuse,
 } from '@regb/operations'
-import { verificarFirmaEcf } from '@regb/ecf-firma'
+import { problemasDelCertificado, verificarFirmaEcf } from '@regb/ecf-firma'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
@@ -188,13 +188,34 @@ async function recibir(ruta: Ruta, xmlEntrante: string): Promise<NextResponse> {
     select id from public.ecf_recibidos
     where tenant_id = ${ruta.tenant_id} and rnc_emisor = ${datos.rncEmisor} and encf = ${datos.encf}`
 
-  // El certificado viaja DENTRO del documento, en X509Data. Se verifica
-  // la firma contra el: sirve para detectar que el documento se toco
-  // despues de firmarlo. NO prueba quien firmo -para eso haria falta
-  // validar la cadena del certificado contra las autoridades
-  // dominicanas, que es trabajo pendiente y esta anotado como tal-.
+  // El certificado viaja DENTRO del documento, en X509Data.
+  //
+  // Verificar la firma contra ese certificado prueba que el documento NO
+  // SE TOCO despues de firmarse. Eso es TODO lo que prueba: cualquiera
+  // se genera un autofirmado en diez segundos, firma con el, y la
+  // verificacion da true. La firma es integridad, no identidad —
+  // confundirlas es leer como resuelto algo que no lo esta.
+  //
+  // Por eso ademas se mira el certificado en si: vigencia, si lo
+  // respalda alguien, y si la identidad que declara es la del emisor que
+  // dice ser el documento. Esto ultimo cierra el caso de un
+  // contribuyente con certificado LEGITIMO firmando facturas en nombre
+  // de otro.
+  //
+  // Cuanto se exige depende del ambiente del tenant: en los de prueba de
+  // la DGII circulan autofirmados y rechazarlos impediria certificarse.
   const cert = certificadoDelDocumento(xmlEntrante)
-  const firmaValida = cert !== null && verificarFirmaEcf(xmlEntrante, cert)
+  const problemas =
+    cert === null
+      ? [{ codigo: 'ilegible' as const, detalle: 'sin certificado' }]
+      : problemasDelCertificado(cert, {
+          ahora: new Date(),
+          nivel: ruta.ambiente === 'ecf' ? 'produccion' : 'pruebas',
+          rncEsperado: datos.rncEmisor,
+        })
+
+  const firmaValida =
+    cert !== null && problemas.length === 0 && verificarFirmaEcf(xmlEntrante, cert)
 
   const acuse = decidirAcuse({
     xmlValido: true,

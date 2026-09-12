@@ -9,6 +9,8 @@ import {
   codigoSeguridadDe,
   elementosVacios,
   firmarEcf,
+  inspeccionarCertificado,
+  problemasDelCertificado,
   verificarFirmaEcf,
 } from './index.js'
 
@@ -135,5 +137,74 @@ describe('El codigo de seguridad', () => {
 
   it('sin firma no hay codigo: el QR no existe hasta firmar', () => {
     expect(codigoSeguridadDe(DOC)).toBeNull()
+  })
+})
+
+describe('La firma prueba INTEGRIDAD, no identidad', () => {
+  /**
+   * Un instante DENTRO de la vigencia del certificado de prueba.
+   *
+   * No se fija una fecha a mano: el certificado se genera al correr las
+   * pruebas, asi que cualquier fecha escrita queda fuera de su ventana
+   * segun la hora del dia. Se saca de su propia vigencia.
+   */
+  const dentroDeVigencia = () => {
+    const d = inspeccionarCertificado(certificado)!
+    return new Date((d.validoDesde.getTime() + d.validoHasta.getTime()) / 2)
+  }
+
+  it('un autofirmado da firma valida: por eso hace falta mirar el certificado', () => {
+    // Este es el hallazgo. `verificarFirmaEcf` dice true porque el
+    // documento no se toco -y eso es cierto-. Lo que no dice es quien
+    // firmo: el certificado se lo hizo el propio firmante.
+    const firmado = firmarEcf(DOC, { clavePrivada, certificado })
+    expect(verificarFirmaEcf(firmado, certificado)).toBe(true)
+    expect(inspeccionarCertificado(certificado)?.autofirmado).toBe(true)
+  })
+
+  it('en PRODUCCION un autofirmado no pasa', () => {
+    const p = problemasDelCertificado(certificado, { ahora: dentroDeVigencia(), nivel: 'produccion' })
+    expect(p.map((x) => x.codigo)).toContain('autofirmado')
+  })
+
+  it('en los ambientes de prueba SI se tolera', () => {
+    // En testecf y certecf circulan autofirmados; rechazarlos impediria
+    // certificarse, que es justo el paso que hay que dar.
+    expect(problemasDelCertificado(certificado, { ahora: dentroDeVigencia(), nivel: 'pruebas' })).toEqual([])
+  })
+
+  it('un certificado vencido no pasa en ningun ambiente', () => {
+    const p = problemasDelCertificado(certificado, {
+      ahora: new Date('2030-01-01T00:00:00Z'),
+      nivel: 'pruebas',
+    })
+    expect(p.map((x) => x.codigo)).toContain('vencido')
+  })
+
+  it('uno que aun no empieza tampoco', () => {
+    const p = problemasDelCertificado(certificado, {
+      ahora: new Date('2020-01-01T00:00:00Z'),
+      nivel: 'pruebas',
+    })
+    expect(p.map((x) => x.codigo)).toContain('aun-no-valido')
+  })
+
+  it('basura devuelve "ilegible", no explota', () => {
+    expect(inspeccionarCertificado('no soy un certificado')).toBeNull()
+    expect(
+      problemasDelCertificado('x', { ahora: dentroDeVigencia(), nivel: 'pruebas' }).map((p) => p.codigo),
+    ).toEqual(['ilegible'])
+  })
+
+  it('sin identidad en el certificado no se inventa una coincidencia', () => {
+    // El de prueba no lleva cedula en el asunto: no se puede comprobar
+    // contra quien, y afirmar que coincide seria mentir.
+    expect(inspeccionarCertificado(certificado)?.documentoIdentidad).toBeNull()
+    const p = problemasDelCertificado(certificado, {
+      ahora: dentroDeVigencia(),
+      nivel: 'pruebas',
+      rncEsperado: '131223345',
+    })
+    expect(p.map((x) => x.codigo)).not.toContain('identidad-no-coincide')
   })
 })

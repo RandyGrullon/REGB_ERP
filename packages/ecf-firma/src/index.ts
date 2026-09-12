@@ -35,6 +35,7 @@
  * tiene nada que hacer dentro de esta funcion.
  */
 
+import { X509Certificate } from 'node:crypto'
 import { SignedXml } from 'xml-crypto'
 
 /** Los algoritmos que la DGII fija. No son configurables a proposito. */
@@ -192,3 +193,129 @@ export function codigoSeguridadDe(xmlFirmado: string): string | null {
 // son el mismo trabajo -hablarle a la DGII con el certificado del
 // contribuyente- y separarlos en dos importaciones no compra nada.
 export * from './transporte.js'
+
+// ── El certificado: quien firmo, y si se le puede creer ──────────────────
+
+/**
+ * Lo que se puede saber de un certificado sin salir a internet.
+ *
+ * ── Por que existe ────────────────────────────────────────────────────
+ *
+ * `verificarFirmaEcf()` comprueba que el documento NO SE TOCO despues de
+ * firmarse. Eso es todo lo que comprueba. Como el certificado viaja
+ * dentro del propio documento, cualquiera puede generarse uno
+ * autofirmado en diez segundos, firmar con el, y la verificacion da
+ * `true`.
+ *
+ * O sea: la firma prueba integridad, NO identidad. Lo encontro una
+ * revision y es exactamente el tipo de cosa que se lee como resuelta
+ * porque "la firma verifica".
+ *
+ * Aqui se saca lo que hace falta para decidir si a ese firmante se le
+ * cree: si esta vigente, si es autofirmado, y que RNC dice ser.
+ */
+export interface DatosCertificado {
+  asunto: string
+  emisor: string
+  validoDesde: Date
+  validoHasta: Date
+  /** El emisor es el mismo asunto: nadie lo respalda. */
+  autofirmado: boolean
+  /**
+   * RNC o cedula que aparece en el asunto del certificado.
+   *
+   * Un certificado de e-CF dominicano es de PERSONA FISICA (Ley 126-02)
+   * y lleva su cedula. `null` si no se encuentra ninguno.
+   */
+  documentoIdentidad: string | null
+}
+
+export function inspeccionarCertificado(pem: string): DatosCertificado | null {
+  try {
+    const c = new X509Certificate(pem)
+
+    // El RNC (9) o la cedula (11) van entre los campos del asunto, sin
+    // un sitio fijo: unos emisores lo ponen en `serialNumber`, otros
+    // dentro del nombre comun. Se busca la secuencia de digitos.
+    const digitos = /(?:^|[^0-9])(\d{11}|\d{9})(?:[^0-9]|$)/.exec(c.subject.replace(/-/g, ''))
+
+    return {
+      asunto: c.subject,
+      emisor: c.issuer,
+      validoDesde: new Date(c.validFrom),
+      validoHasta: new Date(c.validTo),
+      autofirmado: c.issuer === c.subject,
+      documentoIdentidad: digitos?.[1] ?? null,
+    }
+  } catch {
+    return null
+  }
+}
+
+export type NivelConfianza = 'produccion' | 'pruebas'
+
+export interface ProblemaCertificado {
+  codigo: 'ilegible' | 'vencido' | 'aun-no-valido' | 'autofirmado' | 'identidad-no-coincide'
+  detalle: string
+}
+
+/**
+ * Si a este certificado se le puede creer para ESTE emisor.
+ *
+ * `nivel` decide cuanto se exige, y sale del ambiente que ya tiene cada
+ * tenant: en produccion un autofirmado no vale nada; en los ambientes de
+ * prueba de la DGII si circulan, y rechazarlos impediria certificarse.
+ *
+ * `rncEsperado` ata el certificado al documento. Sin esta comprobacion,
+ * un contribuyente con certificado legitimo puede firmar facturas
+ * diciendo ser OTRO -su firma verifica, su certificado es bueno, y el
+ * RNC del documento no es el suyo-.
+ *
+ * Se devuelve la lista de problemas y no un booleano: quien llama
+ * necesita poder decir cual fue, y un acuse con el motivo equivocado no
+ * le sirve a nadie.
+ */
+export function problemasDelCertificado(
+  pem: string,
+  opciones: { ahora: Date; nivel: NivelConfianza; rncEsperado?: string | null },
+): ProblemaCertificado[] {
+  const datos = inspeccionarCertificado(pem)
+  if (datos === null) {
+    return [{ codigo: 'ilegible', detalle: 'El certificado no se pudo interpretar.' }]
+  }
+
+  const problemas: ProblemaCertificado[] = []
+  const { ahora, nivel, rncEsperado } = opciones
+
+  if (ahora > datos.validoHasta) {
+    problemas.push({
+      codigo: 'vencido',
+      detalle: `El certificado vencio el ${datos.validoHasta.toISOString().slice(0, 10)}.`,
+    })
+  }
+  if (ahora < datos.validoDesde) {
+    problemas.push({
+      codigo: 'aun-no-valido',
+      detalle: `El certificado no es valido hasta el ${datos.validoDesde.toISOString().slice(0, 10)}.`,
+    })
+  }
+
+  if (nivel === 'produccion' && datos.autofirmado) {
+    problemas.push({
+      codigo: 'autofirmado',
+      detalle: 'El certificado se firmo a si mismo: no lo respalda ninguna entidad certificadora.',
+    })
+  }
+
+  if (rncEsperado != null && rncEsperado !== '' && datos.documentoIdentidad !== null) {
+    const esperado = rncEsperado.replace(/\D/g, '')
+    if (esperado !== '' && datos.documentoIdentidad !== esperado) {
+      problemas.push({
+        codigo: 'identidad-no-coincide',
+        detalle: `El certificado es de ${datos.documentoIdentidad} y el documento dice venir de ${esperado}.`,
+      })
+    }
+  }
+
+  return problemas
+}
