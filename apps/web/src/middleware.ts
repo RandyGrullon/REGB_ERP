@@ -12,7 +12,20 @@ import { NextResponse, type NextRequest } from 'next/server'
  * Si no hay Supabase configurado (modo demostracion local), no estorba.
  */
 
-const PUBLICAS = ['/login', '/auth', '/sin-acceso']
+const PUBLICAS = [
+  '/login',
+  '/auth',
+  '/sin-acceso',
+  // Las URL que el contribuyente declara a la DGII. NO llevan sesion de
+  // empleado por definicion: la DGII y otros emisores les pegan desde
+  // internet, y su credencial es el token opaco de la propia URL.
+  //
+  // Sin esta linea el middleware las contestaba con un redirect a /login
+  // en cuanto Supabase esta configurado, o sea que en PRODUCCION estaban
+  // MUERTAS -y en desarrollo funcionaban, porque sin Supabase el
+  // middleware se aparta-. Un fallo que solo aparece donde importa.
+  '/api/ecf/',
+]
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL

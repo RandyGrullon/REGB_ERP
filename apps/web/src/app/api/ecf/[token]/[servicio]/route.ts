@@ -209,6 +209,21 @@ function certificadoDelDocumento(xmlFirmado: string): string | null {
  * Aprobacion comercial: alguien acepta o rechaza un e-CF que NOSOTROS
  * emitimos. Es del negocio, no del formato.
  *
+ * ── Lo que esta funcion hacia mal, y encontro una revision ────────────
+ *
+ * Escribia el resultado en `ecf_emitidos.estado` -la columna del
+ * veredicto FISCAL de la DGII, 0 a 4- usando los valores 1 y 2 de la
+ * aprobacion comercial. Dos semanticas en una columna, y ambas con los
+ * mismos numeros: un 2 ahi hacia que `esValidoFiscalmente()` devolviera
+ * false para una factura que la DGII habia ACEPTADO.
+ *
+ * Y no verificaba nada del remitente: ni firma, ni de quien venia. La
+ * aprobacion comercial (ACECF) es un documento FIRMADO; aqui solo se
+ * sacaban dos regex.
+ *
+ * Ahora: columna propia (0102), firma obligatoria, y el documento tiene
+ * que decir que el emisor somos nosotros.
+ *
  * `Estado` aqui es 1 aceptado y 2 rechazado -otra numeracion distinta de
  * las otras dos del mismo formato-.
  */
@@ -216,21 +231,58 @@ async function aprobar(ruta: Ruta, xmlEntrante: string): Promise<NextResponse> {
   const datos = leerEcfEntrante(xmlEntrante)
   const estado = /<(?:\w+:)?Estado>\s*([12])\s*<\/(?:\w+:)?Estado>/.exec(xmlEntrante)?.[1]
 
-  if (datos.encf === null || estado === undefined) {
-    return NextResponse.json({ error: 'Aprobacion sin e-NCF o sin estado.' }, { status: 400 })
+  // Una sola respuesta para TODO lo que no prospera.
+  //
+  // Antes se distinguia 200 de 404 segun el e-NCF existiera, y como el
+  // e-NCF es correlativo eso convertia la ruta en un enumerador: pidiendo
+  // E32...0001 en adelante se aprendia cuantas facturas lleva emitidas el
+  // cliente. Ahora quien no acierta no se entera de por que.
+  const sinNovedad = () => NextResponse.json({ recibido: true })
+
+  if (datos.encf === null || estado === undefined) return sinNovedad()
+
+  // La aprobacion comercial es un documento firmado. Sin firma valida no
+  // se toca nada: cualquiera podria rechazarle las facturas a un cliente.
+  const cert = certificadoDelDocumento(xmlEntrante)
+  if (cert === null || !verificarFirmaEcf(xmlEntrante, cert)) return sinNovedad()
+
+  // El ACECF nombra al emisor del comprobante que aprueba. Ese emisor
+  // somos nosotros: si el documento dice otro RNC, no es para esta
+  // cuenta. Es la misma comprobacion que ya hacia `recibir()` con el
+  // comprador, aplicada al otro lado.
+  if (
+    datos.rncEmisor === null ||
+    !esParaEsteTenant(datos.rncEmisor, { tenantId: ruta.tenant_id, rncTenant: ruta.rnc })
+  ) {
+    return sinNovedad()
   }
 
-  const r = await db()`
+  const motivo = etiquetaSuelta(xmlEntrante, 'DetalleMotivoRechazo')
+
+  // Se escribe en la columna de la aprobacion COMERCIAL, nunca en la del
+  // estado fiscal. Y solo si no habia decision previa: la primera manda,
+  // para que nadie la cambie despues mandando otro documento.
+  await db()`
     update public.ecf_emitidos
-    set estado = ${estado === '1' ? 1 : 2}, updated_at = now()
-    where tenant_id = ${ruta.tenant_id} and encf = ${datos.encf}`
+    set aprobacion_comercial = ${estado === '1' ? 'aceptado' : 'rechazado'},
+        aprobado_en          = now(),
+        motivo_rechazo       = ${estado === '1' ? null : motivo},
+        updated_at           = now()
+    where tenant_id = ${ruta.tenant_id}
+      and encf = ${datos.encf}
+      and aprobacion_comercial is null`
 
-  // Una aprobacion de un e-CF que no emitimos no es nuestra: no se
-  // guarda y no se inventa una fila.
-  if (r.count === 0) {
-    return NextResponse.json({ error: 'Ese e-NCF no es de este emisor.' }, { status: 404 })
-  }
-  return NextResponse.json({ recibido: true })
+  return sinNovedad()
+}
+
+/** Una etiqueta suelta del documento, sin construir regex al vuelo. */
+function etiquetaSuelta(xml: string, nombre: string): string | null {
+  const fin = xml.indexOf(`</${nombre}>`)
+  if (fin === -1) return null
+  const abre = xml.lastIndexOf(`${nombre}>`, fin - 1)
+  if (abre === -1 || abre >= fin) return null
+  const v = xml.slice(abre + nombre.length + 1, fin).trim()
+  return v === '' ? null : v
 }
 
 /**
