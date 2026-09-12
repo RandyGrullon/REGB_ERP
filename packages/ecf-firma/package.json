@@ -1,0 +1,26 @@
+{
+  "name": "@regb/ecf-firma",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Firma digital del e-CF: XMLDSig envolvente con RSA-SHA256, como la exige la DGII. Necesita Node -no es logica pura-.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "xml-crypto": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

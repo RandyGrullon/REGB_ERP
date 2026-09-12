@@ -157,8 +157,23 @@ describe('El XML del e-CF 32', () => {
     expect(xml.indexOf('<FechaHoraFirma>')).toBeGreaterThan(xml.indexOf('</DetallesItems>'))
   })
 
-  it('Comprador se emite aunque vaya vacio -el XSD lo pide 1..1-', () => {
-    expect(xml).toContain('<Comprador></Comprador>')
+  it('Comprador NUNCA sale vacio: un elemento vacio rompe la firma', () => {
+    // El XSD lo pide 1..1 pero todos sus hijos son opcionales, asi que en
+    // una venta de mostrador quedaria vacio. Y al firmar, un elemento
+    // vacio hace que el digest se calcule sobre `<a/>` mientras quien
+    // verifica canonicaliza `<a></a>`: la firma no valida. Ver
+    // `elementosVacios()` en @regb/ecf-firma.
+    expect(xml).not.toContain('<Comprador></Comprador>')
+    expect(xml).toContain('<Comprador><RazonSocialComprador>CONSUMIDOR FINAL</RazonSocialComprador></Comprador>')
+  })
+
+  it('con comprador identificado sale su razon social, no el generico', () => {
+    const conCliente = xmlEcfConsumo({
+      ...BASE,
+      comprador: { rnc: '130111111', razonSocial: 'Ferreteria El Martillo SRL' },
+    })
+    expect(conCliente).toContain('<RNCComprador>130111111</RNCComprador>')
+    expect(conCliente).toContain('<RazonSocialComprador>Ferreteria El Martillo SRL</RazonSocialComprador>')
   })
 
   it('un campo opcional sin valor NO se emite vacio', () => {

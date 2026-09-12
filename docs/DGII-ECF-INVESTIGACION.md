@@ -763,3 +763,58 @@ abreviado.
 
 El XSD quedó versionado en `supabase/xsd/` para que la validación no
 dependa de que dgii.gov.do esté arriba.
+
+---
+
+## 11. La firma, construida y verificada (2026-09-11)
+
+`@regb/ecf-firma` firma un e-CF con XMLDSig envolvente, RSA-SHA256 y C14N,
+como exige el instructivo. Probado con un certificado **autofirmado**
+generado al vuelo: no sirve para la DGII, pero prueba lo único que se
+puede probar sin uno real.
+
+**Tres verificaciones independientes, las tres en verde:**
+
+1. El `DigestValue` recalculado con `lxml` (otra implementación, otro
+   lenguaje) coincide con el declarado.
+2. La firma verifica con `xml-crypto`.
+3. El documento firmado **valida contra el XSD oficial**.
+
+### 11.1 Dos trampas de `xml-crypto` que habrían llegado hasta producción
+
+Ninguna da error al firmar. Las dos producen un documento que se ve
+perfecto y que la DGII rechazaría.
+
+**a) Los elementos vacíos rompen la firma.** `xml-crypto` calcula el
+digest sobre su propia serialización, que escribe los elementos vacíos
+auto-cerrados (`<a/>`). El C14N del W3C dice lo contrario: un elemento
+vacío **siempre** se canonicaliza como `<a></a>`. Comprobado midiendo los
+dos hashes:
+
+```
+declarado:                DPZUpvVfVAOC+ApWq/4di3BjyPqSBFKE5xw0dBkLi/Q=
+C14N correcto (<a></a>):  2o6Ha45GnMvVy884yOJEznzDIlHHfxSsb9EvGwiWse4=
+auto-cerrado (<a/>):      DPZUpvVfVAOC+ApWq/4di3BjyPqSBFKE5xw0dBkLi/Q=  <<< este
+```
+
+**No es teórico:** el esquema exige `<Comprador>` (1..1) y en una venta de
+mostrador a consumidor final no hay nada que poner dentro. O sea que el
+caso más común de una PYME dominicana es justo el que rompía.
+
+Dos defensas: el generador escribe `CONSUMIDOR FINAL` en
+`RazonSocialComprador` —lo que ya dice cualquier factura de consumo en
+papel— y el firmador **se niega a firmar** un documento con elementos
+vacíos, nombrándolos.
+
+**b) `uri: ''` no es lo mismo que `isEmptyUri`.** Con el primero,
+`xml-crypto` le añade un atributo `Id="_0"` a la raíz para poder
+apuntarle, y el XSD **no admite un `Id` en `<ECF>`**: el documento deja de
+validar. Con `isEmptyUri: true` emite `URI=""` —lo que la DGII exige
+literalmente— y no toca el documento.
+
+### 11.2 Lo que sigue sin poder probarse
+
+- **Firmar con un certificado real.** Hace falta un Certificado Digital
+  para Procedimiento Tributario, de **persona física** (Ley 126-02).
+- Que la DGII acepte esta firma. Nuestra verificación es consistente
+  consigo misma y con el estándar; la de ellos es la que cuenta.

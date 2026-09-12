@@ -191,9 +191,17 @@ function opcional(nombre: string, valor: string | number | null | undefined): st
  * que se serializa: la forma del codigo hace visible el orden que la
  * norma exige, y un cambio accidental salta en la lectura.
  *
- * `Comprador` se emite aunque vaya vacio porque el XSD lo pide (1..1)
- * aunque todos sus hijos sean opcionales: en una venta de mostrador no
- * hay a quien identificar, pero la etiqueta tiene que estar.
+ * `Comprador` es obligatorio (1..1) aunque TODOS sus hijos sean
+ * opcionales, asi que en una venta de mostrador se quedaria VACIO. Y un
+ * elemento vacio en un e-CF es una trampa seria: al firmar, el digest
+ * se calcula sobre la forma auto-cerrada `<a/>` mientras que quien
+ * verifica canonicaliza `<a></a>`, y la firma NO valida. Comprobado; ver
+ * `elementosVacios()` en `@regb/ecf-firma`.
+ *
+ * Por eso, sin comprador identificado se escribe "CONSUMIDOR FINAL" en
+ * `RazonSocialComprador` -que es lo que ya dice cualquier factura de
+ * consumo dominicana en papel-. Cumple el esquema, dice la verdad, y
+ * quita la trampa.
  */
 export function xmlEcfConsumo(d: EcfConsumo): string {
   if (!/^[a-zA-Z0-9]{13}$/.test(d.encf)) {
@@ -249,7 +257,7 @@ export function xmlEcfConsumo(d: EcfConsumo): string {
     '</Emisor>',
     '<Comprador>',
     opcional('RNCComprador', d.comprador?.rnc ?? null),
-    opcional('RazonSocialComprador', d.comprador?.razonSocial ?? null),
+    etiqueta('RazonSocialComprador', d.comprador?.razonSocial ?? 'CONSUMIDOR FINAL'),
     '</Comprador>',
     '<Totales>',
     opcional('MontoGravadoTotal', d.totales.montoGravadoTotal === undefined ? null : montoEcf(d.totales.montoGravadoTotal)),
