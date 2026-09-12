@@ -855,3 +855,47 @@ provisional.
 
 ⚠️ **Ninguna llamada se ha hecho contra un servidor real.** Hace falta el
 certificado de persona física para dar el primer paso.
+
+---
+
+## 13. El resumen (RFCE) construido — y un defecto en el XSD de la DGII
+
+### 13.1 El atajo que no existe
+
+El resumen **no reemplaza** al e-CF completo: lo resume. Lleva un campo
+`CodigoSeguridadeCF` que son los 6 caracteres del `SignatureValue` **del
+documento completo**. Así que para mandar el resumen hay que:
+
+1. armar el e-CF completo,
+2. **firmarlo** — de ahí sale el código,
+3. conservarlo (la norma obliga),
+4. armar el resumen con ese código dentro,
+5. **firmar también el resumen**,
+6. mandar el resumen a `fc.dgii.gov.do`.
+
+Lo natural sería pensar *"factura chica, armo solo el resumen"* y es
+**imposible**: sin el documento completo firmado no existe el código que
+el resumen exige. Dado que este es el camino principal de una PYME, es
+una restricción que cambia el diseño y no una nota al pie.
+
+Lo que el resumen NO lleva: `DetallesItems`, ni una línea. Tampoco la
+dirección ni el teléfono del emisor. Pesa ~85% de lo que pesa el
+completo en el ejemplo probado.
+
+### 13.2 El `RFCE 32 v.1.0.xsd` publicado NO COMPILA
+
+Verificado con `lxml`. El archivo trae patrones que la especificación de
+XML Schema no admite, así que **ningún validador conforme puede
+cargarlo**:
+
+| Defecto | En el RFCE | En el e-CF 32 (correcto) |
+|---|---|---|
+| Grupo sin captura | `(?:19\|20)` ×4 — XSD no los soporta | `((19\|20)` |
+| Clase de caracteres | `[12][$0-9]` — `$` colado | `[12][0-9]` |
+
+`scripts/validar-ecf-xsd.py` los corrige **en memoria** y avisa cuando lo
+hace. El archivo en `supabase/xsd/` se deja tal como lo publica la DGII:
+es la fuente, y falsearla escondería el problema.
+
+Con esa corrección mínima, nuestro resumen firmado **valida**, y su firma
+verifica con lxml de forma independiente.

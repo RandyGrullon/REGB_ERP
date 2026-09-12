@@ -301,3 +301,109 @@ export function vaPorResumen(montoTotal: number): boolean {
 export function estaFirmado(xml: string): boolean {
   return /<(\w+:)?Signature[\s>]/.test(xml)
 }
+
+// ── El resumen (RFCE), que es el camino PRINCIPAL de una PYME ────────────
+
+/**
+ * Resumen de Factura de Consumo, para las de menos de RD$250,000.
+ *
+ * ── La consecuencia que no es obvia ───────────────────────────────────
+ *
+ * El resumen NO reemplaza al e-CF completo: lo RESUME. Lleva un campo
+ * `CodigoSeguridadeCF` que son los seis caracteres del `SignatureValue`
+ * **del documento completo**. O sea que para mandar el resumen hay que:
+ *
+ *   1. armar el e-CF COMPLETO,
+ *   2. FIRMARLO -de ahi sale el codigo de seguridad-,
+ *   3. conservarlo (la norma obliga a guardarlo),
+ *   4. armar el resumen con ese codigo dentro,
+ *   5. firmar TAMBIEN el resumen,
+ *   6. mandar el resumen a `fc.dgii.gov.do`.
+ *
+ * Lo natural seria pensar "factura chica, armo solo el resumen y listo",
+ * y es imposible: sin el documento completo firmado no existe el codigo
+ * que el resumen exige. Este comentario esta aqui para que nadie intente
+ * ese atajo.
+ *
+ * Que no lleva: **DetallesItems**. Ni una linea. Por eso es un resumen y
+ * por eso pesa una fraccion. El emisor se queda con el detalle.
+ *
+ * El emisor tampoco lleva direccion ni telefono aqui -solo RNC, razon
+ * social y fecha-, asi que la trampa del telefono con guiones no aplica.
+ */
+export interface RfceConsumo {
+  encf: string
+  tipoIngresos: TipoIngreso
+  tipoPago: TipoPago
+  emisor: {
+    rnc: string
+    razonSocial: string
+    fechaEmision: Date
+  }
+  comprador?: {
+    rnc?: string | null
+    razonSocial?: string | null
+  }
+  totales: {
+    montoGravadoTotal?: number
+    montoExento?: number
+    totalItbis?: number
+    montoTotal: number
+  }
+  /** Los seis caracteres del SignatureValue del e-CF COMPLETO ya firmado. */
+  codigoSeguridadEcf: string
+  /** El `<ds:Signature>` del PROPIO resumen: el esquema tambien lo exige. */
+  firma?: string
+}
+
+export function xmlRfce(d: RfceConsumo): string {
+  if (!/^[a-zA-Z0-9]{13}$/.test(d.encf)) {
+    throw new Error(`El e-NCF "${d.encf}" no tiene los 13 caracteres que exige el esquema.`)
+  }
+  if (!/^\d{9}$|^\d{11}$/.test(d.emisor.rnc)) {
+    throw new Error('El RNC del emisor debe tener 9 u 11 digitos, sin guiones.')
+  }
+  // El patron del XSD es `.{6}` exacto: ni cinco ni siete.
+  if (d.codigoSeguridadEcf.length !== 6) {
+    throw new Error(
+      `El codigo de seguridad debe tener 6 caracteres y tiene ${d.codigoSeguridadEcf.length}. ` +
+        `Sale de firmar el e-CF completo: sin el documento firmado no hay resumen que mandar.`,
+    )
+  }
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<RFCE>',
+    '<Encabezado>',
+    etiqueta('Version', VERSION_ECF),
+    '<IdDoc>',
+    etiqueta('TipoeCF', '32'),
+    etiqueta('eNCF', d.encf.toUpperCase()),
+    etiqueta('TipoIngresos', d.tipoIngresos),
+    etiqueta('TipoPago', d.tipoPago),
+    '</IdDoc>',
+    '<Emisor>',
+    etiqueta('RNCEmisor', d.emisor.rnc),
+    etiqueta('RazonSocialEmisor', d.emisor.razonSocial.slice(0, 150)),
+    etiqueta('FechaEmision', fechaEcf(d.emisor.fechaEmision)),
+    '</Emisor>',
+    // Mismo criterio que el e-CF completo: nunca vacio, porque un
+    // elemento vacio rompe la firma.
+    '<Comprador>',
+    opcional('RNCComprador', d.comprador?.rnc ?? null),
+    etiqueta('RazonSocialComprador', d.comprador?.razonSocial ?? 'CONSUMIDOR FINAL'),
+    '</Comprador>',
+    '<Totales>',
+    opcional('MontoGravadoTotal', d.totales.montoGravadoTotal === undefined ? null : montoEcf(d.totales.montoGravadoTotal)),
+    opcional('MontoExento', d.totales.montoExento === undefined ? null : montoEcf(d.totales.montoExento)),
+    opcional('TotalITBIS', d.totales.totalItbis === undefined ? null : montoEcf(d.totales.totalItbis)),
+    etiqueta('MontoTotal', montoEcf(d.totales.montoTotal)),
+    '</Totales>',
+    etiqueta('CodigoSeguridadeCF', d.codigoSeguridadEcf),
+    '</Encabezado>',
+    d.firma ?? '',
+    '</RFCE>',
+  ]
+    .filter((x) => x !== '')
+    .join('')
+}

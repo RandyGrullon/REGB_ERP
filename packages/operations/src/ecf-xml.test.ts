@@ -15,6 +15,7 @@ import {
   telefonoEcf,
   vaPorResumen,
   xmlEcfConsumo,
+  xmlRfce,
   type EcfConsumo,
 } from './ecf-xml.js'
 
@@ -257,5 +258,69 @@ describe('La firma es un hijo OBLIGATORIO, no un paso posterior', () => {
     expect(estaFirmado('<ECF><Signature></Signature></ECF>')).toBe(true)
     expect(estaFirmado('<ECF><ds:Signature /></ECF>')).toBe(true)
     expect(estaFirmado('<ECF><SignatureValue>x</SignatureValue></ECF>')).toBe(false)
+  })
+})
+
+// ── El resumen (RFCE): el camino PRINCIPAL de una PYME ───────────────────
+
+describe('El resumen, y el atajo que NO existe', () => {
+  const RESUMEN = {
+    encf: 'E320000000001',
+    tipoIngresos: '01' as const,
+    tipoPago: '1' as const,
+    emisor: {
+      rnc: '131223345',
+      razonSocial: 'Distribuidora Caribe SRL',
+      fechaEmision: new Date('2026-09-11T00:00:00Z'),
+    },
+    totales: { montoGravadoTotal: 465, totalItbis: 83.7, montoTotal: 548.7 },
+    codigoSeguridadEcf: 'ix0zGh',
+  }
+
+  it('NO lleva lineas de detalle: por eso es un resumen', () => {
+    const xml = xmlRfce(RESUMEN)
+    expect(xml).not.toContain('DetallesItems')
+    expect(xml).not.toContain('<Item>')
+  })
+
+  it('la raiz es RFCE, no ECF', () => {
+    expect(xmlRfce(RESUMEN)).toContain('<RFCE>')
+    expect(xmlRfce(RESUMEN)).not.toContain('<ECF>')
+  })
+
+  it('lleva el codigo de seguridad del documento COMPLETO', () => {
+    expect(xmlRfce(RESUMEN)).toContain('<CodigoSeguridadeCF>ix0zGh</CodigoSeguridadeCF>')
+  })
+
+  it('sin ese codigo no hay resumen: es el atajo que no existe', () => {
+    // El codigo sale de FIRMAR el e-CF completo. Quien piense "factura
+    // chica, armo solo el resumen" se topa con esto.
+    expect(() => xmlRfce({ ...RESUMEN, codigoSeguridadEcf: 'abc' })).toThrow(/6 caracteres/)
+    expect(() => xmlRfce({ ...RESUMEN, codigoSeguridadEcf: '' })).toThrow(
+      /sin el documento firmado no hay resumen/,
+    )
+  })
+
+  it('el emisor va sin direccion ni telefono -el esquema no los pide-', () => {
+    const xml = xmlRfce(RESUMEN)
+    expect(xml).not.toContain('DireccionEmisor')
+    expect(xml).not.toContain('TelefonoEmisor')
+  })
+
+  it('el Comprador tampoco sale vacio aqui', () => {
+    expect(xmlRfce(RESUMEN)).toContain('CONSUMIDOR FINAL')
+    expect(xmlRfce(RESUMEN)).not.toContain('<Comprador></Comprador>')
+  })
+
+  it('el orden del encabezado es el del XSD', () => {
+    const xml = xmlRfce(RESUMEN)
+    const orden = ['<Version>', '<IdDoc>', '<Emisor>', '<Comprador>', '<Totales>', '<CodigoSeguridadeCF>']
+    const p = orden.map((t) => xml.indexOf(t))
+    expect(p.every((x) => x > -1)).toBe(true)
+    expect([...p].sort((a, b) => a - b)).toEqual(p)
+  })
+
+  it('rechaza un e-NCF que no tenga 13 caracteres', () => {
+    expect(() => xmlRfce({ ...RESUMEN, encf: 'E3200000001' })).toThrow(/13 caracteres/)
   })
 })
