@@ -217,6 +217,22 @@ export interface EcfEntrante {
  * Buscando por indices no hay barras que perder. Ademas tolera el
  * prefijo de espacio de nombres (`ns:eNCF`), que un emisor puede usar.
  */
+/**
+ * Quita lo que NO es contenido: comentarios y el prologo.
+ *
+ * Sin esto el parser lee dentro de un comentario. Un emisor podia
+ * mandar `<!-- <eNCF>E310000000001</eNCF> -->` antes del verdadero y el
+ * documento se archivaba con el e-NCF del comentario: mismo efecto que
+ * suplantar el comprobante, sin romper la firma -un comentario es parte
+ * del documento firmado, asi que la firma sigue cuadrando-.
+ *
+ * Comprobado antes de arreglarlo: con la trampa puesta, el parser
+ * devolvia el del comentario y no el real.
+ */
+function sinComentarios(xml: string): string {
+  return xml.replace(/<!--[\s\S]*?-->/g, '').replace(/<\?[\s\S]*?\?>/g, '')
+}
+
 function etiquetaDe(xml: string, nombre: string): string | null {
   const cierre = `</${nombre}>`
   const fin = xml.indexOf(cierre)
@@ -232,7 +248,8 @@ function etiquetaDe(xml: string, nombre: string): string | null {
   return v === '' ? null : v
 }
 
-export function leerEcfEntrante(xml: string): EcfEntrante {
+export function leerEcfEntrante(crudo: string): EcfEntrante {
+  const xml = sinComentarios(crudo)
   const monto = etiquetaDe(xml, 'MontoTotal')
   const n = monto === null ? NaN : Number(monto)
   return {

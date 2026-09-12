@@ -247,10 +247,20 @@ export class ClienteDgii {
     }
   }
 
-  /** El veredicto, por trackId. Es lo que dice si la factura vale. */
-  async consultarResultado(trackId: string): Promise<unknown> {
+  /**
+   * El veredicto, por trackId. Es lo que dice si la factura vale.
+   *
+   * `porResumen` elige el DOMINIO, igual que en el envio. Sin esto, el
+   * veredicto del CAMINO PRINCIPAL de una PYME -el resumen- se pedia al
+   * dominio del e-CF completo, donde ese trackId no existe: toda factura
+   * de consumo por debajo de RD$250,000 quedaba sin poder confirmarse.
+   */
+  async consultarResultado(trackId: string, porResumen = false): Promise<unknown> {
     const token = await this.obtenerToken()
-    const url = `${urlEcf(this.op.ambiente, RUTAS.consultaResultado)}?trackid=${encodeURIComponent(trackId)}`
+    const base = porResumen
+      ? urlFc(this.op.ambiente, RUTAS.consultaResumen)
+      : urlEcf(this.op.ambiente, RUTAS.consultaResultado)
+    const url = `${base}?trackid=${encodeURIComponent(trackId)}`
     const r = await this.hacerFetch(url, {
       headers: { Authorization: `Bearer ${token.valor}` },
     })

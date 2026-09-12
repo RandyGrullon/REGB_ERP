@@ -103,21 +103,45 @@ export async function POST(
 }
 
 /**
+ * Tope del cuerpo entrante.
+ *
+ * 4 MB es holgado para un e-CF -el mas grande que hemos generado ronda
+ * los 3 KB, y uno con cientos de lineas y su firma no pasa de unos
+ * cientos de KB-. Sin tope, un POST de 500 MB a una ruta PUBLICA se
+ * carga entero en memoria y tumba el servidor de todos los clientes:
+ * la ruta esta abierta a internet y no hace falta ni credencial para
+ * intentarlo.
+ */
+const MAX_CUERPO = 4 * 1024 * 1024
+
+/**
  * El XML llega en `multipart/form-data`, campo `xml` — igual que se
  * manda. Se acepta tambien el cuerpo crudo porque no todo emisor sigue
  * la norma y rechazar por la envoltura seria perder una factura buena.
  */
 async function leerXmlDelCuerpo(req: Request): Promise<string | null> {
   const tipo = req.headers.get('content-type') ?? ''
+
+  // Se mira `content-length` ANTES de leer nada: rechazar despues de
+  // haberlo cargado en memoria no evita el daño.
+  const largo = Number(req.headers.get('content-length') ?? '0')
+  if (Number.isFinite(largo) && largo > MAX_CUERPO) return null
+
   try {
     if (tipo.includes('multipart/form-data')) {
       const fd = await req.formData()
       const campo = fd.get('xml')
-      if (typeof campo === 'string') return campo || null
-      if (campo instanceof File) return (await campo.text()) || null
+      if (typeof campo === 'string') return campo.length > MAX_CUERPO ? null : campo || null
+      if (campo instanceof File) {
+        // Segunda comprobacion: un emisor puede mentir en content-length,
+        // o mandarlo troceado sin el.
+        if (campo.size > MAX_CUERPO) return null
+        return (await campo.text()) || null
+      }
       return null
     }
-    return (await req.text()) || null
+    const crudo = await req.text()
+    return crudo.length > MAX_CUERPO ? null : crudo || null
   } catch {
     return null
   }
@@ -133,19 +157,29 @@ async function leerXmlDelCuerpo(req: Request): Promise<string | null> {
 async function recibir(ruta: Ruta, xmlEntrante: string): Promise<NextResponse> {
   const datos = leerEcfEntrante(xmlEntrante)
 
-  // Sin e-NCF ni emisor no hay ni como archivarlo ni a quien acusarle:
-  // es un error de especificacion y se responde como tal.
+  // Sin e-NCF ni emisor no hay ni como archivarlo ni a quien acusarle.
+  //
+  // Y NO se puede devolver un ARECF: el esquema exige `eNCF` de 9, 11 o
+  // 13 caracteres y `RNCEmisor` de 9 u 11 digitos, asi que un acuse con
+  // esos campos vacios no valida. Mandar un acuse invalido es peor que
+  // no mandarlo -el emisor cree que tiene acuse y no lo tiene-, asi que
+  // aqui si toca un error HTTP: no hay documento que devolver.
   if (datos.encf === null || datos.rncEmisor === null) {
-    return xml(
-      xmlAcuse(
-        {
-          rncEmisor: datos.rncEmisor ?? '',
-          rncComprador: ruta.rnc,
-          encf: datos.encf ?? '',
-          fechaHora: fechaHoraDgii(new Date()),
-        },
-        { estado: 1, codigoMotivo: 1, motivo: 'Error de especificacion' },
-      ),
+    return NextResponse.json(
+      { error: 'El documento no trae eNCF o RNCEmisor: no se puede acusar.' },
+      { status: 400 },
+    )
+  }
+
+  // El RNC del tenant sale de su empresa por defecto. Si no tiene una
+  // cargada llega vacio, y entonces `esParaEsteTenant` daria false para
+  // TODO: se rechazaria cada e-CF legitimo con motivo 4 -"RNC comprador
+  // no corresponde"- que es justo el motivo equivocado, porque el
+  // problema es nuestro y no del emisor.
+  if (ruta.rnc === '') {
+    return NextResponse.json(
+      { error: 'Esta cuenta no tiene RNC configurado: no puede recibir e-CF.' },
+      { status: 503 },
     )
   }
 

@@ -60,23 +60,47 @@ export const VERSION_ECF = '1.0'
 // ── Formatos, tambien del XSD ────────────────────────────────────────────
 
 /**
+ * Huso horario de Republica Dominicana: UTC-4, TODO el año.
+ *
+ * El pais no cambia de hora, asi que un desplazamiento fijo es correcto
+ * y no una simplificacion.
+ */
+const HORAS_RD = -4
+
+/** Corre una fecha a hora dominicana antes de escribirla. */
+function enHoraRd(d: Date): Date {
+  return new Date(d.getTime() + HORAS_RD * 3_600_000)
+}
+
+/**
  * `FechaValidationType` pide **DD-MM-AAAA**, no ISO.
  *
  * Es el error mas facil de cometer viniendo de una base de datos, donde
  * todo es AAAA-MM-DD. Se convierte aqui y en un solo sitio.
+ *
+ * ── Y va en hora DOMINICANA, no en UTC ────────────────────────────────
+ *
+ * Esto lo encontro una revision y es de los que hacen daño a diario sin
+ * que nadie lo note: una venta a las 9:00 pm en Santo Domingo es la
+ * 01:00 UTC del dia SIGUIENTE. Formateando en UTC, esa factura se
+ * declaraba con fecha de mañana.
+ *
+ * O sea que toda venta despues de las 8 pm -que en un colmado o una
+ * ferreteria es media tarde de trabajo- salia con el dia equivocado, y
+ * las de fin de mes caian en el periodo equivocado del 606/607.
  */
 export function fechaEcf(d: Date): string {
-  const dd = String(d.getUTCDate()).padStart(2, '0')
-  const mm = String(d.getUTCMonth() + 1).padStart(2, '0')
-  return `${dd}-${mm}-${d.getUTCFullYear()}`
+  const rd = enHoraRd(d)
+  const dd = String(rd.getUTCDate()).padStart(2, '0')
+  const mm = String(rd.getUTCMonth() + 1).padStart(2, '0')
+  return `${dd}-${mm}-${rd.getUTCFullYear()}`
 }
 
 /** `DateTimeValidationType`: **DD-MM-AAAA HH:mm:ss**, con espacio, no "T". */
 export function fechaHoraEcf(d: Date): string {
-  const hh = String(d.getUTCHours()).padStart(2, '0')
-  const mi = String(d.getUTCMinutes()).padStart(2, '0')
-  const ss = String(d.getUTCSeconds()).padStart(2, '0')
-  return `${fechaEcf(d)} ${hh}:${mi}:${ss}`
+  const rd = enHoraRd(d)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${fechaEcf(d)} ${p(rd.getUTCHours())}:${p(rd.getUTCMinutes())}:${p(rd.getUTCSeconds())}`
 }
 
 /**

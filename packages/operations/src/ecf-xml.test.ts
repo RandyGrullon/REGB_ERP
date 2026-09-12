@@ -68,15 +68,29 @@ describe('Los valores permitidos salen del XSD, no de una guia', () => {
 
 describe('Los formatos que el XSD exige', () => {
   it('la fecha va DD-MM-AAAA, no en ISO', () => {
-    expect(fechaEcf(new Date('2026-09-11T00:00:00Z'))).toBe('11-09-2026')
+    // 04:00 UTC = medianoche en RD, o sea el mismo dia.
+    expect(fechaEcf(new Date('2026-09-11T04:00:00Z'))).toBe('11-09-2026')
+  })
+
+  it('va en hora DOMINICANA (UTC-4), no en UTC', () => {
+    // Una venta a las 9:00 pm del 11 en Santo Domingo es la 01:00 UTC
+    // del 12. Formateando en UTC se declaraba con la fecha de mañana, y
+    // a fin de mes caia en el periodo equivocado del 606/607.
+    expect(fechaEcf(new Date('2026-09-12T01:00:00Z'))).toBe('11-09-2026')
+    expect(fechaHoraEcf(new Date('2026-09-12T01:00:00Z'))).toBe('11-09-2026 21:00:00')
+  })
+
+  it('a medianoche dominicana ya es el dia nuevo', () => {
+    expect(fechaEcf(new Date('2026-09-12T04:00:00Z'))).toBe('12-09-2026')
   })
 
   it('un dia de un digito se rellena con cero', () => {
-    expect(fechaEcf(new Date('2026-01-05T00:00:00Z'))).toBe('05-01-2026')
+    // 04:00 UTC = medianoche del dia 5 en RD.
+    expect(fechaEcf(new Date('2026-01-05T04:00:00Z'))).toBe('05-01-2026')
   })
 
   it('la fecha con hora lleva espacio, no la T de ISO', () => {
-    expect(fechaHoraEcf(new Date('2026-09-11T09:05:03Z'))).toBe('11-09-2026 09:05:03')
+    expect(fechaHoraEcf(new Date('2026-09-11T13:05:03Z'))).toBe('11-09-2026 09:05:03')
   })
 
   it('los montos van con punto y sin separador de miles', () => {

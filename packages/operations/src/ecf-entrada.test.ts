@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ESTADO_ACUSE,
+  leerEcfEntrante,
   LARGO_TOKEN_ENDPOINT,
   MOTIVOS_NO_RECIBIDO,
   decidirAcuse,
@@ -128,5 +129,41 @@ describe('Las tres URL que el contribuyente copia al formulario', () => {
   it('dos tenants nunca comparten URL', () => {
     const otras = urlsParaDeclarar('https://erp.regb.do', 'e'.repeat(32))
     expect(otras.recepcion).not.toBe(urls.recepcion)
+  })
+})
+
+describe('Lo que se lee de un e-CF entrante', () => {
+  const REAL =
+    '<ECF><Encabezado><IdDoc><eNCF>E329999999999</eNCF></IdDoc>' +
+    '<Emisor><RNCEmisor>130111111</RNCEmisor></Emisor>' +
+    '<Comprador><RNCComprador>131223345</RNCComprador></Comprador>' +
+    '<Totales><MontoTotal>1180.00</MontoTotal></Totales></Encabezado></ECF>'
+
+  it('saca los campos que hacen falta para acusar', () => {
+    const d = leerEcfEntrante(REAL)
+    expect(d.encf).toBe('E329999999999')
+    expect(d.rncEmisor).toBe('130111111')
+    expect(d.rncComprador).toBe('131223345')
+    expect(d.montoTotal).toBe(1180)
+  })
+
+  it('NO lee dentro de un comentario', () => {
+    // Sin esta guarda, un emisor mandaba el e-NCF verdadero dentro de un
+    // comentario ANTES del real y el documento se archivaba con el del
+    // comentario -sin romper la firma, porque un comentario tambien va
+    // firmado-. Mismo efecto que suplantar el comprobante.
+    const trampa = '<ECF><!-- <eNCF>E310000000001</eNCF> -->' + REAL.slice(5)
+    expect(leerEcfEntrante(trampa).encf).toBe('E329999999999')
+  })
+
+  it('tampoco lee el prologo', () => {
+    expect(leerEcfEntrante('<?xml version="1.0"?>' + REAL).encf).toBe('E329999999999')
+  })
+
+  it('un documento sin los campos devuelve nulos, no basura', () => {
+    const d = leerEcfEntrante('<ECF></ECF>')
+    expect(d.encf).toBeNull()
+    expect(d.rncEmisor).toBeNull()
+    expect(d.montoTotal).toBeNull()
   })
 })
