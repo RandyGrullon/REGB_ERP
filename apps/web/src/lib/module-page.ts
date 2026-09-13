@@ -2,6 +2,7 @@ import 'server-only'
 
 import { notFound, redirect } from 'next/navigation'
 import { can, type Role } from '@regb/permissions'
+import { TOURS } from '@regb/core'
 import { checkAccess } from '@regb/sdk'
 import { bootstrap, listRoles, listTenants, type BootstrapResult } from './bootstrap'
 import { authConfigured, currentSession } from './supabase'
@@ -9,6 +10,7 @@ import { leerAviso } from './aviso'
 import { asUser } from './db'
 import type { ShellProps } from '@/components/Shell'
 import type { SearchEntry } from '@/components/GlobalSearch'
+import type { PasoGuia } from '@/components/GuiaFlotante'
 
 /**
  * Contexto comun de las paginas y acciones de modulo.
@@ -40,6 +42,10 @@ export type DemoParams = {
   tenant?: string | undefined
   rol?: string | undefined
   plataforma?: string | undefined
+  /** Tour en curso, para que la guia siga dentro de la pantalla. */
+  tour?: string | undefined
+  /** Paso del tour, en base 1 -lo que ve el usuario-. */
+  paso?: string | undefined
 }
 
 export type ActionResult = { ok: true } | { ok: false; error: string }
@@ -122,6 +128,58 @@ export async function primeraRutaVisible(
 }
 
 /**
+ * El paso del tour que toca pintar sobre ESTA pantalla, si lo hay.
+ *
+ * Vive aqui -en el embudo por donde pasan las 152 pantallas de modulo-
+ * y no en cada pagina, por la misma razon que el aviso de la ultima
+ * accion: repetirlo 152 veces es garantizar que en alguna se olvide.
+ *
+ * Se valida contra TOURS, no contra lo que venga en la URL. Un `tour`
+ * inventado o un `paso` fuera de rango devuelven undefined y la pantalla
+ * sale normal: el peor caso de manipular la URL es no ver la guia.
+ *
+ * Se exporta porque hay pantallas que NO pasan por `modulePage` -las que
+ * ocupan el ancho entero y no pintan el Shell, como /roles y
+ * /marketplace-, y a esas tambien llega un tour. Sin esto, el tour
+ * moria justo ahi: la prueba de `tours.test.ts` lo comprueba archivo a
+ * archivo para que no vuelva a pasar en silencio.
+ */
+export function guiaDelPaso(params: DemoParams, qs: string): PasoGuia | undefined {
+  if (params.tour === undefined || params.paso === undefined) return undefined
+
+  const tour = TOURS.find((t) => t.id === params.tour)
+  if (tour === undefined) return undefined
+
+  const n = Number(params.paso)
+  if (!Number.isInteger(n) || n < 1 || n > tour.steps.length) return undefined
+
+  const paso = tour.steps[n - 1]!
+  const sep = qs === '' ? '?' : `${qs}&`
+
+  // "Siguiente" solo lleva a algun sitio si el paso que viene tiene su
+  // propia pantalla. Si no la tiene, se vuelve al tutorial a leerlo:
+  // inventarle una ruta seria mandar al usuario a una pantalla que ese
+  // paso no menciona.
+  const queViene = tour.steps[n]
+  const siguiente =
+    queViene?.action !== undefined
+      ? `${queViene.action.path}${sep}tour=${encodeURIComponent(tour.id)}&paso=${n + 1}`
+      : null
+
+  return {
+    tourId: tour.id,
+    titulo: paso.title,
+    cuerpo: paso.body,
+    tip: paso.tip,
+    target: paso.target,
+    paso: n,
+    total: tour.steps.length,
+    siguiente,
+    tutorial: `/tutorial${qs}`,
+  }
+}
+
+/**
  * Pagina de modulo completa: contexto + props del Shell.
  * Sin sesion redirige; sin permiso de ver, la ruta "no existe" (404).
  */
@@ -173,6 +231,7 @@ export async function modulePage(
       demoMode: r.demo,
       isProvider: session?.isProvider ?? false,
       aviso,
+      guia: guiaDelPaso(params, r.ctx.demoQs),
       data: {
         tenant: r.data.tenant,
         user: r.data.user,

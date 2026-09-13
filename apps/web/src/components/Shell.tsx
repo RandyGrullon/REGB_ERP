@@ -6,6 +6,7 @@ import { GlobalSearch, type SearchEntry } from './GlobalSearch'
 import { Aviso } from './Aviso'
 import { Navegacion } from './Navegacion'
 import type { Aviso as AvisoDato } from '@/lib/aviso-comun'
+import { GuiaFlotante, type PasoGuia } from '@/components/GuiaFlotante'
 import {
   Badge,
   Card,
@@ -64,6 +65,11 @@ export interface ShellProps {
   activePath?: string
   /** Resultado de la ultima accion, para confirmarlo o explicar el fallo. */
   aviso?: AvisoDato | null
+  /**
+   * Paso del tour a pintar encima de esta pantalla, si el usuario llego
+   * aqui desde el tutorial. Lo calcula `modulePage`, no la pagina.
+   */
+  guia?: PasoGuia | undefined
   /** Contenido de la pagina. Sin children, pinta el resumen del registry. */
   children?: React.ReactNode
   data: ShellData
@@ -105,6 +111,7 @@ export function Shell({
   impersonating = false,
   activePath = '/',
   aviso = null,
+  guia,
   children,
   data,
 }: ShellProps) {
@@ -170,6 +177,7 @@ export function Shell({
   return (
     <div className="flex h-full flex-col">
       <Aviso aviso={aviso} />
+      {guia !== undefined && <GuiaFlotante guia={guia} />}
       <TopBar
         productName="REGB"
         companies={tenants.map((t) => ({

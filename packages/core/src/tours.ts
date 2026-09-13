@@ -12,6 +12,16 @@ export interface TourStep {
   action?: { label: string; path: string }
   /** Lo que sabe quien ya lleva tiempo usando un ERP. */
   tip?: string
+  /**
+   * Valor de `data-tour` del elemento a resaltar en la pantalla de
+   * destino. Opcional: sin el, la guia sale igual y no resalta nada.
+   *
+   * Es un NOMBRE, no un selector CSS. El contenido de un tour es dato
+   * editable, y un selector crudo dejaria que ese dato apuntara a
+   * cualquier cosa del documento; con el atributo, lo unico alcanzable
+   * es lo que la UI marco a proposito.
+   */
+  target?: string
 }
 
 export interface Tour {

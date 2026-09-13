@@ -186,7 +186,18 @@ export default async function TutorialPage({
 
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {paso.action && (
-                            <a href={paso.action.path + ctx.demoQs} className={btnPri}>
+                            <a
+                              /*
+                                El tour y el paso viajan en la URL para
+                                que la guia siga DENTRO de la pantalla de
+                                destino. Antes se aterrizaba alli sin el
+                                paso y habia que volver aqui para leer el
+                                siguiente: un tutorial que obliga a salirse
+                                de la pantalla no lo termina nadie.
+                              */
+                              href={`${paso.action.path}${ctx.demoQs === '' ? '?' : `${ctx.demoQs}&`}tour=${encodeURIComponent(tour.id)}&paso=${step + 1}`}
+                              className={btnPri}
+                            >
                               {paso.action.label}
                             </a>
                           )}

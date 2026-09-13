@@ -5,6 +5,8 @@ import { loadCatalog } from '@/lib/marketplace'
 import { asUser } from '@/lib/db'
 import { authConfigured, currentSession } from '@/lib/supabase'
 import { MarketplaceView } from '@/components/MarketplaceView'
+import { GuiaFlotante } from '@/components/GuiaFlotante'
+import { guiaDelPaso } from '@/lib/module-page'
 import type { TenantTier } from '@regb/core'
 
 export const dynamic = 'force-dynamic'
@@ -20,7 +22,7 @@ export const metadata = { title: 'Marketplace · REGB ERP' }
 export default async function MarketplacePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tenant?: string; rol?: string }>
+  searchParams: Promise<{ tenant?: string; rol?: string; tour?: string; paso?: string }>
 }) {
   const params = await searchParams
 
@@ -70,7 +72,15 @@ export default async function MarketplacePage({
       where tenant_id = ${tenantId} and status = 'pending'`,
   )
 
+  // Igual que /roles: esta pantalla no pinta el Shell, asi que la guia
+  // del tour se monta aqui. El tour del marketplace aterriza justo aqui.
+  const guia = guiaDelPaso(
+    params,
+    authConfigured ? '' : `?tenant=${params.tenant ?? ''}&rol=${params.rol ?? 'Owner'}`,
+  )
+
   return (
+    <>
     <MarketplaceView
       catalog={catalog}
       tier={tier}
@@ -86,5 +96,7 @@ export default async function MarketplacePage({
         pendiente ? { modules: pendiente.modules, createdAt: pendiente.created_at } : null
       }
     />
+    {guia !== undefined && <GuiaFlotante guia={guia} />}
+    </>
   )
 }

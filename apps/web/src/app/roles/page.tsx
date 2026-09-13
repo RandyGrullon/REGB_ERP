@@ -5,6 +5,8 @@ import { bootstrap, listTenants } from '@/lib/bootstrap'
 import { loadModuleOptions, loadRoles } from '@/lib/roles'
 import { authConfigured, currentSession } from '@/lib/supabase'
 import { RolesEditor } from '@/components/RolesEditor'
+import { GuiaFlotante } from '@/components/GuiaFlotante'
+import { guiaDelPaso } from '@/lib/module-page'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Roles y permisos · REGB ERP' }
@@ -18,7 +20,7 @@ export const metadata = { title: 'Roles y permisos · REGB ERP' }
 export default async function RolesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tenant?: string; rol?: string }>
+  searchParams: Promise<{ tenant?: string; rol?: string; tour?: string; paso?: string }>
 }) {
   const params = await searchParams
 
@@ -68,14 +70,24 @@ export default async function RolesPage({
     loadModuleOptions(tenantId),
   ])
 
+  // Esta pantalla no pinta el Shell -ocupa el ancho entero-, asi que la
+  // guia del tour se monta aqui a mano. Dos tours aterrizan en /roles.
+  const guia = guiaDelPaso(
+    params,
+    demo ? `?tenant=${demo.tenantSlug}&rol=${encodeURIComponent(demo.roleName)}` : '',
+  )
+
   return (
-    <RolesEditor
-      roles={roles}
-      modules={modules}
-      tenantName={tenantName}
-      backHref={backHref}
-      demo={demo}
-      canEdit={canEdit}
-    />
+    <>
+      <RolesEditor
+        roles={roles}
+        modules={modules}
+        tenantName={tenantName}
+        backHref={backHref}
+        demo={demo}
+        canEdit={canEdit}
+      />
+      {guia !== undefined && <GuiaFlotante guia={guia} />}
+    </>
   )
 }
