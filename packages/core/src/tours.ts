@@ -98,7 +98,7 @@ export const TOURS: Tour[] = [
       },
       {
         title: 'El servidor tambien comprueba',
-        body: 'Ocultar el boton no es seguridad. Cada ruta y cada accion vuelven a verificar el permiso en el servidor, y la base de datos filtra por su cuenta.',
+        body: 'Ocultar el boton no es seguridad. Cada ruta y cada accion vuelven a verificar el permiso en el servidor, y la base de datos separa a un cliente de otro por su cuenta.',
         tip: 'Pruebalo: cambia de rol arriba a la derecha y escribe una ruta que ese rol no tenga. Sale 404.',
       },
       {
