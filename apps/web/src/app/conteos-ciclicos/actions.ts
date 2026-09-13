@@ -94,8 +94,12 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
       returning id`
     const countId = conteo!.id
 
+    // `public.existencias` y no `stock_levels`: desde 0109 la columna
+    // `avg_cost` no es legible por `authenticated` -asi no se filtra por
+    // PostgREST- y la vista la destapa solo a quien tiene
+    // `inventory.cost.view`. Quien programa un conteo ciclico lo tiene.
     const existencias = await tx<{ product_id: string; qty_on_hand: string; avg_cost: string }[]>`
-      select product_id, qty_on_hand::text, avg_cost::text from public.stock_levels
+      select product_id, qty_on_hand::text, avg_cost::text from public.existencias()
       where tenant_id = ${ctx.tenantId} and warehouse_id = ${warehouseId} and qty_on_hand > 0`
 
     if (existencias.length === 0) return 'sin-existencias'

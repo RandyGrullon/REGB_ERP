@@ -60,7 +60,14 @@ export default async function InventoryPage({
              sl.warehouse_id, w.name as warehouse_name,
              sl.qty_on_hand::text, sl.qty_reserved::text, sl.avg_cost::text,
              p.reorder_point::text
-      from public.stock_levels sl
+      -- existencias() y no stock_levels: la funcion tapa el costo para
+      -- quien no tiene inventory.cost.view (0109). Antes lo escondia solo
+      -- la plantilla, y bastaba con pedirle la tabla a PostgREST.
+      --
+      -- Sin acentos graves en este comentario: van dentro de una
+      -- plantilla de JavaScript y cortan la cadena. Compila hasta que
+      -- alguien escribe uno.
+      from public.existencias() sl
       join public.products p on p.id = sl.product_id
       join public.warehouses w on w.id = sl.warehouse_id
       where sl.tenant_id = ${ctx.tenantId}

@@ -222,9 +222,12 @@ describe('La proyeccion nunca se separa del libro', () => {
     const [r] = await as(
       userA,
       tenantA,
+      // Por `public.existencias()` y no por la tabla: desde 0109 la
+      // columna `avg_cost` no la lee `authenticated` -para que no se
+      // filtre por PostgREST- y la funcion la destapa segun el permiso.
       (tx) => tx<{ avg: string }[]>`
-        select avg_cost::text as avg from public.stock_levels
-        where tenant_id = ${tenantA} and product_id = ${productoA}`,
+        select avg_cost::text as avg from public.existencias()
+        where product_id = ${productoA}`,
     )
     expect(Number(r!.avg)).toBeCloseTo((90 * 380 + 50 * 420) / 140, 1)
   })

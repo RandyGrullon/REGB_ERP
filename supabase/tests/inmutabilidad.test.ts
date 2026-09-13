@@ -117,16 +117,28 @@ describe('Las proyecciones no se escriben a mano', () => {
    * forma de deducir "esto es una proyeccion" del esquema. Lo que si se
    * puede es no dejar que vuelva a abrirse.
    */
-  it('a stock_levels authenticated solo puede LEER', async () => {
-    const [p] = await sql<{ ins: boolean; upd: boolean; del: boolean; sel: boolean }[]>`
+  it('a stock_levels authenticated no escribe, y del costo ni lee', async () => {
+    const [p] = await sql<{
+      ins: boolean
+      upd: boolean
+      del: boolean
+      cantidad: boolean
+      costo: boolean
+    }[]>`
       select has_table_privilege('authenticated', 'public.stock_levels', 'INSERT') as ins,
              has_table_privilege('authenticated', 'public.stock_levels', 'UPDATE') as upd,
              has_table_privilege('authenticated', 'public.stock_levels', 'DELETE') as del,
-             has_table_privilege('authenticated', 'public.stock_levels', 'SELECT') as sel`
+             has_column_privilege('authenticated', 'public.stock_levels', 'qty_on_hand', 'SELECT') as cantidad,
+             has_column_privilege('authenticated', 'public.stock_levels', 'avg_cost', 'SELECT') as costo`
     expect(p!.ins).toBe(false)
     expect(p!.upd).toBe(false)
     expect(p!.del).toBe(false)
-    expect(p!.sel).toBe(true)
+    // La CANTIDAD si se lee: un sistema que le esconde el stock al que
+    // vende no se usa.
+    expect(p!.cantidad).toBe(true)
+    // El COSTO no, ni para el dueño. Quien tenga el permiso lo obtiene
+    // por `public.existencias()`, que lo destapa segun el rol (0109).
+    expect(p!.costo).toBe(false)
   })
 
   it('y a la foto del sistema de un conteo, tampoco', async () => {
@@ -179,6 +191,76 @@ describe('Lo fiscal no se borra (0108)', () => {
                has_table_privilege('authenticated', ${`public.${t}`}, 'UPDATE') as upd`
       expect(p!.ins, `${t} insert`).toBe(true)
       expect(p!.upd, `${t} update`).toBe(true)
+    }
+  })
+})
+
+describe('La base tambien mira el permiso, no solo el modulo (0109)', () => {
+  /**
+   * Antes de 0109, ninguna de las 370 politicas miraba el ROL. Medido con
+   * el rol Cajero del tenant de demo: leia los costos (620.00, 411.50) y
+   * la tabla de empleados. Las dos cosas que la app le esconde.
+   *
+   * Mientras todo pasaba por la web no se notaba -el servidor comprueba
+   * el permiso-. Con el movil hablandole a PostgREST, la app deja de
+   * estar en el medio.
+   */
+  it('los patrones de SQL coinciden con los de @regb/permissions', async () => {
+    // Si divergen, la base y la app opinan distinto sobre quien puede
+    // que, y el que manda es el que conteste primero. Este es el riesgo
+    // real de replicar logica de TypeScript en plpgsql, el mismo que ya
+    // aparecio con el costo promedio en 0019.
+    const casos: [string, string[]][] = [
+      [
+        'inventory.cost.view',
+        ['inventory.cost.view', 'inventory.cost.*', 'inventory.*', '*.view', '*'],
+      ],
+      ['ventas', ['ventas', '*']],
+      ['ar.invoice.void', ['ar.invoice.void', 'ar.invoice.*', 'ar.*', '*.void', '*']],
+    ]
+    for (const [accion, esperado] of casos) {
+      const [r] = await sql<{ p: string[] }[]>`select rls.patrones_de(${accion}) as p`
+      expect(r!.p, accion).toEqual(esperado)
+    }
+  })
+
+  it('la denegacion explicita gana sobre el comodin', async () => {
+    // Es la regla que mas se malinterpreta: conceder "ventas.*" y negar
+    // "ventas.descuento" deja el descuento NEGADO.
+    const [r] = await sql<{ permitido: boolean }[]>`
+      select (
+        select case
+          when exists (select 1 from unnest(rls.patrones_de('ventas.descuento')) p
+                       where (${JSON.stringify({ 'ventas.*': true, 'ventas.descuento': false })}::jsonb -> p) = 'false'::jsonb)
+          then false
+          else exists (select 1 from unnest(rls.patrones_de('ventas.descuento')) p
+                       where (${JSON.stringify({ 'ventas.*': true, 'ventas.descuento': false })}::jsonb -> p) = 'true'::jsonb)
+        end
+      ) as permitido`
+    expect(r!.permitido).toBe(false)
+  })
+
+  it('sin rol en el token, has_perm no bloquea', async () => {
+    // Decision deliberada de 0109: denegar por defecto convierte un
+    // despliegue con el hook a medias en "nadie puede trabajar", y eso en
+    // una caja un sabado es peor que el problema que arregla.
+    const [r] = await sql<{ ok: boolean }[]>`select rls.has_perm('inventory.cost.view') as ok`
+    expect(r!.ok).toBe(true)
+  })
+
+  it('las cuatro superficies sensibles piden permiso en su politica', async () => {
+    const esperado = [
+      ['api_keys', 'api-webhooks.view'],
+      ['ecf_config', 'e-invoice.view'],
+      ['employees', 'employees.view'],
+      ['payroll_lines', 'payroll.view'],
+    ]
+    for (const [tabla, perm] of esperado) {
+      const [r] = await sql<{ expr: string | null }[]>`
+        select pg_get_expr(polqual, polrelid) as expr
+        from pg_policy
+        where polrelid = ${`public.${tabla}`}::regclass and polname = 'tenant_module'`
+      expect(r?.expr ?? '', tabla).toContain(perm)
     }
   })
 })
