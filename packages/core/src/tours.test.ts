@@ -31,20 +31,25 @@ describe('Cobertura de tours', () => {
   })
 
   /**
-   * El numero baja segun se van escribiendo. Cuando llegue a cero, esta
-   * prueba se cambia por la de abajo -que ya esta escrita y saltada- y la
-   * puerta F2 queda cerrada de verdad.
+   * La puerta F2, cerrada. Se llego aqui desde 9 de 78.
    *
-   * Se afirma `toBeLessThanOrEqual` y NO una igualdad: una igualdad
-   * obligaria a tocar la prueba en cada tour nuevo, y una prueba que hay
-   * que editar para que siga pasando deja de vigilar nada.
+   * Ya no hay numero de deuda que ajustar a mano: o estan todos, o esto
+   * se pone rojo y dice cual falta. La lista sale de `modules/` en disco,
+   * asi que un modulo nuevo sin tour rompe la prueba el mismo dia que se
+   * crea, no el dia que alguien se acuerde de mirar.
    */
-  it('la deuda de tours no crece', () => {
-    expect(sinTour.length).toBeLessThanOrEqual(39)
+  it('TODO modulo del catalogo tiene tour', () => {
+    expect(sinTour).toEqual([])
   })
 
-  it.skip('TODO modulo del catalogo tiene tour', () => {
-    expect(sinTour).toEqual([])
+  it('y ningun tour apunta a un modulo que no existe', () => {
+    // `toursFor` filtra por los modulos licenciados del tenant: un tour
+    // con un moduleId inventado no se le enseña NUNCA a nadie, y no hay
+    // nada que lo delate salvo esta prueba. Paso con dos ('rbac' y
+    // 'marketplace'), escritos y mantenidos para nadie.
+    const catalogo = new Set(modulosDelCatalogo())
+    const huerfanos = TOURS.filter((t) => !catalogo.has(t.moduleId)).map((t) => t.id)
+    expect(huerfanos).toEqual([])
   })
 })
 

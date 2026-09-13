@@ -1310,6 +1310,1121 @@ export const TOURS: Tour[] = [
       },
     ],
   },
+  // -- Produccion y proyectos --------------------------------------------
+  {
+    id: 'f11.manufactura',
+    moduleId: 'manufacturing',
+    title: 'Producir y saber cuanto te costo',
+    summary: 'Ordenes de produccion que consumen materia prima y entregan producto.',
+    xp: 40,
+    steps: [
+      {
+        title: 'Una orden de produccion transforma inventario',
+        body: 'Consume materia prima y entrega producto terminado. Las dos puntas mueven el kardex.',
+        action: { label: 'Ir a Produccion', path: '/produccion' },
+      },
+      {
+        title: 'El costo del producto sale de lo que consumio',
+        body: 'Materiales mas mano de obra mas gastos indirectos. Si no cargas los tres, tu producto parece mas barato de lo que es.',
+        tip: 'El que se olvida siempre es el indirecto. Es el que se come el margen sin que nadie lo vea.',
+      },
+      {
+        title: 'La merma se registra, no se disimula',
+        body: 'Lo que se dana o se pierde en el proceso tiene su movimiento. Sin eso, el inventario cuadra en papel y no en el piso.',
+        action: { label: 'Ver una orden', path: '/produccion' },
+      },
+      {
+        title: 'Producir sin material no arranca',
+        body: 'Si falta materia prima, la orden te lo dice antes. Enterarte a media produccion es parar la linea.',
+      },
+      {
+        title: 'Compara lo planeado con lo que gastaste',
+        body: 'Si siempre consumes mas de lo que dice la formula, la formula esta mal o hay merma que nadie mide.',
+      },
+    ],
+  },
+  {
+    id: 'f11.bom',
+    moduleId: 'bom',
+    title: 'La formula de cada producto',
+    summary: 'Que lleva y cuanto, que es de donde sale el costo.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Una lista de materiales es una receta',
+        body: 'Que componentes lleva una unidad y en que cantidad. De aqui salen el costo y lo que hay que comprar.',
+        action: { label: 'Ir a Listas de materiales', path: '/bom' },
+      },
+      {
+        title: 'Incluye la merma esperada',
+        body: 'Si al cortar se pierde un 5%, ponlo en la formula. Si no, cada orden va a quedar corta de material.',
+        tip: 'Saca el porcentaje de tus ordenes reales, no de lo que deberia ser.',
+      },
+      {
+        title: 'Una formula puede llevar otra dentro',
+        body: 'Un subensamble es un producto que a su vez tiene formula. El costo se acumula hacia arriba solo.',
+        action: { label: 'Ver una formula', path: '/bom' },
+      },
+      {
+        title: 'Cambiar la formula no cambia lo ya producido',
+        body: 'Lo fabricado guarda el costo del dia que se fabrico. Si no, el historico cambiaria cada vez que sube un componente.',
+      },
+    ],
+  },
+  {
+    id: 'f11.mrp',
+    moduleId: 'mrp',
+    title: 'Que comprar y cuando',
+    summary: 'Cruza lo que vas a producir con lo que tienes.',
+    xp: 35,
+    steps: [
+      {
+        title: 'El MRP resta, nada mas',
+        body: 'Lo que necesitas menos lo que tienes menos lo que ya viene en camino. Lo que falta es lo que hay que comprar.',
+        action: { label: 'Ir a MRP', path: '/mrp' },
+      },
+      {
+        title: 'El tiempo de entrega manda',
+        body: 'Un componente que tarda 45 dias hay que pedirlo 45 dias antes. Sin ese dato el calculo te dice que compres tarde.',
+        tip: 'Pon el plazo real de tu proveedor, no el que te prometio. Suele haber dos semanas de diferencia.',
+      },
+      {
+        title: 'Las sugerencias no compran solas',
+        body: 'El sistema propone; tu apruebas. Una compra automatica sin ojos encima es como se acumula lo que no se vende.',
+        action: { label: 'Ver sugerencias', path: '/mrp' },
+      },
+      {
+        title: 'Si el plan cambia, corre otra vez',
+        body: 'Un pedido grande que entra cambia todo lo que hay que comprar. El calculo es de hoy, no del lunes.',
+      },
+    ],
+  },
+  {
+    id: 'f11.piso',
+    moduleId: 'shopfloor',
+    title: 'Que esta pasando en la planta ahora',
+    summary: 'Estaciones, avance y donde se traba la produccion.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Cada orden pasa por estaciones',
+        body: 'Corte, ensamble, empaque. Saber en cual esta cada orden es saber para cuando la tienes.',
+        action: { label: 'Ir a Piso de planta', path: '/piso-de-planta' },
+      },
+      {
+        title: 'El operario reporta desde su puesto',
+        body: 'Marca lo que empieza y lo que termina. Sin eso, el avance es lo que alguien cree.',
+      },
+      {
+        title: 'La estacion con cola es tu cuello de botella',
+        body: 'Donde se acumula trabajo es lo unico que limita tu produccion. Mejorar cualquier otra estacion no cambia nada.',
+        action: { label: 'Ver una orden', path: '/piso-de-planta' },
+        tip: 'Es contraintuitivo: acelerar una estacion que no es el cuello solo hace la cola mas larga.',
+      },
+      {
+        title: 'Las paradas se anotan con su motivo',
+        body: 'Falta de material, averia, falta de gente. Sin motivo no hay nada que arreglar.',
+      },
+    ],
+  },
+  {
+    id: 'f11.proyectos',
+    moduleId: 'projects',
+    title: 'Proyectos con tareas y fechas',
+    summary: 'Quien hace que y para cuando.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Un proyecto es un conjunto de tareas con fin',
+        body: 'Con fecha de entrega y responsable. Si no tiene fin, es una operacion, no un proyecto.',
+        action: { label: 'Ir a Proyectos', path: '/proyectos' },
+      },
+      {
+        title: 'Cada tarea con dueno y fecha',
+        body: 'Una tarea sin responsable no la hace nadie; una sin fecha se hace ultima. Siempre las dos cosas.',
+      },
+      {
+        title: 'Lo que depende de algo, marcalo',
+        body: 'Si no puedes pintar hasta que sequen, esa dependencia tiene que estar. Asi un retraso mueve lo que tiene que mover.',
+        action: { label: 'Ver un proyecto', path: '/proyectos' },
+        tip: 'El retraso no duele por la tarea que se atrasa, sino por las cinco que la esperaban.',
+      },
+      {
+        title: 'El avance se reporta, no se supone',
+        body: 'Un proyecto que "va bien" hasta la semana antes de entregar es un proyecto que nadie midio.',
+      },
+    ],
+  },
+  {
+    id: 'f11.costeo',
+    moduleId: 'project-costing',
+    title: 'Cuanto te esta costando ese proyecto',
+    summary: 'Horas, materiales y gastos contra lo que cobraste.',
+    xp: 35,
+    steps: [
+      {
+        title: 'Todo lo que se gasta lleva el proyecto',
+        body: 'Horas, materiales, compras y gastos. Lo que no se carga al proyecto lo termina pagando otro.',
+        action: { label: 'Ir a Costeo de proyectos', path: '/costeo-proyectos' },
+      },
+      {
+        title: 'Las horas son el costo que mas se olvida',
+        body: 'La gente cuesta aunque ya este en nomina. Un proyecto que no carga horas siempre parece rentable.',
+        action: { label: 'Ir a Hojas de tiempo', path: '/hojas-de-tiempo' },
+        tip: 'Ponle a cada quien un costo por hora que incluya prestaciones. El salario solo se queda corto un 30%.',
+      },
+      {
+        title: 'Compara contra lo presupuestado, no al final',
+        body: 'Enterarte al cerrar de que perdiste no sirve. Miralo cada semana, cuando todavia puedes cambiar algo.',
+        action: { label: 'Ver un proyecto', path: '/costeo-proyectos' },
+      },
+      {
+        title: 'Lo que el cliente pidio de mas, se cobra',
+        body: 'Los cambios fuera de alcance se registran y se cotizan. Regalarlos es de donde sale la perdida de casi todo proyecto.',
+      },
+    ],
+  },
+  {
+    id: 'f11.hojas-tiempo',
+    moduleId: 'timesheets',
+    title: 'Hojas de tiempo',
+    summary: 'En que se va el dia de tu gente.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Se llena el mismo dia',
+        body: 'Reconstruir la semana el viernes es inventar. Y esos numeros inventados son los que luego costean el proyecto.',
+        action: { label: 'Ir a Hojas de tiempo', path: '/hojas-de-tiempo' },
+      },
+      {
+        title: 'Cada hora va a un proyecto o a interno',
+        body: 'Que exista la opcion de interno es importante: obligar a cargar todo a un cliente deforma el costeo de ese cliente.',
+      },
+      {
+        title: 'El supervisor aprueba',
+        body: 'Aprobadas, las horas entran al costo del proyecto y a la nomina si son extra.',
+        action: { label: 'Ver horas', path: '/hojas-de-tiempo' },
+        tip: 'Si un proyecto lleva el triple de horas de lo estimado, el problema esta en el estimado. Ajustalo para el proximo.',
+      },
+      {
+        title: 'Sirve para cotizar mejor',
+        body: 'Lo que de verdad tarda un trabajo sale de aqui. Cotizar de memoria es como se pierde plata tres veces con el mismo cliente.',
+      },
+    ],
+  },
+  {
+    id: 'f11.calidad',
+    moduleId: 'quality',
+    title: 'Control de calidad',
+    summary: 'Inspecciones, no conformidades y que no se repita.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Define que se inspecciona y como',
+        body: 'Un plan dice que se mide, con que criterio y cada cuanto. Sin plan, la inspeccion es una opinion.',
+        action: { label: 'Ir a Planes de calidad', path: '/calidad/planes' },
+      },
+      {
+        title: 'Inspecciona al recibir y al producir',
+        body: 'Detectar un defecto al recibir cuesta una devolucion. Detectarlo en casa del cliente cuesta el cliente.',
+        action: { label: 'Nueva inspeccion', path: '/calidad/inspecciones/nueva' },
+      },
+      {
+        title: 'Lo que falla se registra como no conformidad',
+        body: 'Con su causa y su accion correctiva. Un defecto arreglado sin registrar se repite el mes que viene.',
+        action: { label: 'Ver no conformidades', path: '/calidad/no-conformidades' },
+        tip: 'La causa casi nunca es "descuido". Si esa es tu respuesta, no llegaste a la causa.',
+      },
+      {
+        title: 'Mide si de verdad bajaron',
+        body: 'Las mismas no conformidades tres meses seguidos significan que la accion correctiva no corrigio nada.',
+      },
+    ],
+  },
+  // -- Campo, flota y mantenimiento --------------------------------------
+  {
+    id: 'f12.servicio-campo',
+    moduleId: 'field-service',
+    title: 'Tecnicos en la calle',
+    summary: 'Ordenes de servicio, ruta del dia y firma del cliente.',
+    xp: 35,
+    steps: [
+      {
+        title: 'Una orden de servicio por visita',
+        body: 'Cliente, que hay que hacer y cuando. El tecnico la ve en su telefono sin que nadie lo llame.',
+        action: { label: 'Ir a Servicio en campo', path: '/servicio-en-campo' },
+      },
+      {
+        title: 'Agrupa por zona, no por orden de llegada',
+        body: 'Cinco visitas en la misma zona rinden mas que cinco cruzando la ciudad. La gasolina y las horas son tu costo real.',
+        tip: 'Deja siempre un hueco para la urgencia del dia. Una agenda llena al 100% se cae con la primera emergencia.',
+      },
+      {
+        title: 'El tecnico reporta desde ahi',
+        body: 'Que hizo, que repuestos uso y cuanto tardo. Los repuestos salen del inventario en ese momento.',
+        action: { label: 'Ver una orden', path: '/servicio-en-campo' },
+      },
+      {
+        title: 'La firma del cliente cierra la visita',
+        body: 'Firma en el telefono y queda la constancia. Es lo que evita el "nunca vinieron" tres semanas despues.',
+      },
+      {
+        title: 'De ahi sale la factura',
+        body: 'Mano de obra y repuestos ya estan. Facturar no es volver a teclear, es confirmar.',
+        action: { label: 'Ir a Cuentas por cobrar', path: '/cobrar' },
+      },
+    ],
+  },
+  {
+    id: 'f12.flota',
+    moduleId: 'fleet',
+    title: 'Vehiculos y lo que cuestan',
+    summary: 'Combustible, mantenimiento y documentos al dia.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Una ficha por vehiculo',
+        body: 'Placa, marca, ano y a quien esta asignado. Tambien los documentos: seguro, marbete, revision.',
+        action: { label: 'Ir a Flota', path: '/flota' },
+      },
+      {
+        title: 'Los vencimientos avisan solos',
+        body: 'Seguro y marbete tienen fecha. Que te pare la AMET por un marbete vencido cuesta mas que el marbete.',
+        tip: 'Renueva con dos semanas de margen. Dejarlo para el ultimo dia es como se vencen.',
+      },
+      {
+        title: 'El combustible por vehiculo, no en bulto',
+        body: 'Si todo el gasto va a una cuenta, no sabes cual camion se come la plata. Cargalo a cada uno.',
+        action: { label: 'Ver un vehiculo', path: '/flota' },
+      },
+      {
+        title: 'Un vehiculo viejo tiene un punto de venta',
+        body: 'Cuando el mantenimiento del ano se acerca a lo que vale, toca cambiarlo. El dato lo tienes aqui.',
+      },
+    ],
+  },
+  {
+    id: 'f12.mantenimiento',
+    moduleId: 'maintenance',
+    title: 'Mantener los equipos antes de que paren',
+    summary: 'Preventivo programado en vez de correctivo a las tres de la manana.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Registra los equipos que importan',
+        body: 'Los que si paran, te paran. Una nevera de exhibicion o un compresor entran; una silla, no.',
+        action: { label: 'Ir a Equipos', path: '/mantenimiento/equipos' },
+      },
+      {
+        title: 'Programa el preventivo por uso o por tiempo',
+        body: 'Cada 500 horas o cada 3 meses, lo que llegue primero. El sistema genera la orden sola.',
+        tip: 'El preventivo siempre parece caro hasta la primera parada en plena temporada.',
+      },
+      {
+        title: 'Lo correctivo tambien se registra',
+        body: 'Que se dano, que se cambio y cuanto costo. Es el historial que te dice cuando el equipo ya no vale la pena.',
+        action: { label: 'Ver un equipo', path: '/mantenimiento/equipos' },
+      },
+      {
+        title: 'Mide cuanto para cada equipo',
+        body: 'Horas fuera de servicio al mes. El que mas para es el que hay que atender o sustituir, no el que mas se queja.',
+      },
+    ],
+  },
+  {
+    id: 'f12.rutas',
+    moduleId: 'logistics',
+    title: 'Rutas de entrega',
+    summary: 'Que sale hoy, con quien y en que orden.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Una ruta agrupa entregas de un dia',
+        body: 'Con su vehiculo y su chofer. Lo que no entra hoy pasa a manana, pero se sabe.',
+        action: { label: 'Ir a Rutas', path: '/rutas' },
+      },
+      {
+        title: 'El orden de las paradas es plata',
+        body: 'Ordenar por zona en vez de por cliente ahorra horas y combustible todos los dias.',
+        tip: 'Deja las entregas dificiles temprano. A las cuatro de la tarde nadie quiere pelear con un parqueo.',
+      },
+      {
+        title: 'La entrega se confirma en la puerta',
+        body: 'Quien recibio y a que hora. Sin eso, un reclamo de "no llego" no tiene como resolverse.',
+        action: { label: 'Ver una ruta', path: '/rutas' },
+      },
+      {
+        title: 'Lo que no se pudo entregar tiene motivo',
+        body: 'Cerrado, direccion mala, cliente sin plata. El motivo repetido es lo que hay que arreglar.',
+      },
+    ],
+  },
+  // -- Sistema, datos y automatizacion -----------------------------------
+  {
+    id: 'f13.importar',
+    moduleId: 'imports',
+    title: 'Traer tus datos de donde los tengas',
+    summary: 'Del Excel de siempre al sistema, sin perder nada.',
+    xp: 35,
+    steps: [
+      {
+        title: 'Empieza por el catalogo',
+        body: 'Productos primero, despues clientes, despues saldos. En ese orden, porque cada uno necesita el anterior.',
+        action: { label: 'Ir a Importar', path: '/importar' },
+      },
+      {
+        title: 'Baja la plantilla y llenala',
+        body: 'Cada importacion tiene su plantilla con las columnas exactas. Inventarse columnas es la causa numero uno de que falle.',
+      },
+      {
+        title: 'Te avisa ANTES de cargar',
+        body: 'Revisa el archivo y te ensena los errores fila por fila. Corriges el Excel y vuelves a subir.',
+        action: { label: 'Subir archivo', path: '/importar' },
+        tip: 'Prueba primero con 20 filas. Si esas entran bien, sube las 3,000.',
+      },
+      {
+        title: 'Una importacion se deshace completa',
+        body: 'Si te equivocaste, se revierte entera. No hay que borrar 3,000 productos a mano.',
+      },
+      {
+        title: 'Los saldos iniciales se cargan una vez',
+        body: 'Inventario, cuentas por cobrar y por pagar del dia que arrancas. Esa es tu foto de partida.',
+        tip: 'Escoge un corte limpio: fin de mes. Arrancar a mitad de mes obliga a cuadrar dos sistemas a la vez.',
+      },
+    ],
+  },
+  {
+    id: 'f13.respaldos',
+    moduleId: 'backup',
+    title: 'Respaldos que de verdad sirven',
+    summary: 'Un respaldo que nunca se restauro no es un respaldo.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Mira cuando fue el ultimo',
+        body: 'Aqui ves la fecha y el tamano. Un respaldo de hace tres semanas es casi lo mismo que ninguno.',
+        action: { label: 'Ir a Respaldos', path: '/respaldos' },
+      },
+      {
+        title: 'Guardalo fuera de aqui',
+        body: 'Un respaldo en el mismo sitio que los datos no protege del incendio ni del ransomware. Bajalo y guardalo aparte.',
+        tip: 'Tres copias, dos medios, una fuera del local. Es la regla de siempre y sigue siendo la buena.',
+      },
+      {
+        title: 'Pruebalo restaurando',
+        body: 'Un archivo que nadie abrio puede estar corrupto y no lo sabes hasta el dia que lo necesitas.',
+        action: { label: 'Ver respaldos', path: '/respaldos' },
+      },
+      {
+        title: 'Antes de cualquier cosa grande, uno a mano',
+        body: 'Antes de una importacion masiva o un cambio de precios general, respalda. Cuesta un minuto.',
+      },
+    ],
+  },
+  {
+    id: 'f13.auditoria',
+    moduleId: 'audit',
+    title: 'Quien hizo que, y cuando',
+    summary: 'La bitacora que te salva la discusion.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Todo queda registrado',
+        body: 'Crear, cambiar y borrar dejan rastro con usuario, hora y el valor de antes.',
+        action: { label: 'Ir a Auditoria', path: '/auditoria' },
+      },
+      {
+        title: 'La bitacora no se edita ni se borra',
+        body: 'Ni tu puedes. Una bitacora que alguien puede retocar no sirve de prueba de nada.',
+      },
+      {
+        title: 'Se busca por persona, por fecha o por documento',
+        body: 'Cuando aparece un precio raro, vas directo a quien lo toco y que decia antes.',
+        action: { label: 'Buscar en la bitacora', path: '/auditoria' },
+        tip: 'Por eso cada quien necesita su propio usuario. Si tres personas comparten una clave, la bitacora no dice nada.',
+      },
+      {
+        title: 'Lo delicado se guarda tapado',
+        body: 'Claves y llaves de acceso no quedan en claro en la bitacora, solo una huella de que cambiaron.',
+      },
+    ],
+  },
+  {
+    id: 'f13.automatizaciones',
+    moduleId: 'automations',
+    title: 'Que el sistema haga lo repetitivo',
+    summary: 'Cuando pase esto, haz aquello.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Una automatizacion es disparador mas accion',
+        body: 'Cuando el stock baje de X, avisa. Cuando una factura venza, manda recordatorio.',
+        action: { label: 'Ir a Automatizaciones', path: '/automatizaciones' },
+      },
+      {
+        title: 'Empieza por lo que ya haces a mano',
+        body: 'Lo que haces cada lunes sin falta es lo primero que conviene automatizar. No inventes procesos nuevos.',
+        tip: 'Automatizar un proceso malo lo hace malo mas rapido. Arreglalo primero.',
+      },
+      {
+        title: 'Pruebala antes de soltarla',
+        body: 'Una regla mal puesta manda cien correos a tus clientes. Correla primero en modo prueba.',
+        action: { label: 'Ver reglas', path: '/automatizaciones' },
+      },
+      {
+        title: 'Revisa las que ya nadie mira',
+        body: 'Una alerta que salta todos los dias deja de leerse. Si pasa eso, el umbral esta mal.',
+      },
+    ],
+  },
+  {
+    id: 'f13.notificaciones',
+    moduleId: 'notifications',
+    title: 'Enterarte de lo que importa',
+    summary: 'Pocas alertas y que cada una signifique algo.',
+    xp: 20,
+    steps: [
+      {
+        title: 'Elige por donde te llega',
+        body: 'Dentro del sistema, correo o el telefono. Lo urgente al telefono; el resto, dentro.',
+        action: { label: 'Ir a Notificaciones', path: '/notificaciones' },
+      },
+      {
+        title: 'Cada quien configura las suyas',
+        body: 'Al cajero no le sirve una alerta de contabilidad. Si le llega todo, deja de mirar.',
+        tip: 'Menos alertas y mejores. Veinte al dia es lo mismo que cero.',
+      },
+      {
+        title: 'Lo que de verdad para el negocio',
+        body: 'Quedarte sin NCF, un rechazo de la DGII, stock en cero de lo que mas vendes. Esas si.',
+        action: { label: 'Ver notificaciones', path: '/notificaciones' },
+      },
+      {
+        title: 'Si no vas a hacer nada, no es alerta',
+        body: 'Una notificacion que no cambia lo que haces es ruido. Quitala.',
+      },
+    ],
+  },
+  // -- Los que faltaban ---------------------------------------------------
+  {
+    id: 'f14.copiloto',
+    moduleId: 'ai-copilot',
+    title: 'Preguntarle al sistema en español',
+    summary: 'Respuestas sobre TUS datos, sin aprender a hacer reportes.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Preguntale como le hablarias a un empleado',
+        body: 'Cuanto vendi este mes, quien me debe mas, que producto no se mueve. Sin menus ni filtros.',
+        action: { label: 'Abrir el copiloto', path: '/copiloto' },
+      },
+      {
+        title: 'Solo ve lo que tu ves',
+        body: 'Responde con los datos de tu empresa y con los permisos de tu usuario. A un cajero no le va a decir los costos.',
+        tip: 'Por eso nunca le des tu usuario a otra persona: el copiloto responderia con tu nivel de acceso.',
+      },
+      {
+        title: 'Verifica lo que suene raro',
+        body: 'Si una cifra te sorprende, pidele de donde salio y comprueba en el reporte. Es una ayuda, no la fuente.',
+        action: { label: 'Ver reportes', path: '/reportes' },
+      },
+      {
+        title: 'No decide por ti',
+        body: 'Te dice que pasa; que hacer al respecto sigue siendo tuyo.',
+      },
+    ],
+  },
+  {
+    id: 'f14.api',
+    moduleId: 'api-webhooks',
+    title: 'Conectar otro sistema con este',
+    summary: 'Llaves de acceso y avisos automaticos hacia afuera.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Una llave por integracion, nunca compartida',
+        body: 'Si la tienda en linea y el contador usan la misma llave, no puedes cortarle a uno sin cortarle al otro.',
+        action: { label: 'Ir a API y webhooks', path: '/api-webhooks' },
+      },
+      {
+        title: 'La llave se ve UNA vez',
+        body: 'Al crearla la copias y la guardas donde guardas tus claves. Despues no se vuelve a mostrar: se genera otra.',
+        tip: 'No la mandes por WhatsApp ni la escribas en un correo. Quien la tenga entra como tu.',
+      },
+      {
+        title: 'Los webhooks avisan cuando algo pasa',
+        body: 'En vez de que el otro sistema pregunte cada minuto, este le avisa cuando hay una venta nueva.',
+        action: { label: 'Ver webhooks', path: '/api-webhooks' },
+      },
+      {
+        title: 'Si dejas de usar una integracion, borra su llave',
+        body: 'Una llave viva de un sistema que ya no usas es una puerta abierta que nadie vigila.',
+      },
+    ],
+  },
+  {
+    id: 'f14.cuenta',
+    moduleId: 'auth',
+    title: 'Tu cuenta y tu seguridad',
+    summary: 'Clave, segundo factor y por que no se comparte.',
+    xp: 20,
+    steps: [
+      {
+        title: 'Tu usuario es tuyo y de nadie mas',
+        body: 'Todo lo que se haga con el queda a tu nombre en la bitacora. Prestarlo es responder por lo que haga otro.',
+        action: { label: 'Ir a Mi cuenta', path: '/perfil' },
+      },
+      {
+        title: 'Activa el segundo factor',
+        body: 'Una clave sola se adivina o se filtra. Con segundo factor, saberla no alcanza.',
+        tip: 'Hazlo hoy, no cuando pase algo. Toma dos minutos.',
+      },
+      {
+        title: 'Cierra sesion en equipos que no son tuyos',
+        body: 'Un equipo compartido con la sesion abierta es la cuenta abierta.',
+        action: { label: 'Ver mis sesiones', path: '/perfil' },
+      },
+      {
+        title: 'Si sospechas, cambia la clave ya',
+        body: 'Cambiarla cierra las sesiones abiertas. Es lo primero, antes de averiguar que paso.',
+      },
+    ],
+  },
+  {
+    id: 'f14.conciliacion',
+    moduleId: 'bank-rec',
+    title: 'Cuadrar con el banco',
+    summary: 'Lo que el banco dice contra lo que tu tienes.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Sube el estado de cuenta',
+        body: 'El archivo que baja tu banco. El sistema casa solo lo que coincide en monto y fecha.',
+        action: { label: 'Ir a Conciliacion', path: '/conciliacion' },
+      },
+      {
+        title: 'Lo que no casa es tu trabajo',
+        body: 'Cheques sin cobrar, depositos en transito, comisiones que no registraste. Eso es todo lo que hay que mirar.',
+        tip: 'Las comisiones y los ITBIS bancarios son lo que mas descuadra, y casi nadie los registra hasta conciliar.',
+      },
+      {
+        title: 'Concilia cada mes, no cada seis',
+        body: 'Una diferencia de este mes se encuentra en minutos. De hace seis meses, en dias.',
+        action: { label: 'Ver conciliaciones', path: '/conciliacion' },
+      },
+      {
+        title: 'Una diferencia que no aparece, se investiga',
+        body: 'No la fuerces con un ajuste. Un descuadre que se tapa vuelve el mes que viene mas grande.',
+      },
+    ],
+  },
+  {
+    id: 'f14.beneficios',
+    moduleId: 'benefits',
+    title: 'Beneficios y prestamos a empleados',
+    summary: 'Seguro, planes y descuentos por nomina.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Los planes se definen una vez',
+        body: 'Seguro medico, plan dental, lo que ofrezcas. Despues inscribes gente, no configuras de nuevo.',
+        action: { label: 'Ir a Planes', path: '/beneficios/planes' },
+      },
+      {
+        title: 'La inscripcion es por persona',
+        body: 'Quien entra, desde cuando y cuanto aporta cada parte. De ahi sale el descuento en nomina.',
+        action: { label: 'Ir a Beneficios', path: '/beneficios' },
+      },
+      {
+        title: 'Un prestamo se descuenta solo',
+        body: 'Defines cuotas y la nomina las descuenta hasta saldarlo. Un prestamo saldado queda inmutable.',
+        tip: 'Pon un tope de cuanto del sueldo puede irse en descuentos. Sin tope, alguien termina cobrando cero.',
+      },
+      {
+        title: 'Cancelar no borra el historial',
+        body: 'Una inscripcion cancelada se queda con su fecha. Hace falta para responder por lo que se descontaba antes.',
+      },
+    ],
+  },
+  {
+    id: 'f14.bi',
+    moduleId: 'bi',
+    title: 'Reportes y tableros',
+    summary: 'Los numeros que se miran, no los que se pueden sacar.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Empieza por tres numeros, no por treinta',
+        body: 'Ventas, margen y cuanto te deben. Si solo pudieras ver tres, esos.',
+        action: { label: 'Ir a Reportes', path: '/reportes' },
+      },
+      {
+        title: 'Compara siempre contra algo',
+        body: 'Un numero solo no dice nada. Contra el mes pasado o contra el ano pasado, si.',
+        tip: 'En un negocio con temporada, compara contra el mismo mes del ano pasado, no contra el mes anterior.',
+      },
+      {
+        title: 'Guarda el reporte que usas',
+        body: 'Si armas el mismo filtro cada lunes, guardalo. Rehacerlo es donde se pierde la costumbre de mirarlo.',
+        action: { label: 'Ver un reporte', path: '/reportes' },
+      },
+      {
+        title: 'Todo reporte se exporta',
+        body: 'A Excel o PDF, para el contador o el banco. Los datos son tuyos y salen cuando quieras.',
+      },
+    ],
+  },
+  {
+    id: 'f14.sucursales',
+    moduleId: 'branches',
+    title: 'Varias sucursales',
+    summary: 'Cada local con su inventario y su caja, todo en una empresa.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Una sucursal es un sitio con inventario propio',
+        body: 'Local, almacen o punto de venta. El stock se cuenta por sucursal, no en bulto.',
+        action: { label: 'Ir a Sucursales', path: '/sucursales' },
+      },
+      {
+        title: 'Cada quien ve la suya',
+        body: 'El encargado de un local ve su sucursal. Quien administra las ve todas.',
+        tip: 'Es lo que evita que un cajero de un local venda stock que esta en otro.',
+      },
+      {
+        title: 'Mover entre sucursales es transferir',
+        body: 'Nunca ajustes de menos en una y de mas en otra. La transferencia deja el rastro de las dos puntas.',
+        action: { label: 'Ir a Transferencias', path: '/transferencias' },
+      },
+      {
+        title: 'Compara el resultado de cada una',
+        body: 'Cual vende mas por metro, cual tiene mas merma. Es la informacion con la que se abre o se cierra un local.',
+      },
+    ],
+  },
+  {
+    id: 'f14.chat',
+    moduleId: 'chat',
+    title: 'Hablar dentro del sistema',
+    summary: 'Para que lo del trabajo no viva en WhatsApp.',
+    xp: 20,
+    steps: [
+      {
+        title: 'Conversaciones por tema o por area',
+        body: 'Un canal por sucursal o por proyecto. Lo que se decide ahi queda donde se trabaja.',
+        action: { label: 'Ir a Chat', path: '/chat' },
+      },
+      {
+        title: 'Se puede mencionar un documento',
+        body: 'Hablar de una factura con el enlace al lado evita el "cual factura" y tres mensajes de mas.',
+      },
+      {
+        title: 'Lo urgente no va por chat',
+        body: 'Si algo tiene que pasar, hazlo tarea o ticket. Un mensaje se lo lleva el scroll.',
+        action: { label: 'Ver conversaciones', path: '/chat' },
+        tip: 'La regla simple: si tiene dueno y fecha, no es un mensaje.',
+      },
+      {
+        title: 'Quien entra despues lee lo de antes',
+        body: 'Un empleado nuevo se pone al dia leyendo el canal. Eso un grupo de WhatsApp no lo da.',
+      },
+    ],
+  },
+  {
+    id: 'f14.tablero',
+    moduleId: 'dashboard',
+    title: 'Tu pantalla de inicio',
+    summary: 'Lo primero que ves al entrar, y que deberia ser.',
+    xp: 20,
+    steps: [
+      {
+        title: 'El tablero es de cada quien',
+        body: 'Lo que le sirve al dueno no le sirve al cajero. Cada usuario arma el suyo.',
+        action: { label: 'Ir al inicio', path: '/' },
+      },
+      {
+        title: 'Los modulos aportan sus tarjetas',
+        body: 'Activas un modulo y aparecen sus indicadores. Apagas uno y desaparecen. No hay que configurar nada.',
+      },
+      {
+        title: 'Pocas tarjetas y grandes',
+        body: 'Un tablero con quince cosas no se mira. Con cuatro, si.',
+        tip: 'Si llevas una semana sin mirar una tarjeta, quitala. El tablero es para actuar, no para decorar.',
+      },
+      {
+        title: 'De la tarjeta al detalle',
+        body: 'Toda tarjeta lleva al sitio donde se resuelve. Ver que te deben mucho sin poder ir a cobrar no sirve.',
+        action: { label: 'Ir a Cuentas por cobrar', path: '/cobrar' },
+      },
+    ],
+  },
+  {
+    id: 'f14.firma',
+    moduleId: 'e-sign',
+    title: 'Firmar documentos',
+    summary: 'Contratos y aprobaciones sin imprimir ni escanear.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Sube el documento y marca quien firma',
+        body: 'Uno o varios firmantes, en el orden que haga falta.',
+        action: { label: 'Ir a Firma electronica', path: '/firma-electronica' },
+      },
+      {
+        title: 'Cada firmante recibe su enlace',
+        body: 'Firma desde su telefono. No hace falta que tenga cuenta en el sistema.',
+      },
+      {
+        title: 'Queda constancia de quien, cuando y desde donde',
+        body: 'Eso es lo que hace la firma defendible. Un PDF con una imagen pegada no lo es.',
+        action: { label: 'Ver documentos', path: '/firma-electronica' },
+        tip: 'No la confundas con el certificado de la DGII: eso es otra cosa y solo sirve para facturar.',
+      },
+      {
+        title: 'Firmado, el documento se congela',
+        body: 'Si hay que cambiar algo, se firma uno nuevo. Tocar un documento firmado invalida la firma.',
+      },
+    ],
+  },
+  {
+    id: 'f14.ecommerce',
+    moduleId: 'ecommerce',
+    title: 'Vender en linea con el mismo inventario',
+    summary: 'Una sola existencia para la tienda y para la web.',
+    xp: 30,
+    steps: [
+      {
+        title: 'El inventario es uno solo',
+        body: 'Lo que se vende en la web descuenta del mismo stock que el mostrador. Dos inventarios separados es como se vende lo que no hay.',
+        action: { label: 'Ir a Tienda en linea', path: '/ecommerce' },
+      },
+      {
+        title: 'Elige que productos salen',
+        body: 'No todo tiene que estar en linea. Marca lo que si, con su foto y su descripcion.',
+        tip: 'Sin foto no se vende. Es el trabajo aburrido que decide si la tienda funciona.',
+      },
+      {
+        title: 'El pedido web entra como cualquier otro',
+        body: 'Llega a la misma lista de pedidos, se prepara igual y se factura igual.',
+        action: { label: 'Ir a Pedidos', path: '/pedidos' },
+      },
+      {
+        title: 'Deja un margen de stock',
+        body: 'Si tienes 3, publica 2. El tercero te salva del cliente que compro en linea lo que acabas de vender en el mostrador.',
+      },
+    ],
+  },
+  {
+    id: 'f14.archivos',
+    moduleId: 'files',
+    title: 'Documentos donde toca',
+    summary: 'Adjuntos pegados al cliente, al producto o a la factura.',
+    xp: 20,
+    steps: [
+      {
+        title: 'El archivo vive con el registro',
+        body: 'El contrato con el cliente, la ficha con el producto, el conduce con la recepcion. No en una carpeta suelta.',
+        action: { label: 'Ir a Archivos', path: '/archivos' },
+      },
+      {
+        title: 'Nombres que se entiendan',
+        body: 'Contrato-2026-Ferreteria.pdf, no escaneo7.pdf. Dentro de un ano lo vas a agradecer.',
+      },
+      {
+        title: 'Ve quien lo subio y cuando',
+        body: 'Cada archivo trae su rastro. Si hay dos versiones de un contrato, sabes cual es la ultima.',
+        action: { label: 'Ver archivos', path: '/archivos' },
+        tip: 'Sube version nueva en vez de borrar la vieja. Borrar te deja sin con que comparar.',
+      },
+      {
+        title: 'Solo lo ve quien puede ver el registro',
+        body: 'Si no tienes acceso al empleado, no ves su contrato. El permiso del archivo es el del sitio donde esta.',
+      },
+    ],
+  },
+  {
+    id: 'f14.portal-empleado',
+    moduleId: 'hr-portal',
+    title: 'Que el empleado se atienda solo',
+    summary: 'Volantes, saldo de vacaciones y cartas, sin pasar por recursos humanos.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Su volante lo baja el',
+        body: 'Cada quien entra y baja el suyo. Recursos humanos deja de imprimir y repartir papeles.',
+        action: { label: 'Ir al portal', path: '/portal' },
+      },
+      {
+        title: 'Ve su saldo de vacaciones al momento',
+        body: 'La pregunta que mas se repite en toda empresa deja de hacerse.',
+      },
+      {
+        title: 'Pide permisos desde ahi',
+        body: 'La solicitud va a su supervisor sin papeles de por medio.',
+        action: { label: 'Ir a Vacaciones', path: '/vacaciones' },
+      },
+      {
+        title: 'Los anuncios llegan a todos',
+        body: 'Lo que antes era un papel en la pared. Y se sabe quien lo leyo.',
+        action: { label: 'Ver anuncios', path: '/portal/anuncios' },
+        tip: 'Usalo para lo que de verdad es de todos. Si publicas cada cosa, dejan de entrar.',
+      },
+    ],
+  },
+  {
+    id: 'f14.captura-facturas',
+    moduleId: 'invoice-capture',
+    title: 'Facturas de proveedor sin teclear',
+    summary: 'Foto o PDF, y los datos salen solos.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Sube la foto o el PDF',
+        body: 'Lee el RNC, el NCF, la fecha y el monto. Tu confirmas, no tecleas.',
+        action: { label: 'Ir a Cuentas por pagar', path: '/pagar' },
+      },
+      {
+        title: 'Revisa SIEMPRE el NCF y el monto',
+        body: 'Son los dos que van a la 606. Un digito mal leido te lo devuelve la DGII.',
+        tip: 'Una factura arrugada o con sello encima se lee mal. Esas conviene teclearlas.',
+      },
+      {
+        title: 'El archivo se queda pegado',
+        body: 'La imagen original queda con el registro. Es tu respaldo si alguien pregunta.',
+        action: { label: 'Ver archivos', path: '/archivos' },
+      },
+      {
+        title: 'Captura el mismo dia que llega',
+        body: 'Un monton de facturas del mes acumuladas es como se pasan las fechas de la 606.',
+      },
+    ],
+  },
+  {
+    id: 'f14.marketing',
+    moduleId: 'marketing',
+    title: 'Campanas a tus clientes',
+    summary: 'Mandar a quien toca, no a todos.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Segmenta antes de mandar',
+        body: 'Los que compraron esto, los que no vienen hace tres meses. Mandarle a todos lo mismo es como te dejan de leer.',
+        action: { label: 'Ir a Marketing', path: '/marketing' },
+      },
+      {
+        title: 'La lista sale de tus clientes reales',
+        body: 'No hace falta exportar a otro sistema: el segmento se arma con tu historial de ventas.',
+      },
+      {
+        title: 'Mide lo que vendio, no lo que abrio',
+        body: 'Una campana con muchas aperturas y cero ventas no funciono. La venta es la medida.',
+        action: { label: 'Ver campanas', path: '/marketing' },
+        tip: 'Manda menos y mejor. Dos campanas buenas al mes rinden mas que ocho.',
+      },
+      {
+        title: 'Respeta a quien se da de baja',
+        body: 'Si alguien pide no recibir, se respeta. Insistir cuesta el cliente, no solo el correo.',
+      },
+    ],
+  },
+  {
+    id: 'f14.empresas',
+    moduleId: 'orgs',
+    title: 'Una o varias empresas',
+    summary: 'Cada RNC con su contabilidad, bajo una misma cuenta.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Una empresa es un RNC',
+        body: 'Si facturas con dos RNC, son dos empresas: contabilidad, NCF e inventario separados.',
+        action: { label: 'Ir a Empresas', path: '/empresas' },
+      },
+      {
+        title: 'Los datos salen en cada factura',
+        body: 'Razon social, RNC, direccion y telefono. Revisalos una vez, porque van impresos en todo.',
+        tip: 'El telefono va con guiones en la factura electronica. Es un requisito de formato de la DGII.',
+      },
+      {
+        title: 'Cambias de empresa arriba',
+        body: 'La barra de la izquierda cambia de empresa sin cerrar sesion. Lo que ves es siempre de una sola.',
+      },
+      {
+        title: 'Nunca se mezclan',
+        body: 'Ni por error ni a proposito: los datos de una empresa no se ven desde otra. Lo asegura la base, no la pantalla.',
+        action: { label: 'Ver empresas', path: '/empresas' },
+      },
+    ],
+  },
+  {
+    id: 'f14.pagos',
+    moduleId: 'payments',
+    title: 'Cobrar con tarjeta y transferencia',
+    summary: 'Formas de pago, comisiones y cuando entra la plata.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Cada forma de pago se registra aparte',
+        body: 'Efectivo, tarjeta, transferencia. Cuadrar la caja empieza por saber cuanto entro de cada una.',
+        action: { label: 'Ir a Punto de venta', path: '/pos' },
+      },
+      {
+        title: 'La tarjeta cobra comision y tarda',
+        body: 'Vendes 1,000 y te entran 970 en dos dias. Si no registras la comision, la caja nunca cuadra.',
+        tip: 'Esa comision es gasto deducible. Registrala bien y la recuperas en la declaracion.',
+      },
+      {
+        title: 'Un pago puede ser mixto',
+        body: 'Mitad efectivo y mitad tarjeta es normal. Se reparte en el momento, no despues.',
+        action: { label: 'Ver cobros', path: '/cobros' },
+      },
+      {
+        title: 'Cuadra el turno al cerrar',
+        body: 'Lo contado contra lo registrado, por forma de pago. La diferencia se explica hoy, no manana.',
+        action: { label: 'Ver turnos', path: '/pos/shifts' },
+      },
+    ],
+  },
+  {
+    id: 'f14.desempeno',
+    moduleId: 'performance',
+    title: 'Evaluaciones de desempeno',
+    summary: 'Metas, evaluacion y planes de mejora.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Primero las metas, despues la evaluacion',
+        body: 'Evaluar sin metas puestas al principio es opinar. Definelas al empezar el periodo.',
+        action: { label: 'Ir a Desempeno', path: '/desempeno' },
+      },
+      {
+        title: 'Una evaluacion enviada es inmutable',
+        body: 'Igual que un pago: una vez enviada no se retoca. Es lo que la hace valer en una discusion.',
+        tip: 'Revisala dos veces antes de enviar. Lo escrito ahi puede terminar en una demanda laboral.',
+      },
+      {
+        title: 'La 360 recoge varias voces',
+        body: 'Supervisor, pares y la propia persona. Una sola opinion mide tanto al que evalua como al evaluado.',
+        action: { label: 'Ver evaluaciones', path: '/desempeno' },
+      },
+      {
+        title: 'Un plan de mejora tiene fecha',
+        body: 'Sin fecha ni seguimiento es una queja por escrito. Resuelto queda inmutable, como la evaluacion.',
+      },
+    ],
+  },
+  {
+    id: 'f14.reclutamiento',
+    moduleId: 'recruiting',
+    title: 'Contratar gente',
+    summary: 'De la vacante al expediente de empleado.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Abre la vacante con lo que de verdad pides',
+        body: 'Cargo, salario y requisitos. Una vacante vaga trae candidatos vagos.',
+        action: { label: 'Ir a Reclutamiento', path: '/reclutamiento' },
+      },
+      {
+        title: 'Los candidatos van avanzando por etapas',
+        body: 'Recibido, entrevista, prueba, oferta. Saber donde esta cada uno evita perder al bueno por tardanza.',
+      },
+      {
+        title: 'Una aplicacion resuelta queda firme',
+        body: 'Contratado o rechazado, no se vuelve a mover. Y el rechazado se guarda: la proxima vacante empieza ahi.',
+        action: { label: 'Ver candidatos', path: '/reclutamiento' },
+        tip: 'Avisale siempre al que no quedo. Cuesta un minuto y es lo que decide si te recomienda o no.',
+      },
+      {
+        title: 'Contratado se vuelve empleado',
+        body: 'Sus datos pasan al expediente sin volver a teclearlos.',
+        action: { label: 'Ir a Empleados', path: '/empleados' },
+      },
+    ],
+  },
+  {
+    id: 'f14.recursos',
+    moduleId: 'resources',
+    title: 'Reservar salas y equipos',
+    summary: 'Lo que se comparte, sin choques.',
+    xp: 20,
+    steps: [
+      {
+        title: 'Un recurso es algo que se comparte',
+        body: 'Una sala, un vehiculo, un equipo de medicion. Lo que dos personas pueden necesitar a la vez.',
+        action: { label: 'Ir a Recursos', path: '/recursos' },
+      },
+      {
+        title: 'Dos reservas no se pisan',
+        body: 'El sistema no deja reservar lo ya reservado. Ahi se acaba la discusion de quien llego primero.',
+      },
+      {
+        title: 'Reserva con dueno',
+        body: 'Cada reserva tiene a quien reclamarle si no aparece o si deja el equipo sucio.',
+        action: { label: 'Ver reservas', path: '/recursos' },
+        tip: 'Cancela lo que no vas a usar. Una sala reservada y vacia es peor que una ocupada.',
+      },
+      {
+        title: 'Lo que siempre esta lleno, hace falta mas',
+        body: 'Si un recurso vive reservado, el dato para comprar otro ya lo tienes.',
+      },
+    ],
+  },
+  {
+    id: 'f14.busqueda',
+    moduleId: 'search',
+    title: 'Encontrar cualquier cosa rapido',
+    summary: 'Un solo campo para todo el sistema.',
+    xp: 20,
+    steps: [
+      {
+        title: 'Ctrl+K abre la busqueda',
+        body: 'Desde donde estes. Escribe el nombre de un cliente, un numero de factura o un producto.',
+        action: { label: 'Ir al inicio', path: '/' },
+      },
+      {
+        title: 'Tambien busca acciones',
+        body: 'Escribe "nueva factura" y te lleva. No hace falta acordarse en que menu estaba.',
+        tip: 'Es lo mas rapido del sistema. Quien lo usa deja de navegar por menus.',
+      },
+      {
+        title: 'Solo encuentra lo que puedes ver',
+        body: 'La busqueda respeta tus permisos: no va a mostrarte lo que la pantalla te oculta.',
+      },
+      {
+        title: 'Busca por lo que recuerdes',
+        body: 'Un pedazo del nombre, el RNC o el numero. No hace falta que sea exacto.',
+        action: { label: 'Ir a Clientes', path: '/crm' },
+      },
+    ],
+  },
+  {
+    id: 'f14.capacitacion',
+    moduleId: 'training',
+    title: 'Capacitar a tu gente',
+    summary: 'Cursos, inscripciones y constancia de quien lo hizo.',
+    xp: 25,
+    steps: [
+      {
+        title: 'Registra los cursos que das',
+        body: 'Internos o externos, con su fecha y su duracion. Hace falta para el expediente y para la ley.',
+        action: { label: 'Ir a Capacitacion', path: '/capacitacion' },
+      },
+      {
+        title: 'Inscribe y lleva la asistencia',
+        body: 'Quien fue y quien no. Un curso sin lista de asistencia no le consta a nadie.',
+      },
+      {
+        title: 'Una inscripcion resuelta queda firme',
+        body: 'Completado o no completado no se vuelve a tocar. Es la constancia.',
+        action: { label: 'Ver cursos', path: '/capacitacion' },
+        tip: 'Guarda el certificado como archivo adjunto. El dia de una auditoria de seguridad laboral te lo van a pedir.',
+      },
+      {
+        title: 'Capacita a quien lo necesita',
+        body: 'Cruza lo que falta en las evaluaciones con los cursos. Capacitar a ciegas es gastar.',
+      },
+    ],
+  },
 ]
 
 export function toursFor(licensedModules: Set<string>): Tour[] {
