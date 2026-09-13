@@ -285,3 +285,82 @@ describe('Lo que la tabla no deja pasar', () => {
     ).rejects.toThrow(/duplicate key|violates unique constraint/)
   })
 })
+
+describe('Quien cuenta no puede reescribir la foto del sistema (0106)', () => {
+  /**
+   * La diferencia de un conteo es `counted_qty - system_qty`. Quien
+   * pueda escribir `system_qty` puede ponerla en cero, y entonces un
+   * faltante no aparece en ningun reporte ni en ninguna bitacora de
+   * ajuste: el conteo deja de servir para lo unico que sirve.
+   *
+   * La RLS no cubre esto: una politica decide QUE FILAS se tocan, no que
+   * columnas. Hace falta permiso a nivel de columna, y por eso se prueba
+   * contra Postgres de verdad.
+   *
+   * Con la app web sola daba menos miedo -las acciones del servidor
+   * escriben el UPDATE-. Con el movil hablandole a PostgREST, cualquiera
+   * manda el PATCH que quiera, y el telefono lo tiene justo quien cuenta.
+   */
+  let cuenta: string
+  let fila: string
+
+  beforeAll(async () => {
+    const [c] = await as(
+      userB,
+      tenantB,
+      (tx) => tx<{ id: string }[]>`
+        insert into public.cycle_counts (tenant_id, warehouse_id, started_by)
+        values (${tenantB}, ${almacenB}, ${userB}) returning id`,
+    )
+    cuenta = c!.id
+    const [l] = await as(
+      userB,
+      tenantB,
+      (tx) => tx<{ id: string }[]>`
+        insert into public.cycle_count_lines (count_id, tenant_id, product_id, system_qty)
+        values (${cuenta}, ${tenantB}, ${productoB}, 100) returning id`,
+    )
+    fila = l!.id
+  })
+
+  it('escribir lo contado SI se puede: es el trabajo', async () => {
+    await as(
+      userB,
+      tenantB,
+      (tx) => tx`update public.cycle_count_lines set counted_qty = 88 where id = ${fila}`,
+    )
+    const [r] = await sql`select counted_qty::text from public.cycle_count_lines where id = ${fila}`
+    expect(r!.counted_qty).toBe('88.000')
+  })
+
+  it('tocar system_qty se deniega', async () => {
+    await expect(
+      as(
+        userB,
+        tenantB,
+        (tx) => tx`update public.cycle_count_lines set system_qty = 88 where id = ${fila}`,
+      ),
+    ).rejects.toThrow(/permission denied|permiso/i)
+  })
+
+  it('y tampoco colandolo junto al valor legitimo', async () => {
+    // El intento realista: mandar las dos columnas en el mismo PATCH
+    // para que parezca un guardado normal.
+    await expect(
+      as(
+        userB,
+        tenantB,
+        (tx) => tx`
+          update public.cycle_count_lines
+             set counted_qty = 88, system_qty = 88
+           where id = ${fila}`,
+      ),
+    ).rejects.toThrow(/permission denied|permiso/i)
+  })
+
+  it('la foto del sistema sigue intacta despues de los intentos', async () => {
+    const [r] = await sql`select system_qty::text from public.cycle_count_lines where id = ${fila}`
+    expect(r!.system_qty).toBe('100.000')
+  })
+})
+

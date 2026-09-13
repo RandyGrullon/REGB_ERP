@@ -41,6 +41,12 @@ const SECCIONES: Seccion[] = [
     ruta: '/(app)/existencias',
   },
   {
+    moduleId: 'inventory',
+    titulo: 'Contar inventario',
+    descripcion: 'Los conteos abiertos, para hacerlos de pie en el almacen',
+    ruta: '/(app)/conteos',
+  },
+  {
     moduleId: 'chat',
     titulo: 'Chat interno',
     descripcion: 'Lo que se habla del trabajo, donde se trabaja',
