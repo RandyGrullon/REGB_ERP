@@ -141,3 +141,45 @@ describe('Las proyecciones no se escriben a mano', () => {
     }
   })
 })
+
+describe('Lo fiscal no se borra (0108)', () => {
+  /**
+   * Anular una factura es un CAMBIO DE ESTADO, no un borrado: el numero
+   * queda quemado y eso es justo lo que la DGII quiere ver. Un borrado
+   * de verdad deja un hueco en la 607 sin rastro de que existio.
+   *
+   * El contador es el caso menos obvio y el peor: borrarlo lo reinicia,
+   * el sistema reemite numeros ya usados, y reusar un NCF sale en la 607.
+   */
+  const FISCALES = [
+    'customer_invoices',
+    'customer_payments',
+    'ecf_emitidos',
+    'ecf_recibidos',
+    'customer_invoice_counters',
+    'journal_entry_counters',
+  ]
+
+  it('ninguna se puede borrar desde una sesion de usuario', async () => {
+    const borrables: string[] = []
+    for (const t of FISCALES) {
+      const [p] = await sql<{ del: boolean }[]>`
+        select has_table_privilege('authenticated', ${`public.${t}`}, 'DELETE') as del`
+      if (p!.del) borrables.push(t)
+    }
+    expect(borrables).toEqual([])
+  })
+
+  it('pero emitir y anular siguen funcionando', async () => {
+    // Si esto se cae, la revocacion se paso de lista: anular es un
+    // update de estado y tiene que seguir siendo posible.
+    for (const t of ['customer_invoices', 'ecf_emitidos']) {
+      const [p] = await sql<{ ins: boolean; upd: boolean }[]>`
+        select has_table_privilege('authenticated', ${`public.${t}`}, 'INSERT') as ins,
+               has_table_privilege('authenticated', ${`public.${t}`}, 'UPDATE') as upd`
+      expect(p!.ins, `${t} insert`).toBe(true)
+      expect(p!.upd, `${t} update`).toBe(true)
+    }
+  })
+})
+
