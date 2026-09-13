@@ -1,4 +1,5 @@
 import { Badge, EmptyState, Icon, PageHeader, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
+import { estadoDeRespaldos } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -14,6 +15,7 @@ interface BackupRow {
   size_bytes: number
   created_by_name: string | null
   created_at: string
+  downloaded_at: string | null
 }
 
 /** Respaldos (S11): tu informacion es tuya, llevatela cuando quieras. */
@@ -30,7 +32,8 @@ export default async function RespaldosPage({
     ctx.tenantId,
     (tx) => tx<BackupRow[]>`
       select b.id, b.kind, b.size_bytes,
-             p.display_name as created_by_name, b.created_at::text
+             p.display_name as created_by_name, b.created_at::text,
+             b.downloaded_at::text
       from public.backups b
       left join public.user_profiles p
         on p.tenant_id = b.tenant_id and p.user_id = b.created_by
@@ -41,6 +44,31 @@ export default async function RespaldosPage({
 
   const puedeCrear = exigir(ctx, 'backup', 'backup.create').ok
   const puedeExportar = exigir(ctx, 'backup', 'backup.export').ok
+
+  // El estado se mide sobre el ultimo respaldo que SALIO de aqui, no
+  // sobre el ultimo que se hizo: el que sigue dentro de la base se
+  // pierde junto con ella. Ver `estadoDeRespaldos`.
+  //
+  // Se calcula sobre las 50 filas que ya se leyeron -ordenadas por fecha
+  // descendente-, no con otra consulta: si el ultimo que salio fuese mas
+  // viejo que las 50 ultimas, el aviso solo se queda corto en el sentido
+  // seguro -avisa de mas, nunca de menos-.
+  const salido = backups.find((b) => b.downloaded_at !== null)
+  const estado = estadoDeRespaldos(
+    {
+      ultimo: backups[0] ? new Date(backups[0].created_at) : null,
+      ultimoFuera: salido?.downloaded_at ? new Date(salido.downloaded_at) : null,
+    },
+    new Date(),
+  )
+  const tonoAviso: Record<string, string> = {
+    'sin-respaldo': 'danger',
+    'nunca-salio': 'danger',
+    'muy-viejo': 'danger',
+    viejo: 'warning',
+    'al-dia': 'success',
+  }
+  const tono = tonoAviso[estado.nivel] ?? 'neutral'
   const fecha = (iso: string) =>
     new Date(iso).toLocaleString('es-DO', {
       day: 'numeric',
@@ -73,6 +101,39 @@ export default async function RespaldosPage({
           }
         />
 
+        {/*
+          El aviso va ARRIBA y con color, no como una nota al pie. Es la
+          unica linea de esta pantalla que puede cambiar lo que el cliente
+          hace hoy; la lista de abajo solo confirma lo que ya sabe.
+
+          El estado nunca se comunica solo por color (ley de Aurora):
+          lleva icono y texto, y el texto dice el numero de dias -"12
+          dias" mueve a alguien, "desactualizado" no-.
+        */}
+        <div
+          role={tono === 'danger' ? 'alert' : undefined}
+          className="flex items-start gap-3 rounded-[var(--radius-lg)] border p-4"
+          style={{
+            // `color-mix` sobre el token, igual que `Aviso`: asi el fondo
+            // se adapta solo al tema claro y al oscuro sin definir un
+            // token nuevo por cada variante.
+            borderColor: `var(--color-semantic-${tono})`,
+            background: `color-mix(in srgb, var(--color-semantic-${tono}) 14%, var(--color-surface-raised))`,
+          }}
+        >
+          <Icon
+            name={
+              tono === 'danger' ? 'gpp_maybe' : tono === 'warning' ? 'schedule' : 'verified_user'
+            }
+            size={22}
+            className="mt-0.5 shrink-0 text-[var(--color-text-primary)]"
+          />
+          <div className="min-w-0">
+            <p className="font-medium text-[var(--color-text-primary)]">{estado.titulo}</p>
+            <p className="mt-0.5 text-sm text-[var(--color-text-secondary)]">{estado.detalle}</p>
+          </div>
+        </div>
+
         {backups.length === 0 ? (
           <EmptyState
             icon="backup"
@@ -87,6 +148,7 @@ export default async function RespaldosPage({
                 <TH>Tipo</TH>
                 <TH numeric>Tamano</TH>
                 <TH>Creado por</TH>
+                <TH>Fuera de aqui</TH>
                 <TH>
                   <span className="sr-only">Acciones</span>
                 </TH>
@@ -107,6 +169,13 @@ export default async function RespaldosPage({
                     <span className="tabular">{(b.size_bytes / 1024).toFixed(1)} KB</span>
                   </TD>
                   <TD>{b.created_by_name ?? '—'}</TD>
+                  <TD>
+                    {b.downloaded_at === null ? (
+                      <Badge tone="warning">Solo aqui</Badge>
+                    ) : (
+                      <Badge tone="success">Descargado</Badge>
+                    )}
+                  </TD>
                   <TD>
                     {puedeExportar && (
                       <a

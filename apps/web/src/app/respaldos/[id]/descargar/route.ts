@@ -25,6 +25,25 @@ export async function GET(
 
   if (!backup) return new Response('No existe', { status: 404 })
 
+  // Se marca que este respaldo SALIO de aqui.
+  //
+  // Es el unico dato que distingue un respaldo que protege de uno que
+  // no: el que sigue dentro de la misma base se pierde con ella. Sin
+  // esto, la pantalla no puede avisar y el cliente cree que esta
+  // cubierto porque ve la lista llena.
+  //
+  // Se marca la PRIMERA vez y no se pisa en las siguientes: lo que
+  // interesa es cuando dejo de estar solo aqui, no la ultima vez que
+  // alguien volvio a bajarlo.
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
+      update public.backups
+         set downloaded_at = now(), downloaded_by = ${ctx.userId}
+       where id = ${id} and tenant_id = ${ctx.tenantId} and downloaded_at is null`,
+  )
+
   const nombre = `regb-respaldo-${backup.created_at.slice(0, 10)}.json`
   return new Response(JSON.stringify(backup.payload, null, 2), {
     headers: {
