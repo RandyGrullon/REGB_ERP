@@ -154,7 +154,7 @@ export default async function UsuariosPage({
         </Table>
 
         {puedeCrear && (
-          <Card>
+          <Card data-tour="usuario-invitar">
             <CardHeader>
               <CardTitle>Invitar a alguien</CardTitle>
             </CardHeader>

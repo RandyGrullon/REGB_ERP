@@ -115,7 +115,7 @@ export default async function SucursalesPage({
         </Table>
 
         {puedeCrear && (
-          <Card>
+          <Card data-tour="sucursal-nueva">
             <CardHeader>
               <CardTitle>Abrir sucursal</CardTitle>
             </CardHeader>

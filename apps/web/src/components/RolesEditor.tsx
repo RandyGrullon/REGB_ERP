@@ -316,6 +316,7 @@ export function RolesEditor({
 
             {/* ── 1. Modulos visibles ──────────────────────────────── */}
             <Section
+              data-tour="rol-modulos-visibles"
               titulo="Modulos visibles en el sidebar"
               ayuda="Lo que este rol ve al entrar. Los que no marques siguen existiendo, simplemente no aparecen."
             >
@@ -440,13 +441,18 @@ function Section({
   titulo,
   ayuda,
   children,
+  ...resto
 }: {
   titulo: string
   ayuda: string
   children: React.ReactNode
-}) {
+} & React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <Card className="mb-4 p-4">
+    // `...resto` para que el `data-tour` del tutorial llegue como
+    // LITERAL al sitio donde se usa. Pasarlo por una prop con nombre
+    // propio dejaba el nombre del ancla escondido en una expresion, y la
+    // prueba que comprueba que el ancla existe no podia verlo.
+    <Card className="mb-4 p-4" {...resto}>
       <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{titulo}</h2>
       <p className="mb-3 mt-0.5 text-xs text-[var(--color-text-muted)]">{ayuda}</p>
       {children}

@@ -102,7 +102,7 @@ export default async function ImportarPage({
         )}
 
         {puedeImportar && (
-          <Card>
+          <Card data-tour="importar-csv">
             <CardHeader>
               <CardTitle>Subir archivo CSV</CardTitle>
             </CardHeader>

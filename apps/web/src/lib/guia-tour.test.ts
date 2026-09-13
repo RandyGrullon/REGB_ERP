@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { TOURS } from '@regb/core'
@@ -63,3 +63,47 @@ describe('Los destinos de los tours', () => {
     expect(mudos).toEqual([])
   })
 })
+
+describe('Las anclas que los tours señalan', () => {
+  /**
+   * Un `target` que no existe en la UI no rompe nada -la guia sale sin
+   * resaltar- y por eso mismo se pudre sin que nadie lo note: se
+   * renombra el ancla, el resaltado deja de funcionar y el tour sigue
+   * pareciendo correcto.
+   *
+   * Se busca el ancla en TODO `src`, no solo en la pagina de destino:
+   * casi siempre vive en un componente compartido, no en el page.tsx.
+   */
+  const anclasEnElCodigo = (): Set<string> => {
+    const encontradas = new Set<string>()
+    const raiz = join(dirname(fileURLToPath(import.meta.url)), '..')
+    const recorrer = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name)
+        if (e.isDirectory()) {
+          recorrer(p)
+        } else if (e.name.endsWith('.tsx')) {
+          for (const m of readFileSync(p, 'utf8').matchAll(/data-tour="([^"]+)"/g)) {
+            encontradas.add(m[1]!)
+          }
+        }
+      }
+    }
+    recorrer(raiz)
+    return encontradas
+  }
+
+  const objetivos = [
+    ...new Set(TOURS.flatMap((t) => t.steps.flatMap((s) => (s.target ? [s.target] : [])))),
+  ].sort()
+
+  it('hay tours que ya señalan algo', () => {
+    expect(objetivos.length).toBeGreaterThan(0)
+  })
+
+  it('cada target tiene su data-tour en la UI', () => {
+    const anclas = anclasEnElCodigo()
+    expect(objetivos.filter((o) => !anclas.has(o))).toEqual([])
+  })
+})
+

@@ -177,7 +177,7 @@ export default async function EmpresasPage({
         </Table>
 
         {puedeCrear && (
-          <Card>
+          <Card data-tour="empresa-nueva">
             <CardHeader>
               <CardTitle>Agregar empresa</CardTitle>
             </CardHeader>
