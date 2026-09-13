@@ -223,3 +223,70 @@ describe('Lo que la tabla no deja pasar', () => {
     ).rejects.toThrow(/violates check constraint/)
   })
 })
+
+describe('La bitacora NO guarda el token en claro', () => {
+  /**
+   * `audit.record()` guarda `to_jsonb(new)`: la fila entera. En casi toda
+   * tabla eso es lo que se quiere; en `ecf_config` no, porque ahi va el
+   * `endpoint_token`.
+   *
+   * Ese token es lo UNICO que separa el buzon de e-CF de un cliente del
+   * de otro -las tres URL publicas no piden nada mas- y `audit.log` la
+   * lee cualquier usuario del tenant con permiso de bitacora, mientras
+   * que la fila de `ecf_config` solo la ve quien administra el modulo.
+   * La bitacora, puesta ahi para vigilar, filtraba la llave que vigila.
+   *
+   * 0103 lo corrige pasando las columnas secretas como argumentos del
+   * trigger. Se comprueba contra Postgres de verdad porque el defecto
+   * vivia en plpgsql: ningun test de TypeScript lo habria visto.
+   */
+  it('ni al crear ni al cambiarlo', async () => {
+    const [antes] = await sql<{ endpoint_token: string }[]>`
+      select endpoint_token from public.ecf_config where tenant_id = ${tenantA}`
+    const nuevo = 'a1b2c3d4e5f60718293a4b5c6d7e8f90'
+
+    await sql`update public.ecf_config set endpoint_token = ${nuevo} where tenant_id = ${tenantA}`
+
+    const filas = await sql<{ antes: string | null; despues: string | null }[]>`
+      select before ->> 'endpoint_token' as antes, after ->> 'endpoint_token' as despues
+        from audit.log
+       where tenant_id = ${tenantA} and entity = 'ecf_config'
+       order by at`
+
+    // Si esto sale vacio la prueba no esta probando nada.
+    expect(filas.length).toBeGreaterThan(0)
+
+    const enClaro = [antes!.endpoint_token, nuevo]
+    for (const f of filas) {
+      for (const v of [f.antes, f.despues]) {
+        expect(enClaro).not.toContain(v)
+        if (v !== null) expect(v).toMatch(/^oculto:[0-9a-f]{8}$/)
+      }
+    }
+
+    // Devuelto al valor original para no romper el resto del archivo.
+    await sql`update public.ecf_config set endpoint_token = ${antes!.endpoint_token}
+              where tenant_id = ${tenantA}`
+  })
+
+  it('pero el cambio SIGUE siendo detectable, que es para lo que sirve la bitacora', async () => {
+    // Se oculta con una huella, no con un '***' fijo: un auditor tiene
+    // que poder ver que el token cambio el dia X sin poder reconstruirlo.
+    const huellas = await sql<{ n: string }[]>`
+      select count(distinct after ->> 'endpoint_token') as n
+        from audit.log
+       where tenant_id = ${tenantA} and entity = 'ecf_config'`
+    expect(Number(huellas[0]!.n)).toBeGreaterThan(1)
+  })
+
+  it('y el resto de la fila se audita igual que siempre', async () => {
+    // Ocultar una columna no puede convertirse en dejar de auditar.
+    const [f] = await sql<{ ambiente: string | null }[]>`
+      select after ->> 'ambiente' as ambiente
+        from audit.log
+       where tenant_id = ${tenantA} and entity = 'ecf_config'
+       order by at limit 1`
+    expect(f!.ambiente).not.toBeNull()
+  })
+})
+

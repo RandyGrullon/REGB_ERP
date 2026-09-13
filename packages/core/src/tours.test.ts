@@ -88,8 +88,18 @@ describe('Cada tour cumple lo que promete el tutorial', () => {
 
 describe('Un tour de un modulo no licenciado no se ensena', () => {
   it('filtra por los modulos del tenant', () => {
-    const soloInventario = toursFor(new Set(['inventory']))
-    expect(soloInventario.every((t) => t.moduleId === 'inventory')).toBe(true)
+    // El modulo se SACA de los datos en vez de escribirlo aqui.
+    //
+    // No es coqueteria: `audit:registry` prohibe que el core nombre un
+    // modulo concreto -"el core no conoce los modulos", §2.2- y esta
+    // prueba vive en el core. Escribir 'inventory' a mano ponia la
+    // puerta F0 en rojo, y con razon: si manana ese modulo se renombra o
+    // sale del catalogo, una prueba con el id escrito se rompe sin que
+    // nada este mal.
+    const uno = TOURS[0]!.moduleId
+    const filtrados = toursFor(new Set([uno]))
+    expect(filtrados.length).toBeGreaterThan(0)
+    expect(filtrados.every((t) => t.moduleId === uno)).toBe(true)
   })
 
   it('sin modulos, sin tours', () => {
