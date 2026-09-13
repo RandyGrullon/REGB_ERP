@@ -212,7 +212,7 @@ export default async function NcfPage({ searchParams }: { searchParams: Promise<
         )}
 
         {puedeGestionar && (
-          <Card>
+          <Card data-tour="ncf-autorizacion">
             <CardHeader>
               <CardTitle>Registrar autorizacion de la DGII</CardTitle>
             </CardHeader>

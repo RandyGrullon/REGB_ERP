@@ -170,7 +170,7 @@ export default async function ProveedoresPage({
         )}
 
         {puedeGestionar && (
-          <Card>
+          <Card data-tour="proveedor-nuevo">
             <CardHeader>
               <CardTitle>Registrar proveedor</CardTitle>
             </CardHeader>

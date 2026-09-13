@@ -190,7 +190,7 @@ export default async function ClientesPage({
         )}
 
         {puedeGestionar && (
-          <Card>
+          <Card data-tour="cliente-nuevo">
             <CardHeader>
               <CardTitle>Nuevo cliente</CardTitle>
             </CardHeader>

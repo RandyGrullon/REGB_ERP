@@ -347,6 +347,7 @@ export function PosTerminal({
             className="pointer-events-none absolute left-3 text-[var(--color-text-muted)]"
           />
           <input
+            data-tour="pos-buscar"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={alEscanear}

@@ -230,7 +230,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             />
           </>
         ) : puedeAbrir && almacenes.length > 0 ? (
-          <Card>
+          <Card data-tour="turno-abrir">
             <CardHeader>
               <CardTitle>Abrir turno</CardTitle>
             </CardHeader>

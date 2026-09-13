@@ -224,7 +224,7 @@ export default async function PedidosPage({
         )}
 
         {puedeCrear && customers.length > 0 && warehouses.length > 0 && (
-          <Card>
+          <Card data-tour="pedido-nuevo">
             <CardHeader>
               <CardTitle>Nuevo pedido</CardTitle>
             </CardHeader>

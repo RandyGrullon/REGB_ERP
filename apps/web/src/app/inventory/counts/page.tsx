@@ -245,7 +245,7 @@ export default async function CountsPage({
         )}
 
         {puedeContar && (
-          <Card>
+          <Card data-tour="conteo-iniciar">
             <CardHeader>
               <CardTitle>Iniciar conteo</CardTitle>
             </CardHeader>

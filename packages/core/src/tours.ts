@@ -151,17 +151,20 @@ export const TOURS: Tour[] = [
         title: 'Trae lo que ya tienes',
         body: 'No teclees mil productos. Exporta a CSV desde donde los tengas y subelos: si algo sale mal deshaces la importacion completa.',
         action: { label: 'Ir a Importar', path: '/importar' },
+        target: 'importar-csv',
         tip: 'Importa primero 10 filas de prueba. Si esas quedan bien, el resto tambien.',
       },
       {
         title: 'Agrupa por categorias',
         body: 'Las categorias son para encontrar y para reportar, no para decorar. Con 8 o 10 alcanza; una por producto no sirve para nada.',
         action: { label: 'Ir a Categorias', path: '/products/categories' },
+        target: 'categoria-nueva',
       },
       {
         title: 'Revisa el ITBIS de cada producto',
         body: 'La mayoria lleva 18%, pero los alimentos sin procesar estan exentos. Un impuesto mal puesto no se nota vendiendo: se nota declarando.',
         action: { label: 'Ir al Catalogo', path: '/products' },
+        target: 'producto-tabla',
         tip: 'El arroz, la habichuela y el platano van exentos. La galleta y el refresco, no.',
       },
       {
@@ -197,6 +200,7 @@ export const TOURS: Tour[] = [
         title: 'Entiende el semaforo',
         body: 'Verde es que hay de sobra; amarillo, que llegaste al punto de reorden; rojo, que ya no tienes. El punto de reorden lo pones tu por producto.',
         action: { label: 'Ir a Existencias', path: '/inventory' },
+        target: 'existencias-tabla',
       },
       {
         title: 'Disponible no es lo mismo que fisico',
@@ -217,6 +221,7 @@ export const TOURS: Tour[] = [
         title: 'Cuenta por partes, no todo de golpe',
         body: 'Un conteo ciclico toma una zona a la vez y compara con lo que dice el sistema. Cerrar la tienda para contarlo todo cuesta mas de lo que corrige.',
         action: { label: 'Ir a Conteos', path: '/inventory/counts' },
+        target: 'conteo-iniciar',
       },
     ],
   },
@@ -231,12 +236,14 @@ export const TOURS: Tour[] = [
         title: 'Registra tus clientes',
         body: 'Nombre, RNC y a cuantos dias le fias. El RNC se verifica al guardarlo: un digito mal escrito hace rebotar el reporte del mes.',
         action: { label: 'Ir a Clientes', path: '/pedidos/clientes' },
+        target: 'cliente-nuevo',
         tip: 'Los dias de credito que pongas aqui son los que despues deciden quien esta en mora.',
       },
       {
         title: 'Un pedido nace en borrador',
         body: 'En borrador se corrige libremente y no toca el inventario. Nada se aparta hasta que lo confirmas.',
         action: { label: 'Ir a Pedidos', path: '/pedidos' },
+        target: 'pedido-nuevo',
       },
       {
         title: 'Confirmar aparta, no entrega',
@@ -276,6 +283,7 @@ export const TOURS: Tour[] = [
         title: 'Escanea o busca',
         body: 'El lector de codigo de barras es un teclado: teclea el codigo y manda Enter. No hace falta instalar nada, solo que el producto tenga su codigo cargado.',
         action: { label: 'Ir a Caja', path: '/pos' },
+        target: 'pos-buscar',
       },
       {
         title: 'Cobra mezclando formas de pago',
@@ -285,6 +293,7 @@ export const TOURS: Tour[] = [
         title: 'El comprobante fiscal sale solo',
         body: 'Cliente con RNC recibe B01, para que pueda deducir el ITBIS; el de mostrador, B02. Si no hay secuencia cargada la caja no se traba, pero el ticket lo dice.',
         action: { label: 'Ir a Comprobantes', path: '/cobrar/ncf' },
+        target: 'ncf-autorizacion',
       },
       {
         title: 'Imprime en termica de 80 mm',
@@ -314,6 +323,7 @@ export const TOURS: Tour[] = [
         title: 'Carga tu autorizacion de la DGII',
         body: 'Es lo primero: sin una secuencia de NCF vigente no puedes emitir una factura valida. Pedirla toma dias, asi que gestionala antes de necesitarla.',
         action: { label: 'Ir a Comprobantes', path: '/cobrar/ncf' },
+        target: 'ncf-autorizacion',
         tip: 'La pantalla te avisa cuando quedan pocos o esta por vencer. Hazle caso la primera vez que lo diga.',
       },
       {
@@ -353,11 +363,13 @@ export const TOURS: Tour[] = [
         title: 'Registra tus proveedores',
         body: 'Nombre, RNC y cuantos dias de credito te da. Es lo minimo para armar una orden.',
         action: { label: 'Ir a Proveedores', path: '/compras/proveedores' },
+        target: 'proveedor-nuevo',
       },
       {
         title: 'Una orden nace en borrador',
         body: 'Le agregas productos con el costo que este proveedor te cotizo hoy, no el que dice el catalogo. En borrador se corrige libremente.',
         action: { label: 'Ir a Compras', path: '/compras' },
+        target: 'compra-nueva',
       },
       {
         title: 'Confirmar NO mueve inventario',

@@ -218,7 +218,7 @@ export default async function ComprasPage({
         )}
 
         {puedeCrear && suppliers.length > 0 && warehouses.length > 0 && (
-          <Card>
+          <Card data-tour="compra-nueva">
             <CardHeader>
               <CardTitle>Nueva orden de compra</CardTitle>
             </CardHeader>

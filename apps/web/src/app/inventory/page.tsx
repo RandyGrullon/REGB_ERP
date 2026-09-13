@@ -136,7 +136,7 @@ export default async function InventoryPage({
             description="Registra una entrada desde Movimientos, o transfiere stock desde otro almacen."
           />
         ) : (
-          <Table>
+          <Table data-tour="existencias-tabla">
             <THead>
               <TR>
                 <TH>Codigo</TH>
@@ -213,7 +213,7 @@ export default async function InventoryPage({
         )}
 
         {puedeAjustar && warehouses.length > 0 && (
-          <Card>
+          <Card data-tour="inventario-ajuste">
             <CardHeader>
               <CardTitle>Ajuste manual</CardTitle>
             </CardHeader>

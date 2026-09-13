@@ -106,7 +106,7 @@ export default async function CategoriesPage({
         )}
 
         {puedeGestionar && (
-          <Card>
+          <Card data-tour="categoria-nueva">
             <CardHeader>
               <CardTitle>Nueva categoria</CardTitle>
             </CardHeader>

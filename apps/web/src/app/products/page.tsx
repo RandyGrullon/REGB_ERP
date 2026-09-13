@@ -178,7 +178,7 @@ export default async function ProductsPage({
             }
           />
         ) : (
-          <Table>
+          <Table data-tour="producto-tabla">
             <THead>
               <TR>
                 <TH>Codigo</TH>
@@ -255,7 +255,7 @@ export default async function ProductsPage({
         )}
 
         {puedeCrear && (
-          <Card>
+          <Card data-tour="producto-nuevo">
             <CardHeader>
               <CardTitle>Nuevo producto</CardTitle>
             </CardHeader>
