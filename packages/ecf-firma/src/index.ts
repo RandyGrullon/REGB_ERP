@@ -77,11 +77,175 @@ export interface Credencial {
  * sin quejarse es peor que no firmar, porque el rechazo de la DGII llega
  * asincrono y horas despues, con la venta ya hecha.
  */
+// ── Escaneo lineal: por que aqui NO hay expresiones regulares ───────────
+//
+//  Todo lo que se recorre en este archivo puede venir de FUERA: un e-CF
+//  que otro contribuyente nos manda a las rutas publicas `/api/ecf/...`.
+//  El cuerpo llega topado a 4 MB.
+//
+//  Los regex que habia aqui -del estilo `<Signature[\s\S]*?</Signature>`-
+//  son CUADRATICOS cuando la etiqueta de cierre no aparece: el motor
+//  reintenta desde cada apertura y recorre el resto entero cada vez.
+//  Medido sobre este repo: 344 KB de `'<Signature '` repetido tardan
+//  9.6 segundos de CPU. Extrapolando la curva, 4 MB pasan de los veinte
+//  minutos, y Node es de un solo hilo: ese POST deja el servidor
+//  atendiendo a nadie mas. No hace falta romper nada -basta con un
+//  token valido y un archivo grande de basura-.
+//
+//  Buscar por indice recorre el texto una vez. Es mas codigo y menos
+//  bonito; es lineal.
+
+/** Cuanto se acepta de prefijo de espacio de nombres (`ds:`, `xades:`...). */
+const MAX_PREFIJO = 64
+
+/**
+ * Si en `fin` termina un nombre de etiqueta valido, devuelve donde
+ * empieza el `<`. Admite `<Nombre` y `<prefijo:Nombre`.
+ *
+ * El paso atras esta topado a MAX_PREFIJO a proposito: sin tope, un
+ * documento con un prefijo de un megabyte devolveria el mismo coste
+ * cuadratico que se acaba de quitar.
+ */
+function inicioDeEtiqueta(xml: string, fin: number): number {
+  if (xml[fin] === '<') return fin
+  let i = fin
+  const limite = Math.max(0, fin - MAX_PREFIJO)
+  while (i > limite) {
+    const c = xml.charCodeAt(i - 1)
+    const esNombre =
+      (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || c === 95 || c === 45 || c === 46
+    if (esNombre) {
+      i -= 1
+      continue
+    }
+    if (c === 58 /* : */) {
+      // El prefijo se consume de una vez; despues solo puede venir '<'.
+      i -= 1
+      continue
+    }
+    break
+  }
+  if (i > 0 && xml[i - 1] === '<') return i - 1
+  // Cierre: `</Nombre>` o `</prefijo:Nombre>`.
+  if (i > 1 && xml[i - 1] === '/' && xml[i - 2] === '<') return i - 2
+  return -1
+}
+
+function esEspacio(c: string | undefined): boolean {
+  if (c === undefined) return false
+  const n = c.charCodeAt(0)
+  // 32 espacio, 9 tab, 10 salto, 13 retorno. Se comparan por codigo y no
+  // con literales escapados: es la CUARTA vez en este repo que una barra
+  // invertida se pierde al generar codigo y el fallo sale lejos de aqui.
+  return n === 32 || n === 9 || n === 10 || n === 13
+}
+
+/**
+ * Posicion del `<` de la siguiente apertura de `nombre`, o -1.
+ *
+ * Exige que tras el nombre venga un espacio o `>`, para que `Signature`
+ * no enganche con `SignatureValue`.
+ */
+function buscarApertura(xml: string, nombre: string, desde: number): number {
+  let i = xml.indexOf(nombre, desde)
+  while (i !== -1) {
+    const sig = xml[i + nombre.length]
+    if (esEspacio(sig) || sig === '>') {
+      const ini = inicioDeEtiqueta(xml, i)
+      // `inicioDeEtiqueta` tambien reconoce `</`: aqui se busca apertura.
+      if (ini !== -1 && xml[ini + 1] !== '/') return ini
+    }
+    i = xml.indexOf(nombre, i + 1)
+  }
+  return -1
+}
+
+/** Posicion PASADO el `>` del cierre `</nombre>`, o -1. */
+function buscarCierre(xml: string, nombre: string, desde: number): number {
+  let i = xml.indexOf(nombre, desde)
+  while (i !== -1) {
+    // Hacia atras debe haber `</` o `</prefijo:`. `inicioDeEtiqueta` deja
+    // el cursor en el `<`, asi que el `/` se comprueba aparte.
+    const abre = inicioDeEtiqueta(xml, i)
+    if (abre !== -1 && xml[abre + 1] === '/') {
+      const fin = xml.indexOf('>', i + nombre.length)
+      // Entre el nombre y el `>` de un cierre solo caben espacios.
+      if (fin !== -1 && xml.slice(i + nombre.length, fin).trim() === '') return fin + 1
+    }
+    i = xml.indexOf(nombre, i + 1)
+  }
+  return -1
+}
+
+/** El bloque `<Signature ...>...</Signature>` completo, o null. */
+export function bloqueDeFirma(xml: string): { inicio: number; fin: number } | null {
+  const inicio = buscarApertura(xml, 'Signature', 0)
+  if (inicio === -1) return null
+  const fin = buscarCierre(xml, 'Signature', inicio)
+  return fin === -1 ? null : { inicio, fin }
+}
+
+/** Si el documento ya trae firma. */
+export function estaFirmado(xml: string): boolean {
+  return buscarApertura(xml, 'Signature', 0) !== -1
+}
+
+/**
+ * El nombre de la etiqueta que empieza en `desde`, o null si ahi no
+ * empieza una apertura -un cierre, un comentario, el prologo o un
+ * caracter '<' suelto en el texto-.
+ */
+function nombreDeEtiqueta(xml: string, desde: number): string | null {
+  const primero = xml.charCodeAt(desde)
+  const esLetra =
+    (primero >= 65 && primero <= 90) || (primero >= 97 && primero <= 122) || primero === 95
+  if (!esLetra) return null
+  let j = desde + 1
+  while (j < xml.length) {
+    const c = xml.charCodeAt(j)
+    const ok =
+      (c >= 48 && c <= 57) ||
+      (c >= 65 && c <= 90) ||
+      (c >= 97 && c <= 122) ||
+      c === 95 ||
+      c === 45 ||
+      c === 46
+    if (!ok) break
+    j += 1
+  }
+  return xml.slice(desde, j)
+}
+
 export function elementosVacios(xml: string): string[] {
-  const sinFirma = xml.replace(/<(\w+:)?Signature[\s>][\s\S]*?<\/(\w+:)?Signature>/g, '')
+  // Se quita el bloque de firma: lleva elementos vacios legitimos
+  // (`<Transform>`, `<Reference>`...) que no son defecto alguno.
+  const firma = bloqueDeFirma(xml)
+  const sinFirma = firma === null ? xml : xml.slice(0, firma.inicio) + xml.slice(firma.fin)
   const encontrados = new Set<string>()
-  for (const m of sinFirma.matchAll(/<([A-Za-z_][\w.-]*)\s*\/>/g)) encontrados.add(m[1]!)
-  for (const m of sinFirma.matchAll(/<([A-Za-z_][\w.-]*)[^>]*><\/\1>/g)) encontrados.add(m[1]!)
+
+  // Recorrido lineal. Los dos `matchAll` que habia aqui usaban una clase
+  // de nombre seguida de `[^>]*`, dos repeticiones que compiten por los
+  // mismos caracteres: con una etiqueta abierta y sin cierre a la vista,
+  // el motor prueba todos los repartos posibles. Medido sobre este repo:
+  // 32.000 etiquetas tardaban 11,6 s -y `firmarEcf` llama a esto SIEMPRE,
+  // ademas de las rutas publicas de entrada-.
+  let i = sinFirma.indexOf('<')
+  while (i !== -1) {
+    const nombre = nombreDeEtiqueta(sinFirma, i + 1)
+    if (nombre === null) {
+      i = sinFirma.indexOf('<', i + 1)
+      continue
+    }
+    const cierra = sinFirma.indexOf('>', i + 1 + nombre.length)
+    if (cierra === -1) break
+
+    if (sinFirma.slice(i + 1 + nombre.length, cierra).trim() === '/') {
+      encontrados.add(nombre) // <Nombre/>
+    } else if (sinFirma.startsWith('</' + nombre + '>', cierra + 1)) {
+      encontrados.add(nombre) // <Nombre ...></Nombre>
+    }
+    i = sinFirma.indexOf('<', cierra + 1)
+  }
   return [...encontrados]
 }
 
@@ -104,7 +268,7 @@ export function certificadoEnBase64(pem: string): string {
  * documento con dos `<Signature>` y ninguno valido.
  */
 export function firmarEcf(xml: string, cred: Credencial): string {
-  if (/<(\w+:)?Signature[\s>]/.test(xml)) {
+  if (estaFirmado(xml)) {
     throw new Error('Ese XML ya viene firmado: firmarlo otra vez lo invalida.')
   }
 
@@ -164,11 +328,11 @@ export function firmarEcf(xml: string, cred: Credencial): string {
  */
 export function verificarFirmaEcf(xmlFirmado: string, certificadoPem: string): boolean {
   try {
-    const m = /<(\w+:)?Signature[\s>][\s\S]*<\/(\w+:)?Signature>/.exec(xmlFirmado)
-    if (!m) return false
+    const b = bloqueDeFirma(xmlFirmado)
+    if (b === null) return false
 
     const verificador = new SignedXml({ publicCert: certificadoPem })
-    verificador.loadSignature(m[0])
+    verificador.loadSignature(xmlFirmado.slice(b.inicio, b.fin))
     return verificador.checkSignature(xmlFirmado)
   } catch {
     return false
@@ -183,9 +347,14 @@ export function verificarFirmaEcf(xmlFirmado: string, certificadoPem: string): b
  * impresa, asi que el QR tampoco existe hasta que el e-CF esta firmado.
  */
 export function codigoSeguridadDe(xmlFirmado: string): string | null {
-  const m = /<(\w+:)?SignatureValue[^>]*>([\s\S]*?)<\/(\w+:)?SignatureValue>/.exec(xmlFirmado)
-  if (!m?.[2]) return null
-  const limpio = m[2].replace(/\s+/g, '')
+  const abre = buscarApertura(xmlFirmado, 'SignatureValue', 0)
+  if (abre === -1) return null
+  const iniContenido = xmlFirmado.indexOf('>', abre)
+  if (iniContenido === -1) return null
+  const finBloque = buscarCierre(xmlFirmado, 'SignatureValue', iniContenido)
+  if (finBloque === -1) return null
+  const cierre = xmlFirmado.lastIndexOf('<', finBloque - 1)
+  const limpio = xmlFirmado.slice(iniContenido + 1, cierre).replace(/\s+/g, '')
   return limpio.length < 6 ? null : limpio.slice(0, 6)
 }
 

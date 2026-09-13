@@ -230,7 +230,34 @@ export interface EcfEntrante {
  * devolvia el del comentario y no el real.
  */
 function sinComentarios(xml: string): string {
-  return xml.replace(/<!--[\s\S]*?-->/g, '').replace(/<\?[\s\S]*?\?>/g, '')
+  return quitarBloques(quitarBloques(xml, '<!--', '-->'), '<?', '?>')
+}
+
+/**
+ * Quita todo lo que va entre dos delimitadores, recorriendo UNA vez.
+ *
+ * Antes eran dos `replace` con `<!--[\s\S]*?-->`. Ese patron es
+ * cuadratico cuando el cierre nunca aparece: el motor reintenta desde
+ * cada `<!--` y recorre hasta el final cada vez. Como esto se le aplica
+ * a lo que entra por las rutas publicas `/api/ecf/...` -topado a 4 MB-,
+ * un archivo de basura con muchos `<!--` y ningun `-->` bastaba para
+ * dejar el proceso de Node, que es de un solo hilo, girando en vacio.
+ *
+ * Un bloque sin cerrar se descarta hasta el final: es lo mismo que hace
+ * un analizador de XML, y lo contrario -darlo por contenido bueno-
+ * dejaria leer un e-NCF escondido dentro de un comentario abierto.
+ */
+function quitarBloques(xml: string, abre: string, cierra: string): string {
+  let salida = ''
+  let desde = 0
+  for (;;) {
+    const i = xml.indexOf(abre, desde)
+    if (i === -1) return salida + xml.slice(desde)
+    salida += xml.slice(desde, i)
+    const f = xml.indexOf(cierra, i + abre.length)
+    if (f === -1) return salida
+    desde = f + cierra.length
+  }
 }
 
 function etiquetaDe(xml: string, nombre: string): string | null {

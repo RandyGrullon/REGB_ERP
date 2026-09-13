@@ -154,18 +154,38 @@ export interface DatosTimbre {
 }
 
 /**
- * La URL que va dentro del QR de la representacion impresa.
+ * Arma la cadena de consulta escapando como manda la DGII.
  *
- * Se arma con `URLSearchParams`, que escapa exactamente como pide la
- * norma -espacio a `%20`, `#` a `%23`, y el resto de la tabla de
- * caracteres reservados-. Escaparlo a mano es como se cuela un QR que
- * el lector de la DGII no resuelve.
+ * ── Por que NO se usa `URLSearchParams` ───────────────────────────────
+ *
+ * Porque escapa el espacio como `+`, no como `%20`. `URLSearchParams`
+ * implementa `application/x-www-form-urlencoded`, que es el formato de
+ * un formulario HTML, no el de la tabla de caracteres reservados del
+ * Anexo de la DGII -esa pide `%20`-.
+ *
+ * Solo un campo lleva espacio, `fechafirma` (`DD-MM-AAAA HH:mm:ss`), y
+ * es justamente uno de los que el timbre compara. El QR salia con
+ * `10-10-2026+09%3A00%3A00` y quien lo leyera veria un comprobante que
+ * "no existe" -con la factura ya impresa y en mano del cliente-.
+ *
+ * `encodeURIComponent` si sigue la tabla: espacio a `%20`, `:` a `%3A`,
+ * y escapa el `+` y el `/` que puede traer el codigo de seguridad por
+ * venir de base64.
+ */
+function consulta(campos: Record<string, string>): string {
+  return Object.entries(campos)
+    .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+    .join('&')
+}
+
+/**
+ * La URL que va dentro del QR de la representacion impresa.
  *
  * El resumen (RFCE) lleva MENOS campos y va a otro dominio: no es la
  * misma URL con parametros de mas.
  */
 export function urlTimbre(d: DatosTimbre, ambiente: Ambiente = 'ecf'): string {
-  const p = new URLSearchParams({
+  const p = consulta({
     rncemisor: d.rncEmisor,
     rnccomprador: d.rncComprador ?? '',
     encf: d.encf,
@@ -174,7 +194,7 @@ export function urlTimbre(d: DatosTimbre, ambiente: Ambiente = 'ecf'): string {
     fechafirma: d.fechaFirma,
     codigoseguridad: d.codigoSeguridad,
   })
-  return `https://ecf.dgii.gov.do/${ambiente}/consultatimbre?${p.toString()}`
+  return `https://ecf.dgii.gov.do/${ambiente}/consultatimbre?${p}`
 }
 
 /** El timbre del resumen: otro dominio y solo cuatro campos. */
@@ -182,13 +202,13 @@ export function urlTimbreResumen(
   d: Pick<DatosTimbre, 'rncEmisor' | 'encf' | 'montoTotal' | 'codigoSeguridad'>,
   ambiente: Ambiente = 'ecf',
 ): string {
-  const p = new URLSearchParams({
+  const p = consulta({
     rncemisor: d.rncEmisor,
     encf: d.encf,
     montototal: d.montoTotal.toFixed(2),
     codigoseguridad: d.codigoSeguridad,
   })
-  return `https://fc.dgii.gov.do/${ambiente}/consultatimbrefc?${p.toString()}`
+  return `https://fc.dgii.gov.do/${ambiente}/consultatimbrefc?${p}`
 }
 
 /**

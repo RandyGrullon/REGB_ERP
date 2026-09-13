@@ -3,7 +3,6 @@ import {
   decidirAcuse,
   esParaEsteTenant,
   leerEcfEntrante,
-  seRecibio,
   tokenValido,
   xmlAcuse,
 } from '@regb/operations'
@@ -184,9 +183,6 @@ async function recibir(ruta: Ruta, xmlEntrante: string): Promise<NextResponse> {
   }
 
   const sql = db()
-  const [previo] = await sql<{ id: string }[]>`
-    select id from public.ecf_recibidos
-    where tenant_id = ${ruta.tenant_id} and rnc_emisor = ${datos.rncEmisor} and encf = ${datos.encf}`
 
   // El certificado viaja DENTRO del documento, en X509Data.
   //
@@ -217,26 +213,60 @@ async function recibir(ruta: Ruta, xmlEntrante: string): Promise<NextResponse> {
   const firmaValida =
     cert !== null && problemas.length === 0 && verificarFirmaEcf(xmlEntrante, cert)
 
-  const acuse = decidirAcuse({
-    xmlValido: true,
-    firmaValida,
-    duplicado: previo !== undefined,
-    rncCompradorCorrecto:
-      datos.rncComprador !== null &&
-      esParaEsteTenant(datos.rncComprador, { tenantId: ruta.tenant_id, rncTenant: ruta.rnc }),
-  })
+  const rncCompradorCorrecto =
+    datos.rncComprador !== null &&
+    esParaEsteTenant(datos.rncComprador, { tenantId: ruta.tenant_id, rncTenant: ruta.rnc })
 
-  // Solo se archiva lo que se acuso como recibido. Guardar lo rechazado
-  // llenaria la cuenta del cliente de basura que cualquiera puede
-  // mandarle a una URL publica.
-  if (seRecibio(acuse) && previo === undefined) {
-    await sql`
+  // ── Duplicado: lo decide el INSERT, no un SELECT previo ───────────────
+  //
+  //  Antes se consultaba primero y se insertaba despues. Entre las dos
+  //  cosas cabe otra peticion: esta es una URL PUBLICA y el emisor
+  //  reintenta solo cuando la red le falla, asi que dos copias del mismo
+  //  e-CF llegando a la vez no es un caso rebuscado. Las dos veian la
+  //  tabla vacia y las dos contestaban "recibido"; el `on conflict`
+  //  evitaba la fila repetida -no habia dano en los datos- pero el
+  //  emisor se quedaba sin su acuse de duplicado, que es justo lo que le
+  //  dice que pare de reintentar.
+  //
+  //  `on conflict do nothing returning id` resuelve las dos cosas de una:
+  //  si devuelve fila, este e-CF es nuevo; si no devuelve nada, ya
+  //  estaba. Es atomico, asi que de dos peticiones simultaneas exactamente
+  //  una se lleva el "recibido".
+  //
+  //  Solo se archiva lo que se acusaria como recibido: guardar lo
+  //  rechazado llenaria la cuenta del cliente de basura que cualquiera
+  //  puede mandarle a una URL publica. Por eso los dos caminos que NO
+  //  archivan siguen consultando -ahi no hay carrera que perder, porque
+  //  el documento se rechaza igual y el SELECT solo elige el motivo-.
+  let duplicado: boolean
+  if (!firmaValida) {
+    // La firma manda sobre el duplicado en `decidirAcuse`: no hace falta
+    // ni preguntar, y asi un documento sin firma valida no toca la base.
+    duplicado = false
+  } else if (!rncCompradorCorrecto) {
+    // Aqui si importa: el motivo 3 -duplicado- gana al 4 -RNC que no
+    // corresponde-. Se consulta, sin insertar.
+    const [previo] = await sql<{ id: string }[]>`
+      select id from public.ecf_recibidos
+      where tenant_id = ${ruta.tenant_id} and rnc_emisor = ${datos.rncEmisor} and encf = ${datos.encf}`
+    duplicado = previo !== undefined
+  } else {
+    const [guardado] = await sql<{ id: string }[]>`
       insert into public.ecf_recibidos
         (tenant_id, encf, rnc_emisor, monto_total, acuse_estado, xml)
       values (${ruta.tenant_id}, ${datos.encf}, ${datos.rncEmisor},
               ${datos.montoTotal}, 0, ${xmlEntrante})
-      on conflict (tenant_id, rnc_emisor, encf) do nothing`
+      on conflict (tenant_id, rnc_emisor, encf) do nothing
+      returning id`
+    duplicado = guardado === undefined
   }
+
+  const acuse = decidirAcuse({
+    xmlValido: true,
+    firmaValida,
+    duplicado,
+    rncCompradorCorrecto,
+  })
 
   return xml(
     xmlAcuse(

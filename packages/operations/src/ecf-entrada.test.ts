@@ -167,3 +167,22 @@ describe('Lo que se lee de un e-CF entrante', () => {
     expect(d.montoTotal).toBeNull()
   })
 })
+
+describe('Un e-CF entrante enorme y mal formado no cuelga el servidor', () => {
+  it('un millon de comentarios abiertos se despacha en el acto', () => {
+    // `sinComentarios` usaba un patron perezoso hasta el cierre. Sin
+    // cierre a la vista, el motor reintenta desde cada apertura: coste
+    // cuadratico sobre un cuerpo que llega de fuera topado a 4 MB.
+    const basura = '<!--'.repeat(Math.floor((1024 * 1024) / 4))
+    const t0 = Date.now()
+    const d = leerEcfEntrante(basura)
+    expect(Date.now() - t0).toBeLessThan(5000)
+    expect(d.encf).toBeNull()
+  })
+
+  it('un comentario sin cerrar se descarta entero, no se lee lo de dentro', () => {
+    // Darlo por contenido bueno dejaria colar un e-NCF escondido.
+    expect(leerEcfEntrante('<ECF><!-- <eNCF>E310000000001</eNCF>').encf).toBeNull()
+  })
+})
+

@@ -146,8 +146,32 @@ describe('Codigo de seguridad y timbre', () => {
     expect(url).toContain('rncemisor=130000001')
     expect(url).toContain('encf=E310000000001')
     expect(url).toContain('montototal=2.11')
-    // El espacio de la fecha de firma va escapado, como manda la norma.
-    expect(url).toContain('fechafirma=10-10-2026+09%3A00%3A00')
+    // El espacio va como %20, NO como '+'.
+    //
+    // Esta misma prueba existia afirmando `+` y pasaba en verde: no
+    // detectaba el defecto, lo fijaba. `URLSearchParams` escapa en
+    // formato de formulario y la DGII pide la tabla de reservados.
+    expect(url).toContain('fechafirma=10-10-2026%2009%3A00%3A00')
+    expect(url).not.toContain('+')
+  })
+
+  it('el codigo de seguridad sale de base64: sus + y / tambien se escapan', () => {
+    // Son los seis primeros del SignatureValue, asi que puede traer
+    // `+` y `/`. Un `+` sin escapar lo lee el servidor como un espacio y
+    // el timbre no cuadra.
+    const url = urlTimbre(
+      {
+        rncEmisor: '130000001',
+        rncComprador: null,
+        encf: 'E310000000001',
+        fechaEmision: '10-10-2026',
+        montoTotal: 1,
+        fechaFirma: '10-10-2026 09:00:00',
+        codigoSeguridad: 'a+b/c=',
+      },
+      'testecf',
+    )
+    expect(url).toContain('codigoseguridad=a%2Bb%2Fc%3D')
   })
 
   it('el timbre del resumen va a OTRO dominio y con menos campos', () => {

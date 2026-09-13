@@ -208,3 +208,49 @@ describe('La firma prueba INTEGRIDAD, no identidad', () => {
     expect(p.map((x) => x.codigo)).not.toContain('identidad-no-coincide')
   })
 })
+
+describe('Basura grande: lo que llega por las rutas publicas', () => {
+  /**
+   * El cuerpo de `/api/ecf/<token>/recepcion` va topado a 4 MB. Se prueba
+   * con 1 MB para no hacer lentas las pruebas; con el comportamiento
+   * cuadratico que habia, 1 MB ya pasaba del minuto.
+   *
+   * El presupuesto es holgado a proposito -no se mide rendimiento, se
+   * comprueba que el coste no es cuadratico-. Con los regex viejos esto
+   * no terminaba: Node es de un solo hilo y ese POST dejaba el servidor
+   * sin atender a nadie mas, sin necesidad de romper nada.
+   */
+  const MB = 1024 * 1024
+  const rapido = (nombre: string, f: () => void) =>
+    it(nombre, () => {
+      const t0 = Date.now()
+      f()
+      expect(Date.now() - t0).toBeLessThan(5000)
+    })
+
+  rapido('aperturas de Signature sin cierre', () => {
+    const basura = '<Signature '.repeat(Math.floor(MB / 11))
+    elementosVacios(basura)
+    verificarFirmaEcf(basura, certificado)
+  })
+
+  rapido('etiquetas abiertas sin cerrar', () => {
+    elementosVacios('<a '.repeat(Math.floor(MB / 3)))
+  })
+
+  rapido('SignatureValue sin cierre', () => {
+    expect(codigoSeguridadDe('<SignatureValue>'.repeat(Math.floor(MB / 16)))).toBeNull()
+  })
+
+  it('y sigue leyendo bien un SignatureValue con prefijo de espacio de nombres', () => {
+    expect(codigoSeguridadDe('<ECF><ds:SignatureValue>abcdefGH</ds:SignatureValue></ECF>')).toBe('abcdef')
+  })
+
+  it('Signature no se confunde con SignatureValue', () => {
+    // `indexOf('Signature')` engancha primero con `SignatureValue`: si no
+    // se exige espacio o cierre detras, el bloque de firma sale mal
+    // recortado y toda firma legitima se daria por invalida.
+    const doc = '<ECF><SignatureValue>x</SignatureValue><Signature a="1">y</Signature></ECF>'
+    expect(elementosVacios(doc)).toEqual([])
+  })
+})
