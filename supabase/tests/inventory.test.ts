@@ -302,3 +302,89 @@ describe('Modulo apagado', () => {
     expect(mov.length).toBeGreaterThan(0)
   })
 })
+
+describe('A stock_levels solo escribe el kardex (0107)', () => {
+  /**
+   * `stock_levels` no es un dato: es la proyeccion del kardex, calculada
+   * por un trigger dentro de la misma transaccion del movimiento.
+   *
+   * Antes de 0107, `authenticated` tenia insert/update/delete sobre ella.
+   * Medido en este repo: con la sesion de un usuario normal, un update
+   * subio una existencia de 31 a 1030 SIN generar un solo movimiento. El
+   * kardex decia 31 y el sistema 1030, y el unico sitio donde eso se nota
+   * es al contar.
+   *
+   * La RLS no lo cubria: la politica acota tenant y modulo, no prohibe
+   * escribir. Con el movil hablandole a PostgREST la tabla queda a un
+   * PATCH de distancia de cualquiera con la app instalada.
+   */
+  it('el movimiento legitimo SIGUE moviendo el stock', async () => {
+    // Se comprueba primero: una revocacion que rompe el camino bueno es
+    // peor que el agujero que cierra.
+    const antes = await as(
+      userA,
+      tenantA,
+      (tx) => tx<{ qty_on_hand: string }[]>`
+        select qty_on_hand::text from public.stock_levels
+        where product_id = ${productoA} and warehouse_id = ${almacenA}`,
+    )
+    const partida = antes[0] ? Number(antes[0].qty_on_hand) : 0
+
+    await movimiento(7, 100)
+
+    const [despues] = await as(
+      userA,
+      tenantA,
+      (tx) => tx<{ qty_on_hand: string }[]>`
+        select qty_on_hand::text from public.stock_levels
+        where product_id = ${productoA} and warehouse_id = ${almacenA}`,
+    )
+    expect(Number(despues!.qty_on_hand)).toBe(partida + 7)
+  })
+
+  it('pero escribirla a mano se deniega', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          update public.stock_levels set qty_on_hand = qty_on_hand + 999
+          where product_id = ${productoA} and warehouse_id = ${almacenA}`,
+      ),
+    ).rejects.toThrow(/permission denied|permiso/i)
+  })
+
+  it('ni insertando una existencia de la nada', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          insert into public.stock_levels (tenant_id, warehouse_id, product_id, qty_on_hand)
+          values (${tenantA}, ${almacenA}, ${productoA}, 9999)`,
+      ),
+    ).rejects.toThrow(/permission denied|permiso/i)
+  })
+
+  it('ni borrando la fila para que el faltante desaparezca', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          delete from public.stock_levels
+          where product_id = ${productoA} and warehouse_id = ${almacenA}`,
+      ),
+    ).rejects.toThrow(/permission denied|permiso/i)
+  })
+
+  it('leerla se puede, que es el pan de cada dia', async () => {
+    const filas = await as(
+      userA,
+      tenantA,
+      (tx) => tx`select qty_on_hand from public.stock_levels where tenant_id = ${tenantA}`,
+    )
+    expect(filas.length).toBeGreaterThan(0)
+  })
+})
+
