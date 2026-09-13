@@ -21,7 +21,9 @@ export default function Entrada() {
     )
   }
 
-  if (sesion?.tenantId) return <Redirect href="/(app)/chat" />
+  // Al menu, no a una pantalla concreta: cuando habia una sola tenia
+  // sentido; con varias, mandar siempre al chat esconde el resto.
+  if (sesion?.tenantId) return <Redirect href="/(app)" />
 
   return (
     <View style={[estilos.centro, { backgroundColor: tema.color.superficie.base }]}>

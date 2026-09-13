@@ -6,8 +6,8 @@ import { useSesion } from '../../src/sesion'
  * Todo lo de adentro exige sesion con tenant.
  *
  * El movil NO replica el ERP completo: solo lo que cada manifest declara
- * en `mobileScope`. Hoy la unica pantalla portada es `chat` -prueba de
- * concepto de las tres plataformas-.
+ * en `mobileScope`. La pantalla de inicio decide que enseñar mirando los
+ * modulos que el cliente tiene activos, no una lista escrita a mano.
  */
 export default function LayoutApp() {
   const { cargando, sesion } = useSesion()
@@ -24,6 +24,8 @@ export default function LayoutApp() {
         contentStyle: { backgroundColor: tema.color.superficie.base },
       }}
     >
+      <Stack.Screen name="index" options={{ title: 'REGB ERP' }} />
+      <Stack.Screen name="existencias/index" options={{ title: 'Existencias' }} />
       <Stack.Screen name="chat/index" options={{ title: 'Chat interno' }} />
       <Stack.Screen name="chat/[id]" options={{ title: 'Canal' }} />
     </Stack>
