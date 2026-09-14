@@ -61,6 +61,13 @@ export const SECCIONES: Seccion[] = [
     ruta: '/(app)/vacaciones',
   },
   {
+    moduleId: 'expenses',
+    permiso: 'expenses.submit',
+    titulo: 'Gastos',
+    descripcion: 'Reportar un gasto cuando te dan el comprobante',
+    ruta: '/(app)/gastos',
+  },
+  {
     moduleId: 'chat',
     permiso: 'chat.view',
     titulo: 'Chat interno',
