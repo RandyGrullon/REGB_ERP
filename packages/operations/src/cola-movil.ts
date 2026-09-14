@@ -8,10 +8,22 @@
  * estantes, en un deposito de zinc, en la parte de atras del local. Ahi
  * la señal no se cae del todo -eso seria facil-, se cae a ratos.
  *
- * Sin cola, contar un pasillo entero y perder la señal en la ultima
- * linea significa contarlo otra vez. Nadie lo cuenta otra vez: apunta en
- * un papel y lo mete cuando vuelva, que es exactamente el trabajo doble
- * que el ERP venia a quitar.
+ * Sin cola, mover un pallet y perder la señal al confirmarlo significa
+ * que el sistema no se entera de algo que ya ocurrio. Quien lo movio no
+ * lo vuelve a mover: lo apunta en un papel y lo mete cuando vuelva, que
+ * es exactamente el trabajo doble que el ERP venia a quitar.
+ *
+ * ── Que pasa por aqui hoy, y que NO ───────────────────────────────────
+ *
+ * Las tres acciones de `AccionMovil`: transferir, gastos y vacaciones.
+ * Son las que llaman a una funcion de la base y las que 0114 hizo
+ * idempotentes.
+ *
+ * Los CONTEOS todavia no: escriben `stock_count_lines` directo, sin
+ * funcion de por medio. Y es el caso que mas lo pide -contar un pasillo
+ * es lo mas largo que se hace sin señal-, asi que es lo siguiente. Se
+ * dice aqui para que nadie lea esta cola y de por hecho que ya cubre
+ * todo lo que el telefono escribe.
  *
  * ── La regla que decide todo lo demas ─────────────────────────────────
  *

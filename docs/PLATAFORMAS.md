@@ -66,29 +66,59 @@ la ventana, que sale por el papel) esta cubierto por pruebas puras.
   escritorio.
 - No hay UI para escribir `servidor.json`: hoy se escribe a mano.
 
-## Movil (`apps/mobile`) — prueba de concepto honesta
+## Movil (`apps/mobile`) — seis pantallas y una cola
 
 Expo + expo-router. **No replica el ERP completo, y no debe hacerlo**:
-cada manifest declara su `mobileScope`. Hoy hay exactamente un modulo
-portado, `chat`, elegido por ser el caso de uso mas genuinamente movil
-del catalogo.
+cada manifest declara su `mobileScope`.
 
-Lo verificado: `typecheck` y `lint` en verde en `apps/mobile` y en
-`@regb/ui-native` (6 pruebas, una de ellas vigila que ningun componente
-escriba un color a mano), y `expo export --platform android` genera el
-bundle completo, o sea que Metro resuelve de verdad `@regb/ui-native`,
-`@regb/sdk/native` y `@regb/operations` desde el monorepo con pnpm.
+Portado hoy, todo filtrado por modulo contratado Y permiso del rol:
+
+| Pantalla       | Que hace                                           |
+| -------------- | -------------------------------------------------- |
+| `chat`         | Canales y hilos. Fue la prueba de concepto original |
+| `existencias`  | Consultar que hay y donde                          |
+| `conteos`      | Contar inventario sin ver el numero del sistema     |
+| `transferir`   | Mover mercancia entre almacenes                     |
+| `vacaciones`   | Pedir dias, con los laborables contados en la base  |
+| `gastos`       | Reportar el gasto cuando dan el comprobante         |
+| `pendientes`   | Lo que se hizo sin señal y todavia no subio         |
+
+### La cola offline (0114 + `cola-movil`)
+
+Es lo que hace que las tres pantallas de escritura sirvan donde de verdad
+se usan. La regla: **si la base hablo, la respuesta es final**. Un error
+con codigo SQL se le enseña al usuario ahora; un fallo sin codigo -la
+base nunca contesto- se guarda en el telefono y sube solo.
+
+Nada se descarta nunca. Lo que la base rechaza al subir pasa a una lista
+aparte de "trabado", porque eso lo resuelve una persona y no un
+reintento.
+
+El reintento es seguro porque el telefono decide el `uuid` de la fila
+ANTES de mandarla (`p_ref`, migracion 0114): un segundo intento no es una
+accion parecida, es la misma clave primaria.
+
+La logica vive en `@regb/operations/cola-movil` con 17 pruebas; en la app
+solo queda AsyncStorage, PostgREST y AppState.
 
 ### Lo que falta, dicho claro
 
 - **Nadie ha corrido la app movil en un dispositivo ni en un simulador
-  todavia.** Compila y empaqueta; no esta probada: ningun login, ningun
-  mensaje enviado desde un telefono de verdad.
-- Los otros ~73 modulos declaran `mobile: true` en su manifest: eso es
+  todavia.** Compila y empaqueta -`expo export --platform android` genera
+  el bundle, o sea que Metro resuelve de verdad `@regb/ui-native`,
+  `@regb/sdk/native` y `@regb/operations` desde el monorepo con pnpm- pero
+  no esta probada: ningun login, ninguna transferencia hecha desde un
+  telefono de verdad. **Y la cola es justo lo que menos se puede dar por
+  bueno sin eso**: su razon de existir es lo que pasa cuando la red falla,
+  y eso no se ejerce en un `export`.
+- Los otros ~72 modulos declaran `mobile: true` en su manifest: eso es
   una promesa de diseno, no codigo.
 - Faltan las capacidades que justifican una app nativa: camara, GPS,
-  push, biometria, gestos.
-- El movil no tiene cola offline propia todavia (el escritorio si).
+  push, biometria, gestos. La camara es la que mas se nota -un gasto sin
+  foto del comprobante y un conteo sin escaneo-.
+- Los conteos todavia no pasan por la cola: escriben `stock_count_lines`
+  directo. Contar es lo mas largo que se hace sin señal, asi que es lo
+  siguiente.
 - No hay tour de tutorial en movil.
 
 ## Verificacion de paridad — pendiente

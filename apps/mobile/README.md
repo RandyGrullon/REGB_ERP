@@ -25,20 +25,43 @@ filas existen; una app instalada no tiene ningun privilegio extra.
   expo-router.
 - Sesion real contra Supabase (correo y contraseña) con persistencia en
   el dispositivo y redireccion segun tenga tenant o no.
-- **Prueba de concepto de las tres plataformas: `chat`** -lista de
-  canales y hilo de un canal, leer y enviar mensajes reales-. Se eligio
-  `chat` porque es el caso de uso mas genuinamente movil de todo el
-  catalogo, su esquema son dos tablas, y ejercita lectura Y escritura
-  contra RLS.
+- Menu filtrado por **modulo contratado Y permiso del rol** (`mi_rol()`
+  + `mis_modulos()`, evaluados con el mismo `can()` de la web). Es
+  ergonomia, no seguridad: lo que decide es la RLS.
+- Seis pantallas: `chat`, `existencias`, `conteos`, `transferir`,
+  `vacaciones`, `gastos`.
+- **Cola offline** (`src/cola.tsx` + `@regb/operations/cola-movil`): lo
+  que se hace sin señal se guarda en el telefono y sube solo. Ver abajo.
+
+## La cola, en corto
+
+La regla: **si la base hablo, la respuesta es final**. Un error con
+codigo SQL se enseña ahora mismo; un fallo sin codigo -la base nunca
+contesto- se encola.
+
+Nada se descarta. Lo que la base rechaza al subir pasa a una lista de
+"trabado" en la pantalla de pendientes, porque eso lo arregla una
+persona y no un reintento.
+
+El reintento es seguro porque el telefono decide el `uuid` de la fila
+antes de mandarla (`p_ref`, migracion 0114): el segundo intento es la
+misma clave primaria, no una accion parecida.
+
+Pasan por la cola `transferir`, `reportar_gasto` y `pedir_vacaciones`.
+**Los conteos todavia no** -escriben `stock_count_lines` directo- y es
+lo siguiente, porque contar es lo mas largo que se hace sin señal.
 
 ## Lo que esta verificado (y con que)
 
 - `pnpm --filter @regb/mobile typecheck` y `lint` en verde, sin un solo
   `any` ni `@ts-ignore`.
+- La logica de la cola: 17 pruebas en `@regb/operations`, sin telefono
+  de por medio. La idempotencia que la sostiene: 7 pruebas contra
+  Postgres real en `supabase/tests/idempotencia-movil.test.ts`.
 - `expo export --platform android` genera el bundle completo: Metro
   resuelve de verdad `@regb/ui-native` (TypeScript sin compilar),
-  `@regb/sdk/native` y `@regb/operations`. Eso prueba que empaqueta, no
-  que funcione.
+  `@regb/sdk/native`, `@regb/operations` y `expo-crypto`. Eso prueba que
+  empaqueta, no que funcione.
 - `npx expo-doctor`: 17 de 18 comprobaciones pasan. La que falla es que
   el repo usa TypeScript 5.9 y Expo SDK 53 espera 5.8; la version de
   TypeScript es del monorepo entero y no se toca desde aqui.
@@ -47,14 +70,18 @@ filas existen; una app instalada no tiene ningun privilegio extra.
 
 - **No se ha corrido en un dispositivo ni en un simulador todavia.** El
   codigo compila y empaqueta, pero nadie ha visto esta app arrancar, ni
-  ha entrado con un usuario real, ni ha enviado un mensaje desde el
+  ha entrado con un usuario real, ni ha movido mercancia desde el
   telefono. No la des por funcional hasta hacerlo.
-- Ningun otro modulo esta portado: los ~74 manifests declaran
-  `mobile: true`, y eso hoy es una promesa de diseno, no codigo.
+- **La cola es lo que menos se puede dar por bueno sin eso.** Su razon de
+  existir es lo que pasa cuando la red falla, y un `expo export` no
+  ejerce eso. La logica esta probada; el comportamiento en un telefono
+  con señal mala, no.
+- Los otros ~72 modulos declaran `mobile: true` en su manifest, y eso
+  hoy es una promesa de diseno, no codigo.
 - Sin camara, GPS, push, biometria ni gestos -lo que segun el skill
-  `tri-platform` justifica que exista una app movil en primer lugar-.
-- Sin cola offline propia: `apps/desktop` ya tiene la suya (`cola.ts`),
-  el movil todavia no.
+  `tri-platform` justifica que exista una app movil en primer lugar-. La
+  camara es la que mas se nota: un gasto sin foto del comprobante y un
+  conteo sin escaneo.
 - Sin tour de tutorial.
 
 ## Configuracion
