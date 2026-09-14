@@ -1,6 +1,7 @@
 import { Stack, Redirect } from 'expo-router'
 import { useTema } from '@regb/ui-native'
 import { useSesion } from '../../src/sesion'
+import { ProveedorPermisos } from '../../src/permisos'
 
 /**
  * Todo lo de adentro exige sesion con tenant.
@@ -17,7 +18,8 @@ export default function LayoutApp() {
   if (!sesion?.tenantId) return <Redirect href="/" />
 
   return (
-    <Stack
+    <ProveedorPermisos>
+      <Stack
       screenOptions={{
         headerStyle: { backgroundColor: tema.color.superficie.honda },
         headerTintColor: tema.color.texto.primario,
@@ -30,6 +32,7 @@ export default function LayoutApp() {
       <Stack.Screen name="conteos/[id]" options={{ title: 'Contar' }} />
       <Stack.Screen name="chat/index" options={{ title: 'Chat interno' }} />
       <Stack.Screen name="chat/[id]" options={{ title: 'Canal' }} />
-    </Stack>
+      </Stack>
+    </ProveedorPermisos>
   )
 }

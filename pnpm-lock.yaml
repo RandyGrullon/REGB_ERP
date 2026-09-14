@@ -75,6 +75,9 @@ importers:
       '@regb/operations':
         specifier: workspace:*
         version: link:../../packages/operations
+      '@regb/permissions':
+        specifier: workspace:*
+        version: link:../../packages/permissions
       '@regb/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
