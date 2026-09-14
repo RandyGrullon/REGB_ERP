@@ -19,7 +19,16 @@ export interface ExistenciaMovil {
   nombre: string
   /** Codigo de barras, si el producto lo tiene. */
   barcode: string | null
+  /** Nombre del almacen, para enseñarlo. */
   almacen: string
+  /**
+   * Id del almacen. Opcional porque la pantalla de consulta no lo
+   * necesita; la de transferencias si, para filtrar por origen.
+   *
+   * Existe para no tener que meter el id dentro de `almacen`: compilaria
+   * igual y la siguiente persona leeria un nombre donde hay un uuid.
+   */
+  almacenId?: string
   cantidad: number
   reservado: number
   precio: number | null

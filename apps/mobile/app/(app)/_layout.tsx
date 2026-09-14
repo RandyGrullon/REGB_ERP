@@ -28,6 +28,7 @@ export default function LayoutApp() {
     >
       <Stack.Screen name="index" options={{ title: 'REGB ERP' }} />
       <Stack.Screen name="existencias/index" options={{ title: 'Existencias' }} />
+      <Stack.Screen name="transferir/index" options={{ title: 'Transferir' }} />
       <Stack.Screen name="conteos/index" options={{ title: 'Conteos' }} />
       <Stack.Screen name="conteos/[id]" options={{ title: 'Contar' }} />
       <Stack.Screen name="chat/index" options={{ title: 'Chat interno' }} />

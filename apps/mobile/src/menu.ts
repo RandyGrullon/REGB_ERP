@@ -45,6 +45,13 @@ export const SECCIONES: Seccion[] = [
     ruta: '/(app)/conteos',
   },
   {
+    moduleId: 'inventory',
+    permiso: 'inventory.transfer',
+    titulo: 'Transferir',
+    descripcion: 'Mover mercancia de un almacen a otro sin papeles',
+    ruta: '/(app)/transferir',
+  },
+  {
     moduleId: 'chat',
     permiso: 'chat.view',
     titulo: 'Chat interno',
