@@ -104,7 +104,11 @@ describe('Quien pide sale del token, no de un parametro', () => {
       from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and p.proname = 'pedir_vacaciones'`
     expect(f!.args).not.toMatch(/employee/i)
-    expect(f!.args).toBe('p_inicio date, p_fin date, p_tipo text, p_motivo text')
+    // `p_ref` se agrego en 0114: es el id que el telefono decide antes de
+    // encolar, para que un reintento no descuente el doble de dias. No
+    // dice QUIEN pide -eso sigue saliendo del token-, dice CUAL solicitud
+    // es. Por eso entra aqui sin aflojar lo que esta prueba vigila.
+    expect(f!.args).toBe('p_inicio date, p_fin date, p_tipo text, p_motivo text, p_ref uuid')
   })
 
   it('un usuario sin expediente no puede pedir', async () => {
