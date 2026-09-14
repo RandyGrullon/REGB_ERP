@@ -1638,6 +1638,9 @@ importers:
         specifier: ^3.4.5
         version: 3.4.9
     devDependencies:
+      '@regb/operations':
+        specifier: workspace:*
+        version: link:../packages/operations
       typescript:
         specifier: ^5.7.2
         version: 5.9.3

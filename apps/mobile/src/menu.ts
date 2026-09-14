@@ -52,6 +52,15 @@ export const SECCIONES: Seccion[] = [
     ruta: '/(app)/transferir',
   },
   {
+    moduleId: 'time-off',
+    // `request` y no `view`: la pantalla existe para PEDIR. Quien solo
+    // puede mirar lo hace mejor desde la computadora.
+    permiso: 'time-off.request',
+    titulo: 'Vacaciones',
+    descripcion: 'Pedir dias libres y ver en que va lo que pediste',
+    ruta: '/(app)/vacaciones',
+  },
+  {
     moduleId: 'chat',
     permiso: 'chat.view',
     titulo: 'Chat interno',

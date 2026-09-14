@@ -31,6 +31,7 @@ export default function LayoutApp() {
       <Stack.Screen name="transferir/index" options={{ title: 'Transferir' }} />
       <Stack.Screen name="conteos/index" options={{ title: 'Conteos' }} />
       <Stack.Screen name="conteos/[id]" options={{ title: 'Contar' }} />
+      <Stack.Screen name="vacaciones/index" options={{ title: 'Vacaciones' }} />
       <Stack.Screen name="chat/index" options={{ title: 'Chat interno' }} />
       <Stack.Screen name="chat/[id]" options={{ title: 'Canal' }} />
       </Stack>

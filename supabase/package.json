@@ -16,6 +16,7 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
+    "@regb/operations": "workspace:*",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }
