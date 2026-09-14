@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { FlatList, RefreshControl, ScrollView, View, StyleSheet } from 'react-native'
 import { Boton, Campo, EstadoVacio, Fila, Insignia, Texto, useTema } from '@regb/ui-native'
 import { supabase } from '../../../src/supabase'
+import { useCola } from '../../../src/cola'
 
 /**
  * Reportar un gasto en el momento en que ocurre.
@@ -77,7 +78,9 @@ export default function Gastos() {
   const [rnc, setRnc] = useState('')
   const [ncf, setNcf] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const { enviar: enviarPorCola } = useCola()
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -102,20 +105,32 @@ export default function Gastos() {
     }
 
     setEnviando(true)
-    const { error: err } = await supabase.rpc('reportar_gasto', {
-      p_categoria: categoria,
-      p_fecha: fecha,
-      p_monto: n,
-      p_proveedor: proveedor,
-      p_rnc: rnc,
-      p_ncf: ncf,
-      p_nota: null,
-    })
+    // Por la cola: el comprobante se da en la calle, que es justo donde
+    // no hay señal, y ese es el momento en que hay que reportarlo -ver
+    // la cabecera-. La idempotencia de 0114 evita que el reintento lo
+    // reembolse dos veces y lo meta dos veces en la 606.
+    const r = await enviarPorCola(
+      'reportar_gasto',
+      {
+        p_categoria: categoria,
+        p_fecha: fecha,
+        p_monto: n,
+        p_proveedor: proveedor,
+        p_rnc: rnc,
+        p_ncf: ncf,
+        p_nota: null,
+      },
+      `Gasto de ${n} · ${proveedor.trim() === '' ? categoria : proveedor}`,
+    )
     setEnviando(false)
 
-    if (err) {
-      setError(err.message)
+    if (r.estado === 'rechazado') {
+      setError(r.mensaje)
       return
+    }
+
+    if (r.estado === 'encolado') {
+      setAviso('Sin señal. Lo guardamos en el telefono y sube solo. No lo reportes otra vez.')
     }
 
     setReportando(false)
@@ -206,6 +221,10 @@ export default function Gastos() {
     <View style={[estilos.pantalla, fondo]}>
       <View style={estilos.formulario}>
         <Boton etiqueta="Reportar un gasto" onPress={() => setReportando(true)} />
+        {/* Un gasto encolado NO sale en la lista de abajo -todavia no
+            existe en la base-. Sin este aviso, quien lo reporto ve la
+            lista igual que antes y lo reporta otra vez. */}
+        {aviso !== null && <Texto tono="alerta">{aviso}</Texto>}
       </View>
 
       {!cargando && gastos.length === 0 ? (

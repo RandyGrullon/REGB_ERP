@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, View, StyleSheet } from 'react-native'
 import { diasLaborablesEntre } from '@regb/operations'
 import { Boton, Campo, EstadoVacio, Fila, Insignia, Texto, useTema } from '@regb/ui-native'
 import { supabase } from '../../../src/supabase'
+import { useCola } from '../../../src/cola'
 
 /**
  * Pedir vacaciones y ver en que va lo pedido.
@@ -66,7 +67,9 @@ export default function Vacaciones() {
   const [fin, setFin] = useState(HOY())
   const [motivo, setMotivo] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [aviso, setAviso] = useState<string | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const { enviar } = useCola()
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -105,18 +108,23 @@ export default function Vacaciones() {
     }
 
     setEnviando(true)
-    const { error: err } = await supabase.rpc('pedir_vacaciones', {
-      p_inicio: inicio,
-      p_fin: fin,
-      p_tipo: 'vacation',
-      p_motivo: motivo,
-    })
+    const r = await enviar(
+      'pedir_vacaciones',
+      { p_inicio: inicio, p_fin: fin, p_tipo: 'vacation', p_motivo: motivo },
+      `Vacaciones del ${inicio} al ${fin}`,
+    )
     setEnviando(false)
 
-    if (err) {
+    if (r.estado === 'rechazado') {
       // El mensaje de 0112 ya viene en español y para el usuario.
-      setError(err.message)
+      setError(r.mensaje)
       return
+    }
+
+    if (r.estado === 'encolado') {
+      // Importa decir "no la pidas otra vez": dos solicitudes iguales le
+      // descuentan al empleado el doble de dias de su saldo.
+      setAviso('Sin señal. La guardamos en el telefono y sube sola. No la pidas otra vez.')
     }
 
     setPidiendo(false)
@@ -186,6 +194,9 @@ export default function Vacaciones() {
     <View style={[estilos.pantalla, fondo]}>
       <View style={estilos.formulario}>
         <Boton etiqueta="Pedir vacaciones" onPress={() => setPidiendo(true)} />
+        {/* Una solicitud encolada no sale en la lista de abajo: todavia
+            no existe en la base. Sin este aviso se pide otra vez. */}
+        {aviso !== null && <Texto tono="alerta">{aviso}</Texto>}
       </View>
 
       {!cargando && solicitudes.length === 0 ? (

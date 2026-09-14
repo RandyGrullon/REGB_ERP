@@ -2,6 +2,7 @@ import { Stack, Redirect } from 'expo-router'
 import { useTema } from '@regb/ui-native'
 import { useSesion } from '../../src/sesion'
 import { ProveedorPermisos } from '../../src/permisos'
+import { ProveedorCola } from '../../src/cola'
 
 /**
  * Todo lo de adentro exige sesion con tenant.
@@ -17,7 +18,11 @@ export default function LayoutApp() {
   if (cargando) return null
   if (!sesion?.tenantId) return <Redirect href="/" />
 
+  // La cola envuelve a los permisos y no al reves: lo que hay dentro de
+  // ella es trabajo ya hecho por una persona, y tiene que sobrevivir a
+  // que el rol tarde en cargar o falle en cargar.
   return (
+    <ProveedorCola>
     <ProveedorPermisos>
       <Stack
       screenOptions={{
@@ -35,7 +40,9 @@ export default function LayoutApp() {
       <Stack.Screen name="gastos/index" options={{ title: 'Gastos' }} />
       <Stack.Screen name="chat/index" options={{ title: 'Chat interno' }} />
       <Stack.Screen name="chat/[id]" options={{ title: 'Canal' }} />
+      <Stack.Screen name="pendientes/index" options={{ title: 'Sin subir' }} />
       </Stack>
     </ProveedorPermisos>
+    </ProveedorCola>
   )
 }

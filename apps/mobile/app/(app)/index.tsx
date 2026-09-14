@@ -1,7 +1,8 @@
 import { View, ScrollView, StyleSheet } from 'react-native'
 import { useRouter } from 'expo-router'
-import { EstadoVacio, Fila, Texto, useTema } from '@regb/ui-native'
+import { EstadoVacio, Fila, Insignia, Texto, useTema } from '@regb/ui-native'
 import { usePermisos } from '../../src/permisos'
+import { useCola } from '../../src/cola'
 import { SECCIONES } from '../../src/menu'
 
 /**
@@ -28,6 +29,7 @@ export default function Inicio() {
   // Modulos contratados Y permisos del rol. Los dos salen de
   // `mi_rol()` y `mis_modulos()`: ver src/permisos.tsx.
   const { cargando, puede } = usePermisos()
+  const { indicador } = useCola()
 
   if (cargando) {
     return (
@@ -42,17 +44,43 @@ export default function Inicio() {
   // descubra al segundo toque que no puede.
   const visibles = SECCIONES.filter((s) => puede(s.permiso, s.moduleId))
 
+  // La fila de pendientes NO se filtra por permiso ni por modulo, y va
+  // arriba de todo. Lo que hay ahi dentro es trabajo que esta persona ya
+  // hizo: si se le escondiera porque su rol cambio o porque el cliente
+  // apago un modulo, se quedaria sin forma de ver -ni de recuperar- algo
+  // que ocurrio de verdad.
+  const pendientes =
+    indicador.texto === null ? null : (
+      <Fila onPress={() => router.push('/pendientes')}>
+        <View style={estilos.linea}>
+          <Texto variante="cuerpo" style={estilos.crece}>
+            Sin subir
+          </Texto>
+          <Insignia tono={indicador.tono ?? 'neutral'}>{indicador.texto}</Insignia>
+        </View>
+        <Texto variante="pie" tono="atenuado">
+          {indicador.bloqueadas > 0
+            ? 'Algo no se pudo guardar. Toca para ver que paso.'
+            : 'Sube solo en cuanto haya señal.'}
+        </Texto>
+      </Fila>
+    )
+
   if (visibles.length === 0) {
     return (
-      <EstadoVacio
-        titulo="Nada para ti en el telefono"
-        descripcion="Ninguna pantalla movil corresponde a tu rol y a los modulos activos. Entra desde la computadora."
-      />
+      <ScrollView style={{ backgroundColor: tema.color.superficie.base }}>
+        {pendientes}
+        <EstadoVacio
+          titulo="Nada para ti en el telefono"
+          descripcion="Ninguna pantalla movil corresponde a tu rol y a los modulos activos. Entra desde la computadora."
+        />
+      </ScrollView>
     )
   }
 
   return (
     <ScrollView style={{ backgroundColor: tema.color.superficie.base }}>
+      {pendientes}
       {visibles.map((s) => (
         <Fila key={s.moduleId} onPress={() => router.push(s.ruta)}>
           <Texto variante="cuerpo">{s.titulo}</Texto>
@@ -67,4 +95,6 @@ export default function Inicio() {
 
 const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  linea: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  crece: { flex: 1 },
 })

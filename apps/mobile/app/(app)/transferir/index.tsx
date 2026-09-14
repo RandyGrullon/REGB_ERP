@@ -10,6 +10,7 @@ import {
 } from '@regb/operations'
 import { Boton, Campo, Fila, Insignia, Texto, useTema } from '@regb/ui-native'
 import { supabase } from '../../../src/supabase'
+import { useCola } from '../../../src/cola'
 
 /**
  * Mover mercancia entre almacenes, desde el almacen.
@@ -32,6 +33,15 @@ import { supabase } from '../../../src/supabase'
  * de lo que la base devolvio. Es lo que evita una transferencia a un
  * almacen que no existe por un dedo mal puesto, con el telefono en una
  * mano y una caja en la otra.
+ *
+ * ── Sin señal la transferencia NO se pierde ───────────────────────────
+ *
+ * Un deposito es justo donde peor entra la señal, y quien mueve la
+ * mercancia ya la movio: el pallet esta en el otro almacen aunque el
+ * telefono no haya podido decirlo. Por eso se manda por la cola
+ * (`src/cola.tsx`): si la base no contesta, queda guardada en el
+ * telefono y sube sola. La idempotencia de 0114 es lo que hace que ese
+ * reintento no mueva la mercancia dos veces.
  */
 interface Almacen {
   id: string
@@ -57,8 +67,13 @@ export default function Transferir() {
   )
   const [cantidad, setCantidad] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [aviso, setAviso] = useState<string | null>(null)
+  // Un aviso de "quedo en el telefono" NO es el mismo que "se movio": el
+  // primero deja algo pendiente y el segundo no. Pintarlos los dos en
+  // verde de exito es como alguien se va del almacen creyendo que ya
+  // subio.
+  const [aviso, setAviso] = useState<{ texto: string; tono: 'exito' | 'alerta' } | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const { enviar: enviarPorCola } = useCola()
 
   const cargar = useCallback(async () => {
     const [w, s] = await Promise.all([
@@ -114,23 +129,41 @@ export default function Transferir() {
     }
 
     setEnviando(true)
-    const { error: err } = await supabase.rpc('transferir', {
-      p_origen: origen.id,
-      p_destino: destino.id,
-      p_producto: elegido.id,
-      p_cantidad: q.valor,
-    })
+    const r = await enviarPorCola(
+      'transferir',
+      {
+        p_origen: origen.id,
+        p_destino: destino.id,
+        p_producto: elegido.id,
+        p_cantidad: q.valor,
+      },
+      `${q.valor} ${elegido.nombre} → ${destino.name}`,
+    )
     setEnviando(false)
 
-    if (err) {
+    if (r.estado === 'rechazado') {
       // El mensaje de la base se enseña tal cual: lo escribe 0111 en
       // español y para el usuario -"No hay suficiente en el almacen de
       // origen"-, no es un codigo que haya que traducir aqui.
-      setError(err.message)
+      setError(r.mensaje)
       return
     }
 
-    setAviso(`Moviste ${q.valor} de ${elegido.nombre} a ${destino.name}.`)
+    if (r.estado === 'encolado') {
+      // Se dice que quedo guardada en el telefono, no que "se guardo":
+      // quien mueve mercancia necesita saber que todavia falta subirla
+      // para no extrañarse cuando el sistema no la enseñe.
+      setAviso({
+        texto: `Sin señal. Guardamos el movimiento de ${q.valor} ${elegido.nombre} en el telefono y sube solo.`,
+        tono: 'alerta',
+      })
+      setElegido(null)
+      setCantidad('')
+      setError(null)
+      return
+    }
+
+    setAviso({ texto: `Moviste ${q.valor} de ${elegido.nombre} a ${destino.name}.`, tono: 'exito' })
     setElegido(null)
     setCantidad('')
     setError(null)
@@ -163,7 +196,7 @@ export default function Transferir() {
           <Texto variante="pie" tono="atenuado">
             Sale de {origen.name}
           </Texto>
-          {aviso !== null && <Texto tono="exito">{aviso}</Texto>}
+          {aviso !== null && <Texto tono={aviso.tono}>{aviso.texto}</Texto>}
           <Campo
             etiqueta="Buscar"
             value={busqueda}
