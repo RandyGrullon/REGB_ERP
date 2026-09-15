@@ -7,7 +7,7 @@ import {
   transicionValidaConteo,
   type EstadoConteoCiclico,
 } from '@regb/operations'
-import { asUser } from '@/lib/db'
+import { asUser, db } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
@@ -46,15 +46,29 @@ export async function recalcularAbc(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.manage')
   if (!permiso.ok) return permiso
 
+  // El valor por producto se lee con la conexion DUEÑA, no con `asUser`.
+  // Desde 0109 `authenticated` no tiene SELECT sobre `avg_cost` y esta
+  // consulta reventaba entera con "permission denied for table
+  // stock_levels" -o sea que recalcular ABC no funcionaba para nadie-.
+  //
+  // Se lee como dueño y no por `existencias()` a proposito: ese numero NO
+  // se le enseña a nadie, solo decide en que clase cae cada producto. Si
+  // saliera tapado en null, la clasificacion pondria todo el catalogo en
+  // clase C -lo mas barato, lo que casi no se cuenta- sin que nadie se
+  // entere. Un permiso de ver costo no deberia cambiar cada cuanto se
+  // cuenta un producto.
+  //
+  // Al correr como dueño no hay RLS: el `tenant_id` va a mano, y es lo
+  // unico que separa una cuenta de otra aqui.
+  const productos = await db()<{ product_id: string; valor: string }[]>`
+    select p.id as product_id, coalesce(sum(s.qty_on_hand * s.avg_cost), 0)::text as valor
+    from public.products p
+    left join public.stock_levels s on s.product_id = p.id and s.tenant_id = p.tenant_id
+    where p.tenant_id = ${ctx.tenantId} and p.active
+    group by p.id`
+
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-      const productos = await tx<{ product_id: string; valor: string }[]>`
-        select p.id as product_id, coalesce(sum(s.qty_on_hand * s.avg_cost), 0)::text as valor
-        from public.products p
-        left join public.stock_levels s on s.product_id = p.id and s.tenant_id = p.tenant_id
-        where p.tenant_id = ${ctx.tenantId} and p.active
-        group by p.id`
-
       const clasificacion = clasificarAbc(
         productos.map((p) => ({ productId: p.product_id, valorAnual: Number(p.valor) })),
       )

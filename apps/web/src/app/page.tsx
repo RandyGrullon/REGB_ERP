@@ -1,7 +1,7 @@
 import { Badge, Icon, StatCard } from '@regb/ui'
 import { redirect } from 'next/navigation'
 import { asUser, db } from '@/lib/db'
-import { modulePage, primeraRutaVisible, type DemoParams } from '@/lib/module-page'
+import { exigir, modulePage, primeraRutaVisible, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { Widget, cargarDatosWidgets, type DatosWidgets } from '@/components/widgets'
 
@@ -76,7 +76,15 @@ export default async function Page({
     // toda la pantalla de inicio, que es la que mas se abre del ERP. Las
     // claves salen del registry —el dashboard no sabe de que modulo vino
     // cada una, ni le hace falta.
-    const w: DatosWidgets = await cargarDatosWidgets(tx, ctx.tenantId, shell.data.widgets)
+    // `veCosto` se decide aqui, con el mismo `can()` que el resto de la
+    // web, y no dentro de la consulta: `asUser` no lleva `role_id` en los
+    // claims, asi que `rls.has_perm()` diria que si para cualquiera.
+    const w: DatosWidgets = await cargarDatosWidgets(
+      tx,
+      ctx.tenantId,
+      shell.data.widgets,
+      exigir(ctx, 'inventory', 'inventory.cost.view').ok,
+    )
     return [s, w] as const
   })
 

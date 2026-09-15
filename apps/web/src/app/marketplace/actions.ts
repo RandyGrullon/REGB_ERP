@@ -85,5 +85,16 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
 }
 
 export async function solicitarActivacionForm(fd: FormData): Promise<void> {
-  await anotarAviso(await solicitarActivacion(fd), 'solicitarActivacion')
+  // Texto a mano, y no el que deduce `anotarAviso` del nombre de la
+  // accion. "solicitar" no esta en su tabla de verbos, asi que salia el
+  // generico "Guardamos tu cambio" -y aqui eso es justo lo que confunde-.
+  //
+  // Lo que el usuario necesita oir es que su modulo NO quedo encendido:
+  // pidio, y alguien va a llamar. Si el aviso dice "guardado" y despues
+  // el modulo no aparece en el menu, parece que el sistema fallo.
+  await anotarAviso(
+    await solicitarActivacion(fd),
+    'solicitarActivacion',
+    'Recibimos tu pedido. Te llamamos para cotizar; todavia no se activo nada.',
+  )
 }

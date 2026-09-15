@@ -33,7 +33,8 @@ import type { TransactionSql } from 'postgres'
 
 export interface DatosWidgets {
   stockBajo: { name: string; sku: string; qty: number; punto: number }[]
-  valorInventario: number
+  /** null = este rol no puede ver el costo. Cero seria mentira. */
+  valorInventario: number | null
   ventasHoy: { tickets: number; total: number }
   turnosAbiertos: { warehouse: string; cajero: string; desde: string }[]
   pedidosPendientes: { number: string; customer: string; total: number; estado: string }[]
@@ -151,12 +152,14 @@ export async function cargarDatosWidgets(
   tx: TransactionSql,
   tenantId: string,
   claves: readonly string[],
+  /** Si el rol concede `inventory.cost.view`. Lo evalua quien llama. */
+  veCosto: boolean,
 ): Promise<DatosWidgets> {
   const pidieron = (...ks: string[]) => ks.some((k) => claves.includes(k))
 
   const vacio: DatosWidgets = {
     stockBajo: [],
-    valorInventario: 0,
+    valorInventario: null,
     ventasHoy: { tickets: 0, total: 0 },
     turnosAbiertos: [],
     pedidosPendientes: [],
@@ -258,10 +261,24 @@ export async function cargarDatosWidgets(
         limit 5`
     ).map((r) => ({ name: r.name, sku: r.sku, qty: Number(r.qty), punto: Number(r.punto) }))
 
-    const [v] = await tx<{ valor: string }[]>`
-      select coalesce(sum(qty_on_hand * avg_cost), 0)::text as valor
-      from public.stock_levels where tenant_id = ${tenantId}`
-    vacio.valorInventario = Number(v?.valor ?? 0)
+    // Por `public.existencias()` y no por `stock_levels` directo: desde
+    // 0109 `authenticated` NO tiene SELECT sobre `avg_cost` -es el margen
+    // del negocio-, asi que leer la tabla a pelo revienta la consulta
+    // entera con "permission denied for table stock_levels" y se lleva
+    // por delante TODO el dashboard, no solo este widget.
+    //
+    // Quien decide si el numero se enseña es `veCosto`, evaluado con
+    // `can()` arriba, y NO `rls.has_perm()` dentro de la consulta. Es
+    // importante: `asUser` no mete `role_id` en los claims, asi que desde
+    // la web `has_perm` siempre dice que si (es la decision de 0109: sin
+    // rol en el token mandan tenant y modulo). Preguntarselo a la base
+    // aqui daria "puede ver el costo" para cualquiera.
+    if (veCosto) {
+      const [v] = await tx<{ valor: string }[]>`
+        select coalesce(sum(qty_on_hand * avg_cost), 0)::text as valor
+        from public.existencias()`
+      vacio.valorInventario = Number(v?.valor ?? 0)
+    }
   }
 
   if (pidieron('sales-today', 'open-shifts')) {
@@ -1270,16 +1287,24 @@ const WIDGETS: Record<
   'inventory-value': {
     titulo: 'Valor del inventario',
     icono: 'savings',
-    render: (d) => (
-      <p className="py-2">
-        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
-          RD$ {money(d.valorInventario)}
-        </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          a costo promedio ponderado
-        </span>
-      </p>
-    ),
+    // Sin `inventory.cost.view` se dice que no se puede ver, en vez de
+    // pintar RD$ 0.00. Un cero aqui no es "no hay permiso", es "no tienes
+    // nada en almacen", y quien lo lea va a creerse lo segundo.
+    render: (d) =>
+      d.valorInventario === null ? (
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">
+          Tu rol no incluye ver el costo del inventario.
+        </p>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+            RD$ {money(d.valorInventario)}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            a costo promedio ponderado
+          </span>
+        </p>
+      ),
   },
 
   'sales-today': {

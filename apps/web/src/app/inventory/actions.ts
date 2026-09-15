@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { countVariance, varianceValue } from '@regb/operations'
-import { asUser } from '@/lib/db'
+import { asUser, db } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
@@ -61,17 +61,29 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'El costo solo aplica cuando la cantidad es positiva.' }
   }
 
-  const [datos] = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    (tx) => tx<{ avg_cost: string | null; catalog_cost: string | null }[]>`
-      select sl.avg_cost::text as avg_cost, p.cost::text as catalog_cost
-      from public.products p
-      left join public.stock_levels sl
-        on sl.product_id = p.id and sl.warehouse_id = ${warehouseId}
-       and sl.tenant_id = ${ctx.tenantId}
-      where p.id = ${productId} and p.tenant_id = ${ctx.tenantId}`,
-  )
+  // Con la conexion DUEÑA, no con `asUser`. Dos razones, y la segunda es
+  // la que importa:
+  //
+  //  1. Desde 0109 `authenticated` no tiene SELECT sobre `avg_cost`, asi
+  //     que leer `stock_levels` a pelo revienta con "permission denied
+  //     for table stock_levels" y ningun ajuste se podia registrar.
+  //
+  //  2. Este costo NO se le enseña a nadie: alimenta `montoAjuste`, que
+  //     es lo que compara el `max_amount` del rol unas lineas mas abajo.
+  //     Si viniera tapado en null -por `existencias()`, para quien no
+  //     tiene `inventory.cost.view`-, el monto saldria CERO y cualquier
+  //     ajuste pasaria por debajo de cualquier limite. O sea que tapar el
+  //     costo aqui no protegeria nada: abriria el candado.
+  //
+  // Al correr como dueño no hay RLS. El `tenant_id` va a mano en las dos
+  // puntas del join, y es lo unico que separa una cuenta de otra aqui.
+  const [datos] = await db()<{ avg_cost: string | null; catalog_cost: string | null }[]>`
+    select sl.avg_cost::text as avg_cost, p.cost::text as catalog_cost
+    from public.products p
+    left join public.stock_levels sl
+      on sl.product_id = p.id and sl.warehouse_id = ${warehouseId}
+     and sl.tenant_id = ${ctx.tenantId}
+    where p.id = ${productId} and p.tenant_id = ${ctx.tenantId}`
   if (!datos) return { ok: false, error: 'Ese producto no existe.' }
 
   const avgCost = Number(datos.avg_cost ?? 0)
