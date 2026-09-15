@@ -48,16 +48,19 @@ antes de mandarla (`p_ref`, migracion 0114): el segundo intento es la
 misma clave primaria, no una accion parecida.
 
 Pasan por la cola `transferir`, `reportar_gasto` y `pedir_vacaciones`.
-**Los conteos todavia no** -escriben `stock_count_lines` directo- y es
-lo siguiente, porque contar es lo mas largo que se hace sin señal.
+Pasan tambien los CONTEOS, que son de otra clase: no crean nada, le
+asignan un numero a una linea. Por eso recontar la misma linea sin señal
+reemplaza lo que esperaba en vez de acumular dos numeros que se van a
+pisar al subir.
 
 ## Lo que esta verificado (y con que)
 
 - `pnpm --filter @regb/mobile typecheck` y `lint` en verde, sin un solo
   `any` ni `@ts-ignore`.
-- La logica de la cola: 17 pruebas en `@regb/operations`, sin telefono
-  de por medio. La idempotencia que la sostiene: 7 pruebas contra
-  Postgres real en `supabase/tests/idempotencia-movil.test.ts`.
+- La logica de la cola: 21 pruebas en `@regb/operations`, sin telefono
+  de por medio. Lo que la sostiene en la base: 7 pruebas de idempotencia
+  (`idempotencia-movil.test.ts`) y 15 de la puerta de contar
+  (`contar.test.ts`), contra Postgres real.
 - `expo export --platform android` genera el bundle completo: Metro
   resuelve de verdad `@regb/ui-native` (TypeScript sin compilar),
   `@regb/sdk/native`, `@regb/operations` y `expo-crypto`. Eso prueba que

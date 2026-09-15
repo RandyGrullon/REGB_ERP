@@ -203,11 +203,10 @@ describe('Las lineas solo se editan mientras el conteo sigue counting; aprobado 
     )
     linea = l!.id
 
-    await as(
-      userB,
-      tenantB,
-      (tx) => tx`update public.cycle_count_lines set counted_qty = 47 where id = ${linea}`,
-    )
+    // Por `contar_ciclico()` y no por un UPDATE: desde 0115 el UPDATE
+    // directo sobre `counted_qty` esta revocado y la funcion es la unica
+    // puerta. Ver la cabecera de esa migracion.
+    await as(userB, tenantB, (tx) => tx`select public.contar_ciclico(${linea}, 47)`)
     const [row] = await sql`select counted_qty::text from public.cycle_count_lines where id = ${linea}`
     expect(row!.counted_qty).toBe('47.000')
   })
@@ -220,11 +219,17 @@ describe('Las lineas solo se editan mientras el conteo sigue counting; aprobado 
         update public.cycle_counts set status = 'pending_approval', submitted_at = now() where id = ${conteo}`,
     )
     await expect(
-      as(
-        userB,
-        tenantB,
-        (tx) => tx`update public.cycle_count_lines set counted_qty = 50 where id = ${linea}`,
-      ),
+      as(userB, tenantB, (tx) => tx`select public.contar_ciclico(${linea}, 50)`),
+    ).rejects.toThrow(/aprobacion/i)
+  })
+
+  it('y el trigger de 0068 sigue ahi debajo, por si acaso', async () => {
+    // La funcion comprueba el estado, pero el trigger es el que lo
+    // garantiza aunque alguien abra otra via manaña. Dos cierres para la
+    // misma puerta es correcto aqui: el de 0115 da el mensaje bueno, el
+    // de 0068 no depende de que se use la funcion.
+    await expect(
+      sql`update public.cycle_count_lines set counted_qty = 51 where id = ${linea}`,
     ).rejects.toThrow(/ya no admite cambios/)
   })
 
@@ -324,11 +329,10 @@ describe('Quien cuenta no puede reescribir la foto del sistema (0106)', () => {
   })
 
   it('escribir lo contado SI se puede: es el trabajo', async () => {
-    await as(
-      userB,
-      tenantB,
-      (tx) => tx`update public.cycle_count_lines set counted_qty = 88 where id = ${fila}`,
-    )
+    // Desde 0115, por la funcion. Lo que esta prueba vigila no cambio:
+    // que el arreglo de 0106 -y ahora el de 0115- no haya roto el
+    // trabajo normal de quien cuenta.
+    await as(userB, tenantB, (tx) => tx`select public.contar_ciclico(${fila}, 88)`)
     const [r] = await sql`select counted_qty::text from public.cycle_count_lines where id = ${fila}`
     expect(r!.counted_qty).toBe('88.000')
   })

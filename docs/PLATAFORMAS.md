@@ -98,7 +98,13 @@ El reintento es seguro porque el telefono decide el `uuid` de la fila
 ANTES de mandarla (`p_ref`, migracion 0114): un segundo intento no es una
 accion parecida, es la misma clave primaria.
 
-La logica vive en `@regb/operations/cola-movil` con 17 pruebas; en la app
+Contar es de otra clase y la cola lo trata distinto. Transferir, un gasto
+o unas vacaciones son HECHOS: cada uno crea una fila y dos son dos cosas
+que pasaron. Contar es una ASIGNACION: le pone un numero a una linea que
+ya existe. Por eso recontar la misma linea sin señal **reemplaza** lo que
+esperaba en vez de acumular dos numeros que se van a pisar al subir.
+
+La logica vive en `@regb/operations/cola-movil` con 21 pruebas; en la app
 solo queda AsyncStorage, PostgREST y AppState.
 
 ### Lo que falta, dicho claro
@@ -116,9 +122,6 @@ solo queda AsyncStorage, PostgREST y AppState.
 - Faltan las capacidades que justifican una app nativa: camara, GPS,
   push, biometria, gestos. La camara es la que mas se nota -un gasto sin
   foto del comprobante y un conteo sin escaneo-.
-- Los conteos todavia no pasan por la cola: escriben `stock_count_lines`
-  directo. Contar es lo mas largo que se hace sin señal, asi que es lo
-  siguiente.
 - No hay tour de tutorial en movil.
 
 ## Verificacion de paridad — pendiente

@@ -147,10 +147,24 @@ describe('Las proyecciones no se escriben a mano', () => {
         select has_column_privilege('authenticated', ${`public.${tabla}`}, 'system_qty', 'UPDATE') as system_qty,
                has_column_privilege('authenticated', ${`public.${tabla}`}, 'counted_qty', 'UPDATE') as counted_qty`
       expect(p!.system_qty, `${tabla}.system_qty`).toBe(false)
-      // Y lo contrario tambien importa: si esto se cae, contar dejo de
-      // funcionar y el arreglo rompio el trabajo normal.
-      expect(p!.counted_qty, `${tabla}.counted_qty`).toBe(true)
+      // Desde 0115 `counted_qty` TAMPOCO se escribe por UPDATE directo.
+      // Hasta entonces si se podia, y ese era el agujero: nadie miraba
+      // si el conteo seguia abierto ni si quien escribia tenia permiso
+      // de contar.
+      expect(p!.counted_qty, `${tabla}.counted_qty`).toBe(false)
     }
+  })
+
+  it('pero contar sigue siendo posible: por la funcion (0115)', async () => {
+    // El contrapeso de la prueba de arriba, y hace falta. Comprobar solo
+    // que la puerta esta cerrada deja pasar por bueno el dia en que
+    // alguien la cierra Y se lleva la llave: contar dejaria de funcionar
+    // y ninguna prueba se quejaria.
+    const [p] = await sql<{ simple: boolean; ciclico: boolean }[]>`
+      select has_function_privilege('authenticated', 'public.contar(uuid, numeric)', 'EXECUTE') as simple,
+             has_function_privilege('authenticated', 'public.contar_ciclico(uuid, numeric)', 'EXECUTE') as ciclico`
+    expect(p!.simple, 'public.contar').toBe(true)
+    expect(p!.ciclico, 'public.contar_ciclico').toBe(true)
   })
 })
 

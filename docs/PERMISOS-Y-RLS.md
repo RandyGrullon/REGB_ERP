@@ -63,6 +63,30 @@ Y se aplicaron a **cuatro superficies**:
 | `api_keys`                 | `api-webhooks.view`  | Llaves de integración                          |
 | `ecf_config`               | `e-invoice.view`     | Ahí vive el token de las URL públicas de e-CF  |
 
+### Y lo que cerró 0115: contar
+
+Las dos tablas de líneas de conteo se cerraron por otra vía, porque el
+problema ahí no era solo de lectura:
+
+| Tabla                | Cómo se cierra                | Permiso exigido       |
+| -------------------- | ----------------------------- | --------------------- |
+| `stock_count_lines`  | `public.contar()`             | `inventory.count`     |
+| `cycle_count_lines`  | `public.contar_ciclico()`     | `stock-counts.count`  |
+
+Se revocó el `UPDATE` directo sobre `counted_qty` (que 0106 había dejado
+abierto) y se entra solo por la función. La función mira dos cosas que la
+política no miraba: **quién** —el permiso— y **hasta cuándo** —que el
+conteo siga abierto—.
+
+Lo segundo solo faltaba en el conteo simple: el cíclico ya lo protegía un
+trigger desde 0068. Lo primero faltaba en los dos, o sea que un cajero
+con su token podía escribir lo contado vía PostgREST.
+
+Importa porque cerrar un conteo convierte la diferencia en movimientos de
+ajuste del kardex, y el kardex es inmutable (0107): cambiar lo contado
+después deja el conteo diciendo una cosa y los ajustes otra, sin forma de
+realinearlos.
+
 ### El caso del costo, que no fue directo
 
 El costo es **una columna**, y la RLS filtra **filas**. Hicieron falta

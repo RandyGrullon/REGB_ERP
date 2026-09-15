@@ -68,8 +68,19 @@ export type Resultado =
 interface Estado {
   cola: ArchivoCola
   indicador: EstadoCola
-  /** Intenta ahora; si la base no contesta, lo guarda para despues. */
-  enviar: (accion: AccionMovil, args: Record<string, unknown>, resumen: string) => Promise<Resultado>
+  /**
+   * Intenta ahora; si la base no contesta, lo guarda para despues.
+   *
+   * `clave` solo para las asignaciones -contar-: encolar otra con la
+   * misma sustituye a la que esperaba, en vez de acumular dos numeros
+   * para la misma linea. Los hechos van sin ella.
+   */
+  enviar: (
+    accion: AccionMovil,
+    args: Record<string, unknown>,
+    resumen: string,
+    clave?: string,
+  ) => Promise<Resultado>
   /** Empuja lo que haya pendiente. Devuelve cuantas subieron. */
   sincronizar: () => Promise<number>
   subiendo: boolean
@@ -174,6 +185,7 @@ export function ProveedorCola({ children }: { children: ReactNode }) {
       accion: AccionMovil,
       args: Record<string, unknown>,
       resumen: string,
+      clave?: string,
     ): Promise<Resultado> => {
       // La referencia se decide ANTES de mandar: si se decidiera despues
       // de fallar, el intento que si llego al servidor habria ido sin
@@ -185,9 +197,14 @@ export function ProveedorCola({ children }: { children: ReactNode }) {
 
       if (!seEncola(error)) return { estado: 'rechazado', mensaje: error.message }
 
+      // `clave` se OMITE cuando no viene, en vez de pasar undefined: con
+      // `exactOptionalPropertyTypes` no es lo mismo, y una clave
+      // undefined guardada en el archivo haria que dos hechos distintos
+      // se vieran como la misma asignacion.
       const pendiente: AccionPendiente = {
         ref,
         accion,
+        ...(clave === undefined ? {} : { clave }),
         args,
         creadaEn: new Date().toISOString(),
         resumen,

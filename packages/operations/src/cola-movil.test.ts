@@ -66,6 +66,51 @@ describe('Encolar', () => {
   })
 })
 
+describe('Contar es una asignacion, no un hecho', () => {
+  const contar = (linea: string, cuantos: number, ref: string): AccionPendiente => ({
+    ref,
+    accion: 'contar',
+    clave: `contar:${linea}`,
+    args: { p_linea: linea, p_cantidad: cuantos },
+    creadaEn: '2026-09-14T10:00:00.000Z',
+    resumen: `Cemento gris: ${cuantos}`,
+    intentos: 0,
+  })
+
+  it('recontar la misma linea REEMPLAZA lo que estaba esperando', () => {
+    // Contar 40 y despues corregir a 43 no son dos hechos: es una
+    // persona diciendo dos veces cuanto hay. Lo que vale es lo ultimo.
+    let cola = encolar(COLA_VACIA, contar('L1', 40, 'r1'))
+    cola = encolar(cola, contar('L1', 43, 'r2'))
+
+    expect(cola.acciones).toHaveLength(1)
+    expect(cola.acciones[0]!.args['p_cantidad']).toBe(43)
+  })
+
+  it('pero contar OTRA linea no pisa a la primera', () => {
+    let cola = encolar(COLA_VACIA, contar('L1', 40, 'r1'))
+    cola = encolar(cola, contar('L2', 12, 'r2'))
+    expect(cola.acciones).toHaveLength(2)
+  })
+
+  it('al reemplazar conserva el momento en que esa linea entro en la fila', () => {
+    // Lo que cambio es el numero, no cuando se conto por primera vez.
+    // Mover el momento la reordenaria frente a las demas sin motivo.
+    const primera = { ...contar('L1', 40, 'r1'), creadaEn: '2026-09-14T08:00:00.000Z' }
+    const segunda = { ...contar('L1', 43, 'r2'), creadaEn: '2026-09-14T09:30:00.000Z' }
+    const cola = encolar(encolar(COLA_VACIA, primera), segunda)
+    expect(cola.acciones[0]!.creadaEn).toBe('2026-09-14T08:00:00.000Z')
+  })
+
+  it('dos transferencias iguales NO se funden: son dos camiones', () => {
+    // El lado opuesto de la misma regla. Un hecho sin `clave` nunca
+    // sustituye a otro, por identico que se vea.
+    const t = (ref: string) => accion({ ref })
+    const cola = encolar(encolar(COLA_VACIA, t('r1')), t('r2'))
+    expect(cola.acciones).toHaveLength(2)
+  })
+})
+
 describe('El orden de subida es el orden en que ocurrieron', () => {
   it('lo mas viejo sube primero, aunque se haya encolado despues', () => {
     // No es estetico. Si alguien movio mercancia a un almacen y despues

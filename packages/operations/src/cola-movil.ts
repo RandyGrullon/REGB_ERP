@@ -13,17 +13,22 @@
  * lo vuelve a mover: lo apunta en un papel y lo mete cuando vuelva, que
  * es exactamente el trabajo doble que el ERP venia a quitar.
  *
- * ── Que pasa por aqui hoy, y que NO ───────────────────────────────────
+ * ── Dos clases de accion, y la diferencia importa ─────────────────────
  *
- * Las tres acciones de `AccionMovil`: transferir, gastos y vacaciones.
- * Son las que llaman a una funcion de la base y las que 0114 hizo
- * idempotentes.
+ * HECHOS: transferir, reportar un gasto, pedir vacaciones. Cada llamada
+ * CREA una fila, y dos llamadas son dos cosas distintas que pasaron. Por
+ * eso cada una lleva su `ref` propia (0114) y por eso nunca se funden
+ * entre si: dos transferencias iguales el mismo dia son dos camiones.
  *
- * Los CONTEOS todavia no: escriben `stock_count_lines` directo, sin
- * funcion de por medio. Y es el caso que mas lo pide -contar un pasillo
- * es lo mas largo que se hace sin señal-, asi que es lo siguiente. Se
- * dice aqui para que nadie lea esta cola y de por hecho que ya cubre
- * todo lo que el telefono escribe.
+ * ASIGNACIONES: contar (0115). No crea nada, le pone un numero a una
+ * linea que ya existe. Contar 40 y despues corregir a 43 no son dos
+ * hechos: es una persona diciendo dos veces cuanto hay, y lo que vale es
+ * lo ultimo. Esas llevan `clave`, y la nueva REEMPLAZA a la que estaba
+ * esperando.
+ *
+ * Sin esa distincion, quien recuenta tres estantes sin señal acaba con
+ * nueve cosas en la lista de pendientes para tres lineas, y la pantalla
+ * que existe para dar confianza pasa a quitarla.
  *
  * ── La regla que decide todo lo demas ─────────────────────────────────
  *
@@ -54,8 +59,8 @@
  * no va a pasar, y ponerlo delante de alguien. Ver `bloqueadas`.
  */
 
-/** Las acciones que se pueden encolar. Cada una es una funcion de 0114. */
-export type AccionMovil = 'transferir' | 'reportar_gasto' | 'pedir_vacaciones'
+/** Las acciones que se pueden encolar. Cada una es una funcion de la base. */
+export type AccionMovil = 'transferir' | 'reportar_gasto' | 'pedir_vacaciones' | 'contar'
 
 export interface AccionPendiente {
   /**
@@ -68,6 +73,18 @@ export interface AccionPendiente {
    */
   ref: string
   accion: AccionMovil
+  /**
+   * Para las ASIGNACIONES: que cosa del mundo esta describiendo.
+   *
+   * Si viene, encolar otra con la misma clave no agrega una segunda: la
+   * sustituye. Es lo que hace que recontar una linea tres veces sin
+   * señal deje UN pendiente con el ultimo numero, y no tres que se van a
+   * pisar en orden al subir.
+   *
+   * Los HECHOS no la llevan: dos transferencias iguales son dos
+   * transferencias, y fundirlas seria perder una.
+   */
+  clave?: string
   /** Los parametros de la funcion, sin `p_ref`. */
   args: Record<string, unknown>
   /** Cuando la persona lo hizo. No cuando se logro subir. */
@@ -115,9 +132,28 @@ export function seEncola(error: { code?: string | null } | null | undefined): bo
  *
  * Si ya hay una con la misma referencia NO la duplica: la pantalla puede
  * llamar a esto sin llevar la cuenta de si ya lo hizo.
+ *
+ * Y si la accion trae `clave` -o sea que es una asignacion, no un
+ * hecho-, sustituye a la que hubiera con esa misma clave. Se conserva el
+ * `creadaEn` de la primera a proposito: lo que cambio es el numero, no
+ * el momento en que esa linea entro en la fila, y mover el momento la
+ * reordenaria frente a las demas sin motivo.
  */
 export function encolar(cola: ArchivoCola, accion: AccionPendiente): ArchivoCola {
   if (cola.acciones.some((a) => a.ref === accion.ref)) return cola
+
+  if (accion.clave !== undefined) {
+    const previa = cola.acciones.find((a) => a.clave === accion.clave)
+    if (previa !== undefined) {
+      return {
+        version: 1,
+        acciones: cola.acciones.map((a) =>
+          a.clave === accion.clave ? { ...accion, creadaEn: previa.creadaEn } : a,
+        ),
+      }
+    }
+  }
+
   return { version: 1, acciones: [...cola.acciones, accion] }
 }
 
@@ -259,9 +295,12 @@ function esAccionValida(x: unknown): x is AccionPendiente {
   const a = x as Record<string, unknown>
   const texto = (v: unknown): v is string => typeof v === 'string' && v.trim() !== ''
   if (!texto(a['ref']) || !texto(a['creadaEn']) || !texto(a['resumen'])) return false
-  if (a['accion'] !== 'transferir' && a['accion'] !== 'reportar_gasto' && a['accion'] !== 'pedir_vacaciones') {
-    return false
-  }
+  const conocidas: readonly string[] = ['transferir', 'reportar_gasto', 'pedir_vacaciones', 'contar']
+  if (typeof a['accion'] !== 'string' || !conocidas.includes(a['accion'])) return false
+  // Una accion de una version futura de la app -alguien instalo, encolo
+  // y volvio atras- se descarta aqui en vez de atascar el subidor con
+  // algo que esta version no sabe mandar.
+  if (a['clave'] !== undefined && typeof a['clave'] !== 'string') return false
   if (typeof a['args'] !== 'object' || a['args'] === null || Array.isArray(a['args'])) return false
   return typeof a['intentos'] === 'number' && Number.isFinite(a['intentos'])
 }

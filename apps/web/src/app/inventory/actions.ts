@@ -183,11 +183,19 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
     return { ok: false, error: 'La cantidad contada no es valida.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      update public.stock_count_lines set counted_qty = ${counted}
-      where id = ${lineId} and tenant_id = ${ctx.tenantId}`
-  })
+  // Por `public.contar()` y no por un UPDATE: desde 0115 es la unica
+  // puerta, y es la que comprueba que el conteo siga abierto. Antes no lo
+  // comprobaba nadie, y tocar `counted_qty` despues de cerrar reescribe
+  // una diferencia que ya salio al kardex, que es inmutable.
+  try {
+    await asUser(ctx.userId, ctx.tenantId, (tx) => {
+      return tx`select public.contar(${lineId}, ${counted})`
+    })
+  } catch (e) {
+    // El mensaje de 0115 ya viene en español y dice que hacer.
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
 
   revalidatePath(`/inventory/counts`)
   return { ok: true }

@@ -10,6 +10,7 @@ import {
 } from '@regb/operations'
 import { Boton, Campo, EstadoVacio, Fila, Insignia, Texto, useTema } from '@regb/ui-native'
 import { supabase } from '../../../src/supabase'
+import { useCola } from '../../../src/cola'
 
 /**
  * Contar, linea por linea.
@@ -32,6 +33,22 @@ import { supabase } from '../../../src/supabase'
  * señal, se apaga el telefono y suena el jefe: cualquier cosa que
  * dependa de llegar al final pierde una hora de trabajo. Cada linea que
  * se confirma ya esta a salvo.
+ *
+ * ── "A salvo" tambien sin señal ───────────────────────────────────────
+ *
+ * Antes, cada linea era un PATCH y sin linea no se guardaba: la pantalla
+ * decia "revisa la señal y vuelve a intentar" y quien contaba tenia que
+ * quedarse ahi parado, o apuntar en un papel. En un pasillo de un
+ * deposito eso es la mitad del tiempo.
+ *
+ * Ahora va por la cola (`src/cola.tsx`) y se marca contada igual. Contar
+ * es una ASIGNACION y no un hecho: si se recuenta la misma linea sin
+ * señal, la cola sustituye lo que habia en vez de acumular dos numeros
+ * que se van a pisar al subir.
+ *
+ * Escribe con `public.contar()` (0115) y no con un UPDATE, que es la
+ * unica puerta desde que se descubrio que nadie comprobaba que el conteo
+ * siguiera abierto.
  */
 interface LineaCruda {
   id: string
@@ -48,6 +65,7 @@ export default function Contar() {
   const [texto, setTexto] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
+  const { enviar, indicador } = useCola()
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -85,21 +103,31 @@ export default function Contar() {
       setError(MENSAJE_PROBLEMA[r.problema])
       return
     }
+    const linea = lineas.find((l) => l.id === lineaId)
     setGuardando(true)
-    const { error: err } = await supabase
-      .from('stock_count_lines')
-      .update({ counted_qty: r.valor })
-      .eq('id', lineaId)
+    const res = await enviar(
+      'contar',
+      { p_linea: lineaId, p_cantidad: r.valor },
+      `${linea?.nombre ?? 'Linea'}: ${r.valor} ${linea?.unidad ?? ''}`.trim(),
+      `contar:${lineaId}`,
+    )
     setGuardando(false)
 
-    if (err) {
-      // El error se enseña y la linea NO se marca como contada: decir
-      // "guardado" cuando no se guardo es como se pierde un conteo
-      // entero sin que nadie se entere hasta cerrarlo.
-      setError('No se pudo guardar. Revisa la señal y vuelve a intentar.')
+    if (res.estado === 'rechazado') {
+      // La base contesto que no -el conteo se cerro, falta el permiso-.
+      // La linea NO se marca como contada: decir "guardado" cuando no se
+      // guardo es como se pierde un conteo entero sin que nadie se
+      // entere hasta cerrarlo. El mensaje de 0115 ya viene en español y
+      // dice que hacer.
+      setError(res.mensaje)
       return
     }
 
+    // Encolado cuenta como contado, y es la diferencia entre poder
+    // trabajar en un pasillo sin señal y no poder. La linea se marca, el
+    // avance sube, y si algo no se pudo guardar de verdad aparece en
+    // pendientes -que es donde se mira, no aqui, para no interrumpir a
+    // quien lleva el ritmo de un estante-.
     setLineas((prev) => prev.map((l) => (l.id === lineaId ? { ...l, contado: r.valor } : l)))
     setEditando(null)
     setTexto('')
@@ -123,6 +151,19 @@ export default function Contar() {
       */}
       <View style={estilos.cabecera}>
         <Texto variante="cuerpoSm">{avance.texto}</Texto>
+        {/*
+          Lo que falta por subir, aqui mismo. Quien cuenta un pasillo
+          entero sin señal necesita ver que su trabajo esta guardado en
+          algun sitio; si no lo ve, lo apunta en un papel por si acaso, y
+          ese papel es lo que veniamos a quitar.
+        */}
+        {indicador.texto !== null && (
+          <Texto variante="pie" tono={indicador.tono === 'peligro' ? 'peligro' : 'alerta'}>
+            {indicador.bloqueadas > 0
+              ? `${indicador.texto}. Miralo en Sin subir.`
+              : `${indicador.texto}. Se guardo en el telefono y sube solo.`}
+          </Texto>
+        )}
         <View style={[estilos.barra, { backgroundColor: tema.color.superficie.elevada }]}>
           <View
             style={[

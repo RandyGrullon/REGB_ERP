@@ -135,9 +135,11 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
   if (counted === null || counted < 0) return { ok: false, error: 'La cantidad contada no es valida.' }
 
   try {
+    // Unica puerta desde 0115: comprueba que el conteo siga en
+    // `counting`. Un UPDATE directo dejaba cambiar el numero cuando ya
+    // estaba delante del supervisor o ya habia movido inventario.
     await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-      update public.cycle_count_lines set counted_qty = ${counted}
-      where id = ${lineId} and tenant_id = ${ctx.tenantId}`)
+      select public.contar_ciclico(${lineId}, ${counted})`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
