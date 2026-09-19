@@ -35,6 +35,12 @@ export interface DatosWidgets {
   stockBajo: { name: string; sku: string; qty: number; punto: number }[]
   /** null = este rol no puede ver el costo. Cero seria mentira. */
   valorInventario: number | null
+  /** Lo proximo que hay que presentarle a la DGII. null = nada pendiente. */
+  proximoVencimiento: { form: string; period: string; dueDate: string; dias: number } | null
+  /** ITBIS a pagar del ultimo IT-1 cerrado. null = no hay ninguno cerrado. */
+  itbisAPagar: { period: string; monto: number } | null
+  /** Ultima corrida de consolidacion y cuanto elimino. */
+  ultimaConsolidacion: { grupo: string; periodo: string; cerrada: boolean; eliminado: number } | null
   ventasHoy: { tickets: number; total: number }
   turnosAbiertos: { warehouse: string; cajero: string; desde: string }[]
   pedidosPendientes: { number: string; customer: string; total: number; estado: string }[]
@@ -160,6 +166,9 @@ export async function cargarDatosWidgets(
   const vacio: DatosWidgets = {
     stockBajo: [],
     valorInventario: null,
+    proximoVencimiento: null,
+    itbisAPagar: null,
+    ultimaConsolidacion: null,
     ventasHoy: { tickets: 0, total: 0 },
     turnosAbiertos: [],
     pedidosPendientes: [],
@@ -279,6 +288,64 @@ export async function cargarDatosWidgets(
         from public.existencias()`
       vacio.valorInventario = Number(v?.valor ?? 0)
     }
+  }
+
+  if (pidieron('taxes-next-due')) {
+    // Lo proximo que vence, de lo que todavia no se ha presentado. El
+    // orden es por fecha y no por periodo: una declaracion atrasada de
+    // hace dos meses vence ANTES que la de este mes, y es la que urge.
+    const [v] = await tx<{ form: string; period: string; due_date: string; dias: string }[]>`
+      select form, period, due_date::text,
+             (due_date - current_date)::text as dias
+      from public.tax_filings
+      where tenant_id = ${tenantId} and status = 'pending'
+      order by due_date
+      limit 1`
+    vacio.proximoVencimiento =
+      v === undefined
+        ? null
+        : { form: v.form, period: v.period, dueDate: v.due_date, dias: Number(v.dias) }
+  }
+
+  if (pidieron('taxes-itbis-due')) {
+    // Del ultimo IT-1 ya cerrado, no del periodo en curso: el del mes
+    // vivo cambia con cada factura y un numero que baila no sirve para
+    // apartar el dinero.
+    const [v] = await tx<{ period: string; amount_due: string }[]>`
+      select period, amount_due::text
+      from public.tax_filings
+      where tenant_id = ${tenantId} and form = 'IT-1' and status <> 'pending'
+      order by period desc
+      limit 1`
+    vacio.itbisAPagar =
+      v === undefined ? null : { period: v.period, monto: Number(v.amount_due) }
+  }
+
+  if (pidieron('consolidation-ultima-corrida', 'consolidation-impacto')) {
+    const [v] = await tx<
+      { grupo: string; periodo: string; cerrada: boolean; eliminado: string }[]
+    >`
+      select g.name as grupo,
+             to_char(r.period_end, 'MM/YYYY') as periodo,
+             (r.status = 'closed') as cerrada,
+             coalesce((
+               select sum(e.amount) from public.consolidation_eliminations e
+               where e.run_id = r.id
+             ), 0)::text as eliminado
+      from public.consolidation_runs r
+      join public.consolidation_groups g on g.id = r.group_id
+      where r.tenant_id = ${tenantId}
+      order by r.period_end desc, r.created_at desc
+      limit 1`
+    vacio.ultimaConsolidacion =
+      v === undefined
+        ? null
+        : {
+            grupo: v.grupo,
+            periodo: v.periodo,
+            cerrada: v.cerrada,
+            eliminado: Number(v.eliminado),
+          }
   }
 
   if (pidieron('sales-today', 'open-shifts')) {
@@ -1684,6 +1751,108 @@ const WIDGETS: Record<
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">real contra presupuestado</span>
       </p>
     ),
+  },
+
+  'taxes-next-due': {
+    titulo: 'Proximo vencimiento DGII',
+    icono: 'event_upcoming',
+    render: (d) =>
+      d.proximoVencimiento === null ? (
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">
+          Nada pendiente de presentar.
+        </p>
+      ) : (
+        <p className="py-2">
+          <span className="text-2xl font-semibold text-[var(--color-text-primary)]">
+            {d.proximoVencimiento.form}
+          </span>
+          <span className="ml-2 text-sm text-[var(--color-text-secondary)]">
+            {d.proximoVencimiento.period}
+          </span>
+          {/*
+            Los dias que faltan mandan sobre la fecha: "vence en 3 dias"
+            se actua, "vence el 20/10" se pospone. Y vencido va en rojo,
+            porque a partir de ahi corre mora.
+          */}
+          <span
+            className={
+              d.proximoVencimiento.dias < 0
+                ? 'mt-1 block text-xs text-[var(--color-semantic-text-danger)]'
+                : 'mt-1 block text-xs text-[var(--color-text-muted)]'
+            }
+          >
+            {d.proximoVencimiento.dias < 0
+              ? `Vencio hace ${Math.abs(d.proximoVencimiento.dias)} dia(s)`
+              : d.proximoVencimiento.dias === 0
+                ? 'Vence hoy'
+                : `Vence en ${d.proximoVencimiento.dias} dia(s)`}
+          </span>
+        </p>
+      ),
+  },
+
+  'taxes-itbis-due': {
+    titulo: 'ITBIS a pagar',
+    icono: 'receipt_long',
+    render: (d) =>
+      d.itbisAPagar === null ? (
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">
+          Todavia no has cerrado ningun IT-1.
+        </p>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+            RD$ {money(d.itbisAPagar.monto)}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            del IT-1 de {d.itbisAPagar.period}
+          </span>
+        </p>
+      ),
+  },
+
+  'consolidation-ultima-corrida': {
+    titulo: 'Ultima consolidacion',
+    icono: 'account_tree',
+    render: (d) =>
+      d.ultimaConsolidacion === null ? (
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">
+          Todavia no has corrido ninguna consolidacion.
+        </p>
+      ) : (
+        <p className="py-2">
+          <span className="text-lg font-semibold text-[var(--color-text-primary)]">
+            {d.ultimaConsolidacion.grupo}
+          </span>
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            {d.ultimaConsolidacion.periodo} ·{' '}
+            {d.ultimaConsolidacion.cerrada ? 'cerrada' : 'en borrador'}
+          </span>
+        </p>
+      ),
+  },
+
+  'consolidation-impacto': {
+    titulo: 'Eliminado del grupo',
+    icono: 'filter_alt_off',
+    render: (d) =>
+      d.ultimaConsolidacion === null ? (
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">Sin corridas todavia.</p>
+      ) : (
+        <p className="py-2">
+          <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+            RD$ {money(d.ultimaConsolidacion.eliminado)}
+          </span>
+          {/*
+            Se explica que ES, no solo cuanto: un numero grande aqui es
+            BUENO -es lo que el grupo dejo de contarse dos veces-, y sin
+            la frase se lee como una perdida.
+          */}
+          <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+            movimientos entre empresas del grupo que no son del grupo
+          </span>
+        </p>
+      ),
   },
 
   'cost-center-top': {

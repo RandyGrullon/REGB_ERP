@@ -25,6 +25,7 @@
     "audit:secrets": "node scripts/audit-secrets.mjs",
     "audit:registry": "node scripts/audit-registry.mjs",
     "audit:manifests": "node --experimental-strip-types --no-warnings scripts/audit-manifests.mjs",
+    "sonda:rutas": "node --experimental-strip-types --no-warnings scripts/sonda-rutas.mjs",
     "gate:f0": "pnpm typecheck && pnpm lint && pnpm test && pnpm audit:secrets && pnpm audit:registry && pnpm audit:manifests",
     "db:limpiar-pruebas": "node scripts/limpiar-tenants-de-prueba.mjs",
     "db:migrar-remoto": "node scripts/aplicar-migraciones.mjs",

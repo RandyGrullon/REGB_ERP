@@ -2452,6 +2452,68 @@ export const TOURS: Tour[] = [
       },
     ],
   },
+  {
+    id: 'f6.impuestos',
+    moduleId: 'taxes',
+    title: 'Que la DGII no te agarre de sorpresa',
+    summary: 'Tasas, retenciones y el IT-1 del mes, con fechas que avisan antes.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Las tasas se escriben una vez',
+        body: 'ITBIS 18%, la reducida de 16% y los exentos viven aqui, no en la cabeza de nadie. El dia que la ley se mueva, se cambia en un sitio.',
+        action: { label: 'Ir a Impuestos', path: '/impuestos' },
+        tip: 'Se guardan en fraccion (0.18), no en puntos. La base rechaza un 18 suelto: ese numero seria un cobro de 1800%.',
+      },
+      {
+        title: 'A quien le retienes depende de QUIEN es',
+        body: 'A una persona fisica se le retiene ISR sobre el servicio; a una juridica, parte del ITBIS. Se deja escrito por proveedor y deja de decidirse factura por factura.',
+        action: { label: 'Reglas de retencion', path: '/impuestos/retenciones' },
+        tip: 'El codigo DGII de la retencion es obligatorio: sin el, el 606 del mes rebota.',
+      },
+      {
+        title: 'El IT-1 es una resta, pero hay que cerrarla',
+        body: 'ITBIS que cobraste menos el que adelantaste en compras. Cerrar el mes guarda una FOTO de esos numeros: lo que se declaro, se declaro.',
+        action: { label: 'Liquidacion', path: '/impuestos/liquidacion' },
+        tip: 'Cierra los meses en orden. El saldo a favor de uno arrastra al siguiente, y saltarse un mes descuadra la cadena.',
+      },
+      {
+        title: 'Las fechas avisan antes, no despues',
+        body: 'El calendario mueve solo el vencimiento cuando cae fin de semana, y te dice cuantos dias faltan. La mora empieza al dia siguiente.',
+        action: { label: 'Calendario fiscal', path: '/impuestos/calendario' },
+      },
+    ],
+  },
+  {
+    id: 'f6.consolidacion',
+    moduleId: 'consolidation',
+    title: 'Ver el grupo como una sola empresa',
+    summary: 'Sumar varias empresas y quitar lo que se deben entre ellas.',
+    xp: 30,
+    steps: [
+      {
+        title: 'Un grupo son las empresas que se miran juntas',
+        body: 'Elige cuales entran. No tienen que ser todas las que tengas: un grupo es una pregunta concreta, no un inventario.',
+        action: { label: 'Ir a Consolidacion', path: '/consolidacion' },
+      },
+      {
+        title: 'Lo que se deben entre ellas NO es del grupo',
+        body: 'Si una empresa le vende a otra, eso no es ingreso: es plata pasando de un bolsillo al otro del mismo pantalon. Se elimina.',
+        tip: 'Sin eliminar, el grupo infla ingresos y activos. Es el error contable clasico, y se ve bien cuadrado por dentro.',
+      },
+      {
+        title: 'La hoja de trabajo enseña el camino, no solo el final',
+        body: 'Cada cuenta en una fila: lo que puso cada empresa, la suma, lo que se elimino y el consolidado. Asi se revisa de donde sale cada numero.',
+        action: { label: 'Ver una corrida', path: '/consolidacion' },
+        tip: 'Si un numero sorprende, la columna de eliminaciones suele ser la respuesta.',
+      },
+      {
+        title: 'Cerrar congela la foto',
+        body: 'Una corrida cerrada guarda los saldos con los que se hizo. Si manana cambias el catalogo de cuentas, el consolidado que ya entregaste sigue diciendo lo mismo.',
+        tip: 'Mientras este en borrador, se recalcula. Cierrala solo cuando la vayas a entregar.',
+      },
+    ],
+  },
 ]
 
 export function toursFor(licensedModules: Set<string>): Tour[] {
