@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { calendarioFiscal, liquidarItbis } from '@regb/operations'
+import { calendarioFiscal, creditoArrastrado, liquidarItbis } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -32,6 +32,16 @@ function isoLocal(d: Date): string {
   const dia = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${mes}-${dia}`
 }
+
+/** `202609` a "septiembre de 2026", para que el error nombre el mes. */
+function legible(periodo: string): string {
+  return new Date(`${periodo.slice(0, 4)}-${periodo.slice(4, 6)}-01T12:00:00`).toLocaleDateString(
+    'es-DO',
+    { month: 'long', year: 'numeric' },
+  )
+}
+
+type Cierre = { estado: 'cerrada' } | { estado: 'duplicada' } | { estado: 'falta'; periodo: string }
 
 /**
  * Cierra el IT-1 de un periodo.
@@ -84,16 +94,37 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
     calendarioFiscal(period, new Date()).find((o) => o.form === 'IT-1')?.vence ?? new Date()
 
   try {
-    const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx): Promise<Cierre> => {
       const [ya] = await tx<{ id: string }[]>`
         select id from public.tax_filings
         where tenant_id = ${ctx.tenantId} and form = 'IT-1' and period = ${period}`
-      if (ya) return 'duplicada' as const
+      if (ya) return { estado: 'duplicada' }
 
       const [ventas] = await tx<{ t: string }[]>`
         select coalesce(sum(itbis_facturado), 0)::text as t
         from public.dgii_607
         where tenant_id = ${ctx.tenantId} and periodo = ${period}`
+
+      // El 607 declara COMPROBANTES y el IT-1 declara OPERACIONES: no son
+      // la misma suma. La vista filtra `ncf is not null`, y el POS deja
+      // vender sin NCF a proposito -un colmado que recien abre vende antes
+      // de que la DGII le autorice el primer rango, pos/actions.ts-. Ese
+      // ITBIS se le cobro al cliente igual, asi que entra en la
+      // declaracion; si no, el primer periodo del colmado se declara de
+      // menos en silencio, que es la multa que este modulo dice evitar.
+      const [sinNcf] = await tx<{ t: string }[]>`
+        select coalesce(sum(t), 0)::text as t
+        from (
+          select coalesce(sum(i.tax), 0) as t
+          from public.customer_invoices i
+          where i.tenant_id = ${ctx.tenantId} and i.ncf is null and i.status <> 'void'
+            and to_char(i.issue_date, 'YYYYMM') = ${period}
+          union all
+          select coalesce(sum(s.tax), 0)
+          from public.pos_sales s
+          where s.tenant_id = ${ctx.tenantId} and s.ncf is null and not s.voided
+            and to_char(s.created_at, 'YYYYMM') = ${period}
+        ) q`
 
       // Del 606 salen DOS numeros, no uno, y tiran para lados
       // contrarios: el ITBIS facturado por el proveedor (que me acredito)
@@ -111,17 +142,28 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
             where tenant_id = ${ctx.tenantId} and periodo = ${period}`
         : []
 
-      const [anterior] = await tx<{ credit_forward: string }[]>`
-        select credit_forward::text
+      // La ULTIMA declaracion anterior, no "la que toque": con ella
+      // creditoArrastrado() decide si es el eslabon inmediato o si hay un
+      // hueco en la cadena. Antes se tomaba su credit_forward sin mirar el
+      // periodo, y el mismo saldo a favor se consumia dos veces cuando los
+      // meses se cerraban salteados.
+      const anteriores = await tx<{ period: string; credit_forward: string }[]>`
+        select period, credit_forward::text
         from public.tax_filings
         where tenant_id = ${ctx.tenantId} and form = 'IT-1' and period < ${period}
           and status <> 'pending'
         order by period desc limit 1`
 
-      const itbisCharged = Number(ventas?.t ?? 0)
+      const saldo = creditoArrastrado(
+        period,
+        anteriores.map((a) => ({ period: a.period, creditForward: Number(a.credit_forward) })),
+      )
+      if (saldo.faltaCerrar !== null) return { estado: 'falta', periodo: saldo.faltaCerrar }
+
+      const itbisCharged = Number(ventas?.t ?? 0) + Number(sinNcf?.t ?? 0)
       const itbisPaid = Number(compras[0]?.t ?? 0)
       const itbisRetained = Number(compras[0]?.r ?? 0)
-      const previousCredit = Number(anterior?.credit_forward ?? 0)
+      const previousCredit = saldo.previousCredit
       const { amountDue, creditForward } = liquidarItbis({
         itbisCharged,
         itbisPaid,
@@ -130,28 +172,39 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
         previousCredit,
       })
 
+      // Por `registrar_declaracion()` y no por un INSERT: desde la 0116 el
+      // insert directo sobre tax_filings esta revocado. Cerrar el update y
+      // el delete sin cerrar el insert dejaba FABRICAR una declaracion con
+      // un saldo a favor inventado —y el trigger de inmutabilidad la
+      // congelaba—. La funcion es la unica puerta, y es la que mira el
+      // permiso: la politica de RLS solo mira tenant y modulo.
       await tx`
-        insert into public.tax_filings
-          (tenant_id, form, period, due_date, status, itbis_charged, itbis_paid, itbis_withheld,
-           itbis_retained, previous_credit, amount_due, credit_forward, receipt_number,
-           filed_at, filed_by, notes)
-        values (${ctx.tenantId}, 'IT-1', ${period}, ${isoLocal(vence)}, 'filed',
-                ${itbisCharged}, ${itbisPaid}, ${retenido}, ${itbisRetained}, ${previousCredit},
-                ${amountDue}, ${creditForward}, ${receipt || null}, now(), ${ctx.userId},
-                ${notes || null})`
+        select public.registrar_declaracion(
+          'IT-1', ${period}, ${isoLocal(vence)}::date,
+          ${itbisCharged}, ${itbisPaid}, ${retenido}, ${itbisRetained},
+          ${previousCredit}, ${amountDue}, ${creditForward},
+          ${receipt || null}, ${notes || null})`
 
       await tx`
         select public.emit_event('taxes.filing.closed',
           ${JSON.stringify({ form: 'IT-1', period, amountDue, creditForward })}::text::jsonb,
           'taxes')`
 
-      return 'cerrada' as const
+      return { estado: 'cerrada' }
     })
 
-    if (resultado === 'duplicada') {
+    if (resultado.estado === 'duplicada') {
       return {
         ok: false,
         error: 'Ese periodo ya esta cerrado. Una declaracion cerrada no se recalcula: se corrige con una rectificativa.',
+      }
+    }
+    if (resultado.estado === 'falta') {
+      // Misma negativa asimetrica que con `ar` apagado: mejor no cerrar
+      // que cerrar con un saldo a favor que ya se consumio en otro mes.
+      return {
+        ok: false,
+        error: `Falta cerrar ${legible(resultado.periodo)}: el saldo a favor se arrastra en cadena, un mes a la vez. Cierra ese periodo primero y despues este.`,
       }
     }
   } catch (e) {

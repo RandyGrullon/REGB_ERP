@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { TASAS_ITBIS_RD } from '@regb/operations'
+import { TASAS_ITBIS_RD, porcentajeAFraccion } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -21,26 +21,11 @@ function demoDe(fd: FormData): DemoParams {
   }
 }
 
-const num = (raw: string): number | null => {
-  const t = raw.trim().replace(/,/g, '')
-  if (t === '') return null
-  const n = Number(t)
-  return Number.isFinite(n) ? n : null
-}
-
-/**
- * Lee una tasa escrita por una persona y la deja en fraccion.
- *
- * Se acepta "18" y "0.18" y las dos significan lo mismo, porque la mitad
- * de la gente escribe el porcentaje y la otra mitad la fraccion. Lo que NO
- * se hace es guardar el 18: la tabla usa la convencion de fraccion que la
- * 0021 dejo fijada, y guardar 18 ahi es cobrar 1800% de ITBIS.
- */
-function tasaEnFraccion(raw: string): number | null {
-  const n = num(raw)
-  if (n === null || n < 0) return null
-  return n > 1 ? n / 100 : n
-}
+// El campo es un PORCENTAJE y se divide siempre entre 100, sin adivinar:
+// porcentajeAFraccion() en @regb/operations, con sus pruebas. La version
+// anterior aceptaba "18" y "0.18" como lo mismo (`n > 1 ? n / 100 : n`) y
+// esa comodidad guardaba 100% cuando alguien escribia 1 queriendo 1%.
+// Guardar la fraccion sigue igual: la tabla usa la convencion de la 0021.
 
 const limpioError = (e: unknown): string =>
   (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, '')
@@ -55,13 +40,13 @@ export async function crearTasa(fd: FormData): Promise<ActionResult> {
   const code = String(fd.get('code') ?? '').trim()
   const name = String(fd.get('name') ?? '').trim()
   const kind = String(fd.get('kind') ?? 'itbis').trim()
-  const rate = tasaEnFraccion(String(fd.get('rate') ?? ''))
+  const rate = porcentajeAFraccion(String(fd.get('rate') ?? ''))
   const isDefault = fd.get('isDefault') !== null
 
   if (code.length < 1) return { ok: false, error: 'Escribe el codigo de la tasa.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre de la tasa.' }
-  if (rate === null || rate > 1) {
-    return { ok: false, error: 'La tasa va entre 0 y 100 por ciento.' }
+  if (rate === null) {
+    return { ok: false, error: 'La tasa va en porcentaje, entre 0 y 100: escribe 18 para el 18%.' }
   }
 
   try {
@@ -166,13 +151,18 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
   const name = String(fd.get('name') ?? '').trim()
   const tax = String(fd.get('tax') ?? '').trim()
   const partyType = String(fd.get('partyType') ?? '').trim()
-  const rate = tasaEnFraccion(String(fd.get('rate') ?? ''))
+  const rate = porcentajeAFraccion(String(fd.get('rate') ?? ''))
   const dgiiIsrType = String(fd.get('dgiiIsrType') ?? '').trim()
 
   if (code.length < 1) return { ok: false, error: 'Escribe el codigo de la regla.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre de la regla.' }
   if (tax !== 'itbis' && tax !== 'isr') return { ok: false, error: 'Elige ITBIS o ISR.' }
-  if (rate === null || rate > 1) return { ok: false, error: 'La tasa va entre 0 y 100 por ciento.' }
+  if (rate === null) {
+    return {
+      ok: false,
+      error: 'La retencion va en porcentaje, entre 0 y 100: escribe 10 para el 10%.',
+    }
+  }
   if (tax === 'isr' && dgiiIsrType === '') {
     return {
       ok: false,

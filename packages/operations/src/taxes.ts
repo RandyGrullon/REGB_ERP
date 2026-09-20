@@ -46,6 +46,33 @@ export const TASAS_ITBIS_RD: TasaSembrada[] = [
   { code: 'EXENTO', name: 'Exento 0%', rate: 0, isDefault: false },
 ]
 
+/**
+ * Lee un PORCENTAJE tecleado por una persona y lo deja en fraccion.
+ *
+ * Siempre entre 100, sin adivinar. La version anterior hacia
+ * `n > 1 ? n / 100 : n` para aceptar "18" y "0.18" como lo mismo, y esa
+ * comodidad tiene un precio en el rango 0-1, que es justo donde la
+ * heuristica no puede acertar: quien escribia "1" queriendo 1% guardaba
+ * 100%, y quien escribia "0.5" queriendo medio por ciento guardaba 50%.
+ * La validacion posterior solo rechazaba > 1, asi que los dos pasaban
+ * limpios y se descubrian cuando el proveedor reclamaba su pago.
+ *
+ * Una tasa cien veces mas alta se nota en la primera factura; una regla
+ * de retencion cien veces mas alta se nota tarde. Por eso el campo dice
+ * "%" y aqui no hay caso especial: quien escriba 0.18 va a leer "0.18%"
+ * en la fila y lo corrige.
+ *
+ * Devuelve null si no es un numero, si es negativo o si pasa de 100.
+ */
+export function porcentajeAFraccion(raw: string): number | null {
+  const t = raw.trim().replace(/,/g, '').replace(/%\s*$/, '').trim()
+  if (t === '') return null
+  const n = Number(t)
+  if (!Number.isFinite(n) || n < 0 || n > 100) return null
+  // 4 decimales es lo que aguanta numeric(5,4): 18 -> 0.18, 2.5 -> 0.025.
+  return roundBankers(n / 100, 4)
+}
+
 // ── Calendario ─────────────────────────────────────────────────────────
 
 export type Formulario = 'IT-1' | '606' | '607' | '608' | 'IR-17'
@@ -155,6 +182,10 @@ export interface ReglaRetencion {
   /** Codigo 01-09 de TIPOS_RETENCION_ISR_606. Obligatorio si tax='isr'. */
   dgiiIsrType?: string | null
   isActive?: boolean
+  /** Codigo de la regla. Solo para desempatar y para poder nombrarla. */
+  code?: string
+  /** `YYYY-MM-DD`. Solo para desempatar: gana la vigencia mas reciente. */
+  effectiveFrom?: string
 }
 
 export interface BaseRetencion {
@@ -162,6 +193,20 @@ export interface BaseRetencion {
   itbis: number
   partyType: TipoParte
   isExempt?: boolean
+  /**
+   * De ese subtotal, cuanto es SERVICIOS.
+   *
+   * El ISR a personas fisicas se retiene sobre los servicios, no sobre la
+   * compra de bienes. En una factura mixta -un tecnico que cobra las
+   * piezas y la mano de obra en el mismo documento- retener el 10% de
+   * todo le paga de menos al proveedor, y el numero no cuadra despues
+   * contra el desglose servicios/bienes que el 606 obliga a declarar
+   * (supplier_invoices.services_amount, campo 8 contra campo 9).
+   *
+   * Si no viene, la base es el subtotal completo: es el caso del
+   * proveedor de puro servicio, que es el normal.
+   */
+  servicios?: number
 }
 
 export interface Retenciones {
@@ -171,6 +216,38 @@ export interface Retenciones {
   tipoRetencionIsr: string | null
   totalRetenido: number
   netoAPagar: number
+  /**
+   * Cuantas reglas podian aplicar en el nivel que gano, por impuesto.
+   *
+   * Mas de una significa que se aplico UNA de varias y que la eleccion la
+   * decidio un desempate, no el usuario. Quien pinta el numero tiene que
+   * decirlo: un numero limpio que salio de una entre tres reglas es peor
+   * que un numero con aviso.
+   */
+  candidatas: { itbis: number; isr: number }
+  /** Codigo de la regla que se aplico, cuando la regla lo trae. */
+  reglaAplicada: { itbis: string | null; isr: string | null }
+}
+
+/**
+ * Desempate EXPLICITO: primero la vigencia mas reciente, y a igual fecha
+ * el codigo en orden alfabetico.
+ *
+ * Cualquier orden declarado sirve; el que no sirve es el de llegada. La
+ * pantalla de retenciones alimenta este arreglo con TODAS las reglas
+ * activas cuando el proveedor no tiene una asignada, ordenadas por
+ * `tax, party_type` -que entre dos reglas de ISR para fisica no desempata
+ * nada-, asi que ganaba la que Postgres devolviera primero esa vez. Con
+ * los nueve codigos 01-09 del 606 (alquileres, honorarios, intereses...)
+ * tener varias reglas de ISR para fisica no es un caso raro, y si solo
+ * difiere el codigo el 606 del mes se declara con el tipo que no era.
+ */
+function ordenarReglas(reglas: ReglaRetencion[]): ReglaRetencion[] {
+  return [...reglas].sort(
+    (a, b) =>
+      (b.effectiveFrom ?? '').localeCompare(a.effectiveFrom ?? '') ||
+      (a.code ?? '').localeCompare(b.code ?? ''),
+  )
 }
 
 /**
@@ -178,10 +255,19 @@ export interface Retenciones {
  * cubrirlo con el comodin: una regla escrita para 'fisica' es una decision
  * mas especifica que una escrita para 'ambas', y quien la escribio queria
  * que aplicara.
+ *
+ * Devuelve tambien cuantas competian en el nivel que gano, porque aplicar
+ * una de tres en silencio es el problema, no cual de las tres.
  */
-function elegirRegla(reglas: ReglaRetencion[], tax: 'itbis' | 'isr', parte: TipoParte) {
+function elegirRegla(
+  reglas: ReglaRetencion[],
+  tax: 'itbis' | 'isr',
+  parte: TipoParte,
+): { regla: ReglaRetencion | undefined; candidatas: number } {
   const activas = reglas.filter((r) => r.tax === tax && r.isActive !== false)
-  return activas.find((r) => r.partyType === parte) ?? activas.find((r) => r.partyType === 'ambas')
+  const propias = activas.filter((r) => r.partyType === parte)
+  const nivel = propias.length > 0 ? propias : activas.filter((r) => r.partyType === 'ambas')
+  return { regla: ordenarReglas(nivel)[0], candidatas: nivel.length }
 }
 
 /**
@@ -207,29 +293,98 @@ export function calcularRetenciones(entrada: BaseRetencion, reglas: ReglaRetenci
       tipoRetencionIsr: null,
       totalRetenido: 0,
       netoAPagar: bruto,
+      candidatas: { itbis: 0, isr: 0 },
+      reglaAplicada: { itbis: null, isr: null },
     }
   }
 
-  const rItbis = elegirRegla(reglas, 'itbis', entrada.partyType)
-  const rIsr = elegirRegla(reglas, 'isr', entrada.partyType)
+  const eItbis = elegirRegla(reglas, 'itbis', entrada.partyType)
+  const eIsr = elegirRegla(reglas, 'isr', entrada.partyType)
+
+  // La base del subtotal se limita a los servicios cuando se dice cuanto
+  // es servicios. Nunca puede pasar del subtotal: retener sobre mas de lo
+  // que dice la factura no es un caso, es un dedazo.
+  const baseSubtotal =
+    entrada.servicios === undefined
+      ? entrada.subtotal
+      : Math.min(Math.max(entrada.servicios, 0), entrada.subtotal)
 
   const montoDe = (r: ReglaRetencion | undefined): number =>
-    r === undefined ? 0 : roundBankers((r.base === 'itbis' ? entrada.itbis : entrada.subtotal) * r.rate, 2)
+    r === undefined ? 0 : roundBankers((r.base === 'itbis' ? entrada.itbis : baseSubtotal) * r.rate, 2)
 
-  const itbisRetenido = montoDe(rItbis)
-  const isrRetenido = montoDe(rIsr)
+  const itbisRetenido = montoDe(eItbis.regla)
+  const isrRetenido = montoDe(eIsr.regla)
   const totalRetenido = roundBankers(itbisRetenido + isrRetenido, 2)
 
   return {
     itbisRetenido,
     isrRetenido,
-    tipoRetencionIsr: isrRetenido > 0 ? (rIsr?.dgiiIsrType ?? null) : null,
+    tipoRetencionIsr: isrRetenido > 0 ? (eIsr.regla?.dgiiIsrType ?? null) : null,
     totalRetenido,
     netoAPagar: roundBankers(bruto - totalRetenido, 2),
+    candidatas: { itbis: eItbis.candidatas, isr: eIsr.candidatas },
+    reglaAplicada: { itbis: eItbis.regla?.code ?? null, isr: eIsr.regla?.code ?? null },
   }
 }
 
 // ── Liquidacion IT-1 ───────────────────────────────────────────────────
+
+/** El `YYYYMM` inmediatamente anterior. Enero retrocede a diciembre. */
+export function periodoAnterior(periodo: string): string {
+  const anio = Number(periodo.slice(0, 4))
+  const mes = Number(periodo.slice(4, 6))
+  return mes === 1 ? `${anio - 1}12` : `${anio}${String(mes - 1).padStart(2, '0')}`
+}
+
+/** Una declaracion ya presentada, para resolver la cadena del saldo. */
+export interface DeclaracionPrevia {
+  /** `YYYYMM`. */
+  period: string
+  creditForward: number
+}
+
+export interface SaldoArrastrado {
+  /** Lo que este periodo puede tomar como `previous_credit`. */
+  previousCredit: number
+  /**
+   * Periodo que hay que cerrar ANTES que este, o null si no falta ninguno.
+   * Quien cierra tiene que negarse mientras esto no sea null.
+   */
+  faltaCerrar: string | null
+}
+
+/**
+ * De donde sale el saldo a favor que arrastra un periodo.
+ *
+ * Del periodo INMEDIATAMENTE anterior y de ningun otro. Antes se tomaba
+ * "la ultima declaracion que hubiera" (`period < X order by period desc
+ * limit 1`), y asi el mismo saldo se consumia dos veces: cerrar 202609
+ * con 5,000 de saldo, saltarse octubre y cerrar 202611 se lo comia; volver
+ * despues a cerrar 202610 se lo comia otra vez. Dos declaraciones bajaban
+ * el ITBIS a pagar por el mismo dinero y las dos quedaban cerradas como
+ * foto, asi que ni siquiera se podian recalcular: hay que rectificar las
+ * dos. Y el periodo entra por el query string, o sea que cerrar en el
+ * orden que a uno le de la gana no es un escenario rebuscado -es el
+ * cliente que se pone al dia-.
+ *
+ * Si falta el eslabon, no se inventa un cero: se dice cual falta. Un cero
+ * silencioso es declarar de mas, que le cuesta dinero al cliente sin que
+ * nadie se entere. La unica excepcion es la PRIMERA declaracion de la
+ * historia: cuando no hay ninguna anterior no falta ninguna, y ahi el
+ * cero es la verdad.
+ */
+export function creditoArrastrado(
+  periodo: string,
+  cerradas: DeclaracionPrevia[],
+): SaldoArrastrado {
+  const anteriores = cerradas.filter((f) => f.period < periodo)
+  const previo = periodoAnterior(periodo)
+  const exacta = anteriores.find((f) => f.period === previo)
+
+  if (exacta) return { previousCredit: exacta.creditForward, faltaCerrar: null }
+  if (anteriores.length > 0) return { previousCredit: 0, faltaCerrar: previo }
+  return { previousCredit: 0, faltaCerrar: null }
+}
 
 export interface EntradaLiquidacion {
   /** ITBIS cobrado en ventas del periodo. */

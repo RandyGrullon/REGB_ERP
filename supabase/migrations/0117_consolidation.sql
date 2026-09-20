@@ -124,6 +124,15 @@ create table public.consolidation_runs (
   period_end   date not null,
   status       text not null default 'draft' check (status in ('draft','closed')),
   closed_at    timestamptz,
+  -- Los asientos sin empresa que vio ESTA corrida, congelados junto con
+  -- la foto y no leidos en vivo: si manana alguien los etiqueta, o entra
+  -- al grupo la empresa principal, un consolidado ya entregado tiene que
+  -- seguir diciendo lo mismo. `unlabeled_included` distingue los dos
+  -- casos que la pantalla confundia: se sumaron a la principal, o se
+  -- cayeron de la foto porque la principal no es miembro de este grupo.
+  unlabeled_entries  integer       not null default 0 check (unlabeled_entries >= 0),
+  unlabeled_amount   numeric(12,2) not null default 0 check (unlabeled_amount >= 0),
+  unlabeled_included boolean       not null default false,
   created_by   uuid,
   created_at   timestamptz not null default now(),
   unique (tenant_id, group_id, period_start, period_end),
@@ -265,6 +274,45 @@ create trigger no_miembro_de_grupo_ajeno before insert or update
   on public.consolidation_group_members
   for each row execute function public.impedir_miembro_de_grupo_ajeno();
 
+-- La otra puerta de la misma habitacion. La funcion de arriba cierra la
+-- moneda al AGREGAR una empresa, pero el grupo se podia cambiar despues:
+-- con dos empresas en DOP ya dentro, un update de presentation_currency a
+-- USD dejaba los mismos pesos impresos en la cabecera y en las tres
+-- tarjetas con la etiqueta USD. No hay conversion ninguna -este corte no
+-- traduce moneda-, solo una etiqueta nueva encima de los mismos numeros.
+create function public.impedir_cambiar_moneda_del_grupo() returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.presentation_currency is distinct from old.presentation_currency then
+    -- Un consolidado ya entregado no cambia de moneda ni aunque hoy las
+    -- empresas coincidan: lo que se imprimio en enero tiene que leerse
+    -- igual en marzo. Si el grupo va a presentar en otra moneda, es otro
+    -- grupo.
+    if exists (select 1 from public.consolidation_runs r
+               where r.group_id = old.id and r.status = 'closed') then
+      raise exception 'Ese grupo ya tiene consolidados cerrados en %: la moneda de presentacion no se cambia, se arma otro grupo.',
+        old.presentation_currency using errcode = '55000';
+    end if;
+
+    if exists (select 1 from public.consolidation_group_members m
+               join public.companies c on c.id = m.company_id
+               where m.group_id = old.id
+                 and c.currency is distinct from new.presentation_currency) then
+      raise exception 'El grupo ya tiene empresas en %: la consolidacion no traduce moneda.',
+        old.presentation_currency using errcode = '55000';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger no_cambiar_moneda_del_grupo before update
+  on public.consolidation_groups
+  for each row execute function public.impedir_cambiar_moneda_del_grupo();
+
 create function public.impedir_corrida_de_grupo_ajeno() returns trigger
 language plpgsql
 security definer
@@ -277,6 +325,29 @@ begin
   if v_tenant is distinct from new.tenant_id then
     raise exception 'Ese grupo de consolidacion no pertenece a ese cliente.' using errcode = '42501';
   end if;
+
+  -- Una corrida que ya tiene foto no cambia de grupo ni de periodo. Nada
+  -- recalcula la foto al moverla, asi que la corrida acabaria colgando de
+  -- un grupo cuyos miembros no son las empresas de sus saldos -y la
+  -- comprobacion de pertenencia de las eliminaciones mediria contra el
+  -- grupo equivocado-, o imprimiendo en la cabecera un periodo que la
+  -- foto nunca miro. Si el periodo estaba mal, se genera otra corrida.
+  --
+  -- `old.status = 'draft'` no es una excusa, es el mensaje: los triggers
+  -- de la misma tabla disparan en orden alfabetico y este va antes que
+  -- `no_editar_corrida_cerrada`. Sobre una corrida CERRADA el usuario
+  -- tiene que leer que esta cerrada -que es lo que de verdad pasa-, no
+  -- que su foto esta congelada. Misma leccion que el orden de
+  -- `no_editar_contabilizado` contra `no_empresa_ajena` aqui arriba.
+  if tg_op = 'UPDATE'
+     and old.status = 'draft'
+     and (new.group_id, new.period_start, new.period_end)
+         is distinct from (old.group_id, old.period_start, old.period_end)
+     and exists (select 1 from public.consolidation_run_balances b where b.run_id = old.id) then
+    raise exception 'Esa corrida ya tiene su foto congelada: el grupo y el periodo no se cambian, se genera otra corrida.'
+      using errcode = '55000';
+  end if;
+
   return new;
 end;
 $$;
@@ -315,23 +386,37 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_run        uuid;
   v_run_tenant uuid;
   v_run_status text;
+  v_group      uuid;
+  v_viejo      text;
   v_tenant     uuid;
 begin
-  if tg_op = 'DELETE' then v_run := old.run_id; else v_run := new.run_id; end if;
-
-  select tenant_id, status into v_run_tenant, v_run_status
-  from public.consolidation_runs where id = v_run;
-
-  if v_run_status = 'closed' then
-    raise exception 'Esa corrida ya esta cerrada: su foto de saldos no se toca.'
-      using errcode = '55000';
+  -- Las DOS puntas del update, no solo el destino. Mirando unicamente
+  -- new.run_id, mover la foto de una corrida CERRADA a un borrador
+  -- pasaba limpio: el trigger evaluaba el estado del destino. La corrida
+  -- entregada se quedaba en cero -y sin rastro, porque esta tabla no
+  -- lleva bitacora a proposito- mientras el borrador declaraba como
+  -- suyos unos saldos que eran de otro periodo.
+  if tg_op in ('UPDATE', 'DELETE') then
+    select status into v_viejo
+    from public.consolidation_runs where id = old.run_id;
+    if v_viejo = 'closed' then
+      raise exception 'Esa corrida ya esta cerrada: su foto de saldos no se toca.'
+        using errcode = '55000';
+    end if;
   end if;
 
   if tg_op = 'DELETE' then
     return old;
+  end if;
+
+  select tenant_id, status, group_id into v_run_tenant, v_run_status, v_group
+  from public.consolidation_runs where id = new.run_id;
+
+  if v_run_status = 'closed' then
+    raise exception 'Esa corrida ya esta cerrada: su foto de saldos no se toca.'
+      using errcode = '55000';
   end if;
 
   if v_run_tenant is distinct from new.tenant_id then
@@ -346,6 +431,20 @@ begin
   select tenant_id into v_tenant from public.accounts where id = new.account_id;
   if v_tenant is distinct from new.tenant_id then
     raise exception 'Esa cuenta no pertenece a ese cliente.' using errcode = '42501';
+  end if;
+
+  -- La tabla que SUMA dinero valida la pertenencia al grupo igual que la
+  -- que lo RESTA. Sin esto, una empresa del mismo cliente que nunca entro
+  -- al grupo se colaba como una columna mas de la hoja -que se pinta
+  -- desde la foto, no desde los miembros de hoy- y su saldo se sumaba al
+  -- consolidado sin descuadrar nada: la fila entra por un solo lado bien
+  -- formado, asi que debito sigue igual a credito.
+  if not exists (
+        select 1 from public.consolidation_group_members m
+        where m.group_id = v_group and m.tenant_id = new.tenant_id
+          and m.company_id = new.company_id) then
+    raise exception 'Esa empresa no es miembro del grupo de esa corrida.'
+      using errcode = '42501';
   end if;
 
   return new;
@@ -367,24 +466,34 @@ security definer
 set search_path = ''
 as $$
 declare
-  v_run        uuid;
   v_run_tenant uuid;
   v_run_status text;
   v_group      uuid;
+  v_viejo      text;
   v_tenant     uuid;
 begin
-  if tg_op = 'DELETE' then v_run := old.run_id; else v_run := new.run_id; end if;
-
-  select tenant_id, status, group_id into v_run_tenant, v_run_status, v_group
-  from public.consolidation_runs where id = v_run;
-
-  if v_run_status = 'closed' then
-    raise exception 'Esa corrida ya esta cerrada: sus eliminaciones no se tocan.'
-      using errcode = '55000';
+  -- Las DOS puntas del update, por lo mismo que en la foto de saldos:
+  -- mover las eliminaciones de una corrida cerrada a un borrador las
+  -- sacaba del consolidado ya entregado sin que nada se quejara.
+  if tg_op in ('UPDATE', 'DELETE') then
+    select status into v_viejo
+    from public.consolidation_runs where id = old.run_id;
+    if v_viejo = 'closed' then
+      raise exception 'Esa corrida ya esta cerrada: sus eliminaciones no se tocan.'
+        using errcode = '55000';
+    end if;
   end if;
 
   if tg_op = 'DELETE' then
     return old;
+  end if;
+
+  select tenant_id, status, group_id into v_run_tenant, v_run_status, v_group
+  from public.consolidation_runs where id = new.run_id;
+
+  if v_run_status = 'closed' then
+    raise exception 'Esa corrida ya esta cerrada: sus eliminaciones no se tocan.'
+      using errcode = '55000';
   end if;
 
   if v_run_tenant is distinct from new.tenant_id then
@@ -436,6 +545,126 @@ create trigger no_eliminacion_ajena before insert or update or delete
   on public.consolidation_eliminations
   for each row execute function public.impedir_eliminacion_ajena();
 
+-- ══════════════════════════════════════════════════════════════════════
+--  Congelar la foto
+--
+--  El insert...select de la foto vive AQUI y no en la accion de la
+--  pantalla por una razon que ya costo un bug: la ventana que congela la
+--  foto -acumulado hasta period_end- estaba escrita en la accion, y otra
+--  vez, distinta (`between period_start and period_end`), en la pantalla
+--  que avisa de los asientos sin etiquetar. La pantalla decia cero
+--  mientras la foto los habia sumado. Una sola escritura de la regla.
+--
+--  De paso guarda en la corrida cuantos asientos sin empresa vio, por
+--  cuanto, y si de verdad entraron: eso es parte de la ENTRADA congelada,
+--  no del presente. Etiquetarlos manana no cambia lo que se entrego.
+--
+--  ACUMULADO hasta period_end, no el movimiento del periodo. El que rompe
+--  todo es el BALANCE: una cuenta por cobrar entre dos empresas del grupo
+--  nacio en marzo, y si la foto solo mira octubre esa cuenta vale cero en
+--  octubre y la eliminacion de receivable_payable -el caso estrella del
+--  modulo- no tiene nada que eliminar. El precio es que ingresos y gastos
+--  salen acumulados; se asume a proposito mientras el repo no tenga
+--  cierre anual, y se DICE en la pantalla y en la ficha en vez de
+--  prometer lo contrario.
+-- ══════════════════════════════════════════════════════════════════════
+create function public.consolidation_freeze(p_run uuid) returns void
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_run       public.consolidation_runs%rowtype;
+  v_principal uuid;
+  v_entries   integer;
+  v_amount    numeric(12,2);
+begin
+  select * into v_run from public.consolidation_runs where id = p_run;
+  if v_run.id is null then
+    raise exception 'Esa corrida no existe.' using errcode = '42501';
+  end if;
+
+  -- Un asiento sin empresa se lee como de la empresa principal: antes de
+  -- multi-empresa todo era de ella.
+  select c.id into v_principal
+  from public.companies c
+  where c.tenant_id = v_run.tenant_id and c.is_default and c.deleted_at is null
+  limit 1;
+
+  select count(*), coalesce(sum(t.debito), 0) into v_entries, v_amount
+  from (
+    select e.id, coalesce(sum(l.debit), 0) as debito
+    from public.journal_entries e
+    left join public.journal_entry_lines l on l.entry_id = e.id
+    where e.tenant_id = v_run.tenant_id
+      and e.status = 'posted'
+      and e.company_id is null
+      and e.entry_date <= v_run.period_end
+    group by e.id
+  ) t;
+
+  -- Va ANTES del insert de la foto: con la foto ya puesta, el trigger de
+  -- la corrida vigila que no se le cambie el grupo ni el periodo, y este
+  -- update no tiene por que discutir con el.
+  update public.consolidation_runs
+  set unlabeled_entries  = v_entries,
+      unlabeled_amount   = v_amount,
+      unlabeled_included = exists (
+        select 1 from public.consolidation_group_members m
+        where m.tenant_id = v_run.tenant_id
+          and m.group_id = v_run.group_id
+          and m.company_id = v_principal)
+  where id = p_run;
+
+  insert into public.consolidation_run_balances
+    (tenant_id, run_id, company_id, account_id, total_debit, total_credit)
+  select v_run.tenant_id, p_run, m.company_id, l.account_id,
+         sum(l.debit), sum(l.credit)
+  from public.journal_entry_lines l
+  join public.journal_entries e on e.id = l.entry_id
+  join public.consolidation_group_members m
+    on m.tenant_id = v_run.tenant_id
+   and m.group_id = v_run.group_id
+   and m.company_id = coalesce(e.company_id, v_principal)
+  where l.tenant_id = v_run.tenant_id
+    and e.status = 'posted'
+    and e.entry_date <= v_run.period_end
+  group by m.company_id, l.account_id
+  having sum(l.debit) > 0 or sum(l.credit) > 0;
+end;
+$$;
+
+comment on function public.consolidation_freeze(uuid) is
+  'Congela la foto de entrada de una corrida y anota los asientos sin empresa que vio. La ventana -acumulado hasta period_end- se escribe aqui y en ningun otro sitio.';
+
+-- Las cuentas con las que se pinta una corrida: las activas de hoy MAS
+-- toda cuenta que esa corrida haya tocado.
+--
+-- El catalogo vivo no sirve para una hoja historica. Desactivar una
+-- cuenta en /contabilidad es un clic, y la hoja se arma recorriendo las
+-- cuentas: una cuenta ausente no produce fila, asi que un consolidado
+-- cerrado y entregado en enero perdia en marzo su fila de la 4100 con su
+-- millon dentro -y saltaba el cartel de "la hoja no cuadra", que manda a
+-- buscar la causa a la contabilidad, donde no esta-. Es la misma razon
+-- por la que las EMPRESAS salen de la foto y no de los miembros de hoy.
+create function public.consolidation_run_accounts(p_run uuid)
+returns table (id uuid, code text, name text, type text, is_active boolean)
+language sql
+stable
+set search_path = ''
+as $$
+  select a.id, a.code, a.name, a.type, a.is_active
+  from public.accounts a
+  join public.consolidation_runs r on r.id = p_run
+  where a.tenant_id = r.tenant_id
+    and (a.is_active
+         or exists (select 1 from public.consolidation_run_balances b
+                    where b.run_id = r.id and b.account_id = a.id)
+         or exists (select 1 from public.consolidation_eliminations e
+                    where e.run_id = r.id
+                      and (e.debit_account_id = a.id or e.credit_account_id = a.id)))
+  order by a.code;
+$$;
+
 -- ── Bitacora ────────────────────────────────────────────────────────────
 --  Se auditan las DECISIONES -quien armo el grupo, quien metio una empresa,
 --  quien genero o cerro la corrida, quien elimino que-. La foto de saldos
@@ -466,17 +695,18 @@ set is_published = true,
     features     = '[
       {"titulo":"Hoja de trabajo clasica, con sus columnas","detalle":"Una columna por empresa, una de eliminaciones y una consolidada, cuenta por cuenta. Es la misma hoja que el contador ya sabe leer, calculada sola."},
       {"titulo":"Dice cuanto se habria inflado el grupo","detalle":"Arriba, en numero: cuanto ingreso y cuanto activo desaparecen al quitar lo que las empresas se venden y se deben entre ellas. Ese es el numero que justifica el consolidado."},
-      {"titulo":"La foto del periodo queda congelada","detalle":"Al generar la corrida se guarda cuanto aporto cada empresa en cada cuenta. Un asiento con fecha atrasada que entre manana no cambia un consolidado ya entregado."},
+      {"titulo":"La foto queda congelada","detalle":"Al generar la corrida se guarda cuanto aporto cada empresa en cada cuenta, acumulado hasta la fecha de corte. Un asiento con fecha atrasada que entre manana no cambia un consolidado ya entregado, y desactivar una cuenta del catalogo tampoco."},
       {"titulo":"Cerrada es cerrada","detalle":"Una corrida cerrada no se edita ni se borra, igual que un asiento contabilizado. Si hay que corregir, se hace otra corrida -y las dos quedan."},
       {"titulo":"Eliminaciones que no pueden descuadrar","detalle":"Cada eliminacion es un par debito/credito con un solo monto, asi que el grupo sigue cuadrando por construccion. La base ademas exige que las dos empresas sean miembros del grupo."},
-      {"titulo":"Cuenta los asientos sin empresa","detalle":"Los asientos que nadie etiqueto se leen como de la empresa principal, y la pantalla dice cuantos son en vez de esconderlo."}
+      {"titulo":"Cuenta los asientos sin empresa","detalle":"Los asientos que nadie etiqueto se leen como de la empresa principal: la pantalla dice cuantos son y por cuanto dinero, y avisa en rojo cuando la principal no es miembro del grupo y esos asientos se quedaron FUERA del consolidado."}
     ]'::jsonb,
     audience     = '{"Grupos con dos o mas razones sociales","Holdings familiares que reportan al banco","Empresas que se facturan entre si y necesitan un estado limpio del grupo"}',
     faq          = '[
       {"p":"¿Consolida empresas en monedas distintas?","r":"No. Todas las empresas del grupo tienen que llevar la misma moneda que el grupo presenta, y la base lo exige al agregarlas. Reexpresar estados a tasa de cierre, promedio e historica es otro trabajo, no un cambio de signo."},
       {"p":"¿Detecta solo las facturas entre mis empresas?","r":"No. Cada eliminacion se captura a mano. Emparejar por monto coincidente seria adivinar sobre la contabilidad de alguien; para automatizarlo hace falta marcar la contraparte en la linea del asiento, que hoy no existe."},
       {"p":"¿Maneja interes minoritario o consolidacion al 60%?","r":"No. Toda empresa del grupo entra al 100% (integracion global). Preferimos no tener la opcion antes que tener una casilla que no hace lo que dice."},
-      {"p":"¿Los asientos de contabilidad ya saben a que empresa pertenecen?","r":"Se agrega la columna y se respeta, pero la pantalla de contabilidad todavia no la pide: mientras tanto, un asiento sin empresa cuenta como la empresa principal y la corrida te dice cuantos estan asi."},
+      {"p":"¿Los asientos de contabilidad ya saben a que empresa pertenecen?","r":"Se agrega la columna y se respeta, pero la pantalla de contabilidad todavia no la pide: mientras tanto, un asiento sin empresa cuenta como la empresa principal y la corrida te dice cuantos son, por cuanto, y si de verdad entraron al consolidado."},
+      {"p":"¿La corrida es el movimiento del periodo o el acumulado?","r":"El acumulado hasta la fecha de corte, y esta dicho en la pantalla. Es lo unico honesto mientras el repo no tenga cierre anual: si la foto solo mirara el mes, una cuenta por cobrar entre dos empresas del grupo que nacio en marzo valdria cero en octubre y no habria nada que eliminar -el grupo publicaria como activo propio lo que una empresa le debe a la otra-."},
       {"p":"¿El consolidado se postea en los libros?","r":"No, y es a proposito: el consolidado es de presentacion. Las eliminaciones viven en la corrida, no en la contabilidad de ninguna empresa, para no ensuciar los libros individuales con asientos que la DGII no espera."}
     ]'::jsonb,
     setup_minutes = 25

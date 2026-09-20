@@ -104,7 +104,7 @@ export default async function ImpuestosPage({
         <PageHeader
           icon="percent"
           title="Impuestos"
-          description="Las tasas de ITBIS y las reglas de retencion de tu negocio. Se nombran una vez aqui en vez de teclearse producto por producto y factura por factura."
+          description="El catalogo de tasas de ITBIS de tu negocio y las reglas de retencion de tus proveedores, nombradas una vez y en un solo sitio."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -137,6 +137,22 @@ export default async function ImpuestosPage({
             </strong>
             . Por eso son una tabla que puedes editar y no un numero escondido en el sistema:
             revisalos con tu contador antes de tu primera declaracion.
+          </p>
+        </div>
+
+        <div
+          role="note"
+          className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3 text-sm"
+        >
+          <Icon name="link_off" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
+          <p className="text-[var(--color-text-secondary)]">
+            Este catalogo{' '}
+            <strong className="text-[var(--color-text-primary)]">
+              todavia no alimenta a la facturacion
+            </strong>
+            . Cambiar la tasa por defecto aqui no cambia lo que cobra la caja: productos, pedidos,
+            cotizaciones y ordenes de compra siguen llevando su propia tasa por linea, y esa se
+            edita en Productos. Engancharlos es el paso siguiente y esta declarado, no escondido.
           </p>
         </div>
 
@@ -260,13 +276,13 @@ export default async function ImpuestosPage({
                   </select>
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Porcentaje
+                  Porcentaje (%)
                   <input
                     name="rate"
                     required
                     inputMode="decimal"
                     placeholder="18"
-                    title="Escribelo como 18 o como 0.18: se guarda siempre en fraccion"
+                    title="En porcentaje: 18 es el 18%. Se guarda en fraccion (0.18), que es la convencion de la tabla."
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
@@ -403,12 +419,13 @@ export default async function ImpuestosPage({
                     </select>
                   </label>
                   <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Porcentaje
+                    Porcentaje (%)
                     <input
                       name="rate"
                       required
                       inputMode="decimal"
                       placeholder="10"
+                      title="En porcentaje: 10 es el 10%, y 1 es el 1%. Antes un 1 se guardaba como 100%."
                       className={`tabular text-right ${claseInput}`}
                     />
                   </label>

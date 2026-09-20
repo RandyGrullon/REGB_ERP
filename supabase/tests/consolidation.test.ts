@@ -17,6 +17,17 @@ import postgres from 'postgres'
  *  4. Que una eliminacion solo pueda apuntar a empresas que SON miembros
  *     del grupo de esa corrida: eso no lo puede expresar una FK.
  *  5. Que journal_entries.company_id no acepte la empresa de otro cliente.
+ *  6. Que una fila no se MUDE de una corrida cerrada a un borrador: el
+ *     trigger miraba solo la corrida destino, asi que vaciar un
+ *     consolidado entregado pasaba limpio y sin dejar rastro.
+ *  7. Que la foto solo acepte empresas miembros del grupo -la tabla que
+ *     suma dinero, igual que la que lo resta-.
+ *  8. Que consolidation_freeze() congele el ACUMULADO hasta period_end y
+ *     cuente los asientos sin empresa con esa misma ventana.
+ *  9. Que la moneda del grupo no se cambie por detras con los miembros
+ *     ya dentro, ni con consolidados cerrados.
+ * 10. Que consolidation_run_accounts() siga devolviendo una cuenta
+ *     desactivada despues si la corrida la uso.
  */
 
 const URL = process.env.DATABASE_URL ?? 'postgresql://postgres:postgres@localhost:55432/regb_test'
@@ -54,6 +65,36 @@ async function as<T>(
     await tx.unsafe('set local role authenticated')
     return fn(tx)
   }) as Promise<T>
+}
+
+/**
+ * Un asiento contabilizado de verdad: borrador, lineas, y solo entonces
+ * `posted`. Al reves no se puede -0041 no deja tocar las lineas de un
+ * asiento ya contabilizado-, y la foto solo mira los contabilizados.
+ */
+async function asientoContabilizado(opts: {
+  tenant: string
+  numero: string
+  fecha: string
+  empresa: string | null
+  monto: number
+  cuentaDebito: string
+  cuentaCredito: string
+}) {
+  const [e] = await sql<{ id: string }[]>`
+    insert into public.journal_entries
+      (tenant_id, number, description, entry_date, company_id)
+    values (${opts.tenant}, ${opts.numero}, 'Fixture de consolidacion',
+            ${opts.fecha}::date, ${opts.empresa})
+    returning id`
+  const id = e!.id
+  await sql`
+    insert into public.journal_entry_lines (tenant_id, entry_id, account_id, debit, credit)
+    values (${opts.tenant}, ${id}, ${opts.cuentaDebito}, ${opts.monto}, 0),
+           (${opts.tenant}, ${id}, ${opts.cuentaCredito}, 0, ${opts.monto})`
+  await sql`
+    update public.journal_entries set status = 'posted', posted_at = now() where id = ${id}`
+  return id
 }
 
 async function modulo(tenant: string, id: string, encendido: boolean) {
@@ -139,12 +180,28 @@ beforeAll(async () => {
   const [ra] = await sql`
     insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
     values (${tenantA}, ${grupoA}, '2026-01-01', '2026-03-31') returning id`
-  const [rc] = await sql`
-    insert into public.consolidation_runs
-      (tenant_id, group_id, period_start, period_end, status, closed_at)
-    values (${tenantA}, ${grupoA}, '2025-01-01', '2025-12-31', 'closed', now()) returning id`
   corridaA = ra!.id
+
+  // La corrida cerrada se arma en borrador, con su foto y su eliminacion
+  // dentro, y se cierra despues: asi es como nace de verdad, y asi se
+  // puede comprobar que lo que se entrego sigue ahi.
+  const [rc] = await sql`
+    insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
+    values (${tenantA}, ${grupoA}, '2025-01-01', '2025-12-31') returning id`
   corridaCerradaA = rc!.id
+  await sql`
+    insert into public.consolidation_run_balances
+      (tenant_id, run_id, company_id, account_id, total_credit)
+    values (${tenantA}, ${corridaCerradaA}, ${matrizA}, ${cuentaIngresoA}, 1000000)`
+  await sql`
+    insert into public.consolidation_eliminations
+      (tenant_id, run_id, from_company_id, to_company_id,
+       debit_account_id, credit_account_id, amount, description)
+    values (${tenantA}, ${corridaCerradaA}, ${matrizA}, ${filialA},
+            ${cuentaIngresoA}, ${cuentaGastoA}, 250000, 'Venta entre empresas del 2025')`
+  await sql`
+    update public.consolidation_runs set status = 'closed', closed_at = now()
+    where id = ${corridaCerradaA}`
 })
 
 afterAll(async () => {
@@ -164,8 +221,14 @@ afterAll(async () => {
   await sql`alter table public.consolidation_eliminations enable trigger no_eliminacion_ajena`
   await sql`delete from public.consolidation_group_members where tenant_id in ${sql(ts)}`
   await sql`delete from public.consolidation_groups where tenant_id in ${sql(ts)}`
+  // Mismo motivo con la contabilidad: un asiento contabilizado no se
+  // borra, y estos fixtures lo estan a proposito.
+  await sql`alter table public.journal_entry_lines disable trigger no_editar_lineas_contabilizado`
+  await sql`alter table public.journal_entries disable trigger no_editar_contabilizado`
   await sql`delete from public.journal_entry_lines where tenant_id in ${sql(ts)}`
   await sql`delete from public.journal_entries where tenant_id in ${sql(ts)}`
+  await sql`alter table public.journal_entries enable trigger no_editar_contabilizado`
+  await sql`alter table public.journal_entry_lines enable trigger no_editar_lineas_contabilizado`
   await sql`delete from public.accounts where tenant_id in ${sql(ts)}`
   await sql`delete from public.companies where tenant_id in ${sql(ts)}`
   await sql`delete from audit.log where tenant_id in ${sql(ts)}`
@@ -528,5 +591,290 @@ describe('Lo que la tabla no deja pasar', () => {
     await expect(
       sql`delete from public.consolidation_groups where id = ${grupoA}`,
     ).rejects.toThrow(/violates foreign key constraint/)
+  })
+})
+
+describe('Una fila no se muda de una corrida cerrada a un borrador', () => {
+  // El agujero de la regla 3 a medias: el trigger cubria el UPDATE, pero
+  // solo la mitad del UPDATE -el destino-. Con eso, un PATCH de
+  // `run_id` vaciaba la foto de un consolidado entregado y el dinero
+  // reaparecia declarado en el periodo nuevo, sin un aviso y sin una
+  // linea en la bitacora: esta tabla no se audita a proposito.
+  it('la foto de una corrida CERRADA no se puede mudar a un borrador', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          update public.consolidation_run_balances set run_id = ${corridaA}
+          where run_id = ${corridaCerradaA}`,
+      ),
+    ).rejects.toThrow(/ya esta cerrada/)
+  })
+
+  it('las eliminaciones de una corrida CERRADA tampoco', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          update public.consolidation_eliminations set run_id = ${corridaA}
+          where run_id = ${corridaCerradaA}`,
+      ),
+    ).rejects.toThrow(/ya esta cerrada/)
+  })
+
+  it('el consolidado entregado sigue entero despues del intento', async () => {
+    const [foto] = await sql<{ c: number; total: string }[]>`
+      select count(*)::int as c, coalesce(sum(total_credit), 0)::text as total
+      from public.consolidation_run_balances where run_id = ${corridaCerradaA}`
+    expect(foto!.c).toBe(1)
+    expect(foto!.total).toBe('1000000.00')
+
+    const [elim] = await sql<{ c: number; total: string }[]>`
+      select count(*)::int as c, coalesce(sum(amount), 0)::text as total
+      from public.consolidation_eliminations where run_id = ${corridaCerradaA}`
+    expect(elim!.c).toBe(1)
+    expect(elim!.total).toBe('250000.00')
+  })
+
+  it('mover una fila entre dos BORRADORES sigue siendo posible: cerrada es cerrada, borrador no', async () => {
+    const [r] = await sql<{ id: string }[]>`
+      insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
+      values (${tenantA}, ${grupoA}, '2028-01-01', '2028-03-31') returning id`
+    const [b] = await sql<{ id: string }[]>`
+      insert into public.consolidation_run_balances
+        (tenant_id, run_id, company_id, account_id, total_debit)
+      values (${tenantA}, ${r!.id}, ${matrizA}, ${cuentaGastoA}, 700) returning id`
+    const [r2] = await sql<{ id: string }[]>`
+      insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
+      values (${tenantA}, ${grupoA}, '2028-04-01', '2028-06-30') returning id`
+    await as(
+      userA,
+      tenantA,
+      (tx) => tx`
+        update public.consolidation_run_balances set run_id = ${r2!.id} where id = ${b!.id}`,
+    )
+    const [fila] = await sql<{ run_id: string }[]>`
+      select run_id from public.consolidation_run_balances where id = ${b!.id}`
+    expect(fila!.run_id).toBe(r2!.id)
+  })
+})
+
+describe('La foto solo suma empresas del grupo', () => {
+  it('un saldo de una empresa del mismo cliente que NO es miembro se rechaza', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          insert into public.consolidation_run_balances
+            (tenant_id, run_id, company_id, account_id, total_debit)
+          values (${tenantA}, ${corridaA}, ${terceraA}, ${cuentaIngresoA}, 5000000)`,
+      ),
+    ).rejects.toThrow(/no es miembro del grupo/)
+  })
+
+  it('el de una empresa miembro entra normal: cerrar la puerta no rompe la ruta buena', async () => {
+    await as(
+      userA,
+      tenantA,
+      (tx) => tx`
+        insert into public.consolidation_run_balances
+          (tenant_id, run_id, company_id, account_id, total_debit)
+        values (${tenantA}, ${corridaA}, ${filialA}, ${cuentaGastoA}, 4000)`,
+    )
+    const filas = await sql<{ id: string }[]>`
+      select id from public.consolidation_run_balances
+      where run_id = ${corridaA} and company_id = ${filialA}`
+    expect(filas).toHaveLength(1)
+  })
+})
+
+describe('La corrida con foto no cambia de grupo ni de periodo', () => {
+  let grupoBis: string
+
+  beforeAll(async () => {
+    const [g] = await sql<{ id: string }[]>`
+      insert into public.consolidation_groups (tenant_id, name)
+      values (${tenantA}, ${`Grupo A bis ${RUN}`}) returning id`
+    grupoBis = g!.id
+  })
+
+  it('mudarla a otro grupo se rechaza: sus saldos son de las empresas del grupo viejo', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          update public.consolidation_runs set group_id = ${grupoBis} where id = ${corridaA}`,
+      ),
+    ).rejects.toThrow(/foto congelada/)
+  })
+
+  it('estirarle el periodo tambien: la foto se calculo a otra fecha', async () => {
+    await expect(
+      as(
+        userA,
+        tenantA,
+        (tx) => tx`
+          update public.consolidation_runs set period_end = '2030-12-31' where id = ${corridaA}`,
+      ),
+    ).rejects.toThrow(/foto congelada/)
+  })
+
+  it('cerrarla si se puede: lo que se congela es el grupo y el periodo, no la corrida entera', async () => {
+    await as(
+      userA,
+      tenantA,
+      (tx) => tx`
+        update public.consolidation_runs set status = 'closed', closed_at = now()
+        where id = ${corridaA}`,
+    )
+    const [fila] = await sql<{ status: string }[]>`
+      select status from public.consolidation_runs where id = ${corridaA}`
+    expect(fila!.status).toBe('closed')
+  })
+})
+
+describe('La moneda del grupo tampoco se cambia por detras', () => {
+  it('un grupo con empresas dentro no pasa a presentar en otra moneda', async () => {
+    await expect(
+      sql`update public.consolidation_groups set presentation_currency = 'USD' where id = ${grupoB}`,
+    ).rejects.toThrow(/no traduce moneda/)
+  })
+
+  it('uno con consolidados cerrados no cambia ni aunque las empresas coincidan', async () => {
+    await expect(
+      sql`update public.consolidation_groups set presentation_currency = 'USD' where id = ${grupoA}`,
+    ).rejects.toThrow(/consolidados cerrados/)
+  })
+
+  it('un grupo vacio y sin historia si cambia: la puerta cerrada no estorba lo legitimo', async () => {
+    const [g] = await sql<{ id: string }[]>`
+      insert into public.consolidation_groups (tenant_id, name)
+      values (${tenantA}, ${`Grupo Vacio ${RUN}`}) returning id`
+    await sql`
+      update public.consolidation_groups set presentation_currency = 'USD' where id = ${g!.id}`
+    const [fila] = await sql<{ presentation_currency: string }[]>`
+      select presentation_currency from public.consolidation_groups where id = ${g!.id}`
+    expect(fila!.presentation_currency).toBe('USD')
+  })
+})
+
+describe('consolidation_freeze congela la foto con UNA sola ventana', () => {
+  let corridaFoto: string
+  let corridaSinMatriz: string
+
+  beforeAll(async () => {
+    // Uno dentro del periodo, uno muy anterior -la foto es acumulada- y
+    // uno sin empresa tambien anterior: ese ultimo es justo el que el
+    // contador de la pantalla no veia, porque contaba `between`.
+    await asientoContabilizado({
+      tenant: tenantA,
+      numero: `AS-FOTO-${RUN}-1`,
+      fecha: '2026-08-10',
+      empresa: matrizA,
+      monto: 50000,
+      cuentaDebito: cuentaGastoA,
+      cuentaCredito: cuentaIngresoA,
+    })
+    await asientoContabilizado({
+      tenant: tenantA,
+      numero: `AS-FOTO-${RUN}-2`,
+      fecha: '2025-06-15',
+      empresa: matrizA,
+      monto: 1000000,
+      cuentaDebito: cuentaGastoA,
+      cuentaCredito: cuentaIngresoA,
+    })
+    await asientoContabilizado({
+      tenant: tenantA,
+      numero: `AS-FOTO-${RUN}-3`,
+      fecha: '2025-07-20',
+      empresa: null,
+      monto: 777000,
+      cuentaDebito: cuentaGastoA,
+      cuentaCredito: cuentaIngresoA,
+    })
+
+    const [r] = await sql<{ id: string }[]>`
+      insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
+      values (${tenantA}, ${grupoA}, '2026-07-01', '2026-09-30') returning id`
+    corridaFoto = r!.id
+    await as(userA, tenantA, (tx) => tx`select public.consolidation_freeze(${corridaFoto}::uuid)`)
+
+    // El mismo periodo para un grupo de dos filiales que deja fuera al
+    // holding: la principal no es miembro, asi que sus asientos sin
+    // etiquetar no se suman a nadie.
+    const [g] = await sql<{ id: string }[]>`
+      insert into public.consolidation_groups (tenant_id, name)
+      values (${tenantA}, ${`Grupo Sin Matriz ${RUN}`}) returning id`
+    await sql`
+      insert into public.consolidation_group_members (tenant_id, group_id, company_id)
+      values (${tenantA}, ${g!.id}, ${filialA}), (${tenantA}, ${g!.id}, ${terceraA})`
+    const [r2] = await sql<{ id: string }[]>`
+      insert into public.consolidation_runs (tenant_id, group_id, period_start, period_end)
+      values (${tenantA}, ${g!.id}, '2026-07-01', '2026-09-30') returning id`
+    corridaSinMatriz = r2!.id
+    await as(
+      userA,
+      tenantA,
+      (tx) => tx`select public.consolidation_freeze(${corridaSinMatriz}::uuid)`,
+    )
+  })
+
+  it('la foto es el acumulado: un asiento anterior al periodo tambien entra', async () => {
+    const [fila] = await sql<{ total_credit: string }[]>`
+      select total_credit::text from public.consolidation_run_balances
+      where run_id = ${corridaFoto} and company_id = ${matrizA}
+        and account_id = ${cuentaIngresoA}`
+    // 50,000 de agosto + 1,000,000 de junio del ano pasado + 777,000 sin
+    // empresa, que se leen como de la principal.
+    expect(fila!.total_credit).toBe('1827000.00')
+  })
+
+  it('los asientos sin empresa se cuentan con la MISMA ventana que la foto', async () => {
+    const [r] = await sql<
+      { unlabeled_entries: number; unlabeled_amount: string; unlabeled_included: boolean }[]
+    >`
+      select unlabeled_entries, unlabeled_amount::text, unlabeled_included
+      from public.consolidation_runs where id = ${corridaFoto}`
+    expect(r!.unlabeled_entries).toBe(1)
+    expect(r!.unlabeled_amount).toBe('777000.00')
+    expect(r!.unlabeled_included).toBe(true)
+  })
+
+  it('con la principal fuera del grupo NO entran, y la corrida lo dice', async () => {
+    const filas = await sql<{ id: string }[]>`
+      select id from public.consolidation_run_balances
+      where run_id = ${corridaSinMatriz} and company_id = ${matrizA}`
+    expect(filas).toHaveLength(0)
+
+    const [r] = await sql<{ unlabeled_entries: number; unlabeled_included: boolean }[]>`
+      select unlabeled_entries, unlabeled_included
+      from public.consolidation_runs where id = ${corridaSinMatriz}`
+    expect(r!.unlabeled_entries).toBe(1)
+    expect(r!.unlabeled_included).toBe(false)
+  })
+
+  it('una cuenta desactivada despues sigue en la hoja de la corrida que la uso', async () => {
+    const [nueva] = await sql<{ id: string }[]>`
+      insert into public.accounts (tenant_id, code, name, type, is_active)
+      values (${tenantA}, ${`9${RUN.slice(0, 3)}`}, 'Dormida y sin movimiento', 'expense', false)
+      returning id`
+    await sql`update public.accounts set is_active = false where id = ${cuentaIngresoA}`
+
+    const cuentas = await as(
+      userA,
+      tenantA,
+      (tx) => tx<{ id: string }[]>`
+        select id from public.consolidation_run_accounts(${corridaFoto}::uuid)`,
+    )
+    await sql`update public.accounts set is_active = true where id = ${cuentaIngresoA}`
+
+    const ids = cuentas.map((c) => c.id)
+    expect(ids).toContain(cuentaIngresoA)
+    expect(ids).not.toContain(nueva!.id)
   })
 })

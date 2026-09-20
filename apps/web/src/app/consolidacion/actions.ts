@@ -12,11 +12,11 @@ import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/mod
  * Doble candado en las siete: permiso en SERVIDOR con exigir() y escritura
  * bajo RLS con asUser(). Que la pantalla oculte el boton no cuenta (§8.3).
  *
- * La que de verdad tiene sustancia es generarCorrida(): congela la FOTO de
- * saldos por empresa y cuenta leyendo los asientos YA CONTABILIZADOS del
- * periodo. Un asiento sin empresa se suma a la empresa principal, porque
- * antes de que existiera multi-empresa todo era de ella; la pantalla de la
- * corrida dice cuantos son para que nadie tenga que adivinarlo.
+ * La que de verdad tiene sustancia es generarCorrida(), y lo que hace es
+ * llamar a public.consolidation_freeze(): la foto -los asientos YA
+ * CONTABILIZADOS acumulados hasta la fecha de corte- se congela en SQL,
+ * donde la regla se escribe una sola vez y la pantalla la lee en vez de
+ * volver a inventarla.
  */
 
 function demoDe(fd: FormData): DemoParams {
@@ -181,51 +181,16 @@ export async function generarCorrida(fd: FormData): Promise<ActionResult> {
         returning id`
       const id = corrida!.id
 
-      const [principal] = await tx<{ id: string }[]>`
-        select id from public.companies
-        where tenant_id = ${ctx.tenantId} and is_default and deleted_at is null
-        limit 1`
-
-      // Un asiento sin empresa se cuenta como de la principal: antes de
-      // multi-empresa todo era de ella. Si el cliente no tiene principal
-      // marcada, esos asientos simplemente no entran -y la corrida lo dice
-      // en numero, no en silencio-.
-      await tx`
-        insert into public.consolidation_run_balances
-          (tenant_id, run_id, company_id, account_id, total_debit, total_credit)
-        select ${ctx.tenantId}::uuid, ${id}::uuid, m.company_id, l.account_id,
-               sum(l.debit), sum(l.credit)
-        from public.journal_entry_lines l
-        join public.journal_entries e on e.id = l.entry_id
-        join public.consolidation_group_members m
-          on m.tenant_id = ${ctx.tenantId}
-         and m.group_id = ${groupId}
-         and m.company_id = coalesce(e.company_id, ${principal?.id ?? null}::uuid)
-        where l.tenant_id = ${ctx.tenantId}
-          and e.status = 'posted'
-          -- ACUMULADO hasta el cierre, no el movimiento del periodo.
-          --
-          -- Esta es la diferencia entre un balance y un estado de
-          -- resultados, y aqui se aplica a los dos por una razon: el que
-          -- rompe todo es el BALANCE. Una cuenta por cobrar entre dos
-          -- empresas del grupo nacio en marzo; si la foto solo mira
-          -- octubre, en octubre esa cuenta vale cero y la eliminacion de
-          -- receivable_payable -el caso estrella del modulo- no tiene
-          -- nada que eliminar. El grupo publica como activo propio lo
-          -- que una empresa le debe a la otra.
-          --
-          -- Y no se nota: cada asiento cuadra por si solo, asi que la
-          -- hoja sigue con debito = credito mientras dice un numero que
-          -- no es.
-          --
-          -- El precio es que ingresos y gastos salen acumulados desde el
-          -- principio de los tiempos, no del periodo. Se asume a
-          -- proposito mientras el repo no tenga cierre anual: mejor un
-          -- acumulado que se entiende que un balance que miente. Esta
-          -- dicho en docs/modules/consolidation.md.
-          and e.entry_date <= ${periodEnd}::date
-        group by m.company_id, l.account_id
-        having sum(l.debit) > 0 or sum(l.credit) > 0`
+      // Congelar la foto es un insert...select de cientos de filas y, sobre
+      // todo, UNA REGLA: que ventana mira -acumulado hasta period_end- y
+      // que hace con los asientos que nadie etiqueto. La pantalla necesita
+      // esa misma regla para avisar sin mentir, y cuando estaba escrita
+      // dos veces las dos versiones se separaron: la pantalla contaba
+      // `between period_start and period_end` y decia cero mientras la
+      // foto ya los habia sumado. Ahora se escribe una sola vez, en
+      // public.consolidation_freeze() (0117), que ademas anota en la
+      // corrida cuantos eran, por cuanto, y si de verdad entraron.
+      await tx`select public.consolidation_freeze(${id}::uuid)`
 
       await tx`
         select public.emit_event('consolidation.run.created',

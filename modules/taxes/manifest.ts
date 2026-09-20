@@ -25,7 +25,7 @@ export default defineModule({
   id: 'taxes',
   name: 'Impuestos',
   description:
-    'Tasas de ITBIS configurables, reglas de retencion por proveedor, liquidacion IT-1 y calendario fiscal.',
+    'Catalogo de tasas de ITBIS, reglas de retencion por proveedor, liquidacion IT-1 y calendario fiscal.',
   icon: 'percent',
   category: 'advanced',
   version: '0.1.0',
@@ -41,13 +41,17 @@ export default defineModule({
   requires: [],
   recommends: ['ap', 'ar', 'accounting'],
 
+  // Cinco, no seis. `taxes.export` estaba declarado y no lo pedia nadie:
+  // no hay reportes, ninguna ruta lo exige y ninguna accion lo comprueba.
+  // Un permiso muerto es una casilla que en /roles se marca y se desmarca
+  // sin que cambie nada, y quien arma el rol cree que esta dando algo.
+  // Los del periodo ya los da /cobrar/dgii, que es de `ar`.
   permissions: [
     'taxes.view',
     'taxes.rate.manage',
     'taxes.rule.manage',
     'taxes.profile.assign',
     'taxes.filing.close',
-    'taxes.export',
   ],
 
   routes: [

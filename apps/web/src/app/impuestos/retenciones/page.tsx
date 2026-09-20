@@ -21,6 +21,7 @@ import {
 import {
   TIPOS_RETENCION_ISR_606,
   calcularRetenciones,
+  desglosarItbis,
   type ReglaRetencion,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
@@ -54,6 +55,8 @@ interface ReglaRow {
   base: 'itbis' | 'subtotal'
   rate: string
   dgii_isr_type: string | null
+  /** Solo para desempatar entre varias candidatas, de forma explicita. */
+  effective_from: string
 }
 
 const money = (n: number) =>
@@ -73,7 +76,12 @@ const num = (raw: string | undefined): number | null => {
 const claseInput =
   'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
 
-type Params = DemoParams & { proveedor?: string; subtotal?: string; itbis?: string }
+type Params = DemoParams & {
+  proveedor?: string
+  subtotal?: string
+  itbis?: string
+  servicios?: string
+}
 
 /**
  * Retenciones (modulo 24): quien es cada proveedor a ojos de la DGII y
@@ -97,7 +105,7 @@ export default async function RetencionesPage({
   // pinta una tabla vacia que parece un error del sistema.
   const veProveedores = exigir(ctx, 'suppliers', 'suppliers.view').ok
 
-  const [proveedores, reglas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [proveedores, reglas, tasaDefecto] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = veProveedores
       ? await tx<ProveedorRow[]>`
           select s.id, s.name, s.tax_id,
@@ -112,11 +120,19 @@ export default async function RetencionesPage({
       : []
 
     const r = await tx<ReglaRow[]>`
-      select id, code, name, tax, party_type, base, rate::text, dgii_isr_type
+      select id, code, name, tax, party_type, base, rate::text, dgii_isr_type,
+             effective_from::text
       from public.tax_withholding_rules
       where tenant_id = ${ctx.tenantId} and is_active
       order by tax, party_type`
-    return [p, r] as const
+    // La tasa por defecto del catalogo, para CONTRASTAR el ITBIS tecleado.
+    // Es el unico sitio donde tax_rates alimenta un calculo; el resto del
+    // sistema todavia no la lee, y la pantalla de Impuestos lo dice.
+    const [t] = await tx<{ rate: string }[]>`
+      select rate::text
+      from public.tax_rates
+      where tenant_id = ${ctx.tenantId} and kind = 'itbis' and is_active and is_default`
+    return [p, r, t ? Number(t.rate) : null] as const
   })
 
   const puedeAsignar = exigir(ctx, 'taxes', 'taxes.profile.assign').ok
@@ -130,6 +146,7 @@ export default async function RetencionesPage({
   const elegido = proveedores.find((p) => p.id === params.proveedor)
   const subtotal = num(params.subtotal)
   const itbis = num(params.itbis)
+  const servicios = num(params.servicios)
   const aDomain = (r: ReglaRow, comodin: boolean): ReglaRetencion => ({
     tax: r.tax,
     // Una regla asignada A MANO a este proveedor ya expreso la intencion
@@ -139,6 +156,10 @@ export default async function RetencionesPage({
     base: r.base,
     rate: Number(r.rate),
     dgiiIsrType: r.dgii_isr_type,
+    // El desempate entre varias candidatas se decide con estos dos, no
+    // con el orden en que Postgres las devuelva.
+    code: r.code,
+    effectiveFrom: r.effective_from,
   })
 
   const reglasDelCalculo: ReglaRetencion[] = []
@@ -159,10 +180,24 @@ export default async function RetencionesPage({
             itbis,
             partyType: elegido.party_type === 'juridica' ? 'juridica' : 'fisica',
             isExempt: elegido.is_exempt === true,
+            // Se OMITE cuando no se dijo: pasar undefined no es lo mismo
+            // que no pasarlo, y sin el la base del ISR es el subtotal
+            // completo, que es el caso del proveedor de puro servicio.
+            ...(servicios !== null ? { servicios } : {}),
           },
           reglasDelCalculo,
         )
       : null
+
+  // El ITBIS se teclea a mano y no se contrasta con nada: si viene mal
+  // -o el proveedor lo calculo mal-, la retencion de ITBIS sale mal en la
+  // misma proporcion. desglosarItbis() ya sabe cual deberia ser.
+  const itbisEsperado =
+    tasaDefecto !== null && subtotal !== null && tasaDefecto > 0
+      ? desglosarItbis(subtotal * (1 + tasaDefecto), tasaDefecto).itbis
+      : null
+  const itbisSospechoso =
+    itbisEsperado !== null && itbis !== null && Math.abs(itbis - itbisEsperado) > 0.01
 
   return (
     <Shell {...shell} activePath="/impuestos/retenciones">
@@ -261,6 +296,17 @@ export default async function RetencionesPage({
                   className={`tabular text-right ${claseInput}`}
                 />
               </label>
+              <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                De eso, servicios
+                <input
+                  name="servicios"
+                  inputMode="decimal"
+                  defaultValue={params.servicios ?? ''}
+                  placeholder="todo"
+                  title="El ISR se retiene sobre los servicios, no sobre los bienes. En blanco = todo el subtotal es servicios."
+                  className={`tabular text-right ${claseInput}`}
+                />
+              </label>
               <ToolbarActions
                 label="Calcular"
                 hasFilters={params.proveedor !== undefined}
@@ -285,7 +331,7 @@ export default async function RetencionesPage({
                   <StatCard
                     label="Retencion de ISR"
                     value={`RD$ ${money(resultado.isrRetenido)}`}
-                    hint="sobre el subtotal"
+                    hint={servicios === null ? 'sobre el subtotal' : 'sobre los servicios'}
                   />
                   <StatCard
                     label="Total retenido"
@@ -304,6 +350,42 @@ export default async function RetencionesPage({
                     hint="lo que se le paga"
                   />
                 </div>
+                {servicios !== null && subtotal !== null && servicios < subtotal && (
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    El ISR se calculo sobre{' '}
+                    <strong className="text-[var(--color-text-secondary)]">
+                      RD$ {money(Math.min(servicios, subtotal))}
+                    </strong>{' '}
+                    de servicios, no sobre el subtotal completo: a una persona fisica se le retiene
+                    por la mano de obra, no por las piezas. Es el mismo numero que despues va en
+                    el campo de servicios de la factura, para el 606.
+                  </p>
+                )}
+                {itbisSospechoso && itbisEsperado !== null && (
+                  <p className="text-xs text-[var(--color-semantic-text-warning)]">
+                    Con la tasa por defecto de tu catalogo, el ITBIS de un subtotal de{' '}
+                    RD$ {money(subtotal ?? 0)} daria{' '}
+                    <strong>RD$ {money(itbisEsperado)}</strong> y escribiste RD$ {money(itbis ?? 0)}
+                    . Puede estar bien -hay lineas exentas y tasas reducidas-, pero si es un
+                    dedazo la retencion de ITBIS sale mal en la misma proporcion.
+                  </p>
+                )}
+                {(resultado.candidatas.isr > 1 || resultado.candidatas.itbis > 1) && (
+                  <p className="text-xs text-[var(--color-semantic-text-warning)]">
+                    Este proveedor no tiene una regla asignada y habia{' '}
+                    {resultado.candidatas.isr > 1
+                      ? `${resultado.candidatas.isr} reglas de ISR`
+                      : `${resultado.candidatas.itbis} reglas de ITBIS`}{' '}
+                    que le podian aplicar. Se uso{' '}
+                    <Mono>
+                      {resultado.candidatas.isr > 1
+                        ? (resultado.reglaAplicada.isr ?? '—')
+                        : (resultado.reglaAplicada.itbis ?? '—')}
+                    </Mono>{' '}
+                    -la de vigencia mas reciente-. Asignale su regla en el formulario de abajo para
+                    que no lo decida un desempate.
+                  </p>
+                )}
                 {elegido?.is_exempt === true && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
                     Este proveedor esta marcado como exento, asi que no se le retiene nada. Si eso

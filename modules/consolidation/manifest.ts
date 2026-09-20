@@ -36,13 +36,17 @@ export default defineModule({
   requires: ['accounting', 'orgs'],
   recommends: [],
 
+  // Sin `consolidation.export`: no hay exportacion. Un permiso que no
+  // gobierna nada es peor que uno que falta -el cliente se lo quita a un
+  // usuario creyendo que le cierra la salida de datos-, y en este repo
+  // `<modulo>.export` significa algo donde hay descarga de verdad
+  // (respaldos, dgii). Cuando la hoja se pueda bajar, vuelve el permiso.
   permissions: [
     'consolidation.view',
     'consolidation.group.manage',
     'consolidation.run.create',
     'consolidation.elimination.create',
     'consolidation.run.close',
-    'consolidation.export',
   ],
 
   routes: [
@@ -56,7 +60,8 @@ export default defineModule({
   ],
 
   dashboardWidgets: ['consolidation-impacto', 'consolidation-ultima-corrida'],
-  reports: ['consolidation-worksheet'],
+  // Sin `reports`: `consolidation-worksheet` no existia en ningun sitio.
+  reports: [],
 
   events: {
     emits: ['consolidation.run.created', 'consolidation.run.closed'],

@@ -184,6 +184,9 @@ describe('Lo fiscal no se borra (0108)', () => {
     'ecf_recibidos',
     'customer_invoice_counters',
     'journal_entry_counters',
+    // La 0116 llego dos años tarde a esta lista: tax_filings es la foto de
+    // lo que se le DIJO a la DGII, y borrarla reabre un periodo cerrado.
+    'tax_filings',
   ]
 
   it('ninguna se puede borrar desde una sesion de usuario', async () => {

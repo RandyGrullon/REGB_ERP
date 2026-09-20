@@ -17,7 +17,7 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { calendarioFiscal, liquidarItbis } from '@regb/operations'
+import { calendarioFiscal, creditoArrastrado, liquidarItbis } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -34,6 +34,8 @@ interface FilingRow {
   itbis_charged: string
   itbis_paid: string
   itbis_withheld: string
+  /** El que YO le retuve a mis proveedores. SUMA, al reves que los otros. */
+  itbis_retained: string
   previous_credit: string
   amount_due: string
   credit_forward: string
@@ -63,9 +65,13 @@ const ESTADO: Record<string, { texto: string; tono: 'neutral' | 'info' | 'succes
 /**
  * Liquidacion IT-1 (modulo 24).
  *
- * ITBIS cobrado menos ITBIS adelantado menos lo que me retuvieron menos el
- * saldo a favor del periodo anterior. Si da negativo no se declara en
- * negativo: se arrastra.
+ * ITBIS cobrado MAS lo que yo le retuve a mis proveedores, menos el ITBIS
+ * adelantado, menos lo que me retuvieron y el saldo a favor del periodo
+ * anterior. Si da negativo no se declara en negativo: se arrastra.
+ *
+ * Los seis terminos se pintan, y no cinco: un renglon que entra en el
+ * total sin aparecer en pantalla hace que el contador reste a mano, le
+ * sobre un monto sin explicacion y concluya que el sistema esta roto.
  *
  * Las dos mitades de la suma viven bajo la RLS de OTROS modulos -dgii_607
  * es de `ar`, dgii_606 es de `ap`-. Si uno esta apagado, esa mitad vuelve
@@ -92,7 +98,7 @@ export default async function LiquidacionPage({
   const veCompras = exigir(ctx, 'ap', 'ap.view').ok
   const puedeCerrar = exigir(ctx, 'taxes', 'taxes.filing.close').ok
 
-  const [cobrado, adelantado, retenidoAProveedores, saldoAnterior, cerrada, historial] = await asUser(
+  const [cobrado607, adelantado, retenidoAProveedores, sinNcf, saldo, cerrada, historial] = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -109,21 +115,43 @@ export default async function LiquidacionPage({
             from public.dgii_606
             where tenant_id = ${ctx.tenantId} and periodo = ${periodo}`
         : []
-      const [a] = await tx<{ credit_forward: string }[]>`
-        select credit_forward::text
+      // El 607 solo lleva comprobantes (`ncf is not null`) y el IT-1
+      // declara operaciones. El ITBIS de las ventas sin NCF -que el POS
+      // permite a proposito mientras la DGII no autoriza el primer rango-
+      // se cobro igual y entra en la declaracion. Se trae aparte para
+      // poder ENSEÑAR por que el IT-1 no cuadra contra el 607.
+      const sn = veVentas
+        ? await tx<{ t: string }[]>`
+            select coalesce(sum(t), 0)::text as t
+            from (
+              select coalesce(sum(i.tax), 0) as t
+              from public.customer_invoices i
+              where i.tenant_id = ${ctx.tenantId} and i.ncf is null and i.status <> 'void'
+                and to_char(i.issue_date, 'YYYYMM') = ${periodo}
+              union all
+              select coalesce(sum(s.tax), 0)
+              from public.pos_sales s
+              where s.tenant_id = ${ctx.tenantId} and s.ncf is null and not s.voided
+                and to_char(s.created_at, 'YYYYMM') = ${periodo}
+            ) q`
+        : []
+      // La ultima anterior, no "la que toque": creditoArrastrado() decide
+      // si es el eslabon inmediato o si la cadena tiene un hueco.
+      const a = await tx<{ period: string; credit_forward: string }[]>`
+        select period, credit_forward::text
         from public.tax_filings
         where tenant_id = ${ctx.tenantId} and form = 'IT-1' and period < ${periodo}
           and status <> 'pending'
         order by period desc limit 1`
       const [f] = await tx<FilingRow[]>`
         select id, period, status, itbis_charged::text, itbis_paid::text, itbis_withheld::text,
-               previous_credit::text, amount_due::text, credit_forward::text,
+               itbis_retained::text, previous_credit::text, amount_due::text, credit_forward::text,
                receipt_number, filed_at::text, notes
         from public.tax_filings
         where tenant_id = ${ctx.tenantId} and form = 'IT-1' and period = ${periodo}`
       const h = await tx<FilingRow[]>`
         select id, period, status, itbis_charged::text, itbis_paid::text, itbis_withheld::text,
-               previous_credit::text, amount_due::text, credit_forward::text,
+               itbis_retained::text, previous_credit::text, amount_due::text, credit_forward::text,
                receipt_number, filed_at::text, notes
         from public.tax_filings
         where tenant_id = ${ctx.tenantId} and form = 'IT-1'
@@ -132,12 +160,21 @@ export default async function LiquidacionPage({
         Number(v[0]?.t ?? 0),
         Number(c[0]?.t ?? 0),
         Number(c[0]?.r ?? 0),
-        Number(a?.credit_forward ?? 0),
+        Number(sn[0]?.t ?? 0),
+        creditoArrastrado(
+          periodo,
+          a.map((x) => ({ period: x.period, creditForward: Number(x.credit_forward) })),
+        ),
         f ?? null,
         h,
       ] as const
     },
   )
+
+  // Lo cobrado del IT-1 = lo del 607 MAS las ventas sin NCF. Son dos
+  // reportes distintos: el 607 declara comprobantes, el IT-1 operaciones.
+  const cobrado = cobrado607 + sinNcf
+  const saldoAnterior = saldo.previousCredit
 
   // El calculo vivo, para verlo antes de cerrar. Lo que me retuvieron a mi
   // no existe en ninguna tabla del repo -las facturas de venta no tienen
@@ -163,7 +200,7 @@ export default async function LiquidacionPage({
         <PageHeader
           icon="calculate"
           title="Liquidacion IT-1"
-          description="ITBIS cobrado menos ITBIS adelantado. Si da negativo no se declara en negativo: el exceso se arrastra al mes que viene."
+          description="ITBIS cobrado, mas lo que le retuviste a tus proveedores, menos el ITBIS adelantado, lo que te retuvieron y el saldo a favor del mes pasado. Si da negativo no se declara en negativo: el exceso se arrastra al mes que viene."
           crumbs={[{ label: 'Impuestos', href: `/impuestos${qs}` }, { label: 'Liquidacion IT-1' }]}
         />
 
@@ -217,21 +254,62 @@ export default async function LiquidacionPage({
           </div>
         )}
 
-        <section aria-label="Liquidacion del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        {/* Solo mientras este periodo siga abierto: si ya se cerro, el
+            hueco de la cadena es historia y el aviso seria ruido. */}
+        {cerrada === null && saldo.faltaCerrar !== null && (
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-warning)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_10%,transparent)] p-3 text-sm"
+          >
+            <Icon
+              name="warning"
+              size={20}
+              filled
+              className="shrink-0 text-[var(--color-semantic-text-warning)]"
+            />
+            <p className="text-[var(--color-text-secondary)]">
+              Falta cerrar{' '}
+              <a
+                href={`/impuestos/liquidacion${qs}${sep}periodo=${saldo.faltaCerrar}`}
+                className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                {legible(saldo.faltaCerrar)}
+              </a>
+              . El saldo a favor se arrastra{' '}
+              <strong className="text-[var(--color-text-primary)]">en cadena</strong>, un mes a la
+              vez: mientras ese periodo este abierto, este arranca en cero y no se puede cerrar.
+            </p>
+          </div>
+        )}
+
+        <section aria-label="Liquidacion del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard
             label="ITBIS cobrado"
             value={`RD$ ${money(cobrado)}`}
-            hint={veVentas ? 'de tus ventas (607)' : 'sin Cuentas por cobrar'}
+            hint={
+              !veVentas
+                ? 'sin Cuentas por cobrar'
+                : sinNcf > 0
+                  ? `de tus ventas, con ${money(sinNcf)} sin NCF`
+                  : 'de tus ventas (607)'
+            }
           />
           <StatCard
             label="ITBIS adelantado"
             value={`RD$ ${money(adelantado)}`}
             hint={veCompras ? 'de tus compras (606)' : 'sin Cuentas por pagar'}
           />
+          {/* El unico termino que SUMA. Se calculaba y no se pintaba, asi
+              que el total no cuadraba contra los numeros de la pantalla. */}
+          <StatCard
+            label="ITBIS que retuve a proveedores"
+            value={`RD$ ${money(retenidoAProveedores)}`}
+            hint={veCompras ? 'SUMA: es plata de la DGII' : 'sin Cuentas por pagar'}
+          />
           <StatCard
             label="Saldo a favor anterior"
             value={`RD$ ${money(saldoAnterior)}`}
-            hint="arrastrado"
+            hint={saldo.faltaCerrar === null ? 'arrastrado' : 'falta cerrar el mes anterior'}
           />
           <StatCard label="A pagar" value={`RD$ ${money(vivo.amountDue)}`} hint="calculo vivo" />
           <StatCard
@@ -240,6 +318,15 @@ export default async function LiquidacionPage({
             hint="al mes que viene"
           />
         </section>
+
+        {sinNcf > 0 && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            De lo cobrado, <strong className="text-[var(--color-text-secondary)]">RD$ {money(sinNcf)}</strong>{' '}
+            viene de ventas <strong className="text-[var(--color-text-secondary)]">sin NCF</strong>,
+            que no salen en el 607. El 607 declara comprobantes y el IT-1 declara operaciones: el
+            ITBIS de un ticket sin NCF se cobro igual y se declara igual.
+          </p>
+        )}
 
         {vence && (
           <p className="text-xs text-[var(--color-text-muted)]">
@@ -315,6 +402,17 @@ export default async function LiquidacionPage({
                     <TD numeric>
                       <span className="tabular text-[var(--color-text-muted)]">
                         {money(adelantado)}
+                      </span>
+                    </TD>
+                  </TR>
+                  <TR>
+                    <TD>ITBIS que retuve a mis proveedores</TD>
+                    <TD numeric>
+                      <span className="tabular">{money(Number(cerrada.itbis_retained))}</span>
+                    </TD>
+                    <TD numeric>
+                      <span className="tabular text-[var(--color-text-muted)]">
+                        {money(retenidoAProveedores)}
                       </span>
                     </TD>
                   </TR>

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildConsolidationWorksheet,
   eliminationImpact,
+  unlabeledEntriesNotice,
   validateElimination,
   worksheetTotals,
   type ConsolidationAccount,
@@ -213,5 +214,47 @@ describe('validateElimination', () => {
 
   it('rechaza cuando falta elegir una empresa', () => {
     expect(validateElimination({ ...base, fromCompanyId: '' })).toMatchObject({ ok: false })
+  })
+})
+
+describe('unlabeledEntriesNotice', () => {
+  it('sin asientos sin etiquetar no inventa un aviso', () => {
+    expect(unlabeledEntriesNotice({ entries: 0, montoTexto: 'DOP 0.00', parentInGroup: true })).toBeNull()
+  })
+
+  it('cuando la principal es miembro, dice que se sumaron a ella y por cuanto', () => {
+    const aviso = unlabeledEntriesNotice({
+      entries: 12,
+      montoTexto: 'DOP 40,000,000.00',
+      parentInGroup: true,
+    })
+    expect(aviso?.tono).toBe('warning')
+    expect(aviso?.texto).toContain('DOP 40,000,000.00')
+    expect(aviso?.texto).toContain('se sumaron a la empresa principal')
+  })
+
+  // El aviso que inducia el error: "se sumaron a la empresa principal"
+  // sin condicion, con la principal fuera del grupo. El usuario leia que
+  // el dinero estaba contado y no hacia nada, y esos 500,000 se habian
+  // quedado fuera del consolidado.
+  it('cuando la principal NO es miembro, avisa que ese dinero se quedo fuera', () => {
+    const aviso = unlabeledEntriesNotice({
+      entries: 1,
+      montoTexto: 'DOP 500,000.00',
+      parentInGroup: false,
+    })
+    expect(aviso?.tono).toBe('danger')
+    expect(aviso?.texto).toMatch(/NO entro en el consolidado/)
+    expect(aviso?.texto).not.toContain('se sumo a la empresa principal')
+  })
+
+  it('un solo asiento se redacta en singular', () => {
+    const aviso = unlabeledEntriesNotice({
+      entries: 1,
+      montoTexto: 'DOP 3,000.00',
+      parentInGroup: true,
+    })
+    expect(aviso?.texto).toContain('1 asiento contabilizado por DOP 3,000.00 no dice')
+    expect(aviso?.texto).toContain('se sumo a la empresa principal')
   })
 })

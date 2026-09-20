@@ -32,11 +32,31 @@ nadie lo note.
 ## Se congela la entrada, nunca el resultado
 
 Al generar una corrida se guarda `consolidation_run_balances`: cuanto
-debito y cuanto credito aporto cada empresa en cada cuenta dentro del
-periodo, leido de los asientos **ya contabilizados** (un borrador no es un
-hecho contable, mismo criterio que la balanza de `accounting`). Esa foto
-hace falta porque un asiento con fecha atrasada puede entrar manana y
-cambiar el pasado — mismo patron que `payroll_periods.tax_params` (0052).
+debito y cuanto credito aporto cada empresa en cada cuenta **acumulado
+hasta la fecha de corte** (`period_end`), leido de los asientos **ya
+contabilizados** (un borrador no es un hecho contable, mismo criterio que
+la balanza de `accounting`). Esa foto hace falta porque un asiento con
+fecha atrasada puede entrar manana y cambiar el pasado — mismo patron que
+`payroll_periods.tax_params` (0052).
+
+**Acumulado, no el movimiento del periodo**, y esta dicho en la pantalla
+con esas palabras. El que rompe todo si la foto solo mirara el periodo es
+el **balance**: una cuenta por cobrar entre dos empresas del grupo que
+nacio en marzo valdria cero en octubre, y la eliminacion de
+`receivable_payable` —el caso estrella del modulo— no tendria nada que
+eliminar; el grupo publicaria como activo propio lo que una empresa le
+debe a la otra. El precio es que ingresos y gastos tambien salen
+acumulados mientras el repo no tenga cierre anual. `period_start`
+etiqueta el periodo que se reporta y **no** recorta la foto.
+
+Congelar es un solo acto y vive en un solo sitio:
+`public.consolidation_freeze(run)` (0117). La ventana estaba escrita dos
+veces —una en la accion, otra distinta en la pantalla del aviso— y las dos
+versiones se separaron: la pantalla decia *cero asientos sin empresa*
+mientras la foto ya los habia sumado. La funcion ademas anota en la
+corrida cuantos asientos sin etiquetar vio, por cuanto, y si de verdad
+entraron (`unlabeled_entries`, `unlabeled_amount`, `unlabeled_included`):
+eso es parte de la entrada congelada, no del presente.
 
 Lo que **no** existe, a proposito, es una tabla `consolidation_lines`. La
 0041 ya fijo la regla del repo: *el mayor y la balanza no son tablas, se
@@ -67,7 +87,24 @@ saldo. Dos implementaciones del saldo normal serian dos verdades.
   escrita en la 0041.
 - **Una corrida cerrada es inmutable**: ni ella, ni su foto de saldos,
   ni sus eliminaciones. Mismo criterio que un asiento contabilizado
-  (0041) o un periodo de nomina procesado (0052).
+  (0041) o un periodo de nomina procesado (0052). Los triggers miran las
+  **dos puntas** del `update`: mirando solo el destino, mover una fila de
+  una corrida cerrada a un borrador vaciaba el consolidado entregado sin
+  dejar rastro —y `consolidation_run_balances` no lleva bitacora—.
+- **Una corrida que ya tiene foto no cambia de grupo ni de periodo.**
+  Nada la recalcula al moverla: acabaria colgando de un grupo cuyos
+  miembros no son las empresas de sus saldos.
+- **La empresa de un saldo tiene que ser miembro del grupo**, igual que
+  las de una eliminacion. La tabla que suma dinero se valida como la que
+  lo resta: una empresa fuera del grupo aparecia como una columna mas de
+  la hoja sin descuadrar nada.
+- **La moneda del grupo no se cambia por detras.** Ni con miembros en
+  otra moneda dentro, ni nunca si el grupo ya tiene consolidados
+  cerrados: seria la misma suma de pesos con una etiqueta de dolares.
+- **La hoja historica se pinta con las cuentas de la corrida**, no con el
+  catalogo activo de hoy (`public.consolidation_run_accounts(run)`).
+  Desactivar una cuenta es un clic y le borraba a un consolidado ya
+  entregado su fila y su dinero.
 - **La moneda cierra la puerta**: una empresa cuya `currency` no sea la
   `presentation_currency` del grupo **no entra**. Este corte no traduce
   moneda, y una nota al pie no impide que alguien lea una suma de pesos
@@ -90,8 +127,9 @@ diferido— se capturan como dos eliminaciones separadas.
 ## El numero que justifica el modulo
 
 `eliminationImpact()` calcula cuanto ingreso, gasto, activo y pasivo se
-habrian inflado sin eliminar, y va **arriba** en la pantalla de la
-corrida. Es el argumento de venta del modulo, asi que tiene que ser un
+habrian inflado sin eliminar. **Arriba** en la pantalla de la corrida van
+dos de los cuatro —ingreso y activo, que son los que resumen el caso—;
+gasto y pasivo se calculan y hoy no se pintan. Es el argumento de venta del modulo, asi que tiene que ser un
 numero calculado y no una frase.
 
 ## Sin `ownership_pct`
@@ -112,9 +150,13 @@ algo.
 ## Manifiesto
 
 - **Permisos:** `view`, `group.manage`, `run.create`,
-  `elimination.create`, `run.close`, `export`
+  `elimination.create`, `run.close`
 - **Widgets:** `consolidation-impacto`, `consolidation-ultima-corrida`
-- **Reportes:** `consolidation-worksheet`
+- **Reportes:** ninguno. `consolidation.export` y
+  `consolidation-worksheet` estaban declarados y no existian en ningun
+  sitio: no hay boton de exportar, ni route handler, ni descarga. Un
+  permiso que no gobierna nada engana a quien arma los roles, asi que se
+  quitaron. Vuelven el dia que la hoja se pueda bajar.
 - **Emite:** `consolidation.run.created`, `consolidation.run.closed`
 - **Requiere:** `accounting`, `orgs` · **Recomienda:** ninguno
 
@@ -123,14 +165,14 @@ algo.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/consolidation.test.ts` — 30 casos: aislamiento en las 5 tablas, spoofing de tenant en miembro/corrida/foto/eliminacion, modulo apagado, moneda distinta, inmutabilidad de corrida cerrada (editar, borrar, eliminar, foto), eliminacion contra empresa no miembro, `journal_entries.company_id` ajeno, y las restricciones de tabla |
-| 3 | Logica pura con cobertura | ✅ `consolidation.ts` — 19 pruebas: hoja con dos empresas, empresa sin movimiento, cuenta dormida, activo al reves, eliminacion mayor que el saldo, totales, impacto, validacion |
-| 4 | UI web responsive | 🔜 pendiente de verificar en navegador: el import de `@regb/operations` no resuelve hasta que el coordinador exporte `./consolidation.js` y registre el paquete |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/consolidation.test.ts` — 46 casos: aislamiento en las 5 tablas, spoofing de tenant en miembro/corrida/foto/eliminacion, modulo apagado, moneda distinta, inmutabilidad de corrida cerrada (editar, borrar, eliminar, foto), eliminacion contra empresa no miembro, `journal_entries.company_id` ajeno, las restricciones de tabla, mudar una fila de una corrida cerrada a un borrador, saldo de empresa no miembro, cambio de grupo/periodo con foto, cambio de moneda del grupo, y `consolidation_freeze()` / `consolidation_run_accounts()` |
+| 3 | Logica pura con cobertura | ✅ `consolidation.ts` — 23 pruebas: hoja con dos empresas, empresa sin movimiento, cuenta dormida, activo al reves, eliminacion mayor que el saldo, totales, impacto, validacion, aviso de asientos sin empresa |
+| 4 | UI web responsive | 🔜 pendiente de verificar en navegador; el import ya resuelve (`packages/operations/src/index.ts` exporta `./consolidation.js`) |
 | 5 | UI movil | ➖ `platforms.mobile = false` — una hoja de siete columnas no se lee en un telefono |
 | 6 | Desktop verificado | 🔜 F5 |
-| 7 | Tour ≥6 pasos | 🔜 pendiente (`tours.ts` es archivo compartido) |
+| 7 | Tour ≥6 pasos | 🔜 el tour existe (`f6.consolidacion`, `packages/core/src/tours.ts`) pero tiene **4 pasos** y se exigen 6; `tours.ts` es archivo compartido |
 | 8 | Datos demo | 🔜 pendiente: `demo.sql` es archivo compartido y el tenant mediano tiene una sola empresa |
-| 9 | ≥2 widgets | 🔶 declarados en el manifiesto; falta el renderizador en `widgets.tsx` (archivo compartido) |
+| 9 | ≥2 widgets | ✅ declarados y pintandose: consulta y renderizadores ya estan en `apps/web/src/components/widgets.tsx` |
 | 10 | Eventos documentados | ✅ `run.created` y `run.closed`; nadie los escucha todavia |
 | 11 | Precio en 3 tiers | ✅ ya cargado desde la siembra original (0009), derivado de `category = 'enterprise'` |
 | 12 | E2E en 3 plataformas | 🔜 F5 |
@@ -163,7 +205,12 @@ algo.
 - **Consolidar por sucursal.** La unidad es la empresa
   (`public.companies`). Sumar por `branches` es otra pregunta con otra
   respuesta.
-- **Comparar periodos ni acumular el ano.** Cada corrida es un periodo
-  suelto.
+- **Comparar periodos.** Cada corrida se lee sola; no hay columna del
+  periodo anterior ni variacion.
+- **Recortar la foto al periodo.** La foto es el acumulado hasta la fecha
+  de corte, a proposito y dicho en la pantalla: sin cierre anual, un
+  balance recortado al mes mentiria en las cuentas que vienen de atras
+  —y son justo las que se eliminan—.
+- **Exportar la hoja.** Todavia no hay descarga; se lee en pantalla.
 - **Eliminaciones de mas de dos patas.** Una eliminacion es un par
   debito/credito.

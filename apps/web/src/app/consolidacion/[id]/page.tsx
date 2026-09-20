@@ -19,6 +19,7 @@ import {
 import {
   buildConsolidationWorksheet,
   eliminationImpact,
+  unlabeledEntriesNotice,
   type AccountType,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
@@ -38,6 +39,10 @@ interface CorridaHead {
   period_end: string
   status: string
   closed_at: string | null
+  /** Congelados al generar la corrida, no leidos en vivo (0117). */
+  unlabeled_entries: number
+  unlabeled_amount: string
+  unlabeled_included: boolean
 }
 
 interface MiembroRow {
@@ -51,6 +56,8 @@ interface CuentaRow {
   code: string
   name: string
   type: AccountType
+  /** Una cuenta dormida sigue saliendo en la hoja si la corrida la toco. */
+  is_active: boolean
 }
 
 interface SaldoRow {
@@ -118,17 +125,18 @@ export default async function CorridaConsolidacionPage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'consolidation')
 
-  const [head, miembros, cuentas, saldos, eliminaciones, sinEmpresa] = await asUser(
+  const [head, miembros, cuentas, saldos, eliminaciones] = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
       const [h] = await tx<CorridaHead[]>`
         select cr.id, cr.group_id, g.name as group_name, g.presentation_currency,
-               cr.period_start::text, cr.period_end::text, cr.status, cr.closed_at::text
+               cr.period_start::text, cr.period_end::text, cr.status, cr.closed_at::text,
+               cr.unlabeled_entries, cr.unlabeled_amount::text, cr.unlabeled_included
         from public.consolidation_runs cr
         join public.consolidation_groups g on g.id = cr.group_id
         where cr.id = ${id} and cr.tenant_id = ${ctx.tenantId}`
-      if (!h) return [null, [], [], [], [], 0] as const
+      if (!h) return [null, [], [], [], []] as const
 
       // Las empresas salen de la FOTO de la corrida, no de la lista de
       // miembros de hoy.
@@ -160,10 +168,16 @@ export default async function CorridaConsolidacionPage({
          and gm.tenant_id = ${ctx.tenantId}
         order by coalesce(gm.is_parent, false) desc, nombre`
 
+      // Las cuentas de LA CORRIDA, no el catalogo activo de hoy. La
+      // funcion (0117) devuelve las activas mas toda cuenta que esta
+      // corrida haya tocado: desactivar una cuenta en /contabilidad es un
+      // clic, y con el filtro `is_active` esa cuenta y su dinero
+      // desaparecian de un consolidado ya cerrado y entregado -la hoja se
+      // arma recorriendo las cuentas, una cuenta ausente no produce fila-.
+      // Mismo motivo por el que las empresas salen de la foto.
       const a = await tx<CuentaRow[]>`
-        select id, code, name, type from public.accounts
-        where tenant_id = ${ctx.tenantId} and is_active
-        order by code`
+        select id, code, name, type, is_active
+        from public.consolidation_run_accounts(${id}::uuid)`
 
       const s = await tx<SaldoRow[]>`
         select company_id, account_id, total_debit::text, total_credit::text
@@ -184,15 +198,13 @@ export default async function CorridaConsolidacionPage({
         where el.run_id = ${id} and el.tenant_id = ${ctx.tenantId}
         order by el.created_at`
 
-      // Los asientos que nadie etiqueto. Se cuentan y se dicen: esconder
-      // el supuesto -"todo lo sin empresa es de la principal"- es lo que
-      // hace que un consolidado se entregue mal sin que nadie lo note.
-      const [sin] = await tx<{ c: string }[]>`
-        select count(*) as c from public.journal_entries
-        where tenant_id = ${ctx.tenantId} and status = 'posted' and company_id is null
-          and entry_date between ${h.period_start}::date and ${h.period_end}::date`
-
-      return [h, m, a, s, e, Number(sin?.c ?? 0)] as const
+      // Los asientos que nadie etiqueto NO se cuentan aqui: vienen en la
+      // cabecera, congelados por consolidation_freeze() con la misma
+      // ventana que la foto. Contarlos en vivo era el bug: la pantalla
+      // miraba `between period_start and period_end` mientras la foto
+      // sumaba todo lo anterior, asi que el aviso decia cero con asientos
+      // sin etiquetar dentro del consolidado.
+      return [h, m, a, s, e] as const
     },
   )
 
@@ -215,6 +227,15 @@ export default async function CorridaConsolidacionPage({
   })
 
   const impacto = eliminationImpact(hoja)
+  const aviso = unlabeledEntriesNotice({
+    entries: head.unlabeled_entries,
+    montoTexto: `${head.presentation_currency} ${money(Number(head.unlabeled_amount))}`,
+    parentInGroup: head.unlabeled_included,
+  })
+  // El formulario de captura si mira el catalogo de hoy: una eliminacion
+  // NUEVA no deberia poder apuntar a una cuenta que el cliente ya dejo
+  // dormida, aunque la hoja historica si la siga pintando.
+  const cuentasActivas = cuentas.filter((c) => c.is_active)
   const abierta = head.status === 'draft'
   const puedeEliminar = abierta && exigir(ctx, 'consolidation', 'consolidation.elimination.create').ok
   const puedeCerrar = abierta && exigir(ctx, 'consolidation', 'consolidation.run.close').ok
@@ -236,6 +257,14 @@ export default async function CorridaConsolidacionPage({
           ]}
         />
 
+        <p className="text-xs text-[var(--color-text-muted)]">
+          La foto de esta corrida es el ACUMULADO de todo lo contabilizado hasta el{' '}
+          {fecha(head.period_end)}, no solo el movimiento entre las dos fechas. Es a proposito:
+          una cuenta por cobrar entre dos empresas del grupo nacida antes valdria cero si la foto
+          solo mirara el periodo, y no habria nada que eliminar. Mientras el sistema no tenga
+          cierre anual, ingresos y gastos tambien salen acumulados.
+        </p>
+
         <section aria-label="Lo que se elimino" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
             label="Ingreso que no era del grupo"
@@ -248,9 +277,13 @@ export default async function CorridaConsolidacionPage({
             hint="lo que una le debe a la otra"
           />
           <StatCard
-            label="Total consolidado"
+            label="Total debito consolidado"
             value={`${head.presentation_currency} ${money(hoja.totals.totalDebit)}`}
-            hint={hoja.totals.balanced ? 'debito = credito' : 'la hoja no cuadra'}
+            hint={
+              hoja.totals.balanced
+                ? `credito ${money(hoja.totals.totalCredit)}: cuadra`
+                : `credito ${money(hoja.totals.totalCredit)}: la hoja no cuadra`
+            }
           />
           <StatCard
             label="Estado"
@@ -275,16 +308,17 @@ export default async function CorridaConsolidacionPage({
           </p>
         )}
 
-        {sinEmpresa > 0 && (
+        {aviso && (
           <p
-            role="status"
-            className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-semantic-warning)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-warning)]"
+            role={aviso.tono === 'danger' ? 'alert' : 'status'}
+            className={
+              aviso.tono === 'danger'
+                ? 'flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-danger)]'
+                : 'flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-semantic-warning)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-warning)]'
+            }
           >
-            <Icon name="warning" size={18} />
-            {sinEmpresa} asiento{sinEmpresa === 1 ? '' : 's'} contabilizado
-            {sinEmpresa === 1 ? '' : 's'} de este periodo no dice
-            {sinEmpresa === 1 ? '' : 'n'} a que empresa pertenece: se sumaron a la empresa
-            principal.
+            <Icon name={aviso.tono === 'danger' ? 'error' : 'warning'} size={18} />
+            {aviso.texto}
           </p>
         )}
 
@@ -411,7 +445,7 @@ export default async function CorridaConsolidacionPage({
           </CardBody>
         </Card>
 
-        {puedeEliminar && miembros.length >= 2 && cuentas.length >= 2 && (
+        {puedeEliminar && miembros.length >= 2 && cuentasActivas.length >= 2 && (
           <Card>
             <CardHeader>
               <CardTitle>Eliminar una operacion entre empresas</CardTitle>
@@ -459,7 +493,7 @@ export default async function CorridaConsolidacionPage({
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Cuenta al debito
                     <select name="debitAccountId" required className={claseInput}>
-                      {cuentas.map((c) => (
+                      {cuentasActivas.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.code} · {c.name}
                         </option>
@@ -469,7 +503,7 @@ export default async function CorridaConsolidacionPage({
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Cuenta al credito
                     <select name="creditAccountId" required className={claseInput}>
-                      {cuentas.map((c) => (
+                      {cuentasActivas.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.code} · {c.name}
                         </option>

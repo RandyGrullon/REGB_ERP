@@ -338,8 +338,11 @@ export default async function ConsolidacionPage({
                   Generar corrida
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
-                  La corrida congela una foto de los saldos del periodo por empresa y cuenta. Un
-                  asiento con fecha atrasada que entre despues no cambia un consolidado ya generado.
+                  La corrida congela una foto de los saldos por empresa y cuenta, acumulados hasta
+                  la fecha de <strong>Hasta</strong>: <strong>Desde</strong> etiqueta el periodo que
+                  se reporta, no recorta la foto. Es a proposito -una deuda entre dos empresas del
+                  grupo nacida antes seguiria viva y hay que poder eliminarla-. Un asiento con fecha
+                  atrasada que entre despues no cambia un consolidado ya generado.
                 </p>
               </form>
             </CardBody>
