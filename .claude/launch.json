@@ -1,10 +1,11 @@
 {
   "version": "0.0.1",
+  "_nota": "El --dir apunta a la ruta REAL en D:, no al junction de C:. Next.js concatena mal la ruta del proyecto cuando se le alcanza por un junction -sale C:/.../RegbERP/D:/.../RegbERP/.next/...- y TODAS las rutas dan 500. Misma trampa que ya mordio en forja.",
   "configurations": [
     {
       "name": "regb-web",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["--filter", "@regb/web", "dev"],
+      "runtimeArgs": ["--dir", "D:/Users/randy/code/RegbERP", "--filter", "@regb/web", "dev"],
       "port": 3100
     }
   ]
