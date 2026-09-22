@@ -47,4 +47,8 @@ apps/desktop/release/
 apps/mobile/.expo/
 
 # Respaldos de la base: nunca al repositorio.
-respaldos/
+# Solo la de la raiz. Sin la barra inicial tambien atrapaba
+# apps/web/src/app/respaldos/ -la pantalla-: sus archivos siguen
+# subiendo porque ya estaban trackeados, pero uno nuevo en esa ruta
+# se habria ignorado en silencio.
+/respaldos/

@@ -5,6 +5,7 @@
 
 | Documento                                                  | Para qué                                                     |
 | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| [docs/ESTADO.md](docs/ESTADO.md)                           | **Dónde estamos**: qué está hecho, qué falta y por qué       |
 | [docs/PROYECTO-REGB-ERP.md](docs/PROYECTO-REGB-ERP.md)     | **Qué** se construye: módulos, precios, diseño, mockups      |
 | [docs/FASES-DE-DESARROLLO.md](docs/FASES-DE-DESARROLLO.md) | **En qué orden**: 11 fases, 84 sprints, puertas de no-avance |
 

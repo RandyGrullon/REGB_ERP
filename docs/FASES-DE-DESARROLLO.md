@@ -527,29 +527,35 @@ Tan importante como el plan es la lista de lo que se rechaza.
 
 ## 17. Checklist maestro
 
+> Estado al 22 sep 2026. **`[x]` = el código de la fase está construido.**
+> No quiere decir que su puerta esté pasada: varias piden cosas que el
+> código no hace —un cliente pagando, un contador que firma, la DGII
+> aceptando un e-CF en producción—. El detalle, en
+> [`ESTADO.md`](ESTADO.md).
+
 ```
 CIMIENTOS
-[ ] F0  Monorepo, Supabase, Auth, RLS, Aurora          8 sp
-[ ] F1  Máquina de módulos (registry + eventos)        6 sp
-[ ] F2  15 módulos core + app web                     12 sp
-[ ] F3  REGB Control + motor de precios               8 sp
+[x] F0  Monorepo, Supabase, Auth, RLS, Aurora          8 sp
+[x] F1  Máquina de módulos (registry + eventos)        6 sp
+[x] F2  15 módulos core + app web                     12 sp
+[x] F3  REGB Control + motor de precios               8 sp
         └─ 34 sp invertidos, 0 ingresos. Es normal.
 
 VENDIBLE
-[ ] F4  MVP comercial (5 módulos) 🚀 PRIMER CLIENTE   10 sp
-[ ] F5  Electron + React Native                       10 sp
+[x] F4  MVP comercial (5 módulos) 🚀 PRIMER CLIENTE   10 sp   ← puerta: falta el cliente pagando
+[x] F5  Electron + React Native                       10 sp   ← móvil sin probar en un teléfono
         └─ 54 sp. Aquí empieza a entrar dinero.
 
 ESCALA
-[ ] F6  Finanzas + fiscalidad DGII (11 módulos)       12 sp
-[ ] F7  RRHH y nómina (10 módulos)                    11 sp
-[ ] F8  Suministro y producción (18 módulos)          18 sp
+[x] F6  Finanzas + fiscalidad DGII (11 módulos)       12 sp   ← puerta: contador + e-CF en producción
+[x] F7  RRHH y nómina (10 módulos)                    11 sp
+[x] F8  Suministro y producción (18 módulos)          18 sp
         └─ 95 sp. Ya puedes vender los 3 tiers.
 
 DIFERENCIACIÓN
-[ ] F9  Ventas avanzado + BI + IA (16 módulos)        14 sp
-[ ] F10 Proyectos y verticales (16 módulos)           16 sp
-[ ] F11 Enterprise (1 módulo)                          5 sp
+[x] F9  Ventas avanzado + BI + IA (16 módulos)        14 sp
+[~] F10 Proyectos y verticales (16 módulos)           16 sp   ← 5 de 16; los 11 verticales, a propósito
+[x] F11 Enterprise (1 módulo)                          5 sp
         └─ 130 sp · 93 módulos ✅
 ```
 
