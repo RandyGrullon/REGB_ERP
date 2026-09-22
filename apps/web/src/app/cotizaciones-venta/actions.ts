@@ -86,25 +86,39 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const quantity = num(String(fd.get('quantity') ?? ''))
   const unitPrice = num(String(fd.get('unitPrice') ?? ''))
   const discountPct = num(String(fd.get('discountPct') ?? '')) ?? 0
-  const taxRate = num(String(fd.get('taxRate') ?? '')) ?? 0.18
+  const taxRateForm = num(String(fd.get('taxRate') ?? ''))
 
   if (!productId) return { ok: false, error: 'Elige el producto.' }
   if (quantity === null || quantity <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
   if (unitPrice === null || unitPrice < 0) return { ok: false, error: 'El precio debe ser un numero valido.' }
 
-  let totalLinea: number
-  try {
-    totalLinea = lineTotals({ quantity, unitPrice, discountPct, taxRate }).total
-  } catch {
-    return { ok: false, error: 'Esos numeros no son validos.' }
-  }
+  const error = await asUser(ctx.userId, ctx.tenantId, async (tx): Promise<string | null> => {
+    // El formulario no manda tasa, y el respaldo era un 0.18 fijo: un
+    // producto exento o al 16% se cotizaba al 18%. La tasa sale del
+    // producto, igual que en caja, pedidos y compras. El 0.18 queda solo
+    // para cuando la ficha no se ve (products apagado).
+    let taxRate = taxRateForm
+    if (taxRate === null) {
+      const [p] = await tx<{ tax_rate: string }[]>`
+        select tax_rate::text from public.products
+        where id = ${productId} and tenant_id = ${ctx.tenantId}`
+      taxRate = p ? Number(p.tax_rate) : 0.18
+    }
 
-  await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    let totalLinea: number
+    try {
+      totalLinea = lineTotals({ quantity, unitPrice, discountPct, taxRate }).total
+    } catch {
+      return 'Esos numeros no son validos.'
+    }
+
     await tx`
       insert into public.quote_lines (quote_id, tenant_id, product_id, description, quantity, unit_price, discount_pct, tax_rate, line_total)
       values (${quoteId}, ${ctx.tenantId}, ${productId}, ${description}, ${quantity}, ${unitPrice}, ${discountPct}, ${taxRate}, ${totalLinea})`
     await recalcularTotales(tx, ctx.tenantId, quoteId)
+    return null
   })
+  if (error) return { ok: false, error }
 
   revalidatePath(`/cotizaciones-venta/${quoteId}`)
   return { ok: true }

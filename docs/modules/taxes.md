@@ -2,8 +2,9 @@
 
 **Que resuelve:** la retencion del proveedor deja de calcularse en una
 hoja aparte y sobre la base equivocada, las tasas de ITBIS quedan
-nombradas en un sitio con su vigencia, y el IT-1 del mes se liquida con
-su saldo a favor arrastrado. Encima, el calendario de vencimientos.
+nombradas en un sitio con su vigencia —y la marcada por defecto es con la
+que nacen los productos nuevos—, y el IT-1 del mes se liquida con su
+saldo a favor arrastrado. Encima, el calendario de vencimientos.
 
 **Categoria:** `advanced` · **Precio:** 400/1500/4000 instalacion ·
 45/160/420 mes · **Recomienda:** `ap`, `ar`, `accounting`
@@ -229,6 +230,55 @@ de llegar a Postgres y el patron viaja como la letra D. Sin barra
 invertida no hay nada que perder —y las pruebas de BD escriben este SQL
 dentro de plantillas—.
 
+## La tasa por defecto llega al producto nuevo (0118)
+
+Hasta la 0116, `public.tax_rates` era un catalogo que nadie leia: un
+cliente que marcaba ITBIS-16 por defecto seguia creando productos al 18%
+sin un solo aviso, porque la pantalla de Productos escribia un `0.18` fijo
+y la importacion CSV caia en el `default 0.18` de la columna.
+
+Ahora `public.tasa_itbis_por_defecto()` devuelve la tasa de ITBIS marcada
+por defecto, activa y ya vigente (`effective_from <= current_date`) del
+cliente, y **0.18 si el modulo esta apagado o si no hay ninguna**. La
+llaman los dos caminos que crean productos: `crearProducto` y la
+importacion de `/importar`.
+
+**Por que al crear y no en cada venta.** Todas las lineas
+—`pos_sale_lines`, `sales_order_lines`, `purchase_order_lines`,
+`quote_lines`— ya copian `products.tax_rate` cuando se vende o se compra.
+Basta con que el producto nazca con la tasa correcta para que el resto la
+herede sin cambiarle el significado a una columna que leen otros modulos.
+Una referencia viva a `tax_rates` haria que cambiar el catalogo
+reescribiera en silencio lo ya cotizado.
+
+**Por que no se cambio el default de la columna.** Un default que lee una
+tabla con RLS se evalua con la sesion de quien inserta, y los seeds y las
+pruebas que insertan como dueño de la base, sin token, pasarian a
+depender de eso. La funcion se llama explicitamente.
+
+**`security invoker`, con el filtro escrito igual.** La lectura pasa por
+la RLS de `tax_rates`. Aun asi la consulta filtra por `rls.tenant_id()` y
+`rls.module_active('taxes')`: el dueño de la base se salta la RLS, y sin
+ese filtro una llamada sin token devolveria la tasa de un cliente
+cualquiera en vez del respaldo. No recibe parametros: el cliente sale del
+token y no se puede apuntar al ajeno.
+
+**Vigencia futura = respaldo.** Una tasa marcada por defecto con
+`effective_from` en el futuro todavia no aplica, y hasta ese dia se usa el
+0.18. Inventar cual era "la anterior" entre las inactivas seria adivinar.
+
+Dos arreglos que salieron de mirar el camino completo:
+
+- **Editar la ficha devolvia al 18% un producto al 16%.** `editarProducto`
+  escribia `exento ? 0 : 0.18` en cada guardado. Ahora solo toca la tasa
+  si cambia el exento: marcarlo pone cero, desmarcarlo pone la tasa por
+  defecto, y en cualquier otro caso deja la que tenia.
+- **Las cotizaciones iban siempre al 18%.** `agregarLinea` leia `taxRate`
+  del formulario con respaldo `0.18`, y el formulario nunca manda ese
+  campo: un producto exento se cotizaba con ITBIS. Ahora la tasa sale del
+  producto, igual que en caja, pedidos y compras; el 0.18 queda solo si la
+  ficha no se ve.
+
 ## Pantallas
 
 | Ruta | Permiso | Que hace |
@@ -257,7 +307,7 @@ dentro de plantillas—.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ validado contra `defineModule` |
-| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/taxes.test.ts` — 37 casos: aislamiento en las 4 tablas, escritura con `tenant_id` ajeno, modulo apagado (lectura y escritura), el trigger por triplicado, el trigger **en UPDATE**, la declaracion presentada que no se borra ni se reescribe (9 casos), el 607 que deja fuera lo vendido sin NCF, y 15 restricciones de tabla |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/tasa-por-defecto.test.ts` — 16 casos de la 0118: el producto nace con la tasa del catalogo por pantalla y por CSV, 18% sin el modulo, sin tasa por defecto, con vigencia futura o desactivada, la tasa de A no le llega a B ni sin token, lo existente no se reescribe y editar no devuelve al 18%. Y `supabase/tests/taxes.test.ts` — 37 casos: aislamiento en las 4 tablas, escritura con `tenant_id` ajeno, modulo apagado (lectura y escritura), el trigger por triplicado, el trigger **en UPDATE**, la declaracion presentada que no se borra ni se reescribe (9 casos), el 607 que deja fuera lo vendido sin NCF, y 15 restricciones de tabla |
 | 3 | Logica pura con cobertura | ✅ `packages/operations/src/taxes.test.ts` — 53 pruebas: fin de semana al lunes, diciembre rodando a enero, dias restantes, desglose que cuadra al centavo, base de ITBIS vs base de ISR, base de servicios en factura mixta, desempate entre varias reglas candidatas, porcentaje a fraccion, cadena del saldo a favor, comodin `ambas`, exento |
 | 4 | UI web responsive | ⚠️ registrado en `bootstrap.ts` y las 4 rutas responden en verde con los 3 roles de `pnpm sonda:rutas`. Lo que falta es mirarlas: nadie las ha abierto en un navegador de verdad, ni a ancho de telefono |
 | 5 | UI movil | 🔜 `platforms.mobile = false`, `mobileScope` vacio, igual que la fila del catalogo |
@@ -304,16 +354,21 @@ dentro de plantillas—.
   nadie lo valida contra nada.
 - **No recalcula una declaracion cerrada**, y es el punto entero de
   guardarla. Corregir se hace con una rectificativa, fuera del sistema.
-- **Ningun otro modulo lee `public.tax_rates` todavia.** El catalogo es
-  la lista de tasas con su vigencia, para consultarla y ponerse de
-  acuerdo; el unico calculo que la usa es el contraste del ITBIS en la
-  calculadora de retenciones. `products`, `pos_sale_lines`,
-  `sales_order_lines`, `purchase_order_lines` y `quote_lines` siguen con
-  su `default 0.18` y con la tasa por linea que se teclea en Productos,
-  asi que **cambiar la tasa por defecto aqui no cambia lo que factura la
-  caja**. La pantalla lo dice donde se ve, el tagline y la feature 1 del
-  catalogo se reescribieron para no prometerlo, y engancharlo es el paso
-  siguiente declarado.
+- **No reescribe los productos que ya existen.** La tasa por defecto
+  solo decide con que tasa **nace** un producto (ver "La tasa por defecto
+  llega al producto nuevo"). Cambiarla hoy no toca los productos creados
+  ayer, ni lo ya vendido, cotizado o comprado. Recatalogar el inventario
+  viejo es una decision del cliente, producto por producto en `/products`.
+- **No hay selector de tasa en la ficha del producto.** La pantalla de
+  Productos solo tiene la casilla "exento": un producto nace con la tasa
+  por defecto o con cero. Un catalogo con productos al 18% y otros al 16%
+  a la vez necesita cambiar la por defecto entre uno y otro, o esperar a
+  ese selector, que no existe.
+- **Las columnas `default 0.18` siguen donde estaban.** `products`,
+  `pos_sale_lines`, `sales_order_lines`, `purchase_order_lines` y
+  `quote_lines` conservan su default de columna: un seed o un script que
+  inserte sin pasar por la pantalla ni por la importacion sigue naciendo
+  al 18%.
 
 ## Riesgo abierto
 

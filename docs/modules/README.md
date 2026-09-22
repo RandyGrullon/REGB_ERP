@@ -75,9 +75,50 @@ documento donde alguien va a buscar la verdad.
 | `resources` | Llena no es lo mismo que imposible: la sobrecarga usa mayor estricto (F10) | [resources.md](resources.md) |
 | `field-service` | La orden no cierra sin checklist obligatorio completo ni sin firma -y la regla vive en la base- (F10) | [field-service.md](field-service.md) |
 | `e-invoice` | La DGII tambien te llama a ti: tres URL propias y un token que separa a un cliente de otro (F6) | [e-invoice.md](e-invoice.md) |
+| `auth` | El tenant del token sale de la base y falla cerrado; `/perfil` te dice que te deja hacer el sistema (F2, core) | [auth.md](auth.md) |
+| `users` | Equipo, rol y desactivar sin borrar -la invitacion todavia no se envia- (F2, core) | [users.md](users.md) |
+| `orgs` | Varios RNC bajo una cuenta; el limite del plan se muestra pero no se aplica (F2, core) | [orgs.md](orgs.md) |
+| `branches` | Locales de cada empresa; su FK a la empresa no compara tenants (F2, core) | [branches.md](branches.md) |
+| `dashboard` | El inicio no conoce los modulos: pinta los widgets que declaran (F2, core) | [dashboard.md](dashboard.md) |
+| `search` | `Ctrl+K` sobre modulos, acciones, productos y equipo; filtra por licencia, no por rol (F2, core) | [search.md](search.md) |
+| `notifications` | Bandeja dentro del ERP; un aviso de equipo tiene un solo "leido" para todos (F2, core) | [notifications.md](notifications.md) |
+| `audit` | Bitacora que escribe la base y nadie edita; sus particiones no se crean solas (F2, core) | [audit.md](audit.md) |
+| `settings` | Guarda preferencias que nada del ERP lee todavia (F2, core) | [settings.md](settings.md) |
+| `files` | Documentos con papelera, 512 KB inline, sin Storage (F2, core) | [files.md](files.md) |
+| `tour` | Pasos como datos, guia dentro de la pantalla, una prueba que exige tour a cada modulo (F2, core) | [tour.md](tour.md) |
+| `imports` | CSV de productos con deshacer exacto; cuenta mal los SKU repetidos (F2, core) | [imports.md](imports.md) |
+| `backup` | Mide el ultimo respaldo que SALIO; el archivo no trae ventas ni facturas (F2, core) | [backup.md](backup.md) |
+| `invoice-capture` | 🚧 Publicado y con precio, sin una sola pantalla ni tabla | [invoice-capture.md](invoice-capture.md) |
 
 Contexto transversal en [../HARDWARE-Y-DGII.md](../HARDWARE-Y-DGII.md): qué
 hardware funciona hoy y qué parte de la DGII está conectada.
+
+## Los 13 core de F2 y `invoice-capture`: lo que encontraron sus fichas
+
+Se escribieron despues, leyendo el codigo, no la intencion. Lo comun a los
+catorce:
+
+| Hallazgo | Donde | Quien lo arregla |
+|---|---|---|
+| **Ninguno emite los eventos que declara** (13 temas en total) | Todos los manifiestos | Codigo de cada accion |
+| **Ningun tour llega a 6 pasos**; la prueba del repo exige ≥4 y la DdT pide ≥6 | `tours.ts`, `tours.test.ts` | Decision: bajar la DdT o subir los tours |
+| **Varios tours prometen lo que la pantalla no tiene** (MFA, restaurar, plantillas, adjuntos por registro...) | `tours.ts` | Contenido del tour |
+| Permisos CRUD genericos declarados que ninguna accion usa (incluido `audit.edit`/`audit.delete` sobre una bitacora inmutable) | Manifiestos | Manifiestos |
+| `requires` del manifiesto distinto del catalogo de 0009 (`users`, `branches`, `imports`) | Manifiestos y `regb.module_catalog` | Una de las dos fuentes |
+| La numeracion "modulo core N" de los comentarios de manifiesto no coincide con §5.1; manda §5.1 | Comentarios de manifiesto | Comentarios |
+
+Y lo que pide una migracion nueva o una decision de producto, uno por uno:
+
+| Riesgo | Ficha |
+|---|---|
+| Las particiones de `audit.log` solo se crean en migraciones; al acabarse, **cada escritura auditada falla y revierte su transaccion** | [audit.md](audit.md) |
+| El respaldo no trae ventas, facturas, inventario ni contabilidad, y el aviso le dice al cliente que si | [backup.md](backup.md) |
+| `invoice-capture` esta publicado con precio y no tiene ni una pantalla | [invoice-capture.md](invoice-capture.md) |
+| `branches.company_id` y `memberships.role_id`: FK a tabla con `tenant_id` **sin** trigger que compare tenants | [branches.md](branches.md), [users.md](users.md) |
+| Importar lee `1,234` como 1.23 y cuenta como "entraron" los SKU que ya existian | [imports.md](imports.md) |
+| La invitacion no se envia y crea un `user_id` inventado | [users.md](users.md) |
+| Un aviso de equipo tiene un solo `read_at` para todos | [notifications.md](notifications.md) |
+| `public.roles` no se audita | [audit.md](audit.md) |
 
 ## Estado de los 14 puntos, de un vistazo
 

@@ -35,8 +35,9 @@ tampoco hace falta para una PYME.
 | | Valor | Cómo comprobarlo |
 |---|---:|---|
 | Módulos construidos | **80**: todos los del plan base | `ls modules`, y compararlo con el catálogo de `FASES` |
-| Migraciones | **117** | `ls supabase/migrations` |
-| Pruebas de base de datos | **1,067** en 82 archivos | `pnpm gate:f0` |
+| Migraciones | **120** | `ls supabase/migrations` |
+| Pruebas de base de datos | **1,099** en 85 archivos | `pnpm gate:f0` |
+| Pruebas de acciones de servidor | **15**, llamando a la acción real | `pnpm gate:f0` |
 | Pruebas de lógica pura | **995** en 74 archivos | `pnpm gate:f0` |
 | Pantallas web | **172** | `find apps/web/src/app -name page.tsx` |
 | Rutas registradas | **158**, sin colisión | `pnpm audit:manifests` |
@@ -68,6 +69,12 @@ ninguna pantalla rota.
 | **F12** | 11 verticales | ⬜ bajo demanda, fuera del plan base |
 
 ### Lo último que se hizo
+
+- **Ronda de agentes sobre este documento** (22 sep): tasa de ITBIS por
+  defecto en productos nuevos, moneda de empresas en grupos, arnés de
+  pruebas para acciones de servidor, las 14 fichas que faltaban, y una
+  bomba de tiempo desactivada en la bitácora. Detalle en
+  [`esto_es.md`](esto_es.md).
 
 - **Alertas** (`pnpm alertas`): el sistema avisa en vez de esperar a que
   alguien abra `/control/salud`. Cierra la mitad del blindaje que faltaba.
@@ -133,10 +140,9 @@ Dicho claro porque es donde más fácil se miente:
   eso: su razón de ser es lo que pasa cuando falla la red.
 - **Escritorio:** la impresora térmica y la gaveta no se han probado con
   hardware físico, y `/api/pos/sync` nunca recibió una venta real.
-- **Muchas acciones de servidor no tienen prueba propia.** El repo no tiene
-  arnés para ellas: `tsc` es lo único que garantiza que una página llame a
-  la función correcta. Varias pruebas de F6 comprueban el SQL copiado, no
-  la acción.
+- **La mayoría de acciones de servidor no tienen prueba propia.** Ya existe
+  el arnés (`apps/web/src/test/`) y cubre el cierre del IT-1 y la corrida
+  de consolidación; el resto de acciones sigue sin prueba que las llame.
 
 ---
 
@@ -144,12 +150,17 @@ Dicho claro porque es donde más fácil se miente:
 
 | Deuda | Riesgo | Dónde |
 |---|---|---|
-| El último respaldo es del **11 de septiembre** | alto | `pnpm alertas` lo marca crítico. Correr `pnpm db:respaldar`. |
-| `tax_rates` no la lee nadie fuera de `/impuestos` | medio | products, pos y quotes siguen con `0.18` cableado. La promesa del catálogo ya se bajó a lo que hay. |
-| Consolidación: la foto es el acumulado, no el período | medio | Sin cierre anual en el repo, separar balance y resultado pide inventar el arrastre. Documentado en la ficha. |
-| Cambiar la moneda de una empresa ya dentro de un grupo se deja | bajo | `update public.companies set currency` no está vigilado. |
-| 14 módulos sin ficha en `docs/modules/` | bajo | 13 son los core de F2, anteriores a la convención. El único hueco real es `invoice-capture`. |
-| Tenants de prueba viejos en la base local | bajo | `node scripts/limpiar-tenants-de-prueba.mjs --si` |
+| **Claves foráneas sin guarda de cliente**: `memberships.role_id` y `branches.company_id` | **alto** | "El agujero de siempre". Comprobar si un cliente puede apuntar a un rol o empresa de otro. Ver `modules/users.md` y `modules/branches.md` |
+| El respaldo del cliente no trae ventas, facturas, inventario ni contabilidad, y el aviso dice que sí | **alto** | `modules/backup.md` |
+| `invoice-capture` publicado con precio y sin ninguna pantalla | medio | Despublicarlo o construirlo. `modules/invoice-capture.md` |
+| Importar lee `1,234` como 1.23 | medio | `modules/imports.md` |
+| La invitación de usuarios no se envía e inventa un `user_id` | medio | `modules/users.md` |
+| Ningún módulo core emite los eventos que declara | medio | `modules/README.md`, tabla de hallazgos |
+| Consolidación: la foto es el acumulado, no el período | medio | Pide decidir cómo cerrar el año. Documentado en la ficha. |
+| Un tenant de prueba no se puede borrar | bajo | Tiene asientos contabilizados, que son inmutables incluso en cascada. El script de limpieza no lo contempla. |
+
+Las seis primeras filas las encontró el agente que escribió las fichas, al
+leer el código. Salieron el 22 sep y ninguna está arreglada todavía.
 
 ---
 
@@ -157,7 +168,9 @@ Dicho claro porque es donde más fácil se miente:
 
 Por prioridad, según el plan Q4:
 
-1. **Correr un respaldo** — la alerta lo está pidiendo.
+1. **Resolver los hallazgos de alto riesgo** de la tabla de deuda —las
+   dos claves foráneas y el respaldo del cliente— antes de que un cliente
+   real los encuentre.
 2. **Desplegar el Cliente #1** en el mostrador: hardware POS, NCF B01/B02,
    crédito a 15 y 30 días, validación del 607. Pasos en `PRIMER-CLIENTE.md`.
 3. **Conectar credenciales**: Supabase, Stripe/Azul, certificado DGII.

@@ -71,11 +71,15 @@ async function importar(formData: FormData): Promise<ActionResult> {
     for (const p of valid) {
       // `on conflict do nothing`: si el sku ya existe, no se pisa un
       // producto vivo con datos de un archivo. Se reporta y sigue.
+      // La tasa se pide explicita: el default de columna es un 0.18 fijo y
+      // el CSV no trae tasa, asi que el catalogo quedaba lleno al 18% aunque
+      // el cliente tuviera otra por defecto en Impuestos (0118).
       await tx`
         insert into public.products
-          (tenant_id, sku, name, category, unit, price, cost, import_batch_id)
+          (tenant_id, sku, name, category, unit, price, cost, tax_rate, import_batch_id)
         values (${ctx.tenantId}, ${p.sku}, ${p.name}, ${p.category},
-                ${p.unit}, ${p.price}, ${p.cost}, ${batch.id})
+                ${p.unit}, ${p.price}, ${p.cost}, public.tasa_itbis_por_defecto(),
+                ${batch.id})
         on conflict (tenant_id, sku) do nothing`
     }
   })

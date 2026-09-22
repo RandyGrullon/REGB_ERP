@@ -186,7 +186,19 @@ algo.
 - **Traducir moneda.** Si una empresa lleva USD y el grupo presenta DOP,
   la base directamente no la deja entrar al grupo. `multicurrency` (0049)
   existe, pero reexpresar estados financieros a tasa de cierre, tasa
-  promedio y tasa historica es otro trabajo, no un `coalesce`.
+  promedio y tasa historica es otro trabajo, no un `coalesce`. La misma
+  regla se cierra por las tres puertas: la empresa no entra en otra moneda
+  (0117), el grupo no cambia de moneda con empresas dentro (0117), y la
+  empresa no cambia de moneda mientras este en un grupo que presenta en
+  otra (0119, trigger `no_cambiar_moneda_en_grupo` sobre `companies`, mismo
+  errcode `55000`). Para cambiarle la moneda hay que sacarla del grupo
+  primero.
+- **Cambiarle la moneda a una empresa que ya figura en un consolidado
+  cerrado.** Aunque ya haya salido del grupo: si aparece en la foto o en
+  una eliminacion de una corrida cerrada, sus libros de ese periodo se
+  sumaron en la moneda vieja, y la 0119 no la deja cambiar. Es el mismo
+  criterio que el grupo: lo entregado se sigue leyendo igual. Una empresa
+  que salio sin dejar huella en nada cerrado si puede cambiar.
 - **Detectar solo las operaciones inter-compania.** Cada eliminacion se
   captura a mano. Emparejar por monto coincidente seria adivinar sobre la
   contabilidad de alguien; automatizarlo pide una marca de contraparte en

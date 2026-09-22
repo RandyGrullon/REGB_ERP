@@ -63,6 +63,9 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
             where id = ${categoryId} and tenant_id = ${ctx.tenantId}`
         : []
 
+      // La tasa sale del catalogo de Impuestos (0118) y no de un 0.18 escrito
+      // aqui: un cliente con ITBIS-16 por defecto creaba todo al 18% sin
+      // aviso. Sin el modulo, la funcion devuelve 0.18 y nada cambia.
       await tx`
         insert into public.products
           (tenant_id, sku, name, unit, price, cost, barcode, category_id,
@@ -70,7 +73,9 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
         values
           (${ctx.tenantId}, ${sku}, ${name}, ${unit}, ${price ?? 0}, ${cost},
            ${barcode}, ${categoryId}, ${cat?.name ?? null},
-           ${sinStock ? null : reorder}, ${exento ? 0 : 0.18}, ${!sinStock})`
+           ${sinStock ? null : reorder},
+           case when ${exento} then 0 else public.tasa_itbis_por_defecto() end,
+           ${!sinStock})`
     })
   } catch (e) {
     const msg = String(e)
@@ -125,6 +130,9 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
           where id = ${categoryId} and tenant_id = ${ctx.tenantId}`
       : []
 
+    // La tasa solo se toca si cambia el exento. Escribir 0.18 en cada
+    // edicion devolvia al 18% un producto que nacio al 16% en cuanto alguien
+    // le corregia el nombre.
     await tx`
       update public.products set
         name          = ${name},
@@ -133,7 +141,11 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
         category_id   = ${categoryId},
         category      = ${cat?.name ?? null},
         reorder_point = ${reorder},
-        tax_rate      = ${exento ? 0 : 0.18},
+        tax_rate      = case
+                          when ${exento} then 0
+                          when tax_rate = 0 then public.tasa_itbis_por_defecto()
+                          else tax_rate
+                        end,
         updated_at    = now()
       where id = ${id} and tenant_id = ${ctx.tenantId}`
 

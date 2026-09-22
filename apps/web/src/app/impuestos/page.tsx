@@ -144,15 +144,15 @@ export default async function ImpuestosPage({
           role="note"
           className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3 text-sm"
         >
-          <Icon name="link_off" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
+          <Icon name="info" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
           <p className="text-[var(--color-text-secondary)]">
-            Este catalogo{' '}
+            La tasa de ITBIS por defecto es con la que{' '}
             <strong className="text-[var(--color-text-primary)]">
-              todavia no alimenta a la facturacion
+              nacen los productos que crees o importes desde ahora
             </strong>
-            . Cambiar la tasa por defecto aqui no cambia lo que cobra la caja: productos, pedidos,
-            cotizaciones y ordenes de compra siguen llevando su propia tasa por linea, y esa se
-            edita en Productos. Engancharlos es el paso siguiente y esta declarado, no escondido.
+            , y de ahi la toman la caja, los pedidos, las cotizaciones y las ordenes de compra. Los
+            productos que ya existen conservan la suya: cambiarla aqui no los reescribe. Si la tasa
+            por defecto tiene vigencia futura, hasta ese dia los productos nuevos nacen al 18%.
           </p>
         </div>
 
