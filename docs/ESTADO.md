@@ -16,9 +16,17 @@ poner al primer cliente a facturar, y eso depende de credenciales y de
 trabajo de campo.
 
 ```
-Esfuerzo   █████████████████████████████████████░░░  ~119 / 130 sp · 92%
-Módulos    ██████████████████████████████████░░░░░░    80 / 91
+Plan base  ███████████████████████████████████████░  ~115 / 119 sp · 97%
+Módulos    ████████████████████████████████████████    80 / 80 del plan base
 ```
+
+El plan base es F0–F11. Los **11 verticales** (restaurante, clínica,
+hotel…) se sacaron a una fase final aparte, **F12, bajo demanda**: solo se
+construyen cuando un cliente de ese rubro los pide. No cuentan como
+pendientes porque no lo son.
+
+Lo que falta del plan base es la parte enterprise de F11 —ver abajo—, que
+tampoco hace falta para una PYME.
 
 ---
 
@@ -26,7 +34,7 @@ Módulos    ██████████████████████�
 
 | | Valor | Cómo comprobarlo |
 |---|---:|---|
-| Módulos construidos | **80** de 91 | `ls modules` |
+| Módulos construidos | **80**: todos los del plan base | `ls modules`, y compararlo con el catálogo de `FASES` |
 | Migraciones | **117** | `ls supabase/migrations` |
 | Pruebas de base de datos | **1,067** en 82 archivos | `pnpm gate:f0` |
 | Pruebas de lógica pura | **995** en 74 archivos | `pnpm gate:f0` |
@@ -55,8 +63,9 @@ ninguna pantalla rota.
 | **F7** | RRHH y nómina, 10 módulos | ✅ |
 | **F8** | Suministro y producción, 18 módulos | ✅ |
 | **F9** | Ventas avanzado, BI e IA, 16 módulos | ✅ |
-| **F10** | Proyectos (5 de 16) | 🟡 parcial, a propósito |
-| **F11** | Enterprise | ✅ |
+| **F10** | Proyectos, 5 módulos | ✅ |
+| **F11** | Enterprise | 🟡 1 de 5 — ver abajo |
+| **F12** | 11 verticales | ⬜ bajo demanda, fuera del plan base |
 
 ### Lo último que se hizo
 
@@ -94,9 +103,25 @@ completo; las puertas, no.
 
 ### Lo que falta de código
 
-| Pendiente | Tamaño | Por qué no está hecho |
-|---|---|---|
-| 11 verticales de F10 (restaurante, clínica, hotel, taller, inmobiliaria, educación, gimnasio, farmacia, agro, construcción, lavandería) | ~11 sp | **A propósito.** La regla de oro de F10: no se construye un vertical sin un cliente que ya lo pidió y va a pagar la instalación. |
+**F11 — Enterprise, a medias.** Solo está hecho uno de sus cinco sprints:
+
+| Entregable | Estado |
+|---|---|
+| `consolidation` — estados consolidados multi-empresa | ✅ |
+| Despliegue on-premise / VPC dedicada | ❌ |
+| SSO empresarial: SAML, Azure AD, SCIM | ❌ el módulo `auth` lo difiere a "Supabase real" |
+| Pentest externo + SOC2 lite + plan de continuidad | ❌ son actividades externas |
+| SDK público para partners | ❌ `packages/sdk` es el SDK interno, no uno para terceros |
+
+Estaba marcada como completa hasta el 22 sep 2026, y no lo estaba: se
+confundió "su único módulo existe" con "la fase está hecha". Como los
+verticales, esto solo hace falta cuando llega un cliente grande que lo
+pida; para una PYME no.
+
+**F12 — Verticales, bajo demanda.** Once módulos para rubros concretos.
+No son atraso: la regla de oro dice que no se construye un vertical sin un
+cliente que ya lo pidió y va a pagar la instalación. Detalle en
+`FASES-DE-DESARROLLO.md` §13 bis.
 
 ### Lo que está construido pero no probado de verdad
 

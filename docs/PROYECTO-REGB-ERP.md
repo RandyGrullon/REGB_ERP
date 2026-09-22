@@ -2063,7 +2063,7 @@ timeline
 
 | Documento                                               | Contenido                                                      |
 | ------------------------------------------------------- | -------------------------------------------------------------- |
-| [`docs/FASES-DE-DESARROLLO.md`](FASES-DE-DESARROLLO.md) | **Plan operativo: 11 fases, 84 sprints, puertas de no-avance** |
+| [`docs/FASES-DE-DESARROLLO.md`](FASES-DE-DESARROLLO.md) | **Plan operativo: 12 fases, 84 sprints, puertas de no-avance** |
 | `docs/MODULOS.md`                                       | Ficha detallada de los 93 módulos                              |
 | `docs/DESIGN-SYSTEM.md`                                 | Aurora completo: tokens, componentes, ejemplos                 |
 | `docs/API.md`                                           | Referencia del API público                                     |

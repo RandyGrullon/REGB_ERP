@@ -9,7 +9,7 @@
 | **Fecha**             | 2026-07-22                                                     |
 | **Unidad de trabajo** | 1 sprint = 2 semanas                                           |
 | **Esfuerzo**          | expresado en **sprint-persona** (1 sp = 1 persona × 2 semanas) |
-| **Módulos totales**   | 92, repartidos en 11 fases                                     |
+| **Módulos totales**   | 92, repartidos en 12 fases (la última, bajo demanda)           |
 
 ---
 
@@ -66,7 +66,7 @@ Cada fase termina en una **puerta**. Si la puerta no pasa, **no se avanza a la s
 
 ```mermaid
 timeline
-    title REGB ERP — 11 fases
+    title REGB ERP — 12 fases
     section Cimientos (no vendible)
       F0 : Monorepo, Supabase, Auth, RLS, Aurora
       F1 : Máquina de módulos (registry + manifest)
@@ -81,8 +81,10 @@ timeline
       F8 : Cadena de suministro y producción
     section Diferenciación
       F9 : Ventas avanzado + BI + IA
-      F10 : Proyectos y 11 verticales
+      F10 : Proyectos
       F11 : Enterprise, on-premise, partners
+    section Bajo demanda
+      F12 : 11 verticales, solo con cliente que los pida
 ```
 
 ### 1.1 Tabla resumen
@@ -99,9 +101,16 @@ timeline
 | **F7**  | RRHH y nómina           |      11 sp |      10 | ✅                                     |
 | **F8**  | Suministro y producción |      18 sp |      18 | ✅ **Cliente Grande**                  |
 | **F9**  | Ventas avanzado + IA    |      14 sp |      16 | ✅                                     |
-| **F10** | Proyectos y verticales  |      16 sp |      16 | ✅ Nuevos nichos                       |
+| **F10** | Proyectos               |       5 sp |       5 | ✅ Servicios y obras                   |
 | **F11** | Enterprise              |       5 sp |       1 | ✅ Contratos grandes                   |
+|         | **Plan base**           | **119 sp** |  **81** |                                        |
+| **F12** | Verticales              |      11 sp |      11 | 🎯 Solo con cliente que lo pida        |
 |         | **TOTAL**               | **130 sp** |  **92** |                                        |
+
+> **F12 no es parte del plan base.** Se separó el 22 sep 2026: los once
+> verticales solo se construyen cuando un cliente de ese rubro los pide y
+> paga la instalación (ver §13 bis). Contarlos como "pendientes" hacía
+> parecer inacabado un producto que para una PYME general ya está completo.
 
 ---
 
@@ -400,38 +409,26 @@ Son el mínimo con el que un colmado, una ferretería o una distribuidora peque�
 
 ---
 
-## 12. FASE 10 — Proyectos y verticales
+## 12. FASE 10 — Proyectos
 
-> **Objetivo:** abrir nichos nuevos sin construir un producto nuevo.
+> **Objetivo:** vender a quien cobra por horas, por obra o por servicio en campo.
 
-**Esfuerzo:** 16 sp · **Módulos:** 16 (acumulado: 91) · **Agentes:** `regb-module-builder`, `regb-docs`
+**Esfuerzo:** 5 sp · **Módulos:** 5 (acumulado: 80) · **Agentes:** `regb-module-builder`, `regb-docs`
 
-| Sprint     | Módulos                                             |
-| ---------- | --------------------------------------------------- |
-| **S67**    | `projects` (71), `timesheets` (72)                  |
-| **S68**    | `project-costing` (73), `resources` (75)            |
-| **S69**    | `field-service` (74) — móvil-primero                |
-| **S70–71** | `restaurant` (76) — mesas, KDS, delivery, food cost |
-| **S72**    | `clinic` (77)                                       |
-| **S73**    | `workshop` (79)                                     |
-| **S74**    | `real-estate` (80)                                  |
-| **S75**    | `gym` (82), `laundry` (86)                          |
-| **S76**    | `pharmacy` (83)                                     |
-| **S77**    | `hotel` (78)                                        |
-| **S78**    | `education` (81)                                    |
-| **S79**    | `agro` (84), `construction` (85)                    |
+| Sprint  | Módulos                                  |
+| ------- | ---------------------------------------- |
+| **S67** | `projects` (71), `timesheets` (72)       |
+| **S68** | `project-costing` (73), `resources` (75) |
+| **S69** | `field-service` (74) — móvil-primero     |
 
-### 12.1 Regla de oro de los verticales
+> Hasta el 22 sep 2026 esta fase incluía también los once verticales. Se
+> movieron a su propia fase final —F12, §13 bis— porque se construyen con
+> otra regla: solo bajo demanda.
 
-> **No construyas un vertical sin un cliente que ya lo pidió y va a pagar la instalación.**
+### 12.1 🚪 Puerta F10
 
-Reordena esta fase según quién aparezca primero. El orden de arriba es una hipótesis de demanda (restaurante y clínica son los mercados más grandes en RD), no un compromiso.
-
-### 12.2 🚪 Puerta F10
-
-- [ ] Cada vertical construido tiene **al menos 1 cliente pagando** antes de publicarse en el marketplace
-- [ ] Cada vertical reutiliza ≥70% de módulos existentes — si reescribe inventario, está mal diseñado
-- [ ] Ficha de módulo publicada en `docs/modules/` para cada uno
+- [ ] Un proyecto real se lleva de punta a punta: horas cargadas, costo real contra presupuesto, margen
+- [ ] Una orden de servicio en campo se cierra **desde el celular**
 
 ---
 
@@ -457,6 +454,46 @@ Reordena esta fase según quién aparezca primero. El orden de arriba es una hip
 
 ---
 
+## 13 bis. FASE 12 — Verticales bajo demanda
+
+> **Objetivo:** abrir un rubro nuevo cuando un cliente de ese rubro lo pide, no antes.
+
+**Esfuerzo:** 11 sp · **Módulos:** 11 · **Agentes:** `regb-module-builder`, `regb-docs`
+
+Es la última fase y **no tiene orden**: cada vertical se construye cuando
+llega su cliente, sin esperar a los demás. No se "termina" la fase: se
+construye el vertical que haga falta, cuando haga falta.
+
+| Vertical            | Lo que agrega sobre los módulos generales                  |
+| ------------------- | ---------------------------------------------------------- |
+| `restaurant` (76)   | mesas, comandas a cocina (KDS), delivery, costo por plato  |
+| `clinic` (77)       | citas, expedientes de pacientes                            |
+| `hotel` (78)        | habitaciones, reservas, check-in                           |
+| `workshop` (79)     | órdenes de reparación                                      |
+| `real-estate` (80)  | propiedades, alquileres, contratos                         |
+| `education` (81)    | alumnos, matrículas, calificaciones                        |
+| `gym` (82)          | membresías, asistencia                                     |
+| `pharmacy` (83)     | recetas, lotes y vencimientos de medicamentos              |
+| `agro` (84)         | fincas, cosechas                                           |
+| `construction` (85) | obras, cubicaciones, avance de obra                        |
+| `laundry` (86)      | órdenes de ropa, estados de entrega                        |
+
+### 13 bis.1 Regla de oro de los verticales
+
+> **No construyas un vertical sin un cliente que ya lo pidió y va a pagar la instalación.**
+
+El orden de la tabla no es un compromiso. Si hubiera que adivinar,
+restaurante y clínica son los mercados más grandes en RD, pero la regla
+manda sobre la adivinanza: se construye el que llegue primero con dinero.
+
+### 13 bis.2 🚪 Puerta de cada vertical
+
+- [ ] Tiene **al menos 1 cliente pagando** antes de publicarse en el marketplace
+- [ ] Reutiliza ≥70% de módulos existentes — si reescribe inventario, está mal diseñado
+- [ ] Ficha de módulo publicada en `docs/modules/`
+
+---
+
 ## 14. Asignación de agentes por fase
 
 | Fase | Agentes principales                     | Skills que se usan                          |
@@ -472,6 +509,7 @@ Reordena esta fase según quién aparezca primero. El orden de arriba es una hip
 | F8   | `module-builder`, `mobile`, `db`        | `/new-module`, `/tri-platform`              |
 | F9   | `module-builder`, `web`, `security`     | `/new-module`, `/rls-audit`                 |
 | F10  | `module-builder`, `docs`                | `/new-module`, `/tour-writer`               |
+| F12  | `module-builder`, `docs`                | `/new-module`, `/tour-writer`, `/pricing-calc` |
 | F11  | `architect`, `security`, `docs`         | `/rls-audit`                                |
 
 ### 14.1 Ritual por cada módulo (a partir de F4)
@@ -500,7 +538,7 @@ Tan importante como el plan es la lista de lo que se rechaza.
 | App móvil con paridad total       | El móvil no es el ERP completo          | `mobileScope` explícito por módulo                                |
 | Una BD por cliente                | Mata la economía del multi-tenant       | Un Postgres + RLS                                                 |
 | Reescribir la UI en Electron      | Duplica el trabajo para siempre         | Electron reutiliza `apps/web` al ~95%                             |
-| Verticales sin cliente            | Construyes para nadie                   | Regla de oro §12.1                                                |
+| Verticales sin cliente            | Construyes para nadie                   | Regla de oro §13 bis.1                                            |
 | Optimizar antes de F8             | No sabes dónde duele                    | Mide con `pg_stat_statements`, luego optimiza                     |
 | Migrar de Supabase                | Es Postgres estándar                    | El `sdk` ya abstrae el cliente                                    |
 
@@ -520,18 +558,19 @@ Tan importante como el plan es la lista de lo que se rechaza.
 | F7   | Error de nómina                | Un empleado cobra mal                        | Doble cálculo paralelo 3 meses      |
 | F8   | Postgres se satura             | P95 sube de 150 ms                           | Particionar antes, no después       |
 | F9   | Copiloto filtra datos          | Cualquier respuesta rara                     | Auditoría adversarial dedicada      |
-| F10  | Verticales sin demanda         | Construir "por si acaso"                     | Regla de oro §12.1                  |
+| F10  | Proyectos que nadie usa        | Horas cargadas al final del mes              | Cargar desde el celular, en el día  |
+| F12  | Verticales sin demanda         | Construir "por si acaso"                     | Regla de oro §13 bis.1              |
 | F11  | Un cliente enorme te secuestra | 80% del tiempo en 1 cliente                  | Precio enterprise que lo pague      |
 
 ---
 
 ## 17. Checklist maestro
 
-> Estado al 22 sep 2026. **`[x]` = el código de la fase está construido.**
-> No quiere decir que su puerta esté pasada: varias piden cosas que el
-> código no hace —un cliente pagando, un contador que firma, la DGII
-> aceptando un e-CF en producción—. El detalle, en
-> [`ESTADO.md`](ESTADO.md).
+> Estado al 22 sep 2026. **`[x]` = el código de la fase está construido;
+> `[~]` = a medias.** Ninguna de las dos quiere decir que la puerta esté
+> pasada: varias piden cosas que el código no hace —un cliente pagando,
+> un contador que firma, la DGII aceptando un e-CF en producción—. El
+> detalle, en [`ESTADO.md`](ESTADO.md).
 
 ```
 CIMIENTOS
@@ -554,9 +593,14 @@ ESCALA
 
 DIFERENCIACIÓN
 [x] F9  Ventas avanzado + BI + IA (16 módulos)        14 sp
-[~] F10 Proyectos y verticales (16 módulos)           16 sp   ← 5 de 16; los 11 verticales, a propósito
-[x] F11 Enterprise (1 módulo)                          5 sp
-        └─ 130 sp · 93 módulos ✅
+[x] F10 Proyectos (5 módulos)                          5 sp
+[~] F11 Enterprise (1 módulo)                          5 sp   ← consolidation hecho; SSO, on-premise,
+                                                                 pentest y SDK de partners, no
+        └─ 119 sp · 81 módulos: el plan base
+
+BAJO DEMANDA
+[ ] F12 Verticales (11 módulos)                       11 sp   ← solo con cliente que los pida
+        └─ 130 sp · 92 módulos
 ```
 
 ---
