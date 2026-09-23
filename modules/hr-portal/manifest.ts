@@ -3,11 +3,12 @@ import { defineModule } from '@regb/module-registry'
 /**
  * Portal del Empleado — modulo 70 del catalogo (§5.6, F7/S40).
  *
- * Ventana de autoservicio: "quien mira" se resuelve por correo entre
- * public.user_profiles y public.employees -este esquema no tiene un
- * employees.user_id formal-. Sin ese correo coincidente, el portal no
- * encuentra expediente y lo dice explicitamente, nunca falla en silencio
- * ni muestra el de otra persona.
+ * Ventana de autoservicio: "quien mira" es el expediente que RRHH vinculo
+ * a la cuenta (`employees.user_id`, unico por cliente, 0132) y se le
+ * pregunta a la base por el token (`mi_expediente()`, `mis_volantes()`).
+ * Hasta 0132 se emparejaba por correo, sin unicidad, y la demo le
+ * enseñaba a una persona el volante de otra. Sin vinculo, el portal lo
+ * dice: nunca adivina ni muestra el de otra persona.
  */
 export default defineModule({
   id: 'hr-portal',
@@ -17,7 +18,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'rrhh',
   navOrder: 72,
 
   pricing: {

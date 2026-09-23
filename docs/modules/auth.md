@@ -103,7 +103,13 @@ de un ERP, y casi siempre la respuesta es un permiso que el rol no tiene.
 
 ## Eventos
 
-No declara ni emite eventos.
+No declara ni emite eventos, **a proposito**. Entrar, salir y cambiar la
+contrasena pasan en Supabase Auth: `/auth/callback` solo canjea el codigo
+por una sesion y redirige, `/auth/salir` solo cierra, y `/perfil` solo lee.
+No hay ninguna accion del ERP que cambie el estado de la cuenta, asi que no
+hay transaccion donde emitir. Ademas `emit_event()` exige el tenant en el
+JWT, que en el callback todavia no existe. Cuando lleguen MFA y SSO, un
+`auth.session.started` saldria de un hook de Supabase, no de esta pantalla.
 
 ## Definicion de Terminado
 
@@ -118,7 +124,7 @@ No declara ni emite eventos.
 | 7 | Tour ≥6 pasos | ❌ `f14.cuenta` tiene 4 pasos, y dos de ellos mandan a hacer cosas que `/perfil` no tiene (ver abajo) |
 | 8 | Datos demo | ✅ Maria Rosario, Owner en los dos tenants demo |
 | 9 | ≥2 widgets | ➖ no aplica |
-| 10 | Eventos documentados | ➖ no tiene |
+| 10 | Eventos documentados | ➖ no aplica: ninguna accion del ERP cambia la cuenta (lo hace Supabase Auth); razon en "Eventos" |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

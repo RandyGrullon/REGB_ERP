@@ -81,6 +81,8 @@ const GRUPOS: { titulo: string; icono: string; test: (t: string) => boolean }[] 
       [
         'files',
         'notifications',
+        // Quien leyo que aviso (0125): una fila por persona y aviso de equipo.
+        'notification_reads',
         'backups',
         'import_batches',
         'event_outbox',

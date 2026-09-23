@@ -10,6 +10,7 @@ import {
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { PUERTAS_NCF, primeraPuerta } from '@/lib/fiscal'
 import { Shell } from '@/components/Shell'
 import { BarraEscritorio } from '@/components/BarraEscritorio'
 import {
@@ -20,12 +21,39 @@ import {
 } from '@/components/PosTerminal'
 import { abrirTurnoForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { motivoSinTurno } from './sin-turno'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Caja · REGB ERP' }
 
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/**
+ * Sin turno y sin poder abrirlo: la causa verdadera (sin-turno.ts). Antes,
+ * sin almacen, al Owner se le decia que su rol no podia abrir la caja.
+ */
+function SinTurnoVacio(props: Parameters<typeof motivoSinTurno>[0]) {
+  const m = motivoSinTurno(props)
+  if (!m) return null
+  return (
+    <EmptyState
+      icon={m.icono}
+      title={m.titulo}
+      description={m.descripcion}
+      action={
+        m.enlace ? (
+          <a
+            href={m.enlace.href}
+            className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          >
+            {m.enlace.texto}
+          </a>
+        ) : undefined
+      }
+    />
+  )
+}
 
 /** Caja (S21). Sin turno abierto no se vende: sin eso no hay arqueo posible. */
 export default async function PosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
@@ -74,7 +102,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               on sl.product_id = pr.id and sl.warehouse_id = ${t.warehouse_id}
              and sl.tenant_id = ${ctx.tenantId}
             where pr.tenant_id = ${ctx.tenantId} and pr.active
-            order by pr.name limit 300`
+            order by pr.name limit 3000`
         : []
 
       const c = await tx<{ id: string; name: string }[]>`
@@ -84,7 +112,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
       const [r] = t
         ? await tx<{ tickets: string; vendido: string; efectivo: string }[]>`
             select count(distinct s.id)::text as tickets,
-                   coalesce(sum(distinct s.total), 0)::text as vendido,
+                   -- Sin distinct: dos tickets del mismo monto son dos ventas.
+                   coalesce(sum(s.total), 0)::text as vendido,
                    coalesce((select sum(p.amount) from public.pos_payments p
                               join public.pos_sales sa on sa.id = p.sale_id
                               where sa.shift_id = ${t.id} and not sa.voided
@@ -118,13 +147,19 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
         select exists (
           select 1 from public.ncf_sequences
           where tenant_id = ${ctx.tenantId} and ncf_type = 'B02' and is_active
-            and expires_on >= current_date and next_number <= range_to
+            and expires_on >= public.hoy_fiscal() and next_number <= range_to
         ) as ok`
 
       return [t, p, c, r, w, n?.ok ?? false, pl, pe] as const
     },
   )
 
+  // Enlace del aviso "No hay secuencia de NCF": la pantalla de la caja si
+  // el rol administra comprobantes; si no, la de otra puerta que alcance;
+  // si ninguna, no se enlaza un 404.
+  const rutaNcf = exigir(ctx, 'pos', 'pos.ncf.manage').ok
+    ? '/pos/comprobantes'
+    : (primeraPuerta(ctx, PUERTAS_NCF)?.ruta ?? null)
   const puedeAbrir = exigir(ctx, 'pos', 'pos.shift.open').ok
   const puedeDescuento = exigir(ctx, 'pos', 'pos.discount').ok
   const qs = ctx.demoQs
@@ -187,12 +222,20 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               </strong>{' '}
               Se puede seguir vendiendo, pero los tickets saldran sin comprobante fiscal y no
               serviran para credito fiscal.{' '}
-              <a
-                href={`/cobrar/ncf${qs}`}
-                className="text-[var(--color-text-link)] underline hover:no-underline"
-              >
-                Carga la autorizacion de la DGII
-              </a>{' '}
+              {/* A la pantalla que ESTE rol puede abrir: la de la caja si
+                  administra comprobantes, la de Por cobrar si llega por
+                  ahi. Antes enlazaba siempre a /cobrar/ncf, que para un
+                  colmado sin `ar` era un 404 (0129). */}
+              {rutaNcf ? (
+                <a
+                  href={`${rutaNcf}${qs}`}
+                  className="text-[var(--color-text-link)] underline hover:no-underline"
+                >
+                  Carga la autorizacion de la DGII
+                </a>
+              ) : (
+                <>Avisale al dueño que cargue la autorizacion de la DGII en Caja › Comprobantes</>
+              )}{' '}
               — pedirla toma dias.
             </p>
           </div>
@@ -275,10 +318,13 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
             </CardBody>
           </Card>
         ) : (
-          <EmptyState
-            icon="lock"
-            title="No hay turno abierto"
-            description="Tu rol no puede abrir la caja. Pidele a un encargado que abra el turno."
+          <SinTurnoVacio
+            puedeAbrir={puedeAbrir}
+            hayAlmacenes={almacenes.length > 0}
+            // Sin el modulo, la RLS esconde los almacenes: no es que falten.
+            tieneExistencias={ctx.licensedModules.has('inventory')}
+            puedeCrearAlmacen={exigir(ctx, 'inventory', 'inventory.warehouses.manage').ok}
+            qs={qs}
           />
         )}
       </div>

@@ -36,9 +36,13 @@ interface CustomerRow {
   phone: string | null
   email: string | null
   payment_terms: number
+  credit_limit: string | null
   is_active: boolean
   pedidos: string
 }
+
+const money = (n: number) =>
+  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const inputCls =
   'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
@@ -57,7 +61,8 @@ export default async function ClientesPage({
 
   const [customers, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const c = await tx<CustomerRow[]>`
-      select c.id, c.name, c.tax_id, c.phone, c.email, c.payment_terms, c.is_active,
+      select c.id, c.name, c.tax_id, c.phone, c.email, c.payment_terms,
+             c.credit_limit::text, c.is_active,
              (select count(*) from public.sales_orders o
                where o.customer_id = c.id)::text as pedidos
       from public.customers c
@@ -74,6 +79,8 @@ export default async function ClientesPage({
   })
 
   const puedeGestionar = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage').ok
+  // Cuanto se le fia a alguien lo decide `ar`, no quien da de alta clientes.
+  const puedeFijarLimite = exigir(ctx, 'ar', 'ar.credit.manage').ok
   const qs = ctx.demoQs
 
   return (
@@ -131,6 +138,7 @@ export default async function ClientesPage({
                 <TH>RNC / Cedula</TH>
                 <TH>Contacto</TH>
                 <TH numeric>Credito</TH>
+                <TH numeric>Limite</TH>
                 <TH numeric>Pedidos</TH>
                 <TH>Estado</TH>
                 {puedeGestionar && (
@@ -143,7 +151,14 @@ export default async function ClientesPage({
             <TBody>
               {customers.map((c) => (
                 <TR key={c.id} className={c.is_active ? '' : 'opacity-50'}>
-                  <TD className="font-medium text-[var(--color-text-primary)]">{c.name}</TD>
+                  <TD className="font-medium text-[var(--color-text-primary)]">
+                    <a
+                      href={`/pedidos/clientes/${c.id}${qs}`}
+                      className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
+                      {c.name}
+                    </a>
+                  </TD>
                   <TD>{c.tax_id ? <Mono>{formatTaxId(c.tax_id)}</Mono> : '—'}</TD>
                   <TD>
                     <span className="text-xs">
@@ -159,6 +174,11 @@ export default async function ClientesPage({
                   <TD numeric>
                     <span className="tabular">
                       {c.payment_terms === 0 ? 'contado' : `${c.payment_terms} d`}
+                    </span>
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular">
+                      {c.credit_limit === null ? '—' : money(Number(c.credit_limit))}
                     </span>
                   </TD>
                   <TD numeric>
@@ -248,6 +268,18 @@ export default async function ClientesPage({
                     className={inputCls}
                   />
                 </label>
+                {puedeFijarLimite && (
+                  <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Limite de credito
+                    <input
+                      name="creditLimit"
+                      inputMode="decimal"
+                      placeholder="Sin limite"
+                      title="Vacio = sin limite. Saldo + pedido nuevo no puede pasarlo sin una excepcion autorizada."
+                      className={inputCls}
+                    />
+                  </label>
+                )}
                 <BotonEnvio
                   
                   className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
@@ -256,7 +288,8 @@ export default async function ClientesPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Los dias de credito deciden el vencimiento de la factura. 0 = contado.
+                Los dias de credito deciden el vencimiento de la factura. 0 = contado. El limite y
+                los datos se corrigen despues en la ficha de cada cliente.
               </p>
             </CardBody>
           </Card>

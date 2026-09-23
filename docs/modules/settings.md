@@ -69,9 +69,25 @@ con el nombre del rol.
 
 ## Eventos
 
-| Evento | Estado |
-|---|---|
-| `settings.prefs.changed` | Declarado; **ningun codigo lo emite** |
+| Evento | Cuando | Payload | Donde |
+|---|---|---|---|
+| `settings.prefs.changed` | Al guardar, **solo si algo cambio**, en la misma transaccion que el guardado | `{ changed: [...], <campo>: <valor nuevo> }` | `guardarConfiguracion()` en [`configuracion/actions.ts`](../../apps/web/src/app/configuracion/actions.ts) |
+
+- `changed` lista lo que cambio, en orden fijo (`tradeName`, `timezone`,
+  `currency`, `dateFormat`), y el payload trae el valor nuevo **solo** de
+  esos campos. Cambiar la moneda a USD emite
+  `{ changed: ['currency'], currency: 'USD' }`: una automatizacion con la
+  condicion `currency = USD` se dispara cuando la moneda PASA a USD, no
+  cada vez que alguien guarda.
+- Guardar sin tocar nada **no** emite. Tampoco el primer guardado con los
+  valores por defecto que la pantalla ya ensenaba sin fila: no cambio nada
+  de lo que el cliente veia.
+- La fila anterior se lee con `for update`: dos guardados a la vez no
+  calculan "que cambio" contra la misma foto vieja.
+- Prueba: [`configuracion.accion.test.ts`](../../apps/web/src/app/configuracion/configuracion.accion.test.ts),
+  accion real contra `event_outbox`: sin cambio no hay evento, un cambio da
+  uno, repetir no da otro, dos cambios van en uno, un valor rechazado no
+  guarda ni emite.
 
 ## Definicion de Terminado
 
@@ -86,7 +102,7 @@ con el nombre del rol.
 | 7 | Tour ≥6 pasos | ❌ el unico tour con `moduleId: 'settings'` es `core.marketplace` (4 pasos), y habla del marketplace, no de esta pantalla |
 | 8 | Datos demo | ✅ "La Esperanza" y "Caribe", en DOP |
 | 9 | ≥2 widgets | ❌ ninguno |
-| 10 | Eventos documentados | ⚠️ documentado aqui que el evento declarado no se emite |
+| 10 | Eventos documentados | ✅ `settings.prefs.changed` se emite desde `guardarConfiguracion()` solo cuando algo cambia; prueba de accion real contra el outbox |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

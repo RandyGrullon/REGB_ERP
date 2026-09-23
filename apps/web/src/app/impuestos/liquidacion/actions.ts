@@ -41,7 +41,17 @@ function legible(periodo: string): string {
   )
 }
 
-type Cierre = { estado: 'cerrada' } | { estado: 'duplicada' } | { estado: 'falta'; periodo: string }
+type Cierre =
+  | { estado: 'cerrada' }
+  | { estado: 'duplicada' }
+  | { estado: 'falta'; periodo: string }
+  | { estado: 'escondidas'; modulos: string[]; documentos: number }
+
+/** Como se llama cada modulo para quien declara, no su id. */
+const NOMBRE_MODULO: Record<string, string> = {
+  ar: 'Cuentas por cobrar',
+  pos: 'Punto de venta',
+}
 
 /**
  * Cierra el IT-1 de un periodo.
@@ -62,25 +72,18 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
   const period = String(fd.get('period') ?? '').trim()
   if (!/^[0-9]{6}$/.test(period)) return { ok: false, error: 'El periodo va como AAAAMM.' }
 
-  // El riesgo mas serio del modulo. dgii_607 vive bajo la RLS de `ar`: sin
-  // ese modulo la suma de ventas da CERO y el IT-1 sale mal pareciendo
-  // correcto. Declarar de menos por un modulo apagado es una multa, asi
-  // que no se cierra. Con `ap` apagado si se deja cerrar -faltaria el
-  // ITBIS adelantado y se declararia de MAS, que cuesta dinero pero no
-  // una sancion-, y la pantalla lo avisa.
-  // Guarda que se NIEGA a actuar con un modulo opcional apagado, no
-  // descubrimiento. `ar` no va en `requires` a proposito: las tasas, las
-  // reglas y el calendario funcionan sin el, y exigirlo seria cobrar tres
-  // modulos por poder nombrar el 18%. Lo que no se puede es cerrar un
-  // IT-1 a ciegas, y eso es justo lo que impide la linea de abajo.
-  if (!exigir(ctx, 'ar', 'ar.view').ok) { // registry:allow -- guarda, no descubrimiento
-    return {
-      ok: false,
-      error:
-        'Sin el modulo de Cuentas por cobrar no se puede saber cuanto ITBIS cobraste, y declarar cero ventas es una multa. Activalo antes de cerrar.',
-    }
-  }
-
+  // El riesgo mas serio del modulo: las ventas viven bajo la RLS de DOS
+  // modulos -la factura a credito (`ar`) y el ticket de caja (`pos`)-. Con
+  // uno apagado su mitad suma CERO y el IT-1 sale corto pareciendo
+  // correcto. Declarar de menos por un modulo apagado es una multa.
+  //
+  // Hasta la 0129 esto se evitaba exigiendo `ar`, y un colmado que solo
+  // vende en mostrador no podia declarar nunca. La pregunta correcta no es
+  // "tienes `ar`" sino "hay ventas de este periodo que no ves", y la
+  // responde la base (ventas_fuera_de_vista) justo antes de sumar. Con
+  // `ap` apagado si se deja cerrar -faltaria el ITBIS adelantado y se
+  // declararia de MAS, que cuesta dinero pero no una sancion-, y la
+  // pantalla lo avisa.
   const retenido = Number(String(fd.get('itbisWithheld') ?? '0').replace(/,/g, '') || '0')
   if (!Number.isFinite(retenido) || retenido < 0) {
     return { ok: false, error: 'El ITBIS que te retuvieron no puede ser negativo.' }
@@ -100,8 +103,23 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
         where tenant_id = ${ctx.tenantId} and form = 'IT-1' and period = ${period}`
       if (ya) return { estado: 'duplicada' }
 
+      const ocultas = await tx<{ modulo: string; documentos: string }[]>`
+        select modulo, documentos::text from public.ventas_fuera_de_vista(${period})`
+      if (ocultas.length > 0) {
+        return {
+          estado: 'escondidas',
+          modulos: ocultas.map((o) => NOMBRE_MODULO[o.modulo] ?? o.modulo),
+          documentos: ocultas.reduce((s, o) => s + Number(o.documentos), 0),
+        }
+      }
+
+      // Las notas de credito (B04) vienen en el 607 con montos POSITIVOS,
+      // como los pide el formato; aqui RESTAN: el ITBIS de lo devuelto no
+      // se cobro (0130). Sin esto el IT-1 cobraba ITBIS de mercancia que
+      // volvio al almacen.
       const [ventas] = await tx<{ t: string }[]>`
-        select coalesce(sum(itbis_facturado), 0)::text as t
+        select coalesce(sum(case when origen = 'nota_credito' then -itbis_facturado
+                                 else itbis_facturado end), 0)::text as t
         from public.dgii_607
         where tenant_id = ${ctx.tenantId} and periodo = ${period}`
 
@@ -120,10 +138,21 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
           where i.tenant_id = ${ctx.tenantId} and i.ncf is null and i.status <> 'void'
             and to_char(i.issue_date, 'YYYYMM') = ${period}
           union all
+          -- El dia de la VENTA en RD, igual que el 607 (0129): con
+          -- created_at en UTC, la venta del 30 a las 9 p. m. -o una
+          -- offline que sincronizo al otro dia- caia en el mes siguiente.
           select coalesce(sum(s.tax), 0)
           from public.pos_sales s
           where s.tenant_id = ${ctx.tenantId} and s.ncf is null and not s.voided
-            and to_char(s.created_at, 'YYYYMM') = ${period}
+            and to_char(public.fecha_fiscal(s.sold_at), 'YYYYMM') = ${period}
+          union all
+          -- Una nota de credito sobre una factura SIN NCF no va al 607 (no
+          -- hay comprobante que modificar), pero su ITBIS tambien se
+          -- devolvio: resta igual que la venta sin NCF suma (0130).
+          select -coalesce(sum(n.tax), 0)
+          from public.customer_credit_notes n
+          where n.tenant_id = ${ctx.tenantId} and n.ncf is null
+            and to_char(n.issue_date, 'YYYYMM') = ${period}
         ) q`
 
       // Del 606 salen DOS numeros, no uno, y tiran para lados
@@ -134,6 +163,12 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
       // consigo mismo y aun asi salga corto: me acredito el 100% de un
       // ITBIS que solo pague en parte, y la parte que retuve no aparece
       // en ningun renglon.
+      //
+      // `itbis_retenido` y NO la retencion total: el ISR que le retuve al
+      // proveedor (`retencion_renta`) se paga en el IR-17, no en el IT-1.
+      // Hasta la 0129 /pagar guardaba toda la retencion en un solo campo y
+      // la vista la leia como ITBIS: honorarios con 800 de ISR retenido
+      // hacian que el IT-1 cobrara 800 de un ITBIS que no existia.
       const compras = veCompras
         ? await tx<{ t: string; r: string }[]>`
             select coalesce(sum(itbis_facturado), 0)::text as t,
@@ -197,6 +232,12 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error: 'Ese periodo ya esta cerrado. Una declaracion cerrada no se recalcula: se corrige con una rectificativa.',
+      }
+    }
+    if (resultado.estado === 'escondidas') {
+      return {
+        ok: false,
+        error: `Hay ${resultado.documentos} venta(s) de ${legible(period)} en un modulo que esta apagado (${resultado.modulos.join(', ')}): el IT-1 saldria corto, y declarar de menos es una multa. Enciendelo antes de cerrar.`,
       }
     }
     if (resultado.estado === 'falta') {

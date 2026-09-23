@@ -19,7 +19,7 @@ import { yearsOfService } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { crearContratoForm, darDeBajaEmpleadoForm } from '../actions'
+import { crearContratoForm, darDeBajaEmpleadoForm, vincularUsuarioForm } from '../actions'
 import { ESTADO_EMPLEADO, TIPO_CONTRATO } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
@@ -41,6 +41,13 @@ interface EmpleadoHead {
   manager_name: string | null
   email: string | null
   phone: string | null
+  user_id: string | null
+}
+
+interface CuentaRow {
+  user_id: string
+  nombre: string
+  email: string | null
 }
 
 interface ContratoRow {
@@ -68,17 +75,19 @@ export default async function EmpleadoDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'employees')
 
-  const [head, contratos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const puedeVincular = exigir(ctx, 'employees', 'employees.employee.link').ok
+
+  const [head, contratos, cuentas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<EmpleadoHead[]>`
       select e.id, e.code, e.first_name, e.last_name, e.national_id, e.position, e.department,
              e.hire_date::text, e.salary::text, e.status,
              e.termination_date::text, e.termination_reason,
              m.first_name || ' ' || m.last_name as manager_name,
-             e.email, e.phone
+             e.email, e.phone, e.user_id
       from public.employees e
       left join public.employees m on m.id = e.manager_id
       where e.id = ${id} and e.tenant_id = ${ctx.tenantId}`
-    if (!h) return [null, []] as const
+    if (!h) return [null, [], []] as const
 
     const c = await tx<ContratoRow[]>`
       select id, contract_type, start_date::text, end_date::text, salary::text, position, is_active
@@ -86,7 +95,23 @@ export default async function EmpleadoDetallePage({
       where employee_id = ${id} and tenant_id = ${ctx.tenantId}
       order by start_date desc, created_at desc`
 
-    return [h, c] as const
+    // Cuentas del equipo que pueden ver ESTE expediente en el portal: las
+    // que no estan ya vinculadas a otro (una cuenta, un expediente).
+    const u = puedeVincular || h.user_id
+      ? await tx<CuentaRow[]>`
+          select m.user_id, coalesce(up.display_name, 'Sin nombre') as nombre, up.email
+          from public.memberships m
+          left join public.user_profiles up
+            on up.tenant_id = m.tenant_id and up.user_id = m.user_id
+          where m.tenant_id = ${ctx.tenantId}
+            and (m.is_active or m.user_id = ${h.user_id})
+            and not exists (
+              select 1 from public.employees o
+              where o.tenant_id = m.tenant_id and o.user_id = m.user_id and o.id <> ${id})
+          order by nombre`
+      : []
+
+    return [h, c, u] as const
   })
 
   if (!head) notFound()
@@ -143,6 +168,79 @@ export default async function EmpleadoDetallePage({
           <StatCard label="Cedula" value={head.national_id ?? '—'} />
           <StatCard label="Contacto" value={head.email ?? head.phone ?? '—'} />
         </section>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Acceso al portal</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-3 text-sm">
+            {(() => {
+              const vinculada = cuentas.find((u) => u.user_id === head.user_id)
+              return head.user_id ? (
+                <p className="flex flex-wrap items-center gap-2 text-[var(--color-text-secondary)]">
+                  <Badge tone="success">Vinculado</Badge>
+                  <span>
+                    <strong className="font-semibold text-[var(--color-text-primary)]">
+                      {vinculada?.nombre ?? 'Cuenta del equipo'}
+                    </strong>
+                    {vinculada?.email ? ` · ${vinculada.email}` : ''} ve este expediente y sus volantes en
+                    su portal.
+                  </span>
+                </p>
+              ) : (
+                <p className="flex flex-wrap items-center gap-2 text-[var(--color-text-secondary)]">
+                  <Badge tone="neutral">Sin vincular</Badge>
+                  <span>Nadie ve este expediente en el portal todavia.</span>
+                </p>
+              )
+            })()}
+            <p className="text-xs text-[var(--color-text-muted)]">
+              Solo la cuenta vinculada ve este expediente y sus volantes. No se empareja por correo: dos
+              personas pueden compartirlo.
+            </p>
+            {puedeVincular && (
+              <div className="flex flex-wrap items-end gap-3">
+                <form action={vincularUsuarioForm} className="flex flex-wrap items-end gap-3">
+                  {campos}
+                  <label className="flex min-w-56 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Cuenta del equipo
+                    <select
+                      key={head.user_id ?? 'sin-vinculo'}
+                      name="userId"
+                      required
+                      defaultValue={head.user_id ?? ''}
+                      className={claseInput}
+                    >
+                      <option value="" disabled>
+                        Elige una cuenta
+                      </option>
+                      {cuentas.map((u) => (
+                        <option key={u.user_id} value={u.user_id}>
+                          {u.nombre}
+                          {u.email ? ` · ${u.email}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    <Icon name="link" size={18} />
+                    {head.user_id ? 'Cambiar cuenta' : 'Vincular'}
+                  </BotonEnvio>
+                </form>
+                {head.user_id && (
+                  <form action={vincularUsuarioForm}>
+                    {campos}
+                    <input type="hidden" name="userId" value="" />
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      <Icon name="link_off" size={18} />
+                      Quitar vinculo
+                    </BotonEnvio>
+                  </form>
+                )}
+              </div>
+            )}
+          </CardBody>
+        </Card>
 
         {head.status === 'terminated' && (
           <Card>

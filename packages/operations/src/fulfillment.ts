@@ -42,8 +42,17 @@ export interface OrderLineState {
  * lo que realmente se entrego.
  *
  * `cancelled` no se deriva — es una decision humana y entra como parametro.
+ *
+ * `confirmed` tampoco: confirmar es una decision, no una cantidad. Antes
+ * se deducia de "hay algo apartado", y un pedido confirmado SIN
+ * existencia (todo en backorder) volvia a `draft` mientras el aviso decia
+ * "quedo hecho". Quien confirma lo pasa en `true`.
  */
-export function deriveOrderStatus(lines: OrderLineState[], cancelled = false): OrderStatus {
+export function deriveOrderStatus(
+  lines: OrderLineState[],
+  cancelled = false,
+  confirmed = false,
+): OrderStatus {
   if (cancelled) return 'cancelled'
   if (lines.length === 0) return 'draft'
 
@@ -53,7 +62,7 @@ export function deriveOrderStatus(lines: OrderLineState[], cancelled = false): O
 
   if (entregado >= pedido) return 'delivered'
   if (entregado > 0) return 'partially_delivered'
-  if (reservado > 0) return 'confirmed'
+  if (reservado > 0 || confirmed) return 'confirmed'
   return 'draft'
 }
 

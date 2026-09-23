@@ -44,8 +44,14 @@ Colgar hoy el stock de `branch_id` obligaría a migrar **todo el histórico de
 movimientos** cuando lleguen los almacenes de verdad. Añadir la tabla ahora es
 barato; el retrofit después no lo es.
 
-En el alta se crea un almacén por sucursal, así el caso común —un solo
-almacén— queda igual de simple.
+El alta de un cliente desde REGB Control (`/control/onboarding/nuevo`,
+0133) crea su primera sucursal **y un almacén predeterminado** colgado de
+ella, así el caso común —un solo almacén— queda igual de simple y la caja
+puede abrir turno desde el primer día. Una sucursal que se abra después
+**no** crea almacén: se crea en `/inventory/warehouses`. Sin almacén, `/pos`
+ya no culpa al rol: dice que falta el almacén y enlaza a esa pantalla (o
+al Marketplace si el cliente no tiene este módulo, porque sin él la RLS
+esconde los almacenes).
 
 ## Costeo: promedio ponderado
 
@@ -74,12 +80,36 @@ promedio, eso es una devolución— y el fallo estaba en la frontera: la acción
 no declaraba el costo. Se corrigió ahí, heredando el costo del catálogo
 cuando no se declara, y quedó un test que lo fija.
 
+## Existencias iniciales
+
+Dos caminos, los dos con costo:
+
+- **Todo el catálogo de una vez: CSV** en `/importar#existencias` (código,
+  almacén, cantidad, costo unitario). Cada fila buena es un
+  `adjustment_in` con costo y `reference_type = 'import_batch'`; un
+  producto que ya tiene existencia en ese almacén se deja; sin costo en la
+  fila ni en el catálogo, la fila se rechaza. Deshacer registra el
+  movimiento contrario (el kardex no se borra) y se niega si algo movió
+  esas existencias después. Detalle en [imports.md](imports.md#existencias-iniciales-target--stock-0133).
+- **Uno a uno: el "Ajuste manual" de `/inventory`.** Antes pedía pegar el
+  UUID del producto ("Copia el id desde el catálogo"). Ahora el campo
+  *Producto* busca por **código, código de barras o nombre** (lista nativa
+  del navegador, sin JavaScript, solo productos que llevan existencias).
+  El servidor lo resuelve en orden: SKU o código de barras exactos; SKU o
+  nombre completos sin mayúsculas; parte del nombre o del SKU entre los
+  activos. Si coinciden varios, no adivina: dice cuáles. Los comodines
+  (`%`, `_`) se buscan como texto. El `productId` de antes sigue sirviendo.
+
+Hazlo antes de vender -de noche o un domingo-: una existencia cargada
+mientras se vende no cuadra, y el deshacer del CSV ya no aplica.
+
 ## Pantallas
 
 | Ruta | Permiso | Qué hace |
 |---|---|---|
-| `/inventory` | `inventory.view` | Existencias por almacén, semáforo, valor total, badge de sobre-apartado |
-| `/inventory/movements` | `inventory.view` | Kardex + registro de ajuste |
+| `/inventory` | `inventory.view` | Existencias por almacén, semáforo, valor total, badge de sobre-apartado. Ajuste manual (`inventory.adjust`) con el producto por nombre, código o código de barras; enlace al CSV de existencias iniciales |
+| `/inventory/movements` | `inventory.view` | Kardex, solo lectura (no tiene formulario: el ajuste está en `/inventory`) |
+| `/importar#existencias` | `imports.create` + `inventory.adjust` | Existencias iniciales por CSV (módulo `imports`) |
 | `/inventory/counts` | `inventory.count` | Conteo cíclico |
 | `/inventory/transfers` | `inventory.transfer` | Traslado entre almacenes |
 | `/inventory/warehouses` | `inventory.warehouses.manage` | Alta de almacenes (oculta del menú) |
@@ -110,7 +140,7 @@ verifica en la acción de servidor, no en el botón.
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/inventory.test.ts` — 14 casos: inmutabilidad del kardex, invariante proyección == suma, aislamiento, módulo apagado. Sin `down` (deuda común) |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/inventory.test.ts` — 14 casos: inmutabilidad del kardex, invariante proyección == suma, aislamiento, módulo apagado. Sin `down` (deuda común). Acciones: `apps/web/src/app/inventory/inventario.accion.test.ts` — 9 casos del ajuste por SKU, código de barras, nombre completo y parcial, ambiguo, comodines, inexistente, id de siempre; existencias iniciales en `importar/existencias.accion.test.ts` (10) |
 | 3 | Lógica pura con cobertura | ✅ `costing.ts` 20 tests · **100%** de líneas |
 | 4 | UI web responsive | ✅ |
 | 5 | UI móvil | 🔜 F5 — `mobileScope`: view, count, transfer |

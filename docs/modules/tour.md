@@ -91,9 +91,29 @@ stateDiagram-v2
 
 ## Eventos
 
-| Evento | Estado |
-|---|---|
-| `tour.step.completed`, `tour.finished` | Declarados; **ningun codigo los emite** |
+| Evento | Cuando | Payload | Donde |
+|---|---|---|---|
+| `tour.tour.completed` | Al **terminar** una guia: solo en la transicion a completada, en la misma transaccion que el progreso | `{ tourId, userId }` | `guardar()` en [`tutorial/actions.ts`](../../apps/web/src/app/tutorial/actions.ts), via `avanzarPaso()` |
+
+Los dos temas que declaraba el manifiesto se cambiaron:
+
+| Tema anterior | Que se hizo | Por que |
+|---|---|---|
+| `tour.finished` | **Renombrado** a `tour.tour.completed` | Tenia dos segmentos. `emit_event()` exige `<modulo>.<entidad>.<accion>` y lanza una excepcion que **revierte la transaccion**: el dia que alguien lo emitiera tal cual, terminar un tutorial dejaria de guardarse. Nadie lo escuchaba, asi que renombrarlo no rompe a nadie |
+| `tour.step.completed` | **Quitado** del manifiesto | "Siguiente" no comprueba que el paso se hizo (ver "Lo que NO hace"): el evento afirmaria que alguien invito a su equipo cuando solo pulso un boton. Ademas seria una fila de outbox por clic, repetida cada vez que se va atras y adelante |
+
+- La fila anterior se lee con `for update` y el evento sale solo si pasa
+  de no completada a completada: un "Siguiente" repetido sobre una guia
+  ya terminada no la termina otra vez.
+- **Repasar y volver a terminar SI emite otra vez**: es otra vez
+  terminada. El XP, en cambio, se sigue otorgando una sola vez.
+- `userId` es el id interno del usuario, no su nombre ni su correo.
+- Prueba: [`tutorial.accion.test.ts`](../../apps/web/src/app/tutorial/tutorial.accion.test.ts),
+  accion real contra `event_outbox`: los pasos intermedios no emiten
+  nada, terminar emite uno, pulsar de nuevo no duplica, repasar y terminar
+  emite el segundo. Comprobado rojo: emitiendo `tour.finished`, la accion
+  devuelve el aviso `Tipo invalido "tour.finished"` (antes habria
+  reventado sin decir nada) y la transaccion entera se revierte.
 
 ## Definicion de Terminado
 
@@ -108,7 +128,7 @@ stateDiagram-v2
 | 7 | Tour ≥6 pasos | ❌ el propio `core.bienvenida` tiene 5. La prueba del repo exige ≥4, no ≥6: **la regla del repo y la de la Definicion de Terminado no coinciden**, y ningun tour de los 14 modulos de esta tanda llega a 6 |
 | 8 | Datos demo | ❌ la siembra no crea progreso: todo arranca en el paso 1 |
 | 9 | ≥2 widgets | ❌ ninguno |
-| 10 | Eventos documentados | ⚠️ documentado aqui que los eventos declarados no se emiten |
+| 10 | Eventos documentados | ✅ `tour.tour.completed` se emite al terminar una guia; `tour.finished` (formato invalido) renombrado y `tour.step.completed` quitado, con la razon arriba. Prueba de accion real contra el outbox |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

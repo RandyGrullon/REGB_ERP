@@ -43,13 +43,29 @@ async function subir(formData: FormData): Promise<ActionResult> {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
+  const mime = file.type || 'application/octet-stream'
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      insert into public.files (tenant_id, name, mime, size_bytes, content, uploaded_by)
-      values (${ctx.tenantId}, ${file.name}, ${file.type || 'application/octet-stream'},
-              ${file.size}, ${buffer}, ${ctx.userId})`
-  })
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [f] = await tx<{ id: string }[]>`
+        insert into public.files (tenant_id, name, mime, size_bytes, content, uploaded_by)
+        values (${ctx.tenantId}, ${file.name}, ${mime},
+                ${file.size}, ${buffer}, ${ctx.userId})
+        returning id`
+
+      // Misma transaccion que el archivo. SIN el nombre: "cedula-maria-
+      // perez.pdf" es un dato personal y el evento viaja a webhooks de
+      // terceros. Quien lo necesite lo lee por el id, bajo RLS.
+      await tx`
+        select public.emit_event('files.file.uploaded',
+          ${JSON.stringify({ fileId: f!.id, mime, sizeBytes: file.size })}::text::jsonb, 'files')`
+    })
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, ''),
+    }
+  }
 
   revalidatePath('/archivos')
   return { ok: true }

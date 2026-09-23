@@ -5,6 +5,7 @@ import { dunningBanner } from '@regb/billing'
 import { GlobalSearch, type SearchEntry } from './GlobalSearch'
 import { Aviso } from './Aviso'
 import { Navegacion } from './Navegacion'
+import { TemaToggle } from './TemaToggle'
 import type { Aviso as AvisoDato } from '@/lib/aviso-comun'
 import { GuiaFlotante, type PasoGuia } from '@/components/GuiaFlotante'
 import {
@@ -88,8 +89,18 @@ export interface ShellProps {
  */
 const GROUP_TITLES: Record<string, string> = {
   inicio: '',
-  operacion: 'Operacion',
-  administracion: 'Administracion',
+  // Areas de negocio: las mismas del marketplace, para que un modulo se
+  // busque en el mismo sitio en los dos lugares.
+  ventas: 'Ventas y clientes',
+  inventario: 'Inventario y compras',
+  finanzas: 'Finanzas e impuestos',
+  rrhh: 'Recursos humanos',
+  produccion: 'Producción',
+  proyectos: 'Proyectos y servicios',
+  industria: 'Tu industria',
+  // Lo que no es de un area: BI, copiloto, chat, automatizaciones, API.
+  operacion: 'Herramientas',
+  administracion: 'Administración',
   datos: 'Datos',
   ayuda: 'Ayuda',
 }
@@ -201,7 +212,9 @@ export function Shell({
             {/* Controles de la demostracion */}
             {demoMode && (
               <>
-                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] sm:flex">
+                {/* Los cortes son de ancho real: a 1024 px Rol + Plataforma
+                    + busqueda no caben y se montaban sobre la campana. */}
+                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] xl:flex">
                   Rol
                   <select
                     value={activeRole}
@@ -215,7 +228,7 @@ export function Shell({
                     ))}
                   </select>
                 </label>
-                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] lg:flex">
+                <label className="hidden items-center gap-1.5 text-xs text-[var(--color-text-muted)] 2xl:flex">
                   Plataforma
                   <select
                     value={activePlatform}
@@ -233,6 +246,7 @@ export function Shell({
         }
         actions={
           <>
+            <TemaToggle />
             <a
               href={`/notificaciones${qs}`}
               aria-label={`Notificaciones${data.unread ? `: ${data.unread} sin leer` : ''}`}
@@ -265,6 +279,7 @@ export function Shell({
       {impersonating && (
         <div
           role="alert"
+          data-bajo-la-cabecera
           className="flex h-9 shrink-0 items-center justify-center gap-2 bg-[var(--color-accent-plum)] px-4 text-xs font-medium text-white"
         >
           <Icon name="visibility" size={16} /> Estas viendo los datos de {data.tenant.name} como
@@ -278,6 +293,7 @@ export function Shell({
       {mora && (
         <div
           role="alert"
+          data-bajo-la-cabecera
           className="flex min-h-9 shrink-0 items-center justify-center gap-2 px-4 py-1.5 text-xs font-medium"
           style={{
             // Mismo par fondo-suave/texto-semantico que Badge: contraste AA

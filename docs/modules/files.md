@@ -71,9 +71,18 @@ RLS. Un archivo en la papelera no se descarga.
 
 ## Eventos
 
-| Evento | Estado |
-|---|---|
-| `files.file.uploaded` | Declarado en el manifiesto; **ningun codigo lo emite** |
+| Evento | Cuando | Payload | Donde |
+|---|---|---|---|
+| `files.file.uploaded` | Al subir un archivo, en la **misma transaccion** que el `insert` | `{ fileId, mime, sizeBytes }` | `subir()` / `subirArchivo()` en [`archivos/actions.ts`](../../apps/web/src/app/archivos/actions.ts) |
+
+- **Sin el nombre del archivo**: "cedula-maria-perez.pdf" es un dato
+  personal y el evento puede viajar a un webhook de terceros. Tampoco el
+  contenido. Quien lo necesite lo lee por el id, bajo RLS.
+- Un archivo rechazado (vacio o de mas de 512 KB) no se guarda ni emite.
+- Mandar a la papelera y restaurar **no** emiten: no hay tema declarado.
+- Prueba: [`archivos.accion.test.ts`](../../apps/web/src/app/archivos/archivos.accion.test.ts),
+  accion real contra `event_outbox`, que ademas comprueba que el nombre no
+  aparece en el payload.
 
 ## Definicion de Terminado
 
@@ -88,7 +97,7 @@ RLS. Un archivo en la papelera no se descarga.
 | 7 | Tour ≥6 pasos | ❌ `f14.archivos` tiene 4 pasos |
 | 8 | Datos demo | ❌ la siembra no crea archivos |
 | 9 | ≥2 widgets | ❌ ninguno |
-| 10 | Eventos documentados | ⚠️ documentado aqui que el evento declarado no se emite |
+| 10 | Eventos documentados | ✅ `files.file.uploaded` se emite al subir, sin nombre ni contenido; prueba de accion real contra el outbox |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

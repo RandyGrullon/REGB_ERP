@@ -24,7 +24,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearAsientoForm } from './actions'
-import { ESTADOS } from './estados'
+import { ESTADOS, ORIGEN_ASIENTO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -36,6 +36,7 @@ interface EntryRow {
   entry_date: string
   description: string
   status: string
+  source_type: string
   total_debito: string
   lineas: string
 }
@@ -57,7 +58,7 @@ export default async function ContabilidadPage({
 
   const [asientos, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const a = await tx<EntryRow[]>`
-      select e.id, e.number, e.entry_date::text, e.description, e.status,
+      select e.id, e.number, e.entry_date::text, e.description, e.status, e.source_type,
              coalesce((select sum(l.debit) from public.journal_entry_lines l
                         where l.entry_id = e.id), 0)::text as total_debito,
              (select count(*) from public.journal_entry_lines l
@@ -91,7 +92,7 @@ export default async function ContabilidadPage({
         <PageHeader
           icon="account_balance"
           title="Asientos"
-          description="Un asiento contabilizado es inmutable: se corrige con otro asiento, nunca editandolo."
+          description="Las ventas, cobros, compras y pagos se contabilizan solos. Un asiento contabilizado es inmutable: se corrige con otro asiento, nunca editandolo."
           actions={
             <>
               <a
@@ -100,6 +101,13 @@ export default async function ContabilidadPage({
               >
                 <Icon name="account_tree" size={18} />
                 Cuentas
+              </a>
+              <a
+                href={`/contabilidad/mapa${qs}`}
+                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="alt_route" size={18} />
+                Mapa
               </a>
               <a
                 href={`/contabilidad/mayor${qs}`}
@@ -155,6 +163,7 @@ export default async function ContabilidadPage({
                 <TH>Numero</TH>
                 <TH>Fecha</TH>
                 <TH>Descripcion</TH>
+                <TH>Origen</TH>
                 <TH numeric>Lineas</TH>
                 <TH>Estado</TH>
                 <TH numeric>Total</TH>
@@ -175,6 +184,15 @@ export default async function ContabilidadPage({
                     </TD>
                     <TD>{fecha(a.entry_date)}</TD>
                     <TD className="text-[var(--color-text-primary)]">{a.description}</TD>
+                    <TD>
+                      {a.source_type === 'manual' ? (
+                        <span className="text-[var(--color-text-muted)]">Manual</span>
+                      ) : (
+                        <Badge tone="info" dot={false} title="Generado solo a partir de la operacion">
+                          {ORIGEN_ASIENTO[a.source_type] ?? a.source_type}
+                        </Badge>
+                      )}
+                    </TD>
                     <TD numeric>
                       <span className="tabular">{a.lineas}</span>
                     </TD>

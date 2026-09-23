@@ -38,6 +38,40 @@ en la práctica, se le paga a la DGII en su lugar, no al proveedor.
 `ap_invoice_balance(id)` = `total - retention_amount - pagado`, derivado
 siempre, nunca guardado — mismo principio que `invoice_balance()`.
 
+## Lo que pide el 606, pedido al registrar (0129)
+
+Hasta la 0129 `/pagar` no pedía nada de esto, y el 606 no se podía
+entregar: el TXT respondía 409 ("compra sin clasificar") sin pantalla donde
+clasificarla, y el IT-1 cobraba como ITBIS el ISR retenido.
+
+| Campo del formulario | Columna | Para qué |
+|---|---|---|
+| Fecha de emisión | `issue_date` | La que trae la factura (decide en qué 606 va), no la de hoy. Por defecto, hoy **en RD**; no se acepta una fecha futura |
+| Tipo de gasto (01–11) | `expense_type` | Campo 3 del 606. **Obligatorio si trae NCF** |
+| De eso, servicios | `services_amount` | Campos 8/9 (servicios / bienes) |
+| ITBIS retenido | `retention_amount − isr_retained` | Campo 12; entra al **IT-1** |
+| ISR retenido + tipo (01–09) | `isr_retained`, `isr_retention_type` | Campos 17/18; va al **IR-17**, no al IT-1. Sin tipo se rechaza (acción y `check isr_con_tipo`) |
+| NCF que modifica | `modified_ncf` | Campo 5, solo notas de crédito/débito |
+
+Las dos retenciones se capturan **por separado** y se guardan como hasta
+ahora: `retention_amount` es el total (lo que no se le paga al proveedor) e
+`isr_retained` la parte de ISR. El NCF del proveedor se valida por forma
+(B + 10 o E + 12 caracteres; B11 y B13 incluidos).
+
+**Facturas viejas sin clasificar:** `/pagar/:id` muestra "Datos para el 606"
+y deja completarlos (`clasificarFactura`): tipo de gasto, servicios, qué
+parte de la retención ya registrada fue ISR y su tipo, NCF modificado. No
+toca montos ni el total retenido —ya cuentan en el saldo y en los pagos—.
+
+El TXT del 606 lleva además el campo 15 (**ITBIS por adelantar**) igual al
+facturado: el sistema no modela proporcionalidad ni ITBIS llevado al costo,
+y es lo mismo que acredita el IT-1. La `fecha_pago` sale en hora de RD.
+
+**Caso probado** ([`pagar-606.accion.test.ts`](../../apps/web/src/app/pagar/pagar-606.accion.test.ts)):
+honorarios 10,000 + ITBIS 1,800, retención de ITBIS 540 e ISR 1,000 (tipo
+02). Se le pagan 10,260. El 606 sale con 540 en el campo 12 y 1,000 en el
+18; el IT-1 suma **540** de ITBIS retenido, no 1,540.
+
 ## El mismo agujero que 0040, tapado desde el primer día
 
 `supplier_payments` tiene su propio `tenant_id`, así que su RLS de
@@ -52,8 +86,8 @@ declarado en el pago antes de aceptarlo. Probado explícitamente en
 
 | Ruta | Permiso | Qué hace |
 |---|---|---|
-| `/pagar` | `ap.view` | Lista, registrar factura de proveedor |
-| `/pagar/:id` | `ap.view` | Historial de pagos, registrar pago, anular (solo sin pagos) |
+| `/pagar` | `ap.view` | Lista, registrar factura de proveedor con los datos del 606 |
+| `/pagar/:id` | `ap.view` | Historial de pagos, registrar pago, anular (solo sin pagos), clasificar para el 606 (`ap.invoice.create`) |
 
 ## Manifiesto
 

@@ -12,8 +12,14 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { calendarioFiscal, type Formulario, type ObligacionFiscal } from '@regb/operations'
+import {
+  calendarioFiscal,
+  periodoFiscal,
+  type Formulario,
+  type ObligacionFiscal,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { PUERTAS_VENTAS_DGII, primeraPuerta } from '@/lib/fiscal'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { BotonEnvio } from '@/components/BotonEnvio'
@@ -59,8 +65,8 @@ const claseInput =
 /**
  * Calendario fiscal (modulo 24): que vence, cuando, y si ya se entrego.
  *
- * NO rehace los formatos 606/607/608 -ya existen en /cobrar/dgii-: los
- * ENLAZA. El estado sale de tax_filings, que es donde alguien anota que ya
+ * NO rehace los formatos 606/607/608 -ya existen en /cobrar/dgii y, para
+ * quien solo tiene caja, en /pos/dgii-: los ENLAZA. El estado sale de tax_filings, que es donde alguien anota que ya
  * subio el archivo, porque la DGII no le avisa al sistema.
  *
  * El vencimiento solo corre de sabado o domingo al lunes. Los feriados que
@@ -76,9 +82,12 @@ export default async function CalendarioPage({
   const { ctx, shell } = await modulePage(params, 'taxes')
 
   // Por defecto el mes anterior: es el que se esta declarando ahora mismo.
+  // Contado en RD, no con el mes del servidor (UTC).
   const hoy = new Date()
-  const mesPasado = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
-  const periodoDefecto = `${mesPasado.getFullYear()}${String(mesPasado.getMonth() + 1).padStart(2, '0')}`
+  const actual = periodoFiscal(hoy)
+  const periodoDefecto = periodoFiscal(
+    new Date(Date.UTC(Number(actual.slice(0, 4)), Number(actual.slice(4, 6)) - 2, 15)),
+  )
   const periodo = /^[0-9]{6}$/.test(params.periodo ?? '') ? params.periodo! : periodoDefecto
   const siguiente = siguientePeriodo(periodo)
 
@@ -95,7 +104,9 @@ export default async function CalendarioPage({
     estados.find((e) => e.form === o.form && e.period === o.periodo)?.status ?? 'pending'
 
   const puedeRegistrar = exigir(ctx, 'taxes', 'taxes.filing.close').ok
-  const veReportes = exigir(ctx, 'ar', 'ar.export').ok
+  // La pantalla de reportes que ESTE rol puede abrir: Por cobrar o la Caja
+  // (0129). Un colmado sin `ar` tambien declara su 607.
+  const reportes = primeraPuerta(ctx, PUERTAS_VENTAS_DGII)
   const qs = ctx.demoQs
   const sep = qs === '' ? '?' : '&'
 
@@ -232,9 +243,9 @@ export default async function CalendarioPage({
                             </a>
                           ) : (
                             o.form !== 'IR-17' &&
-                            veReportes && (
+                            reportes && (
                               <a
-                                href={`/cobrar/dgii${qs}${sep}periodo=${b.periodo}`}
+                                href={`${reportes.ruta}${qs}${sep}periodo=${b.periodo}`}
                                 className="text-xs text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                               >
                                 Descargar en Reportes DGII

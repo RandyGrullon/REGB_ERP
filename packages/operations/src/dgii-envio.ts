@@ -75,6 +75,11 @@ export interface LineaVenta607 {
   rncComprador: string | null
   tipoIdentificacion: TipoIdentificacion
   ncf: string
+  /**
+   * Solo en notas de credito/debito (B04, E34): el NCF de la factura que
+   * modifican. Es lo que enlaza la nota con su factura en la DGII (0130).
+   */
+  ncfModificado?: string | null
   /** AAAAMMDD */
   fechaComprobante: string
   /** Sin ITBIS ni otros impuestos. */
@@ -132,7 +137,7 @@ export function generar607(rncEmisor: string, periodo: string, ventas: LineaVent
         v.rncComprador ?? '', //  1 RNC/Cedula del comprador
         v.tipoIdentificacion, //  2 Tipo de identificacion
         v.ncf, //                 3 NCF
-        '', //                    4 NCF modificado (solo notas de credito/debito)
+        v.ncfModificado ?? '', // 4 NCF modificado (solo notas de credito/debito)
         '1', //                   5 Tipo de ingreso: operaciones no financieras
         v.fechaComprobante, //    6 Fecha del comprobante
         '', //                    7 Fecha de retencion

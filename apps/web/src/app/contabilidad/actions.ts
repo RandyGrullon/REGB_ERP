@@ -1,9 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { PROPOSITOS_CONTABLES } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
+import { TIPO_CUENTA } from './estados'
 
 /**
  * Acciones de contabilidad (modulo 16, F6/S28-29).
@@ -208,7 +210,83 @@ export async function borrarAsiento(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+// ── Mapa contable (asientos automaticos) ────────────────────────────────
+
+/**
+ * Asigna la cuenta del catalogo que usan los asientos automaticos para un
+ * proposito ("la caja", "el ITBIS por pagar"). El tipo lo exige tambien
+ * la base (trigger de 0131); aqui se comprueba antes para decirlo en
+ * palabras del contador y no con el texto de un trigger.
+ */
+export async function guardarMapaCuenta(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
+  if (!permiso.ok) return permiso
+
+  const purpose = String(fd.get('purpose') ?? '')
+  const accountId = String(fd.get('accountId') ?? '')
+  const def = PROPOSITOS_CONTABLES.find((p) => p.proposito === purpose)
+  if (!def) return { ok: false, error: 'Ese uso de cuenta no existe.' }
+  if (!accountId) return { ok: false, error: 'Elige la cuenta.' }
+
+  const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [cuenta] = await tx<{ code: string; name: string; type: string; is_active: boolean }[]>`
+      select code, name, type, is_active from public.accounts
+      where id = ${accountId} and tenant_id = ${ctx.tenantId}`
+    if (!cuenta) return 'Esa cuenta no existe.'
+    if (!cuenta.is_active) return `La cuenta ${cuenta.code} ${cuenta.name} esta desactivada.`
+    if (cuenta.type !== def.tipo) {
+      const quiere = (TIPO_CUENTA[def.tipo] ?? def.tipo).toLowerCase()
+      const tiene = (TIPO_CUENTA[cuenta.type] ?? cuenta.type).toLowerCase()
+      return `«${def.etiqueta}» necesita una cuenta de ${quiere}; ${cuenta.code} ${cuenta.name} es de ${tiene}.`
+    }
+
+    await tx`
+      insert into public.accounting_account_map (tenant_id, purpose, account_id)
+      values (${ctx.tenantId}, ${purpose}, ${accountId})
+      on conflict (tenant_id, purpose) do update
+        set account_id = excluded.account_id, updated_at = now()`
+    return 'ok'
+  })
+
+  if (res !== 'ok') return { ok: false, error: res }
+  revalidatePath('/contabilidad/mapa')
+  return { ok: true }
+}
+
+/**
+ * Crea las cuentas del catalogo minimo que falten y asigna los usos que
+ * esten vacios. Lo mismo hace el primer asiento automatico; esto es para
+ * el que quiere verlo y ajustarlo ANTES de la primera venta.
+ */
+export async function crearCuentasPorDefecto(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
+  if (!permiso.ok) return permiso
+
+  try {
+    await asUser(ctx.userId, ctx.tenantId, (tx) =>
+      tx`select public.asegurar_mapa_contable(${ctx.tenantId})`,
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
+
+  revalidatePath('/contabilidad/mapa')
+  revalidatePath('/contabilidad/cuentas')
+  return { ok: true }
+}
+
 // ── Versiones para <form action> ────────────────────────────────────────
+export async function guardarMapaCuentaForm(fd: FormData): Promise<void> {
+  await anotarAviso(await guardarMapaCuenta(fd), 'guardarMapaCuenta')
+}
+export async function crearCuentasPorDefectoForm(fd: FormData): Promise<void> {
+  await anotarAviso(await crearCuentasPorDefecto(fd), 'crearCuentasPorDefecto')
+}
 export async function crearCuentaForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearCuenta(fd), 'crearCuenta')
 }

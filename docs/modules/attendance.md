@@ -119,6 +119,12 @@ en `db().begin()`) revertia los dos. Corregido a
 
 ## Lo que NO hace
 
+- **Llevar las horas extra a la nomina.** `payroll` no las paga todavia
+  (0132 si lleva prestamos y reembolsos): con la geocerca que no bloquea,
+  coordenadas tecleadas en la web y la entrada fija a las 8:00, un marcaje
+  no es base para pagar recargos (CT art. 203: 35% y 100%, por
+  confirmar). Primero hace falta un marcaje confiable y aprobado.
+
 - **Lector de huella digital ni ningun biometrico real.** Es hardware
   que este sistema no controla. Marca por geocerca, QR o manual.
 - **Aprobar o corregir un marcaje con flujo de excepciones.** Un

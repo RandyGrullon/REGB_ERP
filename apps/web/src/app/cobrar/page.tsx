@@ -20,8 +20,9 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { daysOverdue, lateFeeEligible } from '@regb/operations'
+import { daysOverdue, formatTaxId, isValidTaxId, lateFeeEligible } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { excepcionDelPedido, situacionDeCredito, type SituacionDeCredito } from '@/lib/credito'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import {
@@ -49,6 +50,21 @@ interface InvoiceRow {
   cobrado: string
   saldo: string
   status: string
+}
+
+interface PorFacturarRow {
+  id: string
+  number: string
+  status: string
+  customer_id: string
+  customer_name: string
+  tax_id: string | null
+  por_facturar: string
+}
+
+interface PorFacturar extends PorFacturarRow {
+  /** null = autorizado ya para este pedido, o sin nada que medir. */
+  credito: SituacionDeCredito | null
 }
 
 interface CustomerExemptRow {
@@ -83,7 +99,7 @@ export default async function CobrarPage({
                coalesce((select sum(fe.amount) from public.invoice_late_fees fe
                           where fe.invoice_id = i.id), 0)::text as mora,
                coalesce((select sum(p.amount) from public.customer_payments p
-                          where p.invoice_id = i.id), 0)::text as cobrado,
+                          where p.invoice_id = i.id and p.reversed_at is null), 0)::text as cobrado,
                public.invoice_balance(i.id)::text as saldo
         from public.customer_invoices i
         join public.customers c on c.id = i.customer_id
@@ -93,18 +109,51 @@ export default async function CobrarPage({
         order by i.due_date, i.number
         limit 200`
 
-    // Pedidos entregados que aun no se han facturado: el hueco por donde
-    // se escapa el dinero en un negocio a credito.
-    const pf = await tx<{ id: string; number: string; customer_name: string; total: string }[]>`
-        select o.id, o.number, c.name as customer_name, o.total::text
+    // Lo ENTREGADO que aun no se ha facturado: el hueco por donde se
+    // escapa el dinero en un negocio a credito. Por linea -entregado menos
+    // facturado-, asi un pedido entregado a medias muestra lo que salio y
+    // no el pedido entero; y uno cancelado con algo entregado sigue aqui
+    // hasta que eso se facture. Una factura anterior a las lineas (0130)
+    // cubrio el pedido entero.
+    const filas = await tx<PorFacturarRow[]>`
+        select o.id, o.number, o.status, o.customer_id, c.name as customer_name, c.tax_id,
+               round(sum(greatest(l.qty_delivered - coalesce(fact.qty, 0), 0)
+                         * l.unit_price * (1 - l.discount_pct / 100) * (1 + l.tax_rate)), 2)::text
+                 as por_facturar
         from public.sales_orders o
         join public.customers c on c.id = o.customer_id
-        where o.tenant_id = ${ctx.tenantId}
-          and o.status in ('delivered','partially_delivered')
-          and not exists (select 1 from public.customer_invoices i
-                           where i.source_type = 'sales_order' and i.source_id = o.id
-                             and i.status <> 'void')
-        order by o.order_date limit 20`
+        join public.sales_order_lines l on l.order_id = o.id
+        left join lateral (
+          select sum(il.qty) as qty from public.customer_invoice_lines il
+          join public.customer_invoices i on i.id = il.invoice_id
+          where il.order_line_id = l.id and i.status <> 'void'
+        ) fact on true
+        where o.tenant_id = ${ctx.tenantId} and o.status <> 'draft'
+          and not exists (
+            select 1 from public.customer_invoices i
+            where i.tenant_id = o.tenant_id and i.source_type = 'sales_order'
+              and i.source_id = o.id and i.status <> 'void'
+              and not exists (select 1 from public.customer_invoice_lines il
+                              where il.invoice_id = i.id))
+        group by o.id, o.number, o.status, o.customer_id, c.name, c.tax_id, o.order_date
+        having sum(greatest(l.qty_delivered - coalesce(fact.qty, 0), 0)) > 0
+        order by o.order_date, o.number
+        limit 50`
+
+    // El credito de cada uno, con los numeros de la accion: si aqui dice
+    // bloqueado, "Facturar" dice lo mismo. Con excepcion ya autorizada
+    // para ese pedido no hay nada que mostrar.
+    const pf: PorFacturar[] = []
+    for (const f of filas) {
+      const autorizado = await excepcionDelPedido(tx, ctx.tenantId, f.id)
+      const credito = autorizado
+        ? null
+        : await situacionDeCredito(tx, ctx.tenantId, f.customer_id, {
+            excluirPedido: f.id,
+            montoDocumento: Number(f.por_facturar),
+          })
+      pf.push({ ...f, credito })
+    }
 
     const [t] = await tx<{ porcobrar: string; vencido: string; facturas: string }[]>`
         select
@@ -130,6 +179,7 @@ export default async function CobrarPage({
   const puedeFacturar = exigir(ctx, 'ar', 'ar.invoice.create').ok
   const puedeCobrar = exigir(ctx, 'ar', 'ar.payment.record').ok
   const puedeAplicarMora = exigir(ctx, 'ar', 'ar.latefee.apply').ok
+  const puedeAutorizar = exigir(ctx, 'ar', 'ar.credit.override').ok
   const qs = ctx.demoQs
   const hoy = new Date()
 
@@ -195,33 +245,96 @@ export default async function CobrarPage({
               <CardTitle>Pedidos entregados sin facturar</CardTitle>
             </CardHeader>
             <CardBody className="space-y-2">
-              {porFacturar.map((o) => (
-                <div
-                  key={o.id}
-                  className="flex flex-wrap items-center gap-3 rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2"
-                >
-                  <Mono>{o.number}</Mono>
-                  <span className="flex-1 text-sm text-[var(--color-text-primary)]">
-                    {o.customer_name}
-                  </span>
-                  <span className="tabular text-sm font-semibold text-[var(--color-text-primary)]">
-                    RD$ {money(Number(o.total))}
-                  </span>
-                  <form action={facturarPedidoForm}>
+              {porFacturar.map((o) => {
+                const bloqueado = o.credito !== null && !o.credito.allowed
+                const rncMalo = o.tax_id !== null && !isValidTaxId(o.tax_id)
+                return (
+                  <form
+                    key={o.id}
+                    action={facturarPedidoForm}
+                    className="space-y-2 rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2"
+                  >
                     <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                     <input type="hidden" name="orderId" value={o.id} />
-                    <BotonEnvio
-                      
-                      className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                      <Icon name="receipt_long" size={16} />
-                      Facturar
-                    </BotonEnvio>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <a
+                        href={`/pedidos/${o.id}${qs}`}
+                        className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
+                        <Mono>{o.number}</Mono>
+                      </a>
+                      <span className="flex-1 text-sm text-[var(--color-text-primary)]">
+                        {o.customer_name}
+                        {o.status === 'cancelled' && (
+                          <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                            cancelado, con mercancia entregada
+                          </span>
+                        )}
+                      </span>
+                      <span className="tabular text-sm font-semibold text-[var(--color-text-primary)]">
+                        RD$ {money(Number(o.por_facturar))}
+                      </span>
+                      <select
+                        name="ncfType"
+                        defaultValue=""
+                        aria-label={`Comprobante para ${o.number}`}
+                        className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                      >
+                        <option value="">
+                          {o.tax_id && !rncMalo ? 'Automatico (B01)' : 'Automatico'}
+                        </option>
+                        <option value="B01">Credito fiscal (B01)</option>
+                        <option value="B02">Consumo (B02)</option>
+                      </select>
+                      {!bloqueado && (
+                        <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                          <Icon name="receipt_long" size={16} />
+                          Facturar
+                        </BotonEnvio>
+                      )}
+                    </div>
+                    {rncMalo && (
+                      <p className="text-xs text-[var(--color-semantic-text-danger)]">
+                        El RNC {formatTaxId(o.tax_id!)} no es valido: corrigelo en la ficha del cliente
+                        para emitir B01, o elige Consumo (B02) si es consumidor final.
+                      </p>
+                    )}
+                    {bloqueado && (
+                      <div className="space-y-2">
+                        <p className="text-xs text-[var(--color-semantic-text-danger)]">
+                          {o.credito!.mensaje}
+                        </p>
+                        {puedeAutorizar ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <input type="hidden" name="creditOverride" value="1" />
+                            <input
+                              name="overrideReason"
+                              required
+                              minLength={4}
+                              placeholder="Motivo de la excepcion"
+                              aria-label={`Motivo de la excepcion de credito para ${o.number}`}
+                              className="h-9 min-w-56 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            />
+                            <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              <Icon name="verified_user" size={16} />
+                              Facturar con excepcion
+                            </BotonEnvio>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-[var(--color-text-muted)]">
+                            Para facturarlo hace falta que alguien con permiso de autorizar credito
+                            lo apruebe.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </form>
-                </div>
-              ))}
+                )
+              })}
               <p className="text-xs text-[var(--color-text-muted)]">
-                El vencimiento sale de los dias de credito que el cliente tiene hoy.
+                Se factura lo entregado, no lo pedido. El vencimiento sale de los dias de credito que
+                el cliente tiene hoy.
               </p>
             </CardBody>
           </Card>

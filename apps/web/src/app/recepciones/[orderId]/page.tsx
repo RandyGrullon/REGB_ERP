@@ -21,7 +21,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { registrarDevolucionForm, registrarRecepcionForm } from '../actions'
-import { ESTADO_DEVOLUCION } from '../estados'
+import { ESTADO_DEVOLUCION, ORIGEN_DEVOLUCION } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -51,8 +51,10 @@ interface LineaRecepcionPrevia {
   qty_accepted: string
   qty_rejected: string
   rejection_reason: string | null
-  ya_devuelto: string
-  devoluciones: { id: string; qty: string; status: string; reason: string }[]
+  /** Ya devuelto (sin cancelar), por origen: cada uno tiene su propio tope. */
+  devuelto_rechazado: string
+  devuelto_aceptado: string
+  devoluciones: { id: string; qty: string; status: string; reason: string; origin: string }[]
 }
 
 const claseInput =
@@ -88,15 +90,24 @@ export default async function RecibirOrdenPage({
       order by p.name`
 
     const prevRows = await tx<
-      (LineaRecepcionPrevia & { return_id: string | null; return_qty: string | null; return_status: string | null; return_reason: string | null })[]
+      (LineaRecepcionPrevia & {
+        return_id: string | null
+        return_qty: string | null
+        return_status: string | null
+        return_reason: string | null
+        return_origin: string | null
+      })[]
     >`
       select grl.id, p.name as product_name, grl.qty_received::text, grl.qty_accepted::text,
              grl.qty_rejected::text, grl.rejection_reason,
              coalesce((select sum(sr.qty) from public.supplier_returns sr
-                        where sr.goods_receipt_line_id = grl.id and sr.status != 'cancelled'), 0)::text
-               as ya_devuelto,
+                        where sr.goods_receipt_line_id = grl.id and sr.status != 'cancelled'
+                          and sr.origin = 'rejected'), 0)::text as devuelto_rechazado,
+             coalesce((select sum(sr.qty) from public.supplier_returns sr
+                        where sr.goods_receipt_line_id = grl.id and sr.status != 'cancelled'
+                          and sr.origin = 'accepted'), 0)::text as devuelto_aceptado,
              sr2.id as return_id, sr2.qty::text as return_qty, sr2.status as return_status,
-             sr2.reason as return_reason
+             sr2.reason as return_reason, sr2.origin as return_origin
       from public.goods_receipt_lines grl
       join public.products p on p.id = grl.product_id
       left join public.supplier_returns sr2 on sr2.goods_receipt_line_id = grl.id
@@ -113,7 +124,8 @@ export default async function RecibirOrdenPage({
         qty_accepted: r.qty_accepted,
         qty_rejected: r.qty_rejected,
         rejection_reason: r.rejection_reason,
-        ya_devuelto: r.ya_devuelto,
+        devuelto_rechazado: r.devuelto_rechazado,
+        devuelto_aceptado: r.devuelto_aceptado,
         devoluciones: [],
       }
       if (r.return_id) {
@@ -122,6 +134,7 @@ export default async function RecibirOrdenPage({
           qty: r.return_qty!,
           status: r.return_status!,
           reason: r.return_reason!,
+          origin: r.return_origin ?? 'rejected',
         })
       }
       porLinea.set(r.id, existente)
@@ -131,7 +144,9 @@ export default async function RecibirOrdenPage({
   })
 
   if (!head) notFound()
-  if (head.status !== 'confirmed' && head.status !== 'partially_received') notFound()
+  // `received` tambien entra: la ultima recepcion de una orden la cierra
+  // aunque traiga rechazos, y esos rechazos hay que poder devolverlos.
+  if (!['confirmed', 'partially_received', 'received'].includes(head.status)) notFound()
 
   const qs = ctx.demoQs
   const campos = (
@@ -206,11 +221,15 @@ export default async function RecibirOrdenPage({
                             />
                           </TD>
                           <TD numeric>
+                            {/* Vacio a proposito: en blanco = recibido - rechazado.
+                                Precargarlo con lo pedido hacia fallar cualquier
+                                recepcion parcial en la que no se tocara este campo. */}
                             <input
                               name="qtyAccepted"
-                              defaultValue={String(pendiente)}
+                              defaultValue=""
+                              placeholder="auto"
                               inputMode="decimal"
-                              aria-label={`Cantidad aceptada de ${l.name}`}
+                              aria-label={`Cantidad aceptada de ${l.name} (en blanco: recibido menos rechazado)`}
                               className={claseInput}
                             />
                           </TD>
@@ -264,8 +283,9 @@ export default async function RecibirOrdenPage({
               </form>
               <p className="px-3 pb-3 text-xs text-[var(--color-text-muted)]">
                 Deja en cero lo que no llego en este camion -no hace falta recibir todas las
-                lineas a la vez-. Solo lo aceptado entra al inventario disponible para vender; lo
-                rechazado queda fuera del on_hand hasta que se resuelva la devolucion.
+                lineas a la vez-. &ldquo;Aceptado&rdquo; en blanco es lo recibido menos lo
+                rechazado, y el costo en blanco es el cotizado. Solo lo aceptado entra al
+                inventario disponible para vender; lo rechazado nunca entra.
               </p>
             </CardBody>
           </Card>
@@ -289,10 +309,17 @@ export default async function RecibirOrdenPage({
                 </THead>
                 <TBody>
                   {previas.map((p) => {
-                    const disponible = qtyDisponibleParaDevolver(
+                    // Cada origen tiene su tope: lo rechazado (nunca entro)
+                    // y lo aceptado (entro, y sale al devolverlo).
+                    const dispRechazado = qtyDisponibleParaDevolver(
                       Number(p.qty_rejected),
-                      Number(p.ya_devuelto),
+                      Number(p.devuelto_rechazado),
                     )
+                    const dispAceptado = qtyDisponibleParaDevolver(
+                      Number(p.qty_accepted),
+                      Number(p.devuelto_aceptado),
+                    )
+                    const disponible = dispRechazado > 0 ? dispRechazado : dispAceptado
                     return (
                       <TR key={p.id}>
                         <TD className="text-[var(--color-text-primary)]">{p.product_name}</TD>
@@ -316,8 +343,10 @@ export default async function RecibirOrdenPage({
                                 <Badge
                                   key={d.id}
                                   tone={d.status === 'sent' ? 'success' : d.status === 'cancelled' ? 'neutral' : 'warning'}
+                                  title={ORIGEN_DEVOLUCION[d.origin]?.efecto}
                                 >
-                                  {d.qty} · {ESTADO_DEVOLUCION[d.status] ?? d.status}
+                                  {d.qty} {(ORIGEN_DEVOLUCION[d.origin]?.label ?? d.origin).toLowerCase()} ·{' '}
+                                  {ESTADO_DEVOLUCION[d.status] ?? d.status}
                                 </Badge>
                               ))}
                             </div>
@@ -326,6 +355,23 @@ export default async function RecibirOrdenPage({
                             <form action={registrarDevolucionForm} className="flex flex-wrap items-center gap-1">
                               {campos}
                               <input type="hidden" name="goodsReceiptLineId" value={p.id} />
+                              <select
+                                name="origin"
+                                defaultValue={dispRechazado > 0 ? 'rejected' : 'accepted'}
+                                aria-label={`Que se devuelve de ${p.product_name}`}
+                                className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
+                              >
+                                {dispRechazado > 0 && (
+                                  <option value="rejected">
+                                    Rechazado (hasta {dispRechazado}, no mueve inventario)
+                                  </option>
+                                )}
+                                {dispAceptado > 0 && (
+                                  <option value="accepted">
+                                    Ya aceptado (hasta {dispAceptado}, sale del almacen)
+                                  </option>
+                                )}
+                              </select>
                               <input
                                 name="qty"
                                 defaultValue={String(disponible)}

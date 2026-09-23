@@ -57,6 +57,20 @@ export function deriveGoodsReceiptStatus(
 
 // ── Inspeccion ────────────────────────────────────────────────────────
 
+/** Las cantidades se guardan con 3 decimales (numeric(14,3)): se compara igual. */
+const milesimas = (n: number): number => Math.round(n * 1000)
+
+/**
+ * Lo aceptado cuando el almacenista no lo escribe: lo que llego menos lo
+ * que rechazo. Antes la pantalla precargaba "Aceptado" con lo PEDIDO, y
+ * recibir 30 de 50 sin tocar ese campo reventaba la accion (50 + 0 no
+ * suma 30). Recibir menos de lo pedido es el caso normal de una
+ * recepcion parcial, no un error de captura.
+ */
+export function aceptadoPorDefecto(qtyReceived: number, qtyRejected: number): number {
+  return milesimas(qtyReceived - qtyRejected) / 1000
+}
+
 /**
  * Lo aceptado mas lo rechazado tiene que sumar exactamente lo recibido
  * -no puede desaparecer unidades entre la inspeccion y el registro-.
@@ -69,7 +83,7 @@ export function validateInspeccion(
   if (qtyAccepted < 0 || qtyRejected < 0) {
     return { ok: false, error: 'Las cantidades de inspeccion no pueden ser negativas.' }
   }
-  if (qtyAccepted + qtyRejected !== qtyReceived) {
+  if (milesimas(qtyAccepted) + milesimas(qtyRejected) !== milesimas(qtyReceived)) {
     return {
       ok: false,
       error: `Aceptado (${qtyAccepted}) + rechazado (${qtyRejected}) debe sumar lo recibido (${qtyReceived}).`,
@@ -97,10 +111,30 @@ export function transicionValidaDevolucion(
 }
 
 /**
- * Cuanto queda disponible para devolver de lo rechazado en una linea,
- * descontando lo que ya se registro en devoluciones previas -no
- * cancelaciones-. Nunca negativo.
+ * De donde sale lo que se devuelve, y por eso si mueve inventario:
+ *
+ *  - `rejected`: lo que se rechazo en la inspeccion. NUNCA entro al
+ *    on_hand (solo lo aceptado entra), asi que devolverlo no puede
+ *    restar existencia: se despacha y se documenta, sin kardex.
+ *  - `accepted`: algo que se acepto, entro al inventario, y despues
+ *    aparecio malo. Ese si sale del almacen, y solo hasta lo aceptado.
+ *
+ * Antes toda devolucion restaba existencia -tambien la de lo rechazado-,
+ * y el almacen terminaba con menos de lo que tenia en el estante
+ * (hallazgo 11 del analisis de flujo: CEM-100 de 55 a 50).
  */
-export function qtyDisponibleParaDevolver(qtyRejected: number, qtyYaDevuelta: number): number {
-  return Math.max(0, qtyRejected - qtyYaDevuelta)
+export type OrigenDevolucion = 'rejected' | 'accepted'
+
+export function devolucionMueveInventario(origen: OrigenDevolucion): boolean {
+  return origen === 'accepted'
+}
+
+/**
+ * Cuanto queda disponible para devolver de una linea, para UN origen:
+ * lo rechazado (o lo aceptado) menos lo que ya se registro en
+ * devoluciones previas de ese mismo origen -sin contar las canceladas-.
+ * Nunca negativo.
+ */
+export function qtyDisponibleParaDevolver(qtyBase: number, qtyYaDevuelta: number): number {
+  return Math.max(0, milesimas(qtyBase - qtyYaDevuelta) / 1000)
 }

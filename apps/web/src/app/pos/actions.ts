@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import {
+  discountWithinLimit,
   documentTotals,
   esMotivoDgii,
   paymentsBalance,
@@ -13,6 +14,7 @@ import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { preciosDeVenta } from '@/lib/precio'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
+import type { PosProduct } from '@/components/PosTerminal'
 
 /**
  * Acciones del punto de venta (S21).
@@ -135,13 +137,22 @@ export async function cerrarTurno(fd: FormData): Promise<ActionResult> {
 // ── Venta ────────────────────────────────────────────────────────────────
 
 /**
+ * Lo que la caja necesita saber de la venta recien cobrada: su ticket y
+ * su NCF, para ofrecer imprimirlo. Sigue siendo un `ActionResult` para
+ * quien no lo necesita (la cola del escritorio, `/api/pos/sync`).
+ */
+export type ResultadoCobro =
+  | { ok: true; venta?: { id: string; ncf: string | null; total: number } }
+  | { ok: false; error: string }
+
+/**
  * Cobra un ticket completo: lineas + pagos, todo en una transaccion.
  *
  * El carrito viaja como JSON en un campo del formulario. Asi la caja
  * funciona con un solo envio y no deja tickets a medias si el cajero
  * cierra la pestana en mitad del cobro.
  */
-export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
+export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
   const ctx = await actionCtx(demoDe(fd))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
   const permiso = exigir(ctx, 'pos', 'pos.sell')
@@ -182,7 +193,24 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
   if (carrito.some((l) => l.discountPct > 0)) {
     const pd = exigir(ctx, 'pos', 'pos.discount')
     if (!pd.ok) return pd
+
+    // El tope del rol (`pos.discount.max`, un numero en sus permisos) se
+    // comprueba AQUI y no solo en el campo: el navegador puede mandar lo
+    // que quiera. El Cajero de fabrica descuenta hasta 10%.
+    const tope = (ctx.role.permissions as Record<string, unknown>)['pos.discount.max']
+    const max = typeof tope === 'number' ? tope : null
+    const excedido = carrito.find((l) => !discountWithinLimit(l.discountPct, max))
+    if (excedido) {
+      return {
+        ok: false,
+        error: `Tu rol puede descontar hasta ${max}%. Un descuento mayor lo aplica un supervisor.`,
+      }
+    }
   }
+
+  // Un objeto y no un `let`: TypeScript no ve la asignacion dentro del
+  // callback de la transaccion y daria la variable por siempre vacia.
+  const cobro: { venta?: { id: string; ncf: string | null; total: number } } = {}
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [shift] = await tx<{ status: string; warehouse_id: string }[]>`
@@ -287,7 +315,7 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
       select id from public.ncf_sequences
       where tenant_id = ${ctx.tenantId} and ncf_type = ${tipoNcf}
         and is_active and company_id is null
-        and expires_on >= current_date
+        and expires_on >= public.hoy_fiscal()
         and next_number <= range_to
       for update`
 
@@ -339,6 +367,7 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
       select public.emit_event('pos.sale.completed',
         ${JSON.stringify({ saleId: venta!.id, total: totales.total })}::text::jsonb, 'pos')`
 
+    cobro.venta = { id: venta!.id, ncf, total: totales.total }
     return 'ok'
   })
 
@@ -354,7 +383,7 @@ export async function cobrarVenta(fd: FormData): Promise<ActionResult> {
 
   revalidatePath('/pos')
   revalidatePath('/inventory')
-  return { ok: true }
+  return cobro.venta ? { ok: true, venta: cobro.venta } : { ok: true }
 }
 
 /**
@@ -436,6 +465,109 @@ export async function cerrarTurnoForm(fd: FormData): Promise<void> {
 export async function anularVentaForm(fd: FormData): Promise<void> {
   await anotarAviso(await anularVenta(fd), 'anularVenta')
 }
+/**
+ * El cobro para `useActionState`: anota el aviso Y devuelve el resultado.
+ *
+ * La caja necesita saber si el cobro entro para vaciar el carrito. Antes
+ * lo vaciaba 100 ms despues del clic, saliera bien o mal: si la venta
+ * fallaba -un producto archivado, el turno cerrado desde otra caja- el
+ * cajero perdia el ticket armado y tenia que volver a escanear todo.
+ */
+export async function cobrarVentaAccion(
+  _previo: ResultadoCobro | null,
+  fd: FormData,
+): Promise<ResultadoCobro> {
+  const r = await cobrarVenta(fd)
+  await avisarCobro(r, fd)
+  return r
+}
+
 export async function cobrarVentaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await cobrarVenta(fd), 'cobrarVenta')
+  await avisarCobro(await cobrarVenta(fd), fd)
+}
+
+async function avisarCobro(r: ResultadoCobro, fd: FormData): Promise<void> {
+  if (!r.ok || !r.venta) {
+    await anotarAviso(r, 'cobrarVenta')
+    return
+  }
+  // Lo que el cajero hace despues de cobrar es entregar el ticket: el
+  // aviso trae el NCF y el camino para imprimirlo.
+  const { tenant, rol } = demoDe(fd)
+  const qs = tenant ? `?tenant=${tenant}&rol=${encodeURIComponent(rol ?? 'Owner')}` : ''
+  const total = r.venta.total.toLocaleString('es-DO', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  await anotarAviso(
+    r,
+    'cobrarVenta',
+    `Cobrado RD$ ${total} · ${r.venta.ncf ? `NCF ${r.venta.ncf}` : 'sin NCF'}.`,
+    { href: `/pos/ticket/${r.venta.id}${qs}`, texto: 'Ver e imprimir ticket' },
+  )
+}
+
+/**
+ * Busca en el catalogo completo un codigo que la caja no tiene cargado.
+ *
+ * La caja trae al navegador los primeros miles de productos para que
+ * agregar sea instantaneo. Una ferreteria con mas que eso escaneaba un
+ * articulo que SI existe y la caja decia "ningun producto con ese
+ * codigo". Cuando el escaneo no encuentra nada en lo cargado, pregunta
+ * aqui antes de rendirse.
+ *
+ * Solo por codigo exacto (barras o SKU), no por nombre: es la respuesta
+ * a un escaneo, no un buscador.
+ */
+export async function buscarProductoCaja(
+  codigo: string,
+  shiftId: string,
+  demo: DemoParams,
+): Promise<PosProduct | null> {
+  const ctx = await actionCtx(demo)
+  if (!ctx) return null
+  if (!exigir(ctx, 'pos', 'pos.sell').ok) return null
+  const c = codigo.trim()
+  if (c === '' || c.length > 64) return null
+
+  return asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [p] = await tx<
+      {
+        id: string
+        sku: string
+        name: string
+        unit: string
+        barcode: string | null
+        price: string
+        tax_rate: string
+        tracks_stock: boolean
+        disponible: string
+      }[]
+    >`
+      select pr.id, pr.sku, pr.name, pr.unit, pr.barcode, pr.price::text,
+             pr.tax_rate::text, pr.tracks_stock,
+             coalesce(sl.qty_on_hand - sl.qty_reserved, 0)::text as disponible
+      from public.products pr
+      left join public.pos_shifts sh
+        on sh.id = ${shiftId} and sh.tenant_id = ${ctx.tenantId}
+      left join public.stock_levels sl
+        on sl.product_id = pr.id and sl.warehouse_id = sh.warehouse_id
+       and sl.tenant_id = ${ctx.tenantId}
+      where pr.tenant_id = ${ctx.tenantId} and pr.active
+        and (pr.barcode = ${c} or lower(pr.sku) = lower(${c}))
+      order by (pr.barcode = ${c}) desc
+      limit 1`
+    if (!p) return null
+    return {
+      id: p.id,
+      sku: p.sku,
+      name: p.name,
+      unit: p.unit,
+      barcode: p.barcode,
+      price: Number(p.price),
+      taxRate: Number(p.tax_rate),
+      disponible: Number(p.disponible),
+      tracksStock: p.tracks_stock,
+    }
+  })
 }

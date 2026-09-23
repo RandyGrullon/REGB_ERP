@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   canIssue,
+  fechaFiscal,
+  periodoFiscal,
   formatNcf,
   formatTaxId,
   isElectronic,
@@ -113,5 +115,32 @@ describe('secuencias autorizadas', () => {
 
   it('una secuencia sana si permite emitir', () => {
     expect(canIssue(base, hoy)).toBe(true)
+  })
+})
+
+describe('Fecha fiscal: el dia que cuenta es el de Santo Domingo, no el del servidor', () => {
+  // 30 de septiembre a las 9:00 p. m. en RD = 1 de octubre 01:00 UTC. En
+  // UTC la venta caia en octubre: se declaraba en el 607 y el IT-1 del mes
+  // equivocado.
+  const nueveDeLaNoche = new Date('2026-10-01T01:00:00Z')
+
+  it('una venta a las 9 p. m. del 30 es del 30, no del 1', () => {
+    expect(fechaFiscal(nueveDeLaNoche)).toBe('2026-09-30')
+    expect(periodoFiscal(nueveDeLaNoche)).toBe('202609')
+  })
+
+  it('a las 8 p. m. en punto ya NO es el dia siguiente, a medianoche de RD si', () => {
+    expect(fechaFiscal(new Date('2026-10-01T00:00:00Z'))).toBe('2026-09-30')
+    expect(fechaFiscal(new Date('2026-10-01T03:59:59Z'))).toBe('2026-09-30')
+    expect(fechaFiscal(new Date('2026-10-01T04:00:00Z'))).toBe('2026-10-01')
+  })
+
+  it('el cambio de año tambien respeta la hora de RD', () => {
+    expect(periodoFiscal(new Date('2027-01-01T02:30:00Z'))).toBe('202612')
+  })
+
+  it('no depende de la zona del proceso: devuelve componentes, no toISOString', () => {
+    // Si usara toISOString() daria el dia UTC, que es justo el error.
+    expect(fechaFiscal(nueveDeLaNoche)).not.toBe(nueveDeLaNoche.toISOString().slice(0, 10))
   })
 })

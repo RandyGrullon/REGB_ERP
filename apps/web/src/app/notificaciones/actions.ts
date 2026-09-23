@@ -5,7 +5,14 @@ import { asUser } from '@/lib/db'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
 import { anotarAviso } from '@/lib/aviso'
 
-/** Acciones del modulo `notifications` (S10). */
+/**
+ * Acciones del modulo `notifications` (S10).
+ *
+ * Marcar como leido escribe una LECTURA de quien lo pide, no toca el
+ * aviso (0125). Un aviso de equipo que lee el cajero sigue sin leer para
+ * el gerente. Quien es quien sale de la sesion via `asUser` -la base lo
+ * lee de `rls.regb_uid()`-, nunca del formulario.
+ */
 
 function demoDe(formData: FormData) {
   return {
@@ -23,13 +30,16 @@ async function leerUna(formData: FormData): Promise<ActionResult> {
   const id = String(formData.get('id') ?? '')
   if (!id) return { ok: false, error: 'Falta la notificacion.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      update public.notifications set read_at = now()
-      where id = ${id} and tenant_id = ${ctx.tenantId}
-        and (user_id = ${ctx.userId} or user_id is null)
-        and read_at is null`
-  })
+  // Un id que no es un uuid haria saltar la conversion en la base con un
+  // error de sintaxis; para quien pulsa es lo mismo que un aviso ajeno.
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+    return { ok: false, error: 'Ese aviso no existe.' }
+  }
+
+  // `false` si ya estaba leido (doble clic) o si no es suyo ni del equipo.
+  // Lo segundo no se distingue a proposito: decir "es de otro" confirma
+  // que el id existe.
+  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.marcar_aviso_leido(${id})`)
 
   revalidatePath('/notificaciones')
   return { ok: true }
@@ -41,13 +51,7 @@ async function leerTodas(formData: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'notifications', 'notifications.edit')
   if (!permiso.ok) return permiso
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      update public.notifications set read_at = now()
-      where tenant_id = ${ctx.tenantId}
-        and (user_id = ${ctx.userId} or user_id is null)
-        and read_at is null`
-  })
+  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.marcar_avisos_leidos()`)
 
   revalidatePath('/notificaciones')
   return { ok: true }

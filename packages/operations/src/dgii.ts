@@ -160,6 +160,73 @@ export function formatTaxId(raw: string): string {
   return raw
 }
 
+// ── Que comprobante lleva una factura de credito ─────────────────────────
+
+/** Lo que pide quien factura. `auto` = decidelo por el RNC del cliente. */
+export type InvoiceNcfRequest = 'auto' | 'B01' | 'B02'
+
+export type InvoiceNcfDecision =
+  | {
+      ok: true
+      tipo: 'B01' | 'B02'
+      /** El RNC que viaja al 607, en digitos. null si no hay uno valido. */
+      buyerTaxId: string | null
+    }
+  | { ok: false; code: 'missing-tax-id' | 'invalid-tax-id'; error: string }
+
+/**
+ * Decide B01 o B02 SIN adivinar en silencio.
+ *
+ * Antes: RNC valido -> B01; cualquier otra cosa -> B02. Un cliente con
+ * el RNC mal digitado pedia credito fiscal y recibia consumo sin que
+ * nadie se enterara, hasta que su contador reclamaba el ITBIS que no se
+ * pudo descontar.
+ *
+ * Ahora:
+ *  - `B02` pedido a proposito: se emite consumo. Un RNC invalido no viaja
+ *    al 607 (lo rebotaria entero); uno valido si, porque es informacion.
+ *  - `B01` pedido: sin RNC valido es un error que dice por que.
+ *  - `auto`: sin RNC, consumo (el consumidor final de siempre); con RNC
+ *    valido, credito fiscal; con RNC INVALIDO, error: el cliente dio un
+ *    RNC porque queria credito fiscal, y darle otra cosa sin avisar es
+ *    exactamente el bug.
+ */
+export function chooseInvoiceNcf(
+  requested: InvoiceNcfRequest,
+  taxIdRaw: string | null,
+): InvoiceNcfDecision {
+  const digitos = taxIdRaw ? normalizeTaxId(taxIdRaw) : ''
+  const tiene = digitos !== ''
+  const valido = tiene && isValidTaxId(digitos)
+
+  const invalido = (): InvoiceNcfDecision => ({
+    ok: false,
+    code: 'invalid-tax-id',
+    error:
+      `El RNC/cedula del cliente (${formatTaxId(taxIdRaw ?? '')}) no es valido: el digito ` +
+      'verificador no cuadra, y la DGII rechazaria el credito fiscal en el 607. Corrigelo en la ' +
+      'ficha del cliente, o elige "Consumo (B02)" si de verdad es consumidor final.',
+  })
+
+  if (requested === 'B02') return { ok: true, tipo: 'B02', buyerTaxId: valido ? digitos : null }
+
+  if (requested === 'B01') {
+    if (!tiene) {
+      return {
+        ok: false,
+        code: 'missing-tax-id',
+        error:
+          'Para credito fiscal (B01) el cliente necesita RNC o cedula y no tiene ninguno ' +
+          'registrado. Agregalo en su ficha, o factura como consumo (B02).',
+      }
+    }
+    return valido ? { ok: true, tipo: 'B01', buyerTaxId: digitos } : invalido()
+  }
+
+  if (!tiene) return { ok: true, tipo: 'B02', buyerTaxId: null }
+  return valido ? { ok: true, tipo: 'B01', buyerTaxId: digitos } : invalido()
+}
+
 // ── Secuencias autorizadas ───────────────────────────────────────────────
 
 export interface NcfSequenceState {
@@ -197,4 +264,35 @@ export function sequenceHealth(s: NcfSequenceState, asOf: Date, umbralAviso = 50
 export function canIssue(s: NcfSequenceState, asOf: Date): boolean {
   const h = sequenceHealth(s, asOf)
   return !h.agotada && !h.vencida
+}
+
+// ── Fecha fiscal ─────────────────────────────────────────────────────────
+
+/**
+ * Republica Dominicana no cambia de hora: UTC-4 todo el año. Offset fijo,
+ * igual que `horaEsperadaEnRD()` en attendance.ts, porque el servidor
+ * corre en UTC y `toISOString()` / `getMonth()` darian el dia del servidor.
+ *
+ * Es la MISMA regla que `public.fecha_fiscal()` en la base (0129). Si se
+ * toca una, se toca la otra: el 607 lo arma la base y la pantalla elige el
+ * periodo con esta.
+ */
+const OFFSET_FISCAL_MS = -4 * 3_600_000
+
+/**
+ * El dia calendario en Santo Domingo, como `AAAA-MM-DD`.
+ *
+ * Una venta del 30 a las 9 p. m. es del 30: en UTC ya es el 1 y caia en
+ * el 607 y el IT-1 del mes siguiente.
+ */
+export function fechaFiscal(momento: Date): string {
+  const rd = new Date(momento.getTime() + OFFSET_FISCAL_MS)
+  const mes = String(rd.getUTCMonth() + 1).padStart(2, '0')
+  const dia = String(rd.getUTCDate()).padStart(2, '0')
+  return `${rd.getUTCFullYear()}-${mes}-${dia}`
+}
+
+/** El periodo DGII (`AAAAMM`) del momento, contado en Santo Domingo. */
+export function periodoFiscal(momento: Date): string {
+  return fechaFiscal(momento).slice(0, 7).replace('-', '')
 }

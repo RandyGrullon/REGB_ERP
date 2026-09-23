@@ -13,8 +13,11 @@ import {
 } from '@regb/ui'
 import { buildAging, type AgingBucket, type OpenInvoice } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { politicaDeCredito } from '@/lib/credito'
+import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { BotonEnvio } from '@/components/BotonEnvio'
+import { guardarPoliticaDeCreditoForm } from '../actions'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Cartera · REGB ERP' }
@@ -75,6 +78,11 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
     hoy,
   )
 
+  const politica = await asUser(ctx.userId, ctx.tenantId, (tx) =>
+    politicaDeCredito(tx, ctx.tenantId),
+  )
+  const puedeFijarPolitica = exigir(ctx, 'ar', 'ar.credit.manage').ok
+
   const qs = ctx.demoQs
   const maximo = Math.max(...TRAMOS.map((t) => aging.byBucket[t.key]), 1)
 
@@ -96,6 +104,46 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
             value={String(aging.byCustomer.length)}
             hint="con saldo abierto"
           />
+        </section>
+
+        <section
+          aria-label="Politica de credito"
+          className="flex flex-wrap items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
+        >
+          <div className="min-w-0 flex-1 space-y-1">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Politica de credito
+            </h2>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {politica === null
+                ? 'No se bloquea por facturas vencidas: solo por el limite de cada cliente.'
+                : `Un cliente con una factura vencida hace mas de ${politica} dias no recibe pedidos ni facturas a credito nuevas sin una excepcion autorizada.`}
+            </p>
+          </div>
+          {puedeFijarPolitica && (
+            <form action={guardarPoliticaDeCreditoForm} className="flex items-center gap-2">
+              <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+              <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+              <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                Bloquear despues de
+                <input
+                  name="overdueDays"
+                  inputMode="numeric"
+                  defaultValue={politica === null ? '' : String(politica)}
+                  placeholder="no bloquear"
+                  aria-describedby="politica-ayuda"
+                  className="tabular h-9 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-sm text-[var(--color-text-primary)]"
+                />
+                dias
+              </label>
+              <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                Guardar
+              </BotonEnvio>
+              <span id="politica-ayuda" className="sr-only">
+                De 1 a 365 dias. Vacio para no bloquear por vencidas.
+              </span>
+            </form>
+          )}
         </section>
 
         {abiertas.length === 0 ? (

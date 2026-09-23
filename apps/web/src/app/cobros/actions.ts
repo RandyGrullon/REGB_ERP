@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
+import { mensajeLegible, sinExcepciones } from '@/lib/accion-segura'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
@@ -53,8 +54,7 @@ export async function crearLink(fd: FormData): Promise<ActionResult> {
           ${JSON.stringify({ amount, description })}::text::jsonb, 'payments')`
     })
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error inesperado'
-    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+    return { ok: false, error: mensajeLegible(e) }
   }
 
   revalidatePath('/cobros')
@@ -81,8 +81,7 @@ export async function confirmarPago(fd: FormData): Promise<ActionResult> {
           ${JSON.stringify({ linkId, amount })}::text::jsonb, 'payments')`
     })
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error inesperado'
-    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+    return { ok: false, error: mensajeLegible(e) }
   }
 
   revalidatePath('/cobros')
@@ -91,20 +90,22 @@ export async function confirmarPago(fd: FormData): Promise<ActionResult> {
 
 /** Cancela un link pendiente. */
 export async function cancelarLink(fd: FormData): Promise<ActionResult> {
-  const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
-  const permiso = exigir(ctx, 'payments', 'payments.link.confirm')
-  if (!permiso.ok) return permiso
+  return sinExcepciones('cancelarLink', async () => {
+    const ctx = await actionCtx(demoDe(fd))
+    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    const permiso = exigir(ctx, 'payments', 'payments.link.confirm')
+    if (!permiso.ok) return permiso
 
-  const linkId = String(fd.get('linkId') ?? '')
-  if (!linkId) return { ok: false, error: 'Falta el link.' }
+    const linkId = String(fd.get('linkId') ?? '')
+    if (!linkId) return { ok: false, error: 'Falta el link.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-    update public.payment_links set status = 'canceled'
-    where id = ${linkId} and tenant_id = ${ctx.tenantId} and status = 'pending'`)
+    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+      update public.payment_links set status = 'canceled'
+      where id = ${linkId} and tenant_id = ${ctx.tenantId} and status = 'pending'`)
 
-  revalidatePath('/cobros')
-  return { ok: true }
+    revalidatePath('/cobros')
+    return { ok: true }
+  })
 }
 
 /** Crea un cobro recurrente. */
@@ -134,8 +135,7 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
         (tenant_id, customer_id, amount, description, frequency, next_charge_date)
       values (${ctx.tenantId}, ${customerId}, ${amount}, ${description}, ${frequency}, ${nextChargeDate})`)
   } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Error inesperado'
-    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+    return { ok: false, error: mensajeLegible(e) }
   }
 
   revalidatePath('/cobros')
@@ -144,15 +144,17 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
 
 /** Genera los links de los cobros recurrentes ya vencidos. */
 export async function correrRecurrentes(fd: FormData): Promise<ActionResult> {
-  const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
-  const permiso = exigir(ctx, 'payments', 'payments.recurring.create')
-  if (!permiso.ok) return permiso
+  return sinExcepciones('correrRecurrentes', async () => {
+    const ctx = await actionCtx(demoDe(fd))
+    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    const permiso = exigir(ctx, 'payments', 'payments.recurring.create')
+    if (!permiso.ok) return permiso
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.run_recurring_charges(${ctx.tenantId})`)
+    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.run_recurring_charges(${ctx.tenantId})`)
 
-  revalidatePath('/cobros')
-  return { ok: true }
+    revalidatePath('/cobros')
+    return { ok: true }
+  })
 }
 
 // ── Versiones para <form action> ────────────────────────────────────────

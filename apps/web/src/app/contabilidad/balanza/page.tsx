@@ -1,8 +1,9 @@
 import { Badge, Icon, Mono, PageHeader, StatCard, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
-import { buildTrialBalance, type AccountType, type TrialBalanceRow } from '@regb/operations'
+import { buildTrialBalance } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { filasBalanza } from '../consultas'
 import { TIPO_CUENTA } from '../estados'
 
 export const dynamic = 'force-dynamic'
@@ -24,32 +25,9 @@ export default async function BalanzaPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'accounting')
 
-  const filas = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    (tx) => tx<(TrialBalanceRow & { total_debit: string; total_credit: string })[]>`
-      select a.id as "accountId", a.code as "accountCode", a.name as "accountName", a.type,
-             coalesce(sum(l.debit), 0)::text as total_debit,
-             coalesce(sum(l.credit), 0)::text as total_credit
-      from public.accounts a
-      left join public.journal_entry_lines l on l.account_id = a.id
-      left join public.journal_entries e on e.id = l.entry_id and e.status = 'posted'
-      where a.tenant_id = ${ctx.tenantId} and a.is_active
-      group by a.id, a.code, a.name, a.type
-      having coalesce(sum(l.debit), 0) <> 0 or coalesce(sum(l.credit), 0) <> 0
-      order by a.code`,
-  )
-
-  const balanza = buildTrialBalance(
-    filas.map((f) => ({
-      accountId: f.accountId,
-      accountCode: f.accountCode,
-      accountName: f.accountName,
-      type: f.type as AccountType,
-      totalDebit: Number(f.total_debit),
-      totalCredit: Number(f.total_credit),
-    })),
-  )
+  const filas = await asUser(ctx.userId, ctx.tenantId, (tx) => filasBalanza(tx, ctx.tenantId))
+  const inactivas = new Set(filas.filter((f) => !f.isActive).map((f) => f.accountId))
+  const balanza = buildTrialBalance(filas)
 
   const qs = ctx.demoQs
 
@@ -113,6 +91,11 @@ export default async function BalanzaPage({
                     >
                       <Mono>{r.accountCode}</Mono> {r.accountName}
                     </a>
+                    {inactivas.has(r.accountId) && (
+                      <Badge tone="neutral" dot={false} className="ml-1" title="Desactivada, pero con saldo">
+                        desactivada
+                      </Badge>
+                    )}
                   </TD>
                   <TD>{TIPO_CUENTA[r.type] ?? r.type}</TD>
                   <TD numeric>

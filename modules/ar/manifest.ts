@@ -15,7 +15,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 50,
 
   pricing: {
@@ -32,7 +32,15 @@ export default defineModule({
     'ar.invoice.create',
     'ar.invoice.void',
     'ar.payment.record',
+    // Reversar un cobro mal registrado (no se borra: queda tachado, con motivo).
+    'ar.payment.reverse',
     'ar.latefee.apply',
+    // Nota de credito B04: devolucion o rebaja sobre una factura.
+    'ar.creditnote.create',
+    // Fijar el limite de credito de un cliente y la politica de dias vencidos.
+    'ar.credit.manage',
+    // Vender a credito por encima del limite o con vencidas: queda firmado.
+    'ar.credit.override',
     'ar.export',
   ],
 
@@ -47,13 +55,27 @@ export default defineModule({
     },
     { path: '/cobrar/dgii', label: 'Reportes DGII', perm: 'ar.export', icon: 'account_balance' },
     { path: '/cobrar/:id', label: 'Factura', perm: 'ar.view', hidden: true },
+    { path: '/cobrar/:id/imprimir', label: 'Imprimir factura', perm: 'ar.view', hidden: true },
   ],
 
   dashboardWidgets: ['overdue-receivables', 'aging-summary'],
   reports: ['aging-report', 'customer-statement'],
 
   events: {
-    emits: ['ar.invoice.issued', 'ar.invoice.paid', 'ar.invoice.overdue'],
+    emits: [
+      'ar.invoice.issued',
+      'ar.invoice.paid',
+      'ar.invoice.overdue',
+      // Desde la tabla (0131): cada cobro, cada anulacion y cada cargo por
+      // mora, por cualquier camino que escriba la fila.
+      'ar.payment.received',
+      'ar.invoice.voided',
+      'ar.late-fee.applied',
+      // Desde las acciones de cobrar (0130).
+      'ar.payment.reversed',
+      'ar.credit-note.issued',
+      'ar.credit.overridden',
+    ],
     listens: ['sales-orders.order.delivered'],
   },
 

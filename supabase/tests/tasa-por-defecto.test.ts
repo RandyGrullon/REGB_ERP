@@ -269,7 +269,8 @@ describe('El catalogo del marketplace dice lo que ahora hace', () => {
       select features->0->>'detalle' as f, faq::text as faq
       from regb.module_catalog where id = 'taxes'`
     expect(c!.f).toMatch(/nace con esa tasa/)
-    expect(c!.f).not.toMatch(/Todavia no alimentan/)
-    expect(c!.faq).not.toMatch(/Todavia no\. El catalogo/)
+    // Con o sin tildes (0134): lo que no debe volver es la frase, no su ortografia.
+    expect(c!.f).not.toMatch(/Todav[ií]a no alimentan/)
+    expect(c!.faq).not.toMatch(/Todav[ií]a no\. El cat[aá]logo/)
   })
 })

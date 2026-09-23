@@ -4,19 +4,28 @@ import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
 import { actionCtx, exigir } from '@/lib/module-page'
 import { anotarAviso } from '@/lib/aviso'
+import { alcanceDelRespaldo } from './alcance'
 
 /**
- * Respaldos (S11): un snapshot JSON de los datos del tenant, hecho bajo
- * RLS — el respaldo NO puede contener nada que el tenant no vea.
+ * Respaldos (S11): una copia COMPLETA de los datos del cliente, hecha bajo
+ * su RLS -el respaldo no puede contener nada que el cliente no vea- y
+ * acotada a los modulos que el rol ve completos (ver `alcance.ts`).
  *
- * TRAMPA DEL DRIVER — leer antes de tocar esto.
+ * Todo el trabajo lo hace `public.crear_respaldo()` (0122), en una sola
+ * transaccion y sin pasar los datos por JavaScript:
  *
- * El snapshot se arma y se inserta en UNA sola sentencia, sin traerlo a
- * JavaScript. Si se trae y se reenvia con `${JSON.stringify(obj)}::jsonb`,
- * postgres.js vuelve a serializar el valor al ver que el destino es jsonb
- * y Postgres acaba guardando un jsonb de tipo *string* (el JSON entero
- * entrecomillado), no un objeto: `jsonb_object_keys` falla y el archivo
- * descargado sale con comillas escapadas.
+ *  - Deriva las tablas del catalogo -toda tabla de `public` con
+ *    `tenant_id`-, asi que un modulo nuevo entra solo.
+ *  - Las guarda por partes en `backup_parts` (un jsonb con el negocio
+ *    entero de un cliente grande revienta el limite de jsonb).
+ *  - Escribe el indice en `backups.payload`: que tablas trae y cuantas
+ *    filas, que queda fuera y por que, que columnas no salen. Es la
+ *    cabecera del JSON que se descarga.
+ *  - Emite `backup.snapshot.created`.
+ *
+ * Antes de 0122 esta accion armaba seis tablas a mano -empresas,
+ * sucursales, roles, equipo, productos, configuracion- y el aviso le
+ * decia al cliente que ahi estaban sus ventas.
  */
 export async function crearRespaldo(formData: FormData): Promise<void> {
   const ctx = await actionCtx({
@@ -33,33 +42,36 @@ export async function crearRespaldo(formData: FormData): Promise<void> {
     return
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      with snapshot as (
-        select jsonb_build_object(
-          'exportado_en', now(),
-          'empresas',  (select coalesce(jsonb_agg(to_jsonb(c) - 'tenant_id'), '[]'::jsonb)
-                          from public.companies c
-                          where c.tenant_id = ${ctx.tenantId} and c.deleted_at is null),
-          'sucursales',(select coalesce(jsonb_agg(to_jsonb(b) - 'tenant_id'), '[]'::jsonb)
-                          from public.branches b
-                          where b.tenant_id = ${ctx.tenantId} and b.deleted_at is null),
-          'roles',     (select coalesce(jsonb_agg(to_jsonb(r) - 'tenant_id'), '[]'::jsonb)
-                          from public.roles r where r.tenant_id = ${ctx.tenantId}),
-          'equipo',    (select coalesce(jsonb_agg(to_jsonb(p) - 'tenant_id'), '[]'::jsonb)
-                          from public.user_profiles p where p.tenant_id = ${ctx.tenantId}),
-          'productos', (select coalesce(jsonb_agg(to_jsonb(pr) - 'tenant_id'), '[]'::jsonb)
-                          from public.products pr where pr.tenant_id = ${ctx.tenantId}),
-          'configuracion', (select to_jsonb(s) - 'tenant_id'
-                          from public.tenant_settings s where s.tenant_id = ${ctx.tenantId})
-        ) as data
-      )
-      insert into public.backups (tenant_id, kind, payload, size_bytes, created_by)
-      select ${ctx.tenantId}, 'manual', s.data,
-             octet_length(s.data::text), ${ctx.userId}
-      from snapshot s`
-  })
+  const alcance = alcanceDelRespaldo(ctx)
+  if (alcance.bloqueo) {
+    await anotarAviso({ ok: false, error: alcance.bloqueo }, 'crearRespaldo')
+    return
+  }
+
+  try {
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.crear_respaldo(${alcance.modulos}::text[], 'manual')`,
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'error inesperado'
+    await anotarAviso(
+      { ok: false, error: `No pudimos crear el respaldo: ${msg.replace(/^.*ERROR:\s*/, '')}` },
+      'crearRespaldo',
+    )
+    return
+  }
 
   revalidatePath('/respaldos')
-  await anotarAviso({ ok: true }, 'crearRespaldo', 'Listo, creamos el respaldo.')
+  // Lo que el rol deja fuera se dice YA, no solo en la pantalla: es justo
+  // lo que alguien no espera que falte.
+  const faltan = alcance.fuera.map((f) => f.nombre)
+  await anotarAviso(
+    { ok: true },
+    'crearRespaldo',
+    faltan.length === 0
+      ? 'Listo, creamos el respaldo. Descargalo y guardalo fuera de aqui.'
+      : `Listo, creamos el respaldo, pero NO trae ${faltan.join(', ')}: tu rol no lo ve completo.`,
+  )
 }

@@ -10,11 +10,15 @@ import { resolverMiEmpleado } from './mi-empleado'
 /**
  * Acciones del portal del empleado (modulo 70, F7/S40).
  *
- * Toda accion aqui empieza resolviendo el expediente propio por correo
- * -nunca opera sobre un employeeId que venga del formulario-, para que
+ * Toda accion aqui empieza resolviendo el expediente propio por el
+ * vinculo que asigno RRHH (`employees.user_id`, 0132) -nunca por correo,
+ * y nunca opera sobre un employeeId que venga del formulario-, para que
  * nadie pueda pedir vacaciones o editar el telefono de otro empleado
  * con solo cambiar un id en el request.
  */
+
+const SIN_VINCULO =
+  'Tu cuenta no esta vinculada a ningun expediente. Pide a RRHH que la vincule desde Empleados.'
 
 function demoDe(fd: FormData): DemoParams {
   return {
@@ -33,11 +37,14 @@ export async function editarMiTelefono(fd: FormData): Promise<ActionResult> {
   const phone = String(fd.get('phone') ?? '').trim() || null
 
   try {
+    // Por el token (0132): con el rol real en los claims, el rol Empleado
+    // no puede tocar `employees` -ni debe-; la funcion edita SOLO el
+    // expediente vinculado a esta cuenta, sin recibir ningun id.
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-      const yo = await resolverMiEmpleado(tx, ctx.tenantId, ctx.userId)
-      if (!yo) throw new Error('No encontramos un expediente vinculado a tu correo.')
+      const yo = await resolverMiEmpleado(tx)
+      if (!yo) throw new Error(SIN_VINCULO)
 
-      await tx`update public.employees set phone = ${phone}, updated_at = now() where id = ${yo.id}`
+      await tx`select public.editar_mi_telefono(${phone})`
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -74,8 +81,8 @@ export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> 
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-      const yo = await resolverMiEmpleado(tx, ctx.tenantId, ctx.userId)
-      if (!yo) throw new Error('No encontramos un expediente vinculado a tu correo.')
+      const yo = await resolverMiEmpleado(tx)
+      if (!yo) throw new Error(SIN_VINCULO)
 
       await tx`
         insert into public.time_off_requests

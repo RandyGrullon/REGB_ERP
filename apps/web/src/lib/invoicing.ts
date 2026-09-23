@@ -3,7 +3,7 @@ import 'server-only'
 import { db } from './db'
 import { loadTenantsWithModules, quoteTenant } from './control'
 import { fromCents, roundBankers } from '@regb/core'
-import { isoDate, monthlyPeriod } from '@regb/billing'
+import { invoiceDueDate, isoDate, monthlyPeriod } from '@regb/billing'
 
 /**
  * Generacion de facturas (S16).
@@ -14,6 +14,11 @@ import { isoDate, monthlyPeriod } from '@regb/billing'
  *  7. Idempotente: el indice unico (tenant, periodo) hace que generar dos
  *     veces el mismo mes NO cree dos facturas. Se comprueba antes de pedir
  *     numero para no quemar numeracion, y el indice respalda la carrera.
+ *
+ * Desde 0128 la factura es la formula completa -uso medido, ITBIS e
+ * instalacion de lo recien activado- y es la MISMA cotizacion que REGB
+ * Control ensena como "proxima factura" (`quoteTenant(...).invoice`).
+ * Vence a los 15 dias (`invoiceDueDate`), no el primer dia del periodo.
  */
 
 export interface InvoiceRow {
@@ -40,13 +45,22 @@ export interface GenerationResult {
 /** Estados que facturan. `trial` no paga y `suspended/archived` no consume. */
 const BILLABLE_STATUSES = new Set(['active', 'past_due', 'readonly'])
 
-export async function generateMonthlyInvoices(anchor = new Date()): Promise<GenerationResult> {
+/**
+ * `slug` limita la corrida a un cliente: el panel factura a todos, y una
+ * prueba -o una re-emision a mano- no tiene por que tocar a los demas.
+ */
+export async function generateMonthlyInvoices(
+  anchor = new Date(),
+  slug?: string,
+): Promise<GenerationResult> {
   const sql = db()
   const { start, end } = monthlyPeriod(anchor)
   const periodStart = isoDate(start)
   const periodEnd = isoDate(end)
 
-  const { tenants, modulesByTenant } = await loadTenantsWithModules()
+  const dueAt = isoDate(invoiceDueDate(start, new Date()))
+
+  const { tenants, modulesByTenant, pendingInstallByTenant } = await loadTenantsWithModules(slug)
   const created: GenerationResult['created'] = []
   const skipped: GenerationResult['skipped'] = []
 
@@ -64,34 +78,50 @@ export async function generateMonthlyInvoices(anchor = new Date()): Promise<Gene
       continue
     }
 
-    const { monthly } = quoteTenant(tenant, modulesByTenant.get(tenant.id) ?? [])
+    const { invoice: cuenta, installationCharges } = quoteTenant(
+      tenant,
+      modulesByTenant.get(tenant.id) ?? [],
+      pendingInstallByTenant.get(tenant.id) ?? [],
+    )
 
     // Transaccion: numero + insert juntos. Si el insert choca con el indice
     // unico (carrera con otra generacion), el rollback devuelve el numero.
+    // Las instalaciones se marcan DENTRO: si la factura no nace, siguen
+    // pendientes para la siguiente; si nace, no se cobran dos veces.
     const invoice = await sql.begin(async (tx) => {
       const [numbered] = await tx<{ next_invoice_number: string }[]>`
         select regb.next_invoice_number()`
       if (!numbered) throw new Error('next_invoice_number no devolvio numero')
       const number = numbered.next_invoice_number
 
-      const [row] = await tx<{ number: string }[]>`
+      const [row] = await tx<{ id: string; number: string }[]>`
         insert into regb.invoices
           (tenant_id, number, period_start, period_end,
            subtotal, discount, tax, total, currency, status, due_at, lines)
         values
           (${tenant.id}, ${number}, ${periodStart}, ${periodEnd},
-           ${roundBankers(fromCents(monthly.subtotalCents), 2)},
-           ${roundBankers(fromCents(monthly.discountCents), 2)},
-           ${roundBankers(fromCents(monthly.taxCents), 2)},
-           ${monthly.total}, 'USD', 'sent', ${periodStart},
-           ${sql.json(monthly.lines.map((l) => ({ label: l.label, detail: l.detail ?? null, amount: roundBankers(fromCents(l.amountCents), 2) })))})
+           ${roundBankers(fromCents(cuenta.subtotalCents), 2)},
+           ${roundBankers(fromCents(cuenta.discountCents), 2)},
+           ${roundBankers(fromCents(cuenta.taxCents), 2)},
+           ${cuenta.total}, 'USD', 'sent', ${dueAt},
+           ${sql.json(cuenta.lines.map((l) => ({ label: l.label, detail: l.detail ?? null, amount: roundBankers(fromCents(l.amountCents), 2) })))})
         on conflict (tenant_id, period_start) where status <> 'void' do nothing
-        returning number`
-      return row ?? null
+        returning id, number`
+      if (!row) return null
+
+      for (const cargo of installationCharges) {
+        await tx`
+          update regb.module_installation_charges
+          set amount = ${roundBankers(fromCents(cargo.amountCents), 2)},
+              invoice_id = ${row.id}, charged_at = now(),
+              note = ${cargo.included ? 'Dentro de los modulos incluidos del tier' : null}
+          where tenant_id = ${tenant.id} and module_id = ${cargo.moduleId} and amount is null`
+      }
+      return row
     })
 
     if (invoice) {
-      created.push({ tenant: tenant.legal_name, number: invoice.number, total: monthly.total })
+      created.push({ tenant: tenant.legal_name, number: invoice.number, total: cuenta.total })
     } else {
       skipped.push({
         tenant: tenant.legal_name,

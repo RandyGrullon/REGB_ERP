@@ -4,6 +4,7 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
+  EmptyState,
   Table,
   THead,
   TBody,
@@ -13,9 +14,11 @@ import {
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { authConfigured } from '@/lib/supabase'
 import { Shell } from '@/components/Shell'
-import { alternarActivoForm, cambiarRolMiembroForm, invitarMiembroForm } from './actions'
+import { alternarActivoForm, cambiarRolMiembroForm, revocarInvitacionForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { InvitarForm, ReenviarInvitacion } from './InvitacionUI'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Usuarios · REGB ERP' }
@@ -32,9 +35,34 @@ interface MemberRow {
   accepted_at: string | null
 }
 
+interface InvitacionRow {
+  id: string
+  display_name: string
+  email: string
+  role_name: string
+  expires_at: Date
+  sent_at: Date | null
+  vencida: boolean
+}
+
+const fecha = new Intl.DateTimeFormat('es-DO', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'America/Santo_Domingo',
+})
+
+const BOTON_FILA =
+  'inline-flex h-11 items-center rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-50'
+
 /**
  * Usuarios (S8): quien esta en el equipo, con que rol, y como invitar.
  * La puerta F2 exige poder invitar a alguien sin documentacion externa.
+ *
+ * Desde 0123 una invitacion NO es una fila de `memberships`: vive en
+ * `user_invitations` hasta que la persona la acepta con su cuenta. Por eso
+ * la pantalla tiene dos listas -el equipo y quien esta invitado- y nunca
+ * dice "enviada" si el correo no salio de verdad (`sent_at`).
  */
 export default async function UsuariosPage({
   searchParams,
@@ -44,7 +72,7 @@ export default async function UsuariosPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'users')
 
-  const [members, roles] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [members, roles, invitaciones] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const m = await tx<MemberRow[]>`
       select p.user_id, p.display_name, p.email, p.job_title,
              ms.role_id, r.name as role_name, ms.is_active,
@@ -58,24 +86,36 @@ export default async function UsuariosPage({
     const r = await tx<{ id: string; name: string }[]>`
       select id, name from public.roles
       where tenant_id = ${ctx.tenantId} order by name`
-    return [m, r] as const
+    // Columnas nombradas: `token_hash` no tiene grant para authenticated.
+    const i = await tx<InvitacionRow[]>`
+      select i.id, i.display_name, i.email, r.name as role_name,
+             i.expires_at, i.sent_at, i.expires_at <= now() as vencida
+      from public.user_invitations i
+      join public.roles r on r.id = i.role_id
+      where i.tenant_id = ${ctx.tenantId} and i.status = 'pending'
+      order by i.created_at desc`
+    return [m, r, i] as const
   })
 
   const puedeCrear = exigir(ctx, 'users', 'users.create').ok
   const puedeEditar = exigir(ctx, 'users', 'users.edit').ok
+  const tenantDemo = ctx.demoQs ? ctx.tenantSlug : ''
+  const rolDemo = ctx.demoQs ? ctx.roleName : ''
 
   return (
     <Shell {...shell} activePath="/usuarios">
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Usuarios</h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {members.length} en el equipo · {members.filter((m) => m.is_active).length} con acceso
-            activo
+            activo · {invitaciones.length}{' '}
+            {invitaciones.length === 1 ? 'invitacion pendiente' : 'invitaciones pendientes'}
           </p>
         </div>
 
         <Table>
+          <caption className="sr-only">Personas del equipo</caption>
           <THead>
             <TR>
               <TH>Nombre</TH>
@@ -93,14 +133,14 @@ export default async function UsuariosPage({
           <TBody>
             {members.map((m) => (
               <TR key={m.user_id}>
-                <TD className="font-medium text-[var(--color-text-primary)]">{m.display_name}</TD>
+                <TD className="font-semibold text-[var(--color-text-primary)]">{m.display_name}</TD>
                 <TD>{m.email}</TD>
                 <TD>{m.job_title ?? '—'}</TD>
                 <TD>
                   {puedeEditar ? (
                     <form action={cambiarRolMiembroForm} className="inline">
-                      <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-                      <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+                      <input type="hidden" name="tenant" value={tenantDemo} />
+                      <input type="hidden" name="rol" value={rolDemo} />
                       <input type="hidden" name="userId" value={m.user_id} />
                       <select
                         name="roleId"
@@ -114,9 +154,7 @@ export default async function UsuariosPage({
                           </option>
                         ))}
                       </select>{' '}
-                      <BotonEnvio
-                        
-                        className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         Cambiar
                       </BotonEnvio>
                     </form>
@@ -137,12 +175,10 @@ export default async function UsuariosPage({
                 {puedeEditar && (
                   <TD>
                     <form action={alternarActivoForm} className="inline">
-                      <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-                      <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+                      <input type="hidden" name="tenant" value={tenantDemo} />
+                      <input type="hidden" name="rol" value={rolDemo} />
                       <input type="hidden" name="userId" value={m.user_id} />
-                      <BotonEnvio
-                        
-                        className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         {m.is_active ? 'Desactivar' : 'Reactivar'}
                       </BotonEnvio>
                     </form>
@@ -153,58 +189,92 @@ export default async function UsuariosPage({
           </TBody>
         </Table>
 
+        <Card>
+          <CardHeader>
+            <CardTitle id="invitaciones-titulo">Invitaciones pendientes</CardTitle>
+            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+              Todavia no son parte del equipo: entran cuando abren su enlace con el correo invitado.
+            </p>
+          </CardHeader>
+          <CardBody>
+            {invitaciones.length === 0 ? (
+              <EmptyState
+                icon="mark_email_unread"
+                title="Nadie esperando en la puerta"
+                description="Cuando invites a alguien, su invitacion espera aqui hasta que la acepte. Sin papeles ni llamadas."
+                tourHref={`/tutorial${ctx.demoQs}`}
+                tourLabel="Como funcionan los permisos"
+                className="py-8"
+              />
+            ) : (
+              <ul
+                aria-labelledby="invitaciones-titulo"
+                className="divide-y divide-[var(--color-border)]"
+              >
+                {invitaciones.map((inv) => (
+                  <li key={inv.id} className="flex flex-wrap items-center gap-3 py-3">
+                    <div className="min-w-56 flex-1">
+                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                        {inv.display_name}
+                      </p>
+                      <p className="text-sm text-[var(--color-text-secondary)]">
+                        {inv.email} · {inv.role_name}
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-start gap-1">
+                      {inv.vencida ? (
+                        <Badge tone="danger">Vencida el {fecha.format(inv.expires_at)}</Badge>
+                      ) : inv.sent_at ? (
+                        <Badge tone="success">Correo enviado el {fecha.format(inv.sent_at)}</Badge>
+                      ) : (
+                        <Badge tone="warning">Sin enviar por correo</Badge>
+                      )}
+                      {!inv.vencida && (
+                        <span className="text-xs text-[var(--color-text-secondary)]">
+                          Vence el {fecha.format(inv.expires_at)}
+                        </span>
+                      )}
+                    </div>
+                    {puedeCrear && (
+                      <>
+                        <ReenviarInvitacion
+                          tenant={tenantDemo}
+                          rol={rolDemo}
+                          invitationId={inv.id}
+                          nombre={inv.display_name}
+                        />
+                        <form action={revocarInvitacionForm}>
+                          <input type="hidden" name="tenant" value={tenantDemo} />
+                          <input type="hidden" name="rol" value={rolDemo} />
+                          <input type="hidden" name="invitationId" value={inv.id} />
+                          <BotonEnvio
+                            aria-label={`Revocar la invitacion de ${inv.display_name}`}
+                            className={BOTON_FILA}
+                          >
+                            Revocar
+                          </BotonEnvio>
+                        </form>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardBody>
+        </Card>
+
         {puedeCrear && (
           <Card data-tour="usuario-invitar">
             <CardHeader>
               <CardTitle>Invitar a alguien</CardTitle>
             </CardHeader>
             <CardBody>
-              <form action={invitarMiembroForm} className="flex flex-wrap items-end gap-3">
-                <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
-                <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-                <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Nombre
-                  <input
-                    name="nombre"
-                    required
-                    minLength={3}
-                    placeholder="Juana Perez"
-                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-                  />
-                </label>
-                <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Correo
-                  <input
-                    name="email"
-                    type="email"
-                    required
-                    placeholder="juana@tuempresa.do"
-                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-                  />
-                </label>
-                <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Rol
-                  <select
-                    name="roleId"
-                    required
-                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
-                  >
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                  Invitar
-                </BotonEnvio>
-              </form>
-              <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                La invitacion llega por correo. El rol decide que modulos ve desde el primer login.
-              </p>
+              <InvitarForm
+                tenant={tenantDemo}
+                rol={rolDemo}
+                roles={roles}
+                modoDemo={!authConfigured}
+              />
             </CardBody>
           </Card>
         )}

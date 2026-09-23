@@ -159,6 +159,171 @@ export function overpayment(total: number, settlements: number[]): number {
   return roundBankers(Math.max(0, aplicado - total), 2)
 }
 
+// ── Nota de credito por monto ───────────────────────────────────────────
+
+/**
+ * Separa un monto CON ITBIS en base e impuesto, en la misma proporcion
+ * que la factura que se rebaja.
+ *
+ * Una rebaja de RD$1,180 sobre una factura toda gravada al 18% es 1,000
+ * de base y 180 de ITBIS: el ITBIS que se reverso tiene que salir en el
+ * 607 para que el cliente no se descuente de mas. Sobre una factura
+ * exenta, todo es base.
+ */
+export function splitTaxInclusive(
+  amount: number,
+  invoiceTax: number,
+  invoiceTotal: number,
+): { subtotal: number; tax: number } {
+  if (invoiceTotal <= 0 || invoiceTax <= 0) return { subtotal: roundBankers(amount, 2), tax: 0 }
+  const tax = roundBankers((amount * invoiceTax) / invoiceTotal, 2)
+  return { subtotal: roundBankers(amount - tax, 2), tax }
+}
+
+// ── Credito: limite y bloqueo por vencidas ──────────────────────────────
+
+/**
+ * Dias de atraso a partir de los cuales un cliente ya no recibe credito
+ * nuevo, si el negocio no dice otra cosa.
+ *
+ * Por que 30: el Cliente #1 vende a 15 y 30 dias. Un cliente que pasa un
+ * mes entero DESPUES de su vencimiento ya dobló (o triplicó) el plazo que
+ * se le dio: no es un despiste de una semana, es un patron. Menos de 30
+ * frenaria por un cheque que llega tarde; mas de 60 deja crecer la deuda
+ * de alguien que ya dejo de pagar. Es configurable por negocio
+ * (`ar_credit_policy`, 0130) porque una ferreteria que fia a contratistas
+ * y un distribuidor de electronica no toleran lo mismo.
+ */
+export const DIAS_BLOQUEO_POR_DEFECTO = 30
+
+export interface CreditInvoice {
+  number: string
+  /** Saldo pendiente real: capital + mora - cobros - notas de credito. */
+  balance: number
+  dueDate: Date
+}
+
+export interface CreditCheckInput {
+  /** null = el negocio no le puso limite a este cliente. */
+  creditLimit: number | null
+  /** Facturas no anuladas del cliente (las saldadas se ignoran solas). */
+  invoices: CreditInvoice[]
+  /**
+   * Pedidos ya confirmados que todavia no se facturan, SIN contar el
+   * documento que se esta evaluando. Es credito comprometido: sin esto,
+   * diez pedidos de 40,000 contra un limite de 50,000 pasarian uno a uno.
+   */
+  uninvoicedOrders: number
+  /** El pedido o la factura que se esta intentando emitir. */
+  documentTotal: number
+  /** null = el negocio no bloquea por vencidas. */
+  overdueBlockDays: number | null
+  asOf: Date
+}
+
+export type CreditBlock =
+  | { code: 'limit'; limit: number; exposure: number; documentTotal: number; excess: number }
+  | { code: 'overdue'; days: number; maxDays: number; invoices: string[] }
+
+export interface CreditDecision {
+  allowed: boolean
+  blocks: CreditBlock[]
+  /** Saldo pendiente: facturas con saldo + pedidos confirmados sin facturar. */
+  exposure: number
+  /** Limite menos saldo pendiente. null = sin limite. Puede ser negativo. */
+  available: number | null
+  /** Dias de la factura con saldo mas atrasada; 0 si ninguna esta vencida. */
+  oldestOverdueDays: number
+}
+
+/**
+ * Si a este cliente se le puede vender a credito este documento.
+ *
+ * Dos reglas independientes, y se reportan las dos si fallan las dos
+ * -quien autoriza una excepcion tiene que saber TODO lo que se esta
+ * saltando, no solo lo primero que se encontro-:
+ *
+ *  1. Limite: saldo pendiente + documento > limite. Igual al limite pasa.
+ *  2. Vencidas: alguna factura con saldo lleva MAS de N dias vencida.
+ *     El dia N todavia no bloquea (mismo criterio que `agingBucket`: el
+ *     dia del vencimiento aun es "por vencer").
+ *
+ * No decide si hay excepcion: eso es un permiso y una firma, no logica.
+ */
+export function evaluateCredit(input: CreditCheckInput): CreditDecision {
+  const conSaldo = input.invoices.filter((f) => roundBankers(f.balance, 2) > 0)
+  const facturado = conSaldo.reduce((a, f) => a + f.balance, 0)
+  const exposure = roundBankers(facturado + Math.max(0, input.uninvoicedOrders), 2)
+  const blocks: CreditBlock[] = []
+
+  let available: number | null = null
+  if (input.creditLimit !== null) {
+    available = roundBankers(input.creditLimit - exposure, 2)
+    const despues = roundBankers(exposure + input.documentTotal, 2)
+    if (despues > input.creditLimit) {
+      blocks.push({
+        code: 'limit',
+        limit: input.creditLimit,
+        exposure,
+        documentTotal: roundBankers(input.documentTotal, 2),
+        excess: roundBankers(despues - input.creditLimit, 2),
+      })
+    }
+  }
+
+  const atrasos = conSaldo
+    .map((f) => ({ number: f.number, days: daysOverdue(f.dueDate, input.asOf) }))
+    .sort((a, b) => b.days - a.days)
+  const oldestOverdueDays = Math.max(0, atrasos[0]?.days ?? 0)
+
+  if (input.overdueBlockDays !== null) {
+    const max = input.overdueBlockDays
+    const pasadas = atrasos.filter((a) => a.days > max)
+    if (pasadas.length > 0) {
+      blocks.push({
+        code: 'overdue',
+        days: pasadas[0]!.days,
+        maxDays: max,
+        invoices: pasadas.map((p) => p.number),
+      })
+    }
+  }
+
+  return { allowed: blocks.length === 0, blocks, exposure, available, oldestOverdueDays }
+}
+
+const rd = (n: number): string =>
+  `RD$ ${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
+/**
+ * El porque del bloqueo, en palabras del mostrador. Lo lee el vendedor
+ * con el cliente delante: tiene que decir cuanto, desde cuando y que
+ * hacer, no "credito insuficiente".
+ */
+export function creditBlockMessage(customerName: string, blocks: CreditBlock[]): string {
+  const partes: string[] = []
+  for (const b of blocks) {
+    if (b.code === 'overdue') {
+      const lista =
+        b.invoices.length <= 3
+          ? b.invoices.join(', ')
+          : `${b.invoices.slice(0, 3).join(', ')} y ${b.invoices.length - 3} mas`
+      partes.push(
+        `tiene facturas vencidas hace ${b.days} dias (${lista}) y el maximo que se tolera es ${b.maxDays}`,
+      )
+    } else {
+      partes.push(
+        `su saldo pendiente (${rd(b.exposure)}) mas este documento (${rd(b.documentTotal)}) ` +
+          `pasa su limite de credito de ${rd(b.limit)} por ${rd(b.excess)}`,
+      )
+    }
+  }
+  return (
+    `Credito bloqueado para ${customerName}: ${partes.join('; y ')}. ` +
+    'Cobra primero, o que alguien con permiso autorice la excepcion escribiendo el motivo.'
+  )
+}
+
 /**
  * Si se le puede aplicar un cargo por mora a esta factura.
  *

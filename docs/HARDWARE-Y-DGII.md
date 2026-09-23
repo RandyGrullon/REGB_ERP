@@ -73,11 +73,11 @@ ferretería pueden operar hoy con una térmica común.
 
 | Pieza | Dónde |
 |---|---|
-| Secuencias NCF autorizadas (alta, vencimiento, agotamiento) | `/cobrar/ncf` |
+| Secuencias NCF autorizadas (alta, vencimiento, agotamiento; varias vigentes a la vez) | `/cobrar/ncf` o, con solo caja, `/pos/comprobantes` |
 | Asignación atómica del próximo NCF | `public.assign_ncf()` |
 | NCF en factura de crédito y en ticket de caja | `customer_invoices`, `pos_sales` |
 | Validación de RNC (módulo 11) y cédula (Luhn) | `packages/operations/src/dgii.ts` |
-| Reporte 607 (ventas) | vista `public.dgii_607` |
+| Reporte 607 (ventas) | vista `public.dgii_607`; se baja en `/cobrar/dgii` o `/pos/dgii`. Fecha y periodo en hora de RD |
 
 **Regla del mostrador:** cliente con RNC → **B01** (crédito fiscal, para que
 pueda deducir el ITBIS); cliente de mostrador → **B02** (consumo).

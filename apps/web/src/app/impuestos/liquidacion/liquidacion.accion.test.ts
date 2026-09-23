@@ -269,7 +269,8 @@ describe('Guardas de la accion', () => {
 
   beforeAll(async () => {
     c = await sembrarCliente({
-      modulos: ['taxes', 'ar', 'ap'],
+      // `pos` encendido: la venta de la noche del 30 es de caja.
+      modulos: ['taxes', 'ar', 'ap', 'pos'],
       roles: { Contador: CONTADOR, Auxiliar: AUXILIAR },
     })
   })
@@ -285,16 +286,46 @@ describe('Guardas de la accion', () => {
     expect(await declaracion(c.tenantId, '202406')).toBeUndefined()
   })
 
-  it('con Cuentas por cobrar apagado se niega: declarar cero ventas es una multa', async () => {
+  it('con Cuentas por cobrar apagado y facturas en el periodo se niega: declararia de menos', async () => {
+    // Desde la 0129 no se exige `ar` -un colmado con solo caja tambien
+    // declara-: lo que se niega es cerrar cuando HAY ventas del periodo que
+    // un modulo apagado esconde. Por eso la prueba siembra una factura.
+    const cli = await cliente(c.tenantId)
+    await factura(c.tenantId, cli, {
+      numero: 'F-0601',
+      fecha: '2024-06-12',
+      itbis: '180.00',
+      ncf: 'B0100000601',
+    })
     await c.modulo('ar', false)
     try {
       const r = await cerrarLiquidacion(c.fd({ period: '202406' }))
       expect(r.ok).toBe(false)
-      if (!r.ok) expect(r.error).toMatch(/Cuentas por cobrar/)
+      if (!r.ok) expect(r.error).toMatch(/modulo que esta apagado \(Cuentas por cobrar\)/)
       expect(await declaracion(c.tenantId, '202406')).toBeUndefined()
     } finally {
       await c.modulo('ar', true)
     }
+  })
+
+  it('una venta de caja de la noche del ultimo dia es de ese mes, aunque sincronice al otro', async () => {
+    // 30 de junio a las 9:30 p. m. en RD = 1 de julio en UTC. Offline: llego
+    // al servidor el 1 de julio por la mañana.
+    const [alm] = await db()<{ id: string }[]>`
+      insert into public.warehouses (tenant_id, name, code, is_default)
+      values (${c.tenantId}, 'Caja noche', 'NOC', true) returning id`
+    const [turno] = await db()<{ id: string }[]>`
+      insert into public.pos_shifts (tenant_id, warehouse_id, opening_float, opened_at)
+      values (${c.tenantId}, ${alm!.id}, 0, '2024-06-30 08:00-04') returning id`
+    await db()`
+      insert into public.pos_sales
+        (tenant_id, shift_id, number, subtotal, tax, total, created_at, sold_at)
+      values (${c.tenantId}, ${turno!.id}, 'T-NOCHE', 100.00, 18.00, 118.00,
+              '2024-07-01 08:00-04', '2024-06-30 21:30-04')`
+
+    expect(await cerrarLiquidacion(c.fd({ period: '202406' }))).toEqual({ ok: true })
+    // 180 de la factura con NCF + 18 del ticket sin NCF de la noche del 30.
+    expect(await declaracion(c.tenantId, '202406')).toMatchObject({ itbis_charged: '198.00' })
   })
 
   it('un tenant que no existe no pasa de actionCtx', async () => {

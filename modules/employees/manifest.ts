@@ -16,7 +16,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'rrhh',
   navOrder: 68,
 
   pricing: {
@@ -32,6 +32,9 @@ export default defineModule({
     'employees.employee.create',
     'employees.contract.create',
     'employees.employee.terminate',
+    // Vincular la cuenta que ve este expediente en el portal (0132). Es de
+    // RRHH: con el, alguien podria leer el volante de cualquiera.
+    'employees.employee.link',
     'employees.export',
   ],
 
@@ -45,7 +48,11 @@ export default defineModule({
   reports: ['employee-roster', 'org-chart'],
 
   events: {
-    emits: ['employees.employee.created', 'employees.employee.terminated'],
+    emits: [
+      'employees.employee.created',
+      'employees.employee.terminated',
+      'employees.employee.user-linked',
+    ],
     listens: [],
   },
 

@@ -14,12 +14,20 @@ interface NoticeRow {
   title: string
   body: string | null
   link: string | null
+  /** Cuando lo leyo QUIEN MIRA. Otro del equipo puede no haberlo leido (0125). */
   read_at: string | null
   created_at: string
   user_id: string | null
 }
 
-/** Notificaciones (S10): personales o para todo el equipo. */
+/**
+ * Notificaciones (S10): personales o para todo el equipo.
+ *
+ * La lista y el contador salen de `mis_avisos()` y `avisos_sin_leer()`,
+ * las mismas funciones que usa la campana del Shell: el numero de aqui y
+ * el de la campana no pueden discrepar. Antes el de aqui contaba solo
+ * entre los 100 que se pintan.
+ */
 export default async function NotificacionesPage({
   searchParams,
 }: {
@@ -28,19 +36,13 @@ export default async function NotificacionesPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'notifications')
 
-  const notices = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    (tx) => tx<NoticeRow[]>`
+  const { notices, sinLeer } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const notices = await tx<NoticeRow[]>`
       select id, module_id, title, body, link, read_at::text, created_at::text, user_id
-      from public.notifications
-      where tenant_id = ${ctx.tenantId}
-        and (user_id = ${ctx.userId} or user_id is null)
-      order by read_at is null desc, created_at desc
-      limit 100`,
-  )
-
-  const sinLeer = notices.filter((n) => !n.read_at).length
+      from public.mis_avisos(100)`
+    const [c] = await tx<{ n: number }[]>`select public.avisos_sin_leer() as n`
+    return { notices, sinLeer: c?.n ?? 0 }
+  })
   const puedeEditar = exigir(ctx, 'notifications', 'notifications.edit').ok
 
   const fecha = (iso: string) =>
@@ -57,7 +59,7 @@ export default async function NotificacionesPage({
         <PageHeader
           icon="notifications"
           title="Notificaciones"
-          description="Avisos del sistema y de cada modulo. Los que van a todo el equipo llevan su etiqueta."
+          description="Avisos del sistema y de cada modulo. Los que van a todo el equipo llevan su etiqueta; marcarlos como leidos solo los apaga para ti."
           meta={
             sinLeer > 0 ? (
               <Badge tone="danger">{sinLeer} sin leer</Badge>
@@ -135,7 +137,7 @@ export default async function NotificacionesPage({
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={n.id} />
                       <BotonEnvio
-                        
+                        aria-label={`Marcar como leida: ${n.title}`}
                         className="shrink-0 rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]">
                         Leida
                       </BotonEnvio>

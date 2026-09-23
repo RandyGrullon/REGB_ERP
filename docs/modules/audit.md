@@ -62,6 +62,19 @@ sin poder reconstruir el valor. El mecanismo es generico: el core no sabe que
 existe `e-invoice`, el nombre de la columna viaja como dato en la definicion
 del trigger.
 
+## Los roles tambien
+
+Hasta 0121, `public.roles` no llevaba `audit_me`: si alguien le daba a un
+cajero permiso de descuento, la bitacora no lo registraba, aunque el tour
+`core.permisos` promete que "todo queda en la bitacora". Desde
+[`0121_referencias_del_mismo_cliente.sql`](../../supabase/migrations/0121_referencias_del_mismo_cliente.sql)
+se audita con `audit.record('rbac')` -de `rbac` son los permisos que
+gobiernan `/roles`-, sin columnas tapadas: `permissions` y `scope` son
+justo lo que se quiere ver cambiar. El alta de un tenant tambien deja sus
+filas (los roles de sistema se crean y se ajustan sin usuario). Prueba:
+[`fk-guardas.test.ts`](../../supabase/tests/fk-guardas.test.ts), "Bitacora
+de roles".
+
 ## Pantallas
 
 | Ruta | Permiso | Que hace |
@@ -94,14 +107,18 @@ cambiaron (hasta cuatro); un `create`, con el nombre del registro.
 
 ## Eventos
 
-No declara ni emite eventos.
+No declara ni emite eventos, **a proposito**. `/auditoria` solo lee; la
+bitacora la escriben los triggers de la base. Un evento por fila de
+bitacora duplicaria cada cambio del sistema en el outbox, y cada modulo ya
+emite sus propios hechos de negocio: la bitacora es el rastro de todos, no
+un tema mas.
 
 ## Definicion de Terminado
 
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ⚠️ declarado; `audit:manifests` no se corrio en esta entrega. Declara tres permisos que no pueden existir (ver arriba) |
-| 2 | Migraciones + RLS probadas | ⚠️ parcial. Probado: el trigger escribe (`products.test.ts`, caso "Bitacora"), la impersonacion deja rastro en la bitacora del tenant (`dunning.test.ts`), el token de e-CF no queda en claro ni al crear ni al cambiar (`ecf.test.ts`, 4 casos), toda particion tiene RLS (`isolation.test.ts`, red). **Sin prueba propia** de que `authenticated` no pueda hacer `update`/`delete`, ni de que un tenant no lea la bitacora de otro |
+| 2 | Migraciones + RLS probadas | ⚠️ parcial. Probado: el trigger escribe (`products.test.ts`, caso "Bitacora"), la impersonacion deja rastro en la bitacora del tenant (`dunning.test.ts`), el token de e-CF no queda en claro ni al crear ni al cambiar (`ecf.test.ts`, 4 casos), toda particion tiene RLS (`isolation.test.ts`, red), crear, cambiar y borrar un rol queda escrito con usuario y antes/despues, y B no lee la bitacora de roles de A (`fk-guardas.test.ts`, 3 casos, 0121). **Sin prueba propia** de que `authenticated` no pueda hacer `update`/`delete`, ni de que un tenant no lea la bitacora de otro en general (la de roles si esta cubierta) |
 | 3 | Logica pura con cobertura | ❌ `resumen()` vive dentro de la pagina, sin prueba |
 | 4 | UI web responsive | ⚠️ no verificado en esta entrega |
 | 5 | UI movil | ➖ no aplica: `platforms.mobile = false` |
@@ -109,7 +126,7 @@ No declara ni emite eventos.
 | 7 | Tour ≥6 pasos | ❌ `f13.auditoria` tiene 4 pasos |
 | 8 | Datos demo | ✅ la siembra crea empresas, sucursales, perfiles y productos con trigger, asi que la bitacora nace con filas |
 | 9 | ≥2 widgets | ❌ ninguno |
-| 10 | Eventos documentados | ➖ no tiene |
+| 10 | Eventos documentados | ➖ no aplica: la pantalla solo lee y la bitacora la escribe la base; razon en "Eventos" |
 | 11 | Precio en 3 tiers | ✅ 0/0/0, cargado desde 0009 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |
@@ -125,11 +142,9 @@ No declara ni emite eventos.
   error, y como el trigger corre en la misma transaccion **el cambio de
   negocio que lo disparo tambien se revierte**. Es el riesgo mas serio de este
   modulo y no esta cubierto por ninguna prueba.
-- **Auditar los roles.** `public.roles` no tiene trigger `audit_me`: si alguien
-  le da a un cajero permiso de descuento, la bitacora no lo registra, aunque el
-  tour `core.permisos` diga que "todo queda en la bitacora". Tampoco se
-  auditan `tenant_settings`, `notifications`, `import_batches`, `backups` ni
-  `tour_progress`.
+- **Auditar todas las tablas del core.** No llevan `audit_me`
+  `tenant_settings`, `notifications`, `import_batches`, `backups` ni
+  `tour_progress`. Los **roles** si, desde 0121 (ver "Los roles tambien").
 - **Buscar por persona, por fecha o por documento.** El tour `f13.auditoria`
   lo promete; la pantalla filtra solo por entidad, y las entidades del filtro
   salen de las 200 filas cargadas, no de toda la bitacora.

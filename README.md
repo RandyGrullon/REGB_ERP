@@ -15,7 +15,13 @@
 
 ```bash
 pnpm install
+npx turbo run build --filter="./packages/*"
 ```
+
+El segundo paso no es opcional en un clon limpio: `@regb/core`,
+`@regb/billing`, `@regb/module-registry` y otros exportan `dist/`, que no
+se versiona. Sin él, `pnpm --filter @regb/web dev` abre con
+`Module not found: Can't resolve '@regb/billing'`.
 
 ### Base de datos local
 

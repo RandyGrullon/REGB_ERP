@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { db } from './db'
+import { HANDLERS_CONTABLES } from './contabilidad-automatica'
 
 /**
  * Despachador del bus de eventos (§4).
@@ -19,8 +20,15 @@ import { db } from './db'
  *
  * A cambio, la entrega es *at-least-once*: un evento puede procesarse dos
  * veces si el proceso muere despues de actuar y antes de marcar. Por eso
- * **todo handler tiene que ser idempotente**, y por eso nada critico
- * cuelga de aqui — la reserva de stock es sincrona a proposito (§S20).
+ * **todo handler tiene que ser idempotente**, y por eso nada que la venta
+ * NECESITE para cerrarse cuelga de aqui — la reserva de stock es sincrona
+ * a proposito (§S20).
+ *
+ * La contabilidad SI cuelga de aqui (ADR 0001): el asiento no le hace
+ * falta a la venta para cerrarse, y un asiento que falla no puede tumbar
+ * la caja. Lo que la hace confiable es la clave unica por origen (un
+ * reintento no duplica) y los reintentos con espera de este despachador
+ * (un mapa roto no pierde el asiento: sale cuando se corrige).
  *
  * ── Por que un mapa por TEMA y no por modulo ──────────────────────────
  *
@@ -79,12 +87,12 @@ async function notificar(
 }
 
 /**
- * Tema → que hacer.
+ * Tema → aviso.
  *
  * Solo hay handlers para lo que de verdad aporta hoy. Inventarse
  * reacciones para los 20 temas declarados seria construir para nadie.
  */
-const HANDLERS: Record<string, Handler> = {
+const AVISOS: Record<string, Handler> = {
   /**
    * Entregado ≠ facturado. El evento NO crea la factura —hacerlo
    * duplicaria facturas el dia que un evento se reintente— sino que
@@ -165,6 +173,21 @@ const HANDLERS: Record<string, Handler> = {
   },
 }
 
+/**
+ * Tema → TODOS sus handlers: el aviso y el asiento contable
+ * (`contabilidad-automatica.ts`, ADR 0001). Un tema puede tener los dos
+ * -una venta de caja avisa del bajo stock Y se contabiliza-.
+ *
+ * Se corren en orden y si uno falla el evento entero se reintenta, asi
+ * que el que ya actuo vuelve a correr: por eso cada uno es idempotente
+ * por su cuenta (el aviso mira si ya existe; el asiento tiene clave
+ * unica por origen).
+ */
+const HANDLERS: Record<string, Handler[]> = {}
+for (const fuente of [AVISOS, HANDLERS_CONTABLES]) {
+  for (const [tema, h] of Object.entries(fuente)) (HANDLERS[tema] ??= []).push(h)
+}
+
 /** Los temas que este despachador sabe atender. Para diagnostico. */
 export const TEMAS_ATENDIDOS = Object.keys(HANDLERS)
 
@@ -190,9 +213,9 @@ export async function despachar(limite = 50): Promise<ResultadoDespacho> {
   }
 
   for (const e of eventos) {
-    const handler = HANDLERS[e.type]
+    const handlers = HANDLERS[e.type]
 
-    if (!handler) {
+    if (!handlers) {
       // Nadie lo escucha. Se cierra en vez de reintentar para siempre:
       // un outbox lleno de eventos que nadie quiere parece una averia.
       await sql`select public.settle_event(${e.id}::bigint, true, null, null)`
@@ -201,7 +224,7 @@ export async function despachar(limite = 50): Promise<ResultadoDespacho> {
     }
 
     try {
-      await handler(e, sql)
+      for (const handler of handlers) await handler(e, sql)
       await sql`select public.settle_event(${e.id}::bigint, true, null, null)`
       r.procesados++
     } catch (err) {

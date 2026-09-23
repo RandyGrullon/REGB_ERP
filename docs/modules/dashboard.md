@@ -68,7 +68,10 @@ Sin ningun tenant en la base, en vez del tablero sale la receta de arranque
 
 ## Eventos
 
-No declara ni emite eventos.
+No declara ni emite eventos, **a proposito**: el inicio solo lee y pinta
+los widgets que declaran los demas modulos. No escribe nada, asi que no
+hay cambio que anunciar. Un evento por "alguien abrio el inicio" seria
+ruido en el outbox y rastro de actividad personal que nadie pidio.
 
 ## Definicion de Terminado
 
@@ -83,7 +86,7 @@ No declara ni emite eventos.
 | 7 | Tour ≥6 pasos | ❌ `f14.tablero` tiene 4 pasos |
 | 8 | Datos demo | ✅ los indicadores salen de la siembra de los dos tenants demo |
 | 9 | ≥2 widgets | ➖ es el lienzo: los widgets los aportan los demas modulos |
-| 10 | Eventos documentados | ➖ no tiene |
+| 10 | Eventos documentados | ➖ no aplica: modulo de solo lectura; razon en "Eventos" |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

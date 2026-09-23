@@ -17,7 +17,12 @@ export default defineModule({
   },
   permissions: ['users.view', 'users.create', 'users.edit', 'users.delete', 'users.export'],
   routes: [{ path: '/usuarios', label: 'Usuarios', perm: 'users.view' }],
-  events: { emits: ['users.member.invited', 'users.member.deactivated'], listens: [] },
+  // invited: crear_invitacion() (0123) · joined: aceptar_invitacion() (0123)
+  // · deactivated: alternarActivo() en /usuarios. Los tres por el outbox.
+  events: {
+    emits: ['users.member.invited', 'users.member.joined', 'users.member.deactivated'],
+    listens: [],
+  },
   platforms: { web: true, desktop: true, mobile: true },
   mobileScope: ['view'],
 })

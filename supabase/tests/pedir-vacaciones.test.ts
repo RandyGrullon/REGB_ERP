@@ -56,15 +56,22 @@ beforeAll(async () => {
       on conflict (tenant_id, module_id) do update set enabled = true, status = 'active'`
   }
 
+  // Desde 0132 "quien soy" sale del vinculo explicito employees.user_id,
+  // que apunta a una membresia del cliente: el correo ya no empareja.
+  const [rolEmpleado] = await sql`
+    select id from public.roles where tenant_id = ${tenant} and name = 'Empleado'`
   const alta = async (userId: string, nombre: string, correo: string) => {
+    await sql`
+      insert into public.memberships (tenant_id, user_id, role_id, accepted_at)
+      values (${tenant}, ${userId}, ${rolEmpleado!.id}, now())`
     await sql`
       insert into public.user_profiles (tenant_id, user_id, email, display_name)
       values (${tenant}, ${userId}, ${correo}, ${nombre})`
     const [e] = await sql`
       insert into public.employees
-        (tenant_id, code, first_name, last_name, position, salary, email, hire_date, status)
+        (tenant_id, code, first_name, last_name, position, salary, email, hire_date, status, user_id)
       values (${tenant}, ${`E-${nombre}-${RUN}`}, ${nombre}, 'Prueba', 'Vendedor', 30000,
-              ${correo}, '2020-01-15', 'active')
+              ${correo}, '2020-01-15', 'active', ${userId})
       returning id`
     return e!.id as string
   }
@@ -75,6 +82,7 @@ beforeAll(async () => {
 afterAll(async () => {
   await sql`delete from public.time_off_requests where tenant_id = ${tenant}`
   await sql`delete from public.employees where tenant_id = ${tenant}`
+  await sql`delete from public.memberships where tenant_id = ${tenant}`
   await sql`delete from public.user_profiles where tenant_id = ${tenant}`
   await sql`delete from regb.tenant_modules where tenant_id = ${tenant}`
   await sql`delete from audit.log where tenant_id = ${tenant}`

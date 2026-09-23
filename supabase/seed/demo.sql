@@ -115,11 +115,12 @@ begin
   on conflict do nothing;
 
   -- ── La distribuidora: recibe de 40 proveedores y arma el 606 ─────────
+  --  Sin `invoice-capture`: no existe todavia y la base no deja activarlo
+  --  (0124). Tenerlo aqui era venderle a la demo un modulo sin pantallas.
   insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
   values (v_med, 'inventory', 'active', true),
          (v_med, 'pos', 'active', true),
          (v_med, 'payroll', 'active', true),
-         (v_med, 'invoice-capture', 'active', true),
          (v_med, 'purchase-orders', 'active', true),
          (v_med, 'accounting', 'active', true),
          (v_med, 'ar', 'active', true),
@@ -2474,9 +2475,15 @@ end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Portal del Empleado: dos anuncios -uno reciente, uno viejo, para ver
---  la insignia "Nuevo" en accion- y el correo de Rafael enlazado al del
---  usuario demo, para que /portal muestre un expediente de verdad -sin
---  ese correo coincidente, el portal solo mostraria el estado vacio-.
+--  la insignia "Nuevo" en accion-.
+--
+--  Hasta 0132 este bloque le ponia a Rafael el correo del usuario demo
+--  (maria.rosario@demo.do) para que /portal "encontrara" un expediente: el
+--  portal emparejaba por correo y Maria Rosario terminaba viendo el
+--  salario y el volante de Rafael. Ese era el hallazgo, no una demo.
+--  Ahora el portal lee SOLO por el vinculo explicito (employees.user_id)
+--  que asigna RRHH desde /empleados/:id, y el seed no vincula a nadie: la
+--  demo ensena el estado "sin vincular" y el vinculo se hace en vivo.
 -- ═══════════════════════════════════════════════════════════════════════
 do $$
 declare
@@ -2489,11 +2496,10 @@ begin
   select id into v_encargada from public.employees where tenant_id = v_med and code = 'E-001';
   if v_encargada is null then return; end if;
 
-  -- El usuario demo (Owner) inicia sesion como maria.rosario@demo.do -ver
-  -- 0009/bootstrap-. Sin este correo en el expediente de Rafael, el
-  -- portal de demo no encontraria a quien mostrar.
-  update public.employees set email = 'maria.rosario@demo.do'
-  where id = v_encargada and email is null;
+  -- Rafael con SU correo. Tambien corrige las bases sembradas antes de
+  -- 0132, que tienen el de Maria.
+  update public.employees set email = 'rafael.encarnacion@distribuidoracaribe.do'
+  where id = v_encargada and (email is null or email = 'maria.rosario@demo.do');
 
   if not exists (select 1 from public.hr_announcements where tenant_id = v_med) then
     insert into public.hr_announcements (tenant_id, title, body, published_at)
@@ -2947,4 +2953,80 @@ begin
 
   insert into public.service_parts (tenant_id, order_id, description, qty, unit_cost, created_by)
   values (v_med, v_cerrada, 'Capacitor 35uF 440V', 1, 1250.00, v_maria);
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  El colmado, listo para vender: ITBIS real, existencias y NCF B02
+-- ═══════════════════════════════════════════════════════════════════════
+--  Salio de abrir la caja del colmado como lo haria su dueno:
+--
+--   * El arroz cobraba 18% de ITBIS. En RD el arroz y las habichuelas
+--     estan EXENTOS y el aceite comestible va a la tasa reducida del 16%
+--     (Ley 253-12). Un dueno de colmado lo ve en el primer ticket y ahi
+--     deja de creerle al sistema.
+--   * Todo estaba en 0 existencias: cada producto salia "sin stock" y la
+--     caja era una demostracion de avisos, no de ventas.
+--   * No tenia secuencia de NCF, asi que cada ticket salia sin
+--     comprobante. La distribuidora ya ensena el caso "sin NCF"; el
+--     colmado ensena el normal.
+--
+--  Idempotente: el ITBIS se fija con UPDATE, las existencias solo entran
+--  si el producto nunca tuvo movimientos y la secuencia solo si no hay
+--  ninguna B02.
+do $$
+declare
+  v_pyme uuid;
+  v_alm  uuid;
+begin
+  select id into v_pyme from regb.tenants where slug = 'colmado-esperanza';
+  if v_pyme is null then return; end if;
+  select id into v_alm from public.warehouses where tenant_id = v_pyme and code = 'ALM-VC';
+
+  update public.products set tax_rate = 0.00
+  where tenant_id = v_pyme and sku in ('ARZ-001', 'HAB-003') and tax_rate <> 0.00;
+  update public.products set tax_rate = 0.16
+  where tenant_id = v_pyme and sku = 'ACE-002' and tax_rate <> 0.16;
+
+  if v_alm is not null then
+    insert into public.inventory_movements
+      (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost, notes, created_at)
+    select v_pyme, v_alm, p.id, 'adjustment_in', x.qty, p.cost,
+           'Existencia inicial del colmado', now() - interval '10 days'
+    from (values ('ARZ-001', 40), ('ACE-002', 12), ('HAB-003', 60)) as x(sku, qty)
+    join public.products p on p.tenant_id = v_pyme and p.sku = x.sku
+    where not exists (
+      select 1 from public.inventory_movements m
+      where m.tenant_id = v_pyme and m.product_id = p.id
+    );
+  end if;
+
+  if not exists (
+    select 1 from public.ncf_sequences where tenant_id = v_pyme and ncf_type = 'B02'
+  ) then
+    insert into public.ncf_sequences
+      (tenant_id, ncf_type, range_from, range_to, next_number, expires_on, authorization_ref)
+    values
+      (v_pyme, 'B02', 1, 5000, 1, (current_date + interval '1 year')::date, 'DEMO-B02');
+  end if;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  La distribuidora con los dos modulos de F6 que la demo nunca encendio
+-- ═══════════════════════════════════════════════════════════════════════
+--  `taxes` (0116) y `consolidation` (0117) llegaron despues de que se
+--  armara la lista de modulos de la distribuidora y nadie los agrego: sus
+--  pantallas daban 404 en la demo y el marketplace no tenia como
+--  ensenarlos. `consolidation` requiere `accounting` y `orgs`, que ya
+--  estan; la distribuidora tiene dos empresas, que es justo su caso.
+do $$
+declare
+  v_med uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  insert into regb.tenant_modules (tenant_id, module_id, status, enabled)
+  values (v_med, 'taxes', 'active', true),
+         (v_med, 'consolidation', 'active', true)
+  on conflict do nothing;
 end $$;

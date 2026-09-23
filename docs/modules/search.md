@@ -57,7 +57,10 @@ Superposicion, no pantalla:
 
 ## Eventos
 
-No declara ni emite eventos.
+No declara ni emite eventos, **a proposito**: `Ctrl+K` solo lee un indice
+armado en el servidor y navega. No escribe nada. Emitir "alguien busco X"
+mandaria a webhooks lo que la gente escribe en el buscador, que puede ser
+un nombre o una cedula.
 
 ## Definicion de Terminado
 
@@ -72,7 +75,7 @@ No declara ni emite eventos.
 | 7 | Tour ≥6 pasos | ❌ `f14.busqueda` tiene 4 pasos |
 | 8 | Datos demo | ✅ indexa los productos y el equipo sembrados |
 | 9 | ≥2 widgets | ➖ no aplica |
-| 10 | Eventos documentados | ➖ no tiene |
+| 10 | Eventos documentados | ➖ no aplica: modulo de solo lectura; razon en "Eventos" |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

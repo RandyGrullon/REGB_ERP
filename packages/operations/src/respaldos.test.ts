@@ -1,8 +1,40 @@
 import { describe, expect, it } from 'vitest'
-import { DIAS_ALARMA, DIAS_AVISO, estadoDeRespaldos } from './respaldos.js'
+import { DIAS_ALARMA, DIAS_AVISO, datosDeRespaldos, estadoDeRespaldos } from './respaldos.js'
 
 const HOY = new Date('2026-09-13T10:00:00Z')
 const haceDias = (n: number) => new Date(HOY.getTime() - n * 86_400_000)
+
+describe('Un respaldo que no trae las ventas no protege', () => {
+  // Hasta 0122 el respaldo traia seis tablas maestras y ni una venta. Esos
+  // archivos siguen en la lista, y uno descargado ayer ponia el aviso en
+  // verde: "eso es lo que perderias" -mentira, perderias todas las ventas-.
+  const parcialDeAyer = { creado: haceDias(1), salio: haceDias(1), completo: false }
+
+  it('un parcial descargado ayer NO pone el aviso en verde', () => {
+    const d = datosDeRespaldos([parcialDeAyer])
+    expect(d.ultimoFuera).toBeNull()
+    expect(estadoDeRespaldos(d, HOY).nivel).not.toBe('al-dia')
+  })
+
+  it('si solo hay parciales, lo dice: no traen tus ventas', () => {
+    const e = estadoDeRespaldos(datosDeRespaldos([parcialDeAyer]), HOY)
+    expect(e.nivel).toBe('solo-parciales')
+    expect(e.titulo).toMatch(/ventas/)
+    expect(e.detalle).toMatch(/facturas/)
+  })
+
+  it('el reloj corre desde el ultimo COMPLETO que salio, aunque despues salga un parcial', () => {
+    const d = datosDeRespaldos([
+      parcialDeAyer,
+      { creado: haceDias(9), salio: haceDias(8), completo: true },
+    ])
+    expect(estadoDeRespaldos(d, HOY)).toMatchObject({ nivel: 'muy-viejo', diasFuera: 8 })
+  })
+
+  it('sin parciales ni completos sigue siendo "no tienes ningun respaldo"', () => {
+    expect(estadoDeRespaldos(datosDeRespaldos([]), HOY).nivel).toBe('sin-respaldo')
+  })
+})
 
 describe('Un respaldo que no salio no protege de nada', () => {
   it('cuarenta respaldos y ninguno descargado sigue siendo estar a cero', () => {

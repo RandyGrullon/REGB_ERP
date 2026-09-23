@@ -161,6 +161,55 @@ describe('Activar un modulo es un dato, no un despliegue', () => {
     expect(entry?.isTrial).toBe(true)
     expect(entry?.trialDaysLeft).toBe(9)
   })
+
+  // 0128: antes la prueba no vencia nunca y se usaba gratis para siempre.
+  const enPrueba = (trialEndsAt: string | Date): TenantModule => ({
+    moduleId: 'inventory',
+    status: 'trial',
+    enabled: true,
+    trialEndsAt: trialEndsAt as string,
+  })
+
+  it('el ultimo dia de prueba todavia corre, hasta las 24:00', () => {
+    const r = hydrate({
+      ...base,
+      now: new Date('2026-07-31T23:59:59Z'),
+      tenantModules: [live('products'), enPrueba('2026-07-31')],
+    })
+    expect(r.activeModules.has('inventory')).toBe(true)
+  })
+
+  it('vencida, deja de correr y de verse -sus datos no se tocan, eso es de la base-', () => {
+    const r = hydrate({
+      ...base,
+      now: new Date('2026-08-01T00:00:00Z'),
+      tenantModules: [live('products'), enPrueba('2026-07-31')],
+    })
+    expect(r.activeModules.has('inventory')).toBe(false)
+    expect(r.licensedModules.has('inventory')).toBe(false)
+    expect(r.sidebar.some((s) => s.moduleId === 'inventory')).toBe(false)
+  })
+
+  it('tambien con la fecha como Date, que es lo que devuelve el driver', () => {
+    const r = hydrate({
+      ...base,
+      now: new Date('2026-08-01T00:00:00Z'),
+      tenantModules: [live('products'), enPrueba(new Date('2026-07-31T00:00:00Z'))],
+    })
+    expect(r.activeModules.has('inventory')).toBe(false)
+  })
+
+  it('activado, ya no depende de la fecha de prueba', () => {
+    const r = hydrate({
+      ...base,
+      now: new Date('2026-09-01T00:00:00Z'),
+      tenantModules: [
+        live('products'),
+        { moduleId: 'inventory', status: 'active', enabled: true, trialEndsAt: '2026-07-31' },
+      ],
+    })
+    expect(r.activeModules.has('inventory')).toBe(true)
+  })
 })
 
 // ═══════════════════════════════════════════════════════════════════════

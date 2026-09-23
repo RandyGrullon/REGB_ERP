@@ -77,9 +77,21 @@ escribir esta ficha; `ESTADO.md` todavia la lista como deuda). Ver
 
 ## Eventos
 
-| Evento | Estado |
-|---|---|
-| `orgs.company.created` | Declarado; **ningun codigo lo emite** |
+| Evento | Cuando | Payload | Donde |
+|---|---|---|---|
+| `orgs.company.created` | Al agregar una empresa, en la **misma transaccion** que el `insert` | `{ companyId, currency }` | `crearEmpresa()` en [`empresas/actions.ts`](../../apps/web/src/app/empresas/actions.ts) |
+
+- **Sin razon social ni RNC** en el payload: el evento puede viajar a un
+  webhook de terceros. Quien necesite la ficha la lee por el id, bajo RLS.
+- Editar o marcar principal **no** emite: no hay tema declarado para eso.
+- Si el evento no se puede escribir, la empresa tampoco queda, y la
+  pantalla lo dice con un aviso en vez de reventar la accion.
+- Pruebas: [`empresas.accion.test.ts`](../../apps/web/src/app/empresas/empresas.accion.test.ts)
+  llama a la accion real y mira la fila en `event_outbox`;
+  [`eventos-declarados.test.ts`](../../apps/web/src/lib/eventos-declarados.test.ts)
+  pone roja la puerta si un modulo core declara un tema que ningun codigo
+  emite, emite uno que no declara, o declara uno con un formato que
+  `emit_event()` rechazaria.
 
 ## Definicion de Terminado
 
@@ -94,7 +106,7 @@ escribir esta ficha; `ESTADO.md` todavia la lista como deuda). Ver
 | 7 | Tour ≥6 pasos | ❌ `f14.empresas` tiene 4 pasos; `core.bienvenida` (modulo `tour`) abre con uno mas |
 | 8 | Datos demo | ✅ Colmado La Esperanza SRL (RNC 130-11111-1) y Distribuidora Caribe SRL (131-45678-2) |
 | 9 | ≥2 widgets | ❌ ninguno |
-| 10 | Eventos documentados | ⚠️ documentado aqui que el evento declarado no se emite |
+| 10 | Eventos documentados | ✅ `orgs.company.created` se emite desde `crearEmpresa()`; prueba de accion real contra el outbox |
 | 11 | Precio en 3 tiers | ✅ 0/0/0 |
 | 12 | E2E en 3 plataformas | ⚠️ no verificado |
 | 13 | Ficha | ✅ este archivo |

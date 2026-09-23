@@ -4,6 +4,7 @@ import { Icon } from '@regb/ui'
 import { ControlNav } from './ControlNav'
 import { BotonEnvio } from '@/components/BotonEnvio'
 import { Aviso } from '@/components/Aviso'
+import { TemaToggle } from '@/components/TemaToggle'
 import { leerAviso } from '@/lib/aviso'
 
 export const metadata = { title: 'REGB Control' }
@@ -51,6 +52,7 @@ export default async function ControlLayout({ children }: { children: ReactNode 
         <ControlNav />
 
         <div className="ml-auto flex shrink-0 items-center gap-1">
+          <TemaToggle />
           <Link
             href="/"
             className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"

@@ -79,7 +79,10 @@ export async function loadModuleOptions(tenantId: string): Promise<ModuleOption[
     from regb.module_catalog mc
     join regb.tenant_modules tm on tm.module_id = mc.id
     where tm.tenant_id = ${tenantId}
-      and tm.status in ('active', 'trial')
+      -- Una prueba vencida ya no esta activa (0128, rls.module_active()):
+      -- no tiene sentido dar permisos sobre un modulo que no se ve.
+      and (tm.status = 'active'
+           or (tm.status = 'trial' and (tm.trial_ends_at is null or tm.trial_ends_at >= current_date)))
       and tm.enabled
     order by
       case mc.category

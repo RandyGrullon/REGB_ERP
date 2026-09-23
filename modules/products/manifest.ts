@@ -13,7 +13,7 @@ export default defineModule({
   category: 'core',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'inventario',
   navOrder: 20,
 
   pricing: {

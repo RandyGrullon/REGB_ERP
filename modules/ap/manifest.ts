@@ -23,7 +23,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 55,
 
   pricing: {
@@ -51,7 +51,13 @@ export default defineModule({
   reports: ['aging-payable', 'supplier-statement'],
 
   events: {
-    emits: ['ap.invoice.recorded', 'ap.invoice.paid'],
+    emits: [
+      'ap.invoice.recorded',
+      'ap.invoice.paid',
+      // Desde la tabla (0131): cada pago (tambien el parcial) y cada anulacion.
+      'ap.payment.recorded',
+      'ap.invoice.voided',
+    ],
     listens: [],
   },
 

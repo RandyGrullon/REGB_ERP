@@ -57,7 +57,19 @@ export async function preciosDeVenta(
   tx: TransactionSql,
   tenantId: string,
   lineas: PrecioPedido[],
-  contexto: { customerId: string | null; channel: string | null },
+  contexto: {
+    customerId: string | null
+    channel: string | null
+    /**
+     * Respetar la lista ASIGNADA al cliente (`customers.price_list_id`).
+     * Opcional y apagado por defecto a proposito: la caja resuelve el
+     * precio tambien en el navegador (PosTerminal) y cobra lo que ENSEÑA;
+     * si el servidor usara la asignada y el terminal no, la venta se
+     * rechazaria por "los pagos suman X". Los pedidos la usan; la caja,
+     * cuando su terminal la lea tambien.
+     */
+    usarListaAsignada?: boolean
+  },
   asOf: Date = new Date(),
 ): Promise<Map<string, PrecioResultado>> {
   const salida = new Map<string, PrecioResultado>()
@@ -76,6 +88,19 @@ export async function preciosDeVenta(
   if (filasListas.length === 0) {
     for (const l of lineas) salida.set(l.productId, { precio: l.precioBase, listaId: null })
     return salida
+  }
+
+  let assignedListId: string | null = null
+  if (contexto.usarListaAsignada && contexto.customerId) {
+    const [c] = await tx<{ price_list_id: string | null }[]>`
+      select price_list_id from public.customers
+      where id = ${contexto.customerId} and tenant_id = ${tenantId}`
+    assignedListId = c?.price_list_id ?? null
+  }
+  const resolucion = {
+    customerId: contexto.customerId,
+    channel: contexto.channel,
+    assignedListId,
   }
 
   const filasEntradas = await tx<FilaEntrada[]>`
@@ -104,7 +129,7 @@ export async function preciosDeVenta(
 
     salida.set(
       l.productId,
-      resolverPrecio(l.precioBase, listas, entradas, { ...contexto, cantidad: l.cantidad }, asOf),
+      resolverPrecio(l.precioBase, listas, entradas, { ...resolucion, cantidad: l.cantidad }, asOf),
     )
   }
 
@@ -116,7 +141,7 @@ export async function precioDeVenta(
   tx: TransactionSql,
   tenantId: string,
   linea: PrecioPedido,
-  contexto: { customerId: string | null; channel: string | null },
+  contexto: { customerId: string | null; channel: string | null; usarListaAsignada?: boolean },
   asOf: Date = new Date(),
 ): Promise<PrecioResultado> {
   const m = await preciosDeVenta(tx, tenantId, [linea], contexto, asOf)

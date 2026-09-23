@@ -17,8 +17,9 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { calendarioFiscal, creditoArrastrado, liquidarItbis } from '@regb/operations'
+import { calendarioFiscal, creditoArrastrado, liquidarItbis, periodoFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { PUERTAS_VENTAS_DGII, primeraPuerta } from '@/lib/fiscal'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { BotonEnvio } from '@/components/BotonEnvio'
@@ -74,10 +75,11 @@ const ESTADO: Record<string, { texto: string; tono: 'neutral' | 'info' | 'succes
  * sobre un monto sin explicacion y concluya que el sistema esta roto.
  *
  * Las dos mitades de la suma viven bajo la RLS de OTROS modulos -dgii_607
- * es de `ar`, dgii_606 es de `ap`-. Si uno esta apagado, esa mitad vuelve
- * en cero y la declaracion sale mal PARECIENDO correcta. Por eso la
- * pantalla comprueba los dos modulos y lo dice, en vez de sumar cero en
- * silencio.
+ * junta `ar` y `pos`, dgii_606 es de `ap`-. Si uno esta apagado, esa mitad
+ * vuelve en cero y la declaracion sale mal PARECIENDO correcta. Por eso la
+ * pantalla pregunta a la base que ventas no ve (ventas_fuera_de_vista,
+ * 0129) y si `ap` esta, y lo dice en vez de sumar cero en silencio. Ya no
+ * exige `ar`: un colmado que solo vende en caja tambien declara.
  */
 export default async function LiquidacionPage({
   searchParams,
@@ -88,26 +90,35 @@ export default async function LiquidacionPage({
   const { ctx, shell } = await modulePage(params, 'taxes')
 
   // Por defecto el mes ANTERIOR: el corriente todavia se esta armando y lo
-  // que se liquida es un periodo que ya cerro.
+  // que se liquida es un periodo que ya cerro. Contado en RD: con el mes
+  // del servidor (UTC), la noche del ultimo dia ya proponia el equivocado.
   const hoy = new Date()
-  const mesPasado = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
-  const periodoDefecto = `${mesPasado.getFullYear()}${String(mesPasado.getMonth() + 1).padStart(2, '0')}`
+  const actual = periodoFiscal(hoy)
+  const mesPasado = new Date(Date.UTC(Number(actual.slice(0, 4)), Number(actual.slice(4, 6)) - 2, 15))
+  const periodoDefecto = periodoFiscal(mesPasado)
   const periodo = /^[0-9]{6}$/.test(params.periodo ?? '') ? params.periodo! : periodoDefecto
 
-  const veVentas = exigir(ctx, 'ar', 'ar.view').ok
   const veCompras = exigir(ctx, 'ap', 'ap.view').ok
   const puedeCerrar = exigir(ctx, 'taxes', 'taxes.filing.close').ok
+  // Donde se bajan el 606/607/608: la pantalla que ESTE rol puede abrir,
+  // la de Por cobrar o la de la Caja. Un enlace fijo a /cobrar/dgii era un
+  // 404 para el colmado sin `ar`.
+  const reportes = primeraPuerta(ctx, PUERTAS_VENTAS_DGII)
 
-  const [cobrado607, adelantado, retenidoAProveedores, sinNcf, saldo, cerrada, historial] = await asUser(
+  const [cobrado607, adelantado, retenidoAProveedores, sinNcf, saldo, cerrada, historial, ocultas] = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
-      const v = veVentas
-        ? await tx<{ t: string }[]>`
-            select coalesce(sum(itbis_facturado), 0)::text as t
-            from public.dgii_607
-            where tenant_id = ${ctx.tenantId} and periodo = ${periodo}`
-        : []
+      // Las ventas ya no dependen de `ar` (0129): el 607 junta facturas y
+      // caja bajo la RLS de cada una, y lo que un modulo apagado esconda lo
+      // dice ventas_fuera_de_vista() -abajo- en vez de sumar cero callado.
+      // Las notas de credito vienen en positivo y RESTAN (0130), igual que
+      // en cerrarLiquidacion: la vista previa dice lo mismo que se declara.
+      const v = await tx<{ t: string }[]>`
+        select coalesce(sum(case when origen = 'nota_credito' then -itbis_facturado
+                                 else itbis_facturado end), 0)::text as t
+        from public.dgii_607
+        where tenant_id = ${ctx.tenantId} and periodo = ${periodo}`
       const c = veCompras
         ? await tx<{ t: string; r: string }[]>`
             select coalesce(sum(itbis_facturado), 0)::text as t,
@@ -120,21 +131,26 @@ export default async function LiquidacionPage({
       // permite a proposito mientras la DGII no autoriza el primer rango-
       // se cobro igual y entra en la declaracion. Se trae aparte para
       // poder ENSEÑAR por que el IT-1 no cuadra contra el 607.
-      const sn = veVentas
-        ? await tx<{ t: string }[]>`
-            select coalesce(sum(t), 0)::text as t
-            from (
-              select coalesce(sum(i.tax), 0) as t
-              from public.customer_invoices i
-              where i.tenant_id = ${ctx.tenantId} and i.ncf is null and i.status <> 'void'
-                and to_char(i.issue_date, 'YYYYMM') = ${periodo}
-              union all
-              select coalesce(sum(s.tax), 0)
-              from public.pos_sales s
-              where s.tenant_id = ${ctx.tenantId} and s.ncf is null and not s.voided
-                and to_char(s.created_at, 'YYYYMM') = ${periodo}
-            ) q`
-        : []
+      const sn = await tx<{ t: string }[]>`
+        select coalesce(sum(t), 0)::text as t
+        from (
+          select coalesce(sum(i.tax), 0) as t
+          from public.customer_invoices i
+          where i.tenant_id = ${ctx.tenantId} and i.ncf is null and i.status <> 'void'
+            and to_char(i.issue_date, 'YYYYMM') = ${periodo}
+          union all
+          select coalesce(sum(s.tax), 0)
+          from public.pos_sales s
+          where s.tenant_id = ${ctx.tenantId} and s.ncf is null and not s.voided
+            and to_char(public.fecha_fiscal(s.sold_at), 'YYYYMM') = ${periodo}
+          union all
+          select -coalesce(sum(n.tax), 0)
+          from public.customer_credit_notes n
+          where n.tenant_id = ${ctx.tenantId} and n.ncf is null
+            and to_char(n.issue_date, 'YYYYMM') = ${periodo}
+        ) q`
+      const o = await tx<{ modulo: string; documentos: string }[]>`
+        select modulo, documentos::text from public.ventas_fuera_de_vista(${periodo})`
       // La ultima anterior, no "la que toque": creditoArrastrado() decide
       // si es el eslabon inmediato o si la cadena tiene un hueco.
       const a = await tx<{ period: string; credit_forward: string }[]>`
@@ -167,9 +183,12 @@ export default async function LiquidacionPage({
         ),
         f ?? null,
         h,
+        o,
       ] as const
     },
   )
+  const escondidas = ocultas.reduce((s, x) => s + Number(x.documentos), 0)
+  const NOMBRE_MODULO: Record<string, string> = { ar: 'Cuentas por cobrar', pos: 'Punto de venta' }
 
   // Lo cobrado del IT-1 = lo del 607 MAS las ventas sin NCF. Son dos
   // reportes distintos: el 607 declara comprobantes, el IT-1 operaciones.
@@ -222,7 +241,7 @@ export default async function LiquidacionPage({
           />
         </Toolbar>
 
-        {(!veVentas || !veCompras) && (
+        {(escondidas > 0 || !veCompras) && (
           <div
             role="alert"
             className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] p-3 text-sm"
@@ -234,12 +253,13 @@ export default async function LiquidacionPage({
               className="shrink-0 text-[var(--color-semantic-text-danger)]"
             />
             <p className="text-[var(--color-text-secondary)]">
-              {!veVentas && (
+              {escondidas > 0 && (
                 <>
-                  No se ve <strong className="text-[var(--color-text-primary)]">lo que cobraste</strong>:
-                  el modulo de Cuentas por cobrar no esta activo o tu rol no lo alcanza, asi que el
-                  ITBIS de ventas de arriba es cero y{' '}
-                  <strong className="text-[var(--color-text-primary)]">no lo es</strong>. Esta
+                  No se ve <strong className="text-[var(--color-text-primary)]">todo lo que cobraste</strong>:
+                  hay {escondidas} venta{escondidas === 1 ? '' : 's'} de este periodo en un modulo
+                  apagado ({ocultas.map((x) => NOMBRE_MODULO[x.modulo] ?? x.modulo).join(', ')}), asi
+                  que el ITBIS de ventas de arriba{' '}
+                  <strong className="text-[var(--color-text-primary)]">esta corto</strong>. Esta
                   declaracion no se puede cerrar asi: declarar de menos es una multa.{' '}
                 </>
               )}
@@ -287,8 +307,8 @@ export default async function LiquidacionPage({
             label="ITBIS cobrado"
             value={`RD$ ${money(cobrado)}`}
             hint={
-              !veVentas
-                ? 'sin Cuentas por cobrar'
+              escondidas > 0
+                ? 'CORTO: hay ventas en un modulo apagado'
                 : sinNcf > 0
                   ? `de tus ventas, con ${money(sinNcf)} sin NCF`
                   : 'de tus ventas (607)'
@@ -341,14 +361,18 @@ export default async function LiquidacionPage({
             {vence.vencida
               ? ' — ya paso.'
               : ` — faltan ${vence.diasRestantes} dia${vence.diasRestantes === 1 ? '' : 's'}.`}{' '}
-            Los formatos 606, 607 y 608 se descargan en{' '}
-            <a
-              href={`/cobrar/dgii${qs}${sep}periodo=${periodo}`}
-              className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              Reportes DGII
-            </a>
-            .
+            {reportes && (
+              <>
+                Los formatos 606, 607 y 608 se descargan en{' '}
+                <a
+                  href={`${reportes.ruta}${qs}${sep}periodo=${periodo}`}
+                  className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  Reportes DGII
+                </a>
+                .
+              </>
+            )}
           </p>
         )}
 

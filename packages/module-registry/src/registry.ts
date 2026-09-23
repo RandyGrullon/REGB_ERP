@@ -64,9 +64,35 @@ export interface HydrationResult {
   unavailable: Array<{ moduleId: string; reason: string }>
 }
 
-/** Un modulo cuenta como activo solo si esta licenciado Y encendido. */
-const isLive = (tm: TenantModule): boolean =>
-  (tm.status === 'active' || tm.status === 'trial') && tm.enabled
+/**
+ * Un modulo cuenta como activo solo si esta licenciado Y encendido, y si
+ * es una prueba, si no ha vencido.
+ *
+ * `trial_ends_at` es una fecha: la prueba vale el dia entero en que vence
+ * (hasta las 24:00 UTC, igual que `current_date` en `rls.module_active`,
+ * 0128). Antes nadie la miraba: la prueba no vencia nunca y el modulo se
+ * usaba gratis para siempre. Vencida, deja de verse -los datos se
+ * quedan- hasta que se active.
+ */
+const isLive = (tm: TenantModule, now: Date): boolean => {
+  if (!tm.enabled) return false
+  if (tm.status === 'active') return true
+  if (tm.status !== 'trial') return false
+  if (!tm.trialEndsAt) return true
+  return now.getTime() < finDeLaPrueba(tm.trialEndsAt)
+}
+
+/**
+ * Fin (exclusivo) del ultimo dia de prueba, en ms UTC. Acepta la cadena
+ * 'YYYY-MM-DD' y tambien el `Date` que devuelve el driver para `date`.
+ */
+function finDeLaPrueba(v: string | Date): number {
+  const dia =
+    v instanceof Date
+      ? Date.UTC(v.getUTCFullYear(), v.getUTCMonth(), v.getUTCDate())
+      : Date.parse(`${String(v).slice(0, 10)}T00:00:00Z`)
+  return dia + 86_400_000
+}
 
 export interface HydrateOptions {
   /** Filas de regb.tenant_modules del cliente. */
@@ -95,7 +121,7 @@ export function hydrate(opts: HydrateOptions): HydrationResult {
   // ── 1. Que esta licenciado y encendido ───────────────────────────────
   const licensed = new Set<string>()
   for (const tm of tenantModules) {
-    if (isLive(tm)) licensed.add(tm.moduleId)
+    if (isLive(tm, now)) licensed.add(tm.moduleId)
   }
 
   // ── 2. Descartar lo que no puede correr ──────────────────────────────
@@ -185,7 +211,22 @@ export function hydrate(opts: HydrateOptions): HydrationResult {
    * Cada modulo declara su seccion y su orden en el manifest, asi que esto
    * sigue sin conocer ni un solo id de modulo (§2.2).
    */
-  const ORDEN_SECCION = ['inicio', 'operacion', 'administracion', 'datos', 'ayuda']
+  // Lo del dia a dia arriba (vender, inventario), lo de oficina despues y
+  // la plataforma al fondo. Mismo orden que las areas del marketplace.
+  const ORDEN_SECCION = [
+    'inicio',
+    'ventas',
+    'inventario',
+    'finanzas',
+    'rrhh',
+    'produccion',
+    'proyectos',
+    'industria',
+    'operacion',
+    'administracion',
+    'datos',
+    'ayuda',
+  ]
   sidebar.sort((a, b) => {
     const sa = ORDEN_SECCION.indexOf(a.navSection)
     const sb = ORDEN_SECCION.indexOf(b.navSection)

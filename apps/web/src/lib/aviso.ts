@@ -70,9 +70,11 @@ export async function anotarAviso(
    * no le dice al usuario que su archivo se fue a la papelera.
    */
   texto?: string,
+  /** Solo se pinta si salio bien: un error no lleva a ningun sitio. */
+  enlace?: Aviso['enlace'],
 ): Promise<ActionResult> {
   const aviso: Aviso = r.ok
-    ? { tipo: 'ok', texto: texto ?? textoDeExito(accion) }
+    ? { tipo: 'ok', texto: texto ?? textoDeExito(accion), ...(enlace ? { enlace } : {}) }
     : { tipo: 'error', texto: r.error }
 
   const jar = await cookies()
@@ -95,7 +97,13 @@ export async function leerAviso(): Promise<Aviso | null> {
     const a = JSON.parse(crudo) as Aviso
     if (a.tipo !== 'ok' && a.tipo !== 'error') return null
     if (typeof a.texto !== 'string' || a.texto === '') return null
-    return a
+    // La cookie la puede escribir cualquiera en su navegador: un enlace
+    // solo se acepta si es una ruta de la propia app (nada de
+    // `javascript:` ni dominios de fuera).
+    const e = a.enlace
+    const enlaceValido =
+      e && typeof e.href === 'string' && /^\/(?!\/)/.test(e.href) && typeof e.texto === 'string'
+    return { tipo: a.tipo, texto: a.texto, ...(enlaceValido ? { enlace: e } : {}) }
   } catch {
     return null
   }

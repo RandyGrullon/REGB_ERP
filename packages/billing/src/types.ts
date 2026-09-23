@@ -61,4 +61,19 @@ export interface MonthlyInput {
   metered?: MeteredConsumption[]
   discount?: DiscountKind
   taxRate?: number
+  /**
+   * Cargos de una sola vez que viajan en la factura del mes (la
+   * instalacion de un modulo recien activado). Pagan ITBIS pero NO llevan
+   * el descuento por ciclo: el anual descuenta la suscripcion, no un
+   * trabajo que se hace una vez.
+   */
+  oneTimeCharges?: InvoiceLine[]
+}
+
+/** Instalacion de un modulo activado, lista para facturarse una vez. */
+export interface InstallationCharge {
+  moduleId: string
+  amountCents: Cents
+  /** Cayo dentro de los modulos que regala el tier: se registra a US$0. */
+  included: boolean
 }

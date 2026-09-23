@@ -96,6 +96,34 @@ la transacción entera y las líneas, el kardex y los pagos fallan detrás — u
 el mismo candado que toma `assign_ncf` y dura hasta el commit, así que nadie
 más puede gastar el número en el medio.
 
+### Lo fiscal de la caja, sin Por cobrar (0129)
+
+Un colmado con **solo `pos`** emite NCF en cada ticket y declara su 607,
+pero cargar la autorización (`/cobrar/ncf`), bajar el 607/608
+(`/cobrar/dgii`) y cerrar el IT-1 exigían `ar` —que exige `sales-orders`—:
+dos módulos de crédito que un colmado no usa. El aviso amarillo de la caja
+enlazaba a un 404.
+
+- **`/pos/comprobantes`** (`pos.ncf.manage`) y **`/pos/dgii`**
+  (`pos.export`) son las mismas pantallas que las de Por cobrar
+  ([`components/fiscal/`](../../apps/web/src/components/fiscal)), con otra
+  puerta. Ver [ar.md › Secuencias NCF](ar.md#secuencias-ncf).
+- El aviso "No hay secuencia de NCF" enlaza a la pantalla que **ese rol**
+  puede abrir; si ninguna (el Cajero), le dice que avise al dueño en vez de
+  mandarlo a un 404.
+- La base exige el permiso: cargar una secuencia con solo `pos` pide
+  `pos.ncf.manage` (política `registrar_pos`). Antes `tenant_pos` era
+  `for all` y un cajero con su token de PostgREST podía cargar o reiniciar
+  rangos. El `select … for update` de `cobrarVenta` sigue funcionando: el
+  cajero conserva `UPDATE (next_number)`, y el trigger
+  `ncf_proximo_solo_avanza` solo deja avanzar el número desde `assign_ncf`.
+- **El 607 declara la venta el día que se VENDIÓ en RD** (`sold_at`), no el
+  de `created_at` en UTC: la venta del 30 a las 9 p. m. es de ese mes, y la
+  offline no se muda al día en que sincronizó. Y declara `total − ITBIS`
+  como base: el ticket de 1,000 con 10% ya no sale con 800.
+- El IT-1 ya no exige `ar`: se niega solo si **hay** ventas del periodo en un
+  módulo apagado (`ventas_fuera_de_vista`).
+
 ## Pantallas
 
 | Ruta | Permiso | Qué hace |
@@ -104,6 +132,8 @@ más puede gastar el número en el medio.
 | `/pos/shifts` | `pos.shift.open` | Abrir y cerrar turno con arqueo |
 | `/pos/reports` | `pos.report.view` | Histórico de tickets, anulación, enlace al ticket |
 | `/pos/ticket/:id` | `pos.report.view` | Ticket de 80 mm (oculta del menú) |
+| `/pos/comprobantes` | `pos.ncf.manage` | Secuencias NCF: cargar, corregir vencimiento, dar de baja con motivo (0129) |
+| `/pos/dgii` | `pos.export` | 607 y 608 del periodo (y el 606 si el rol ve `ap`) (0129) |
 
 Botones ≥44 px, probado a **768 px** además de 375 y 1440: el POS es de tablet.
 
@@ -118,7 +148,8 @@ verifica **en la acción de servidor**, no en el botón.
 ## Manifiesto
 
 - **Permisos:** `view`, `sell`, `void`, `discount`, `shift.open`,
-  `shift.close`, `report.view`
+  `shift.close`, `report.view`, `ncf.manage`, `export` (los dos últimos,
+  0129: lo fiscal de la caja sin `ar`)
 - **Widgets:** `sales-today`, `open-shifts`
 - **Emite:** `pos.sale.completed`, `pos.sale.voided`, `pos.shift.closed`
 - **Requiere:** `products` · **Recomienda:** `inventory`

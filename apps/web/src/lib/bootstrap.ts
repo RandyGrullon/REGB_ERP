@@ -241,6 +241,10 @@ export async function bootstrap({
     select id, legal_name, tier, status from regb.tenants where id = ${tenantId}`
   if (!tenant) return null
 
+  // El rol se busca DENTRO del tenant. Esta consulta corre como dueño (sin
+  // RLS): si un token trajera el role_id de otro cliente, sin el filtro la
+  // app le aplicaba los permisos de ese otro cliente. Un rol que no es del
+  // tenant es como no tener rol: no hay contexto (0121/0127).
   const [role] = await sql<
     {
       id: string
@@ -250,7 +254,7 @@ export async function bootstrap({
       scope: Record<string, unknown>
     }[]
   >`select id, name, visible_modules, permissions, scope
-      from public.roles where id = ${roleId}`
+      from public.roles where id = ${roleId} and tenant_id = ${tenant.id}`
   if (!role) return null
 
   // ── A partir de aqui, TODO pasa por RLS ──────────────────────────────

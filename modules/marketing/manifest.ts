@@ -19,7 +19,7 @@ export default defineModule({
   category: 'advanced',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'ventas',
   navOrder: 86,
 
   pricing: {

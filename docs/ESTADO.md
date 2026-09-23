@@ -4,16 +4,23 @@
 > repo que dice en qué punto está REGB ERP. El resto dice qué se va a
 > construir (`PROYECTO-REGB-ERP.md`) y en qué orden (`FASES-DE-DESARROLLO.md`).
 
-**Última verificación: 22 de septiembre de 2026**, contra el repo y no de
-memoria. Cada número de abajo dice cómo volver a comprobarlo.
+**Última verificación: 23 de septiembre de 2026**, contra el repo y no de
+memoria, con la puerta `gate:f0` completa en verde. Cada número de abajo
+dice cómo volver a comprobarlo.
 
 ---
 
 ## En una línea
 
-**El código está prácticamente terminado. Lo que falta no es código:** es
-poner al primer cliente a facturar, y eso depende de credenciales y de
-trabajo de campo.
+**El flujo comercial de punta a punta ya está cerrado en código** —caja,
+crédito, compras, contabilidad automática y DGII serie B—. El 22 sep este
+documento decía que el código estaba "prácticamente terminado"; usar la app
+como cliente el 23 sep demostró que no: el 607 se declaraba mal, un colmado
+no podía cumplir con la DGII, el crédito no tenía límite y la contabilidad
+no recibía nada de la operación. La ronda 2 lo arregló
+([`esto_es.md`](esto_es.md)). **Lo que falta ahora es el e-CF** —obligatorio
+desde el 15 nov 2026— **y lo que no es código:** credenciales y trabajo de
+campo.
 
 ```
 Plan base  ███████████████████████████████████████░  ~115 / 119 sp · 97%
@@ -35,18 +42,18 @@ tampoco hace falta para una PYME.
 | | Valor | Cómo comprobarlo |
 |---|---:|---|
 | Módulos construidos | **80**: todos los del plan base | `ls modules`, y compararlo con el catálogo de `FASES` |
-| Migraciones | **120** | `ls supabase/migrations` |
-| Pruebas de base de datos | **1,099** en 85 archivos | `pnpm gate:f0` |
-| Pruebas de acciones de servidor | **15**, llamando a la acción real | `pnpm gate:f0` |
-| Pruebas de lógica pura | **995** en 74 archivos | `pnpm gate:f0` |
-| Pantallas web | **172** | `find apps/web/src/app -name page.tsx` |
-| Rutas registradas | **158**, sin colisión | `pnpm audit:manifests` |
+| Migraciones | **134** (hasta la 0135; la 0126 no existe) | `ls supabase/migrations` |
+| Pruebas de base de datos | **1,342** en 96 archivos | `pnpm gate:f0` |
+| Pruebas de la web (acciones reales y estáticas) | **319** en 38 archivos | `pnpm gate:f0` |
+| Pruebas de lógica pura | **1,653** en los paquetes | `pnpm gate:f0` |
+| Pantallas web | **179** | `find apps/web/src/app -name page.tsx` |
+| Rutas registradas | **159**, sin colisión | `pnpm audit:manifests` |
+| Módulos con captura real en el marketplace | **79** de 80 | `pnpm capturas:marketplace` |
 | Pantallas móvil | **11** | `apps/mobile/app` |
-| Commits | **160**, desde el 24 jul 2026 | `git log` |
 
-La puerta `pnpm gate:f0` (typecheck + lint + pruebas + 3 auditorías) está
-**en verde**. `pnpm sonda:rutas` abre las 118 rutas con tres roles sin
-ninguna pantalla rota.
+La puerta `pnpm gate:f0` (typecheck + lint + pruebas + 4 auditorías) está
+**en verde**: 3,314 pruebas. Las 134 migraciones aplican en orden desde una
+base vacía, y la semilla de la demo también.
 
 ---
 
@@ -70,6 +77,14 @@ ninguna pantalla rota.
 
 ### Lo último que se hizo
 
+- **Ronda 2 de agentes** (23 sep): los seis hallazgos de la ronda 1
+  cerrados; el análisis de flujo de punta a punta y sus arreglos (607/606
+  e IT-1, colmado solo con caja, crédito con límite y B04, contabilidad
+  automática, nómina sin doble pago y portal privado, alta de cliente sin
+  SQL); escalada de rol cerrada; factura de REGB completa; roles de fábrica
+  para clientes nuevos; marketplace con capturas reales; sidebar por áreas;
+  tema oscuro por defecto. Detalle y pendientes en [`esto_es.md`](esto_es.md);
+  a quién vender y cómo dejar Supabase listo en [`defi-v1.md`](defi-v1.md).
 - **Ronda de agentes sobre este documento** (22 sep): tasa de ITBIS por
   defecto en productos nuevos, moneda de empresas en grupos, arnés de
   pruebas para acciones de servidor, las 14 fichas que faltaban, y una
@@ -140,27 +155,40 @@ Dicho claro porque es donde más fácil se miente:
   eso: su razón de ser es lo que pasa cuando falla la red.
 - **Escritorio:** la impresora térmica y la gaveta no se han probado con
   hardware físico, y `/api/pos/sync` nunca recibió una venta real.
-- **La mayoría de acciones de servidor no tienen prueba propia.** Ya existe
-  el arnés (`apps/web/src/test/`) y cubre el cierre del IT-1 y la corrida
-  de consolidación; el resto de acciones sigue sin prueba que las llame.
+- **Muchas acciones de servidor todavía no tienen prueba propia.** El arnés
+  (`apps/web/src/test/`) ya cubre caja, crédito, cobros, compras,
+  contabilidad automática, nómina, portal, invitaciones, respaldo,
+  importación, alta de cliente y eventos core (319 pruebas); los módulos de
+  F8–F10 siguen sin prueba que llame a sus acciones.
+- **Supabase de verdad nunca se ha usado.** El envío de invitaciones (Edge
+  Function), el bloqueo de solo lectura por PostgREST y el pooler en modo
+  transacción están escritos y probados contra Postgres local, no contra un
+  proyecto Supabase.
 
 ---
 
 ## 🔧 Deuda conocida
 
+Los seis hallazgos de la ronda 1 (FK sin guarda, respaldo incompleto,
+`invoice-capture` a la venta, importar `1,234`, invitaciones, eventos core)
+**están cerrados** desde el 23 sep. Esto es lo que sigue abierto:
+
 | Deuda | Riesgo | Dónde |
 |---|---|---|
-| **Claves foráneas sin guarda de cliente**: `memberships.role_id` y `branches.company_id` | **alto** | "El agujero de siempre". Comprobar si un cliente puede apuntar a un rol o empresa de otro. Ver `modules/users.md` y `modules/branches.md` |
-| El respaldo del cliente no trae ventas, facturas, inventario ni contabilidad, y el aviso dice que sí | **alto** | `modules/backup.md` |
-| `invoice-capture` publicado con precio y sin ninguna pantalla | medio | Despublicarlo o construirlo. `modules/invoice-capture.md` |
-| Importar lee `1,234` como 1.23 | medio | `modules/imports.md` |
-| La invitación de usuarios no se envía e inventa un `user_id` | medio | `modules/users.md` |
-| Ningún módulo core emite los eventos que declara | medio | `modules/README.md`, tabla de hallazgos |
+| **El e-CF no emite**: la firma existe, pero nada arma ni envía un e-CF desde una venta o factura | **alto** | Obligatorio para pequeños y micro desde el 15 nov 2026. `modules/e-invoice.md`, [`defi-v1.md`](defi-v1.md) |
+| Un Admin (o un gerente con `*.create`) puede crear un rol con `*` y dárselo a **otra** cuenta; solo el Owner está protegido | medio | `modules/users.md` |
+| El despachador de eventos no corre solo: sin cron no salen asientos automáticos, automatizaciones ni webhooks | medio | Configurar Vercel Cron, `pg_cron` o `pnpm despachar`. [`defi-v1.md`](defi-v1.md) §4.9 |
+| Sin asiento automático todavía: costo de venta a crédito, recepciones, devoluciones, nómina, depreciación | medio | `modules/accounting.md`, ADR 0001 |
+| Nómina: horas extra, aportes patronales, archivo SUIR e IR-3 | medio | `modules/payroll.md` |
+| Reglas DGII y TSS "por confirmar" (campo 15 del 606, fecha del 608, B04 en el 607, recargo de horas extra, artículos del Código de Trabajo) | medio | Fichas de `ar`, `taxes`, `payroll` |
 | Consolidación: la foto es el acumulado, no el período | medio | Pide decidir cómo cerrar el año. Documentado en la ficha. |
-| Un tenant de prueba no se puede borrar | bajo | Tiene asientos contabilizados, que son inmutables incluso en cascada. El script de limpieza no lo contempla. |
-
-Las seis primeras filas las encontró el agente que escribió las fichas, al
-leer el código. Salieron el 22 sep y ninguna está arreglada todavía.
+| `e-invoice` está despublicado pero se cobra en la distribuidora | decisión | `modules/invoice-capture.md` |
+| `rls.role_id()` (0109) convierte el claim sin `nullif` y puede reventar en conexiones de dueño que ya tuvieron claims | bajo | Lo esquiva la 0130; la función sigue igual |
+| La caja no usa la lista de precios asignada al cliente (los pedidos sí) | bajo | Decisión deliberada: la caja cobra lo que muestra. `modules/sales-orders.md` |
+| La app no lleva tildes fuera del catálogo del marketplace | bajo | Pasada de texto en pantallas y manifiestos |
+| Tours de pedidos, cobrar y respaldos no mencionan lo nuevo | bajo | `packages/core/src/tours.ts` |
+| Facturas marcadas vencidas antes de la 0128 | bajo | Revisarlas a mano: la 0128 no las mueve |
+| Un tenant de prueba con asientos no se puede borrar | bajo | Son inmutables incluso en cascada. El script de limpieza no lo contempla. |
 
 ---
 
@@ -168,14 +196,19 @@ leer el código. Salieron el 22 sep y ninguna está arreglada todavía.
 
 Por prioridad, según el plan Q4:
 
-1. **Resolver los hallazgos de alto riesgo** de la tabla de deuda —las
-   dos claves foráneas y el respaldo del cliente— antes de que un cliente
-   real los encuentre.
-2. **Desplegar el Cliente #1** en el mostrador: hardware POS, NCF B01/B02,
+1. **Dejar Supabase de producción listo** siguiendo el checklist de
+   [`defi-v1.md`](defi-v1.md) §4.21 (pooler, SMTP propio para
+   invitaciones, hook de token, `pg_cron` para la bitácora y el
+   despachador, PITR).
+2. **Plan de e-CF** antes del 15 nov: certificado del cliente y set de
+   pruebas de la DGII, o proveedor autorizado en paralelo.
+3. **Desplegar el Cliente #1** en el mostrador: hardware POS, NCF B01/B02,
    crédito a 15 y 30 días, validación del 607. Pasos en `PRIMER-CLIENTE.md`.
-3. **Conectar credenciales**: Supabase, Stripe/Azul, certificado DGII.
-4. **Probar el móvil en un teléfono de verdad.**
-5. Caso de estudio comercial y cierre del Cliente #2.
+4. **Conectar credenciales**: Stripe/Azul, certificado DGII.
+5. **Probar el móvil en un teléfono de verdad** y la impresora térmica.
+6. Ronda 3 de código, en este orden: escalada de Admin a otra cuenta,
+   asientos de nómina y costo a crédito, horas extra y SUIR, pasada de
+   tildes en la app.
 
 La regla del plan: ante la duda entre construir un módulo más y que lo que
 el cliente ya usa sea impecable, **gana lo segundo**.

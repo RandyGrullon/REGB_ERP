@@ -19,29 +19,45 @@ reimplementarlo. La unica pieza de logica genuinamente nueva es
 `esAnuncioVigente()` -si un anuncio todavia cuenta como "reciente" para
 resaltarlo con una insignia-.
 
-## "Quien mira" se resuelve por correo, no por un `employees.user_id`
+## "Quien mira" es el expediente que RRHH vinculo (0132)
 
-Este esquema nunca vinculo formalmente un empleado con una cuenta de
-usuario. `resolverMiEmpleado()` (`apps/web/src/app/portal/mi-empleado.ts`)
-compara `public.user_profiles.email` (el correo de quien inicio sesion)
-contra `public.employees.email` (el correo del expediente), ambos del
-mismo tenant. Si no coinciden -o el expediente nunca tuvo correo
-cargado- el portal no encuentra a quien mostrar, y lo dice
-explicitamente en pantalla: nunca muestra el expediente de otra
-persona ni falla en silencio. Toda accion del portal (editar telefono,
-pedir vacaciones) resuelve el empleado propio de esta misma forma
--nunca confia en un `employeeId` que venga del formulario-, para que
-nadie pueda operar sobre el expediente de otro cambiando un id.
+Hasta 0132 el portal emparejaba el correo de la cuenta
+(`user_profiles.email`) con el del expediente (`employees.email`), **sin
+unicidad**. En la demo, el expediente de Rafael Encarnacion tenia el
+correo de la cuenta de Maria Rosario, y Maria abria `/portal` y veia el
+salario (85,000) y el volante (71,399.44) de Rafael. Las funciones del
+telefono (`pedir_vacaciones`, `reportar_gasto`) resolvian "quien soy"
+igual: con un correo repetido se pedian vacaciones a nombre de otro.
+
+Ahora:
+
+- **`employees.user_id`**: el vinculo explicito, **unico por cliente**, con
+  la guarda de cliente en la propia llave -(tenant_id, user_id) apunta a
+  `memberships`: la cuenta tiene que ser del equipo de ESE cliente-. Si la
+  persona sale del equipo, el expediente queda sin vinculo.
+- **Solo RRHH lo asigna**, desde `/empleados/:id` ("Acceso al portal"),
+  con `employees.employee.link`, via `vincular_empleado_usuario()`. Un
+  token no puede escribir la columna directo: si pudiera, alguien con
+  `employees.view` se vincularia al expediente del gerente y leeria su
+  volante.
+- **El portal no consulta tablas con un filtro de la app**: le pregunta a
+  la base por el token. `mi_expediente()`, `mis_volantes()` y
+  `editar_mi_telefono()` resuelven por el vinculo y no reciben ningun id.
+  `pedir_vacaciones()` y `reportar_gasto()` tambien.
+- **Sin vinculo, el portal lo dice** ("Tu cuenta no esta vinculada a un
+  expediente") y no muestra nada. **Nunca se adivina por correo**, ni
+  siquiera para rellenar el vinculo al migrar: el correo es justo lo que
+  emparejaba mal.
 
 ## Datos personales: solo el telefono, deliberadamente
 
 El "autoservicio de datos personales" del catalogo se implementa como
 edicion del telefono -el unico campo de `employees` para el que
 editarlo desde el propio empleado no tiene ninguna consecuencia hacia
-otro modulo-. Editar el correo, por ejemplo, rompería la propia
-vinculacion de "quien mira"; editar el salario claramente no es
-autoservicio. Declarado explicitamente como el alcance real, no como
-un descuido.
+otro modulo-; editar el salario claramente no es autoservicio. Desde
+0132 pasa por `editar_mi_telefono()`: con el rol real en el token
+(`asUser`, 0127) el rol Empleado no tiene `employees.view` y no puede
+-ni debe- tocar la tabla `employees`.
 
 ## Anuncios: la unica tabla nueva
 
@@ -54,7 +70,7 @@ referencia cruzada (0031 y siguientes) no aplica aqui: la RLS de
 
 | Ruta | Permiso | Que hace |
 |---|---|---|
-| `/portal` | `hr-portal.view` | Tu expediente, tus volantes, tu saldo y tus solicitudes de vacaciones, los anuncios |
+| `/portal` | `hr-portal.view` | Tu expediente, tus volantes (dias, bruto, reembolsos, TSS, ISR, descuentos, neto), tu saldo y tus solicitudes de vacaciones, los anuncios |
 | `/portal/anuncios` | `hr-portal.manage-announcements` | Publicar anuncios para todo el equipo |
 
 ## Manifiesto
@@ -70,13 +86,13 @@ referencia cruzada (0031 y siguientes) no aplica aqui: la RLS de
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/hr-portal.test.ts` — 8 casos: aislamiento de anuncios, spoofing de tenant_id directo (sin trigger de referencia cruzada porque no aplica), modulo apagado, checks de tabla (titulo/cuerpo obligatorios) |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/hr-portal.test.ts` — 8 casos de anuncios; `supabase/tests/nomina-vinculo-y-periodos.test.ts` — dos cuentas con el MISMO correo: cada una ve solo su expediente y su volante, una tercera sin vinculo no ve nada, el vinculo no se escribe con token, no cruza de cliente, una cuenta = un expediente, telefono solo el propio |
 | 3 | Logica pura con cobertura | ✅ `hr-portal.ts` — 5 pruebas de `esAnuncioVigente()`; el resto de la logica se reutiliza de `time-off.ts` y `payroll` sin reimplementar |
-| 4 | UI web responsive | ✅ verificado en navegador end-to-end: expediente propio resuelto por correo con datos reales (saldo, volantes y solicitudes de Rafael), telefono editado en vivo, vacaciones pedidas en vivo desde el portal, anuncio publicado en vivo con la insignia "Nuevo" apareciendo y desapareciendo segun antiguedad |
+| 4 | UI web responsive | ✅ `apps/web/src/app/portal/portal.accion.test.ts` (8, acciones reales): el caso exacto de la demo -dos expedientes con el correo de la cuenta- no muestra ninguno hasta que RRHH vincula, y despues solo el propio. Verificado en navegador (0132): estado "sin vincular", vincular desde `/empleados/:id`, portal con el expediente y el volante vinculados |
 | 5 | UI movil | 🔜 F5 — `mobileScope` declarado, sin implementar todavia |
 | 6 | Desktop verificado | N/A — el modulo declara `platforms.desktop = false` a proposito |
 | 7 | Tour ≥6 pasos | 🔜 pendiente |
-| 8 | Datos demo | ✅ el correo de Rafael enlazado al del usuario demo -para que el portal muestre un expediente real, no el estado vacio-, dos anuncios -uno vigente, uno vencido- |
+| 8 | Datos demo | ✅ dos anuncios -uno vigente, uno vencido-. El seed ya NO le pone a Rafael el correo del usuario demo (era el hallazgo) y no vincula a nadie: la demo arranca en "sin vincular" y el vinculo se hace en vivo desde `/empleados/:id` |
 | 9 | ≥2 widgets | ⚠️ solo 1 (`recent-announcements`): el portal es ante todo una ventana de autoservicio, no genera mas metricas de dashboard propias que las que ya aportan `payroll`/`time-off`/`attendance` |
 | 10 | Eventos documentados | ✅ declarado con el formato correcto de 3 segmentos; nadie lo escucha todavia |
 | 11 | Precio en 3 tiers | ✅ `category = 'standard'`, ya en el catalogo desde la siembra original (0009) |
@@ -86,10 +102,11 @@ referencia cruzada (0031 y siguientes) no aplica aqui: la RLS de
 
 ## Lo que NO hace
 
-- **Vincular formalmente un usuario con un empleado.** La resolucion es
-  por coincidencia de correo entre `user_profiles` y `employees` -sin
-  una columna `employees.user_id` real, sujeto a que el correo del
-  expediente este cargado y coincida con el de la cuenta-.
+- **Abrirse al rol Empleado de fabrica.** La plantilla de 0006 le da
+  `hr-portal.view.own`, que ningun manifiesto declara, y no `hr-portal.view`
+  (la ruta), `hr-portal.request-time-off` ni `hr-portal.edit-profile`: una
+  cuenta con el rol Empleado recibe 404 en `/portal`. Va en
+  `regb.permisos_de_fabrica()` (0135, del dueño de roles), no aqui.
 - **Editar mas que el telefono.** Nombre, puesto, salario y el resto
   del expediente son de solo lectura desde el portal -se editan desde
   `employees`, no aqui-.

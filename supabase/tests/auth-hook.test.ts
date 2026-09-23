@@ -252,26 +252,33 @@ describe('Superficie de ataque del hook', () => {
 
 // ═══════════════════════════════════════════════════════════════════════
 describe('Invitaciones', () => {
+  // Desde 0123 se invita con `crear_invitacion()` y NO nace membresia hasta
+  // que la persona acepta con su cuenta real. `invite_member()` (0008)
+  // inventaba un user_id y se elimino. El ciclo completo -hash, vencimiento,
+  // aceptar, aislamiento- esta en invitaciones.test.ts.
   const invitar = (claims: string, email: string, roleId: string) =>
     sql.begin(async (tx) => {
       await tx`select set_config('request.jwt.claims', ${claims}, true)`
       await tx.unsafe('set local role authenticated')
-      return tx`select public.invite_member(${email}, ${roleId}::uuid) as id`
+      return tx`select invitacion from public.crear_invitacion(${email}, 'Persona Invitada', ${roleId}::uuid)`
     })
 
   const claimsDe = (tenant: string) =>
     JSON.stringify({ sub: userAceptado, app_metadata: { tenant_id: tenant, is_provider: false } })
 
   it('un admin invita a alguien de su tenant', async () => {
+    const antes = await sql`
+      select count(*)::int as n from public.memberships where tenant_id = ${tenantActivo}`
     const rows = await invitar(claimsDe(tenantActivo), 'nuevo@ferreteria.do', rolCajero)
-    expect(rows[0]!.id).toBeTruthy()
+    expect(rows[0]!.invitacion).toBeTruthy()
 
-    const [m] = await sql`
-      select accepted_at from public.memberships
-      where tenant_id = ${tenantActivo} and role_id = ${rolCajero} and invited_at is not null
-      order by invited_at desc limit 1`
-    // Queda pendiente: invitar no es dar acceso.
-    expect(m!.accepted_at).toBeNull()
+    // Queda pendiente: invitar no es dar acceso, y no se inventa una membresia.
+    const [i] = await sql`
+      select status from public.user_invitations where id = ${rows[0]!.invitacion}`
+    expect(i!.status).toBe('pending')
+    const despues = await sql`
+      select count(*)::int as n from public.memberships where tenant_id = ${tenantActivo}`
+    expect(despues[0]!.n).toBe(antes[0]!.n)
   })
 
   it('NO puede asignar un rol de otro cliente', async () => {
@@ -284,6 +291,6 @@ describe('Invitaciones', () => {
 
   it('sin tenant en el JWT no se puede invitar a nadie', async () => {
     const sinTenant = JSON.stringify({ sub: userSinNada, app_metadata: { is_provider: false } })
-    await expect(invitar(sinTenant, 'x@y.do', rolCajero)).rejects.toThrow(/sin un tenant/)
+    await expect(invitar(sinTenant, 'x@y.do', rolCajero)).rejects.toThrow(/Sesion sin cliente/)
   })
 })

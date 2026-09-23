@@ -66,7 +66,7 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
       // La tasa sale del catalogo de Impuestos (0118) y no de un 0.18 escrito
       // aqui: un cliente con ITBIS-16 por defecto creaba todo al 18% sin
       // aviso. Sin el modulo, la funcion devuelve 0.18 y nada cambia.
-      await tx`
+      const [nuevo] = await tx<{ id: string }[]>`
         insert into public.products
           (tenant_id, sku, name, unit, price, cost, barcode, category_id,
            category, reorder_point, tax_rate, tracks_stock)
@@ -75,7 +75,14 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
            ${barcode}, ${categoryId}, ${cat?.name ?? null},
            ${sinStock ? null : reorder},
            case when ${exento} then 0 else public.tasa_itbis_por_defecto() end,
-           ${!sinStock})`
+           ${!sinStock})
+        returning id`
+
+      // En la misma transaccion que el alta: si el evento no entra, el
+      // producto tampoco (lo mismo que hacen los modulos de F4+).
+      await tx`
+        select public.emit_event('products.item.created',
+          ${JSON.stringify({ productId: nuevo!.id })}::text::jsonb, 'products')`
     })
   } catch (e) {
     const msg = String(e)
@@ -154,10 +161,27 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
     // convierte `undefined` en NULL, asi que un Vendedor editando la ficha
     // dejaria el precio del producto en cero.
     if (precios) {
+      const [antes] = await tx<{ price: string }[]>`
+        select price::text from public.products
+        where id = ${id} and tenant_id = ${ctx.tenantId}
+        for update`
       await tx`
         update public.products
         set price = ${precios.price}, cost = ${precios.cost}, updated_at = now()
         where id = ${id} and tenant_id = ${ctx.tenantId}`
+
+      // Solo si el precio de venta cambio de verdad: guardar la ficha con el
+      // mismo precio no es un cambio de precio, y una automatizacion que
+      // avisa "cambio el precio" no debe sonar por corregir un nombre.
+      if (antes && Number(antes.price) !== precios.price) {
+        await tx`
+          select public.emit_event('products.price.changed',
+            ${JSON.stringify({
+              productId: id,
+              oldPrice: Number(antes.price),
+              newPrice: precios.price,
+            })}::text::jsonb, 'products')`
+      }
     }
   })
 

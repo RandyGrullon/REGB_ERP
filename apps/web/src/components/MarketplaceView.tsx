@@ -1,9 +1,31 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Badge, Button, Card, Icon, cn } from '@regb/ui'
-import { CATEGORIES, type CatalogEntry } from '@/lib/catalog'
-import { solicitarActivacionForm } from '@/app/marketplace/actions'
+import { useMemo, useState, type ReactNode } from 'react'
+import { Badge, Button, EmptyState, Icon, cn } from '@regb/ui'
+import {
+  AREAS,
+  areaDe,
+  cerrarDependencias,
+  estaActivo,
+  seleccionDesdeSolicitud,
+  sePuedePedir,
+  type AreaId,
+  type CatalogEntry,
+  type CotizacionMotor,
+  type SolicitudPendiente,
+} from '@/lib/catalog'
+import { TemaToggle } from '@/components/TemaToggle'
+import { PaquetesNegocio } from '@/components/marketplace/PaquetesNegocio'
+import { Simulador } from '@/components/marketplace/Simulador'
+import { TarjetaModulo } from '@/components/marketplace/TarjetaModulo'
+import {
+  FOCO,
+  diasRestantes,
+  fechaCorta,
+  plural,
+  tierLabel,
+  usd,
+} from '@/components/marketplace/formato'
 
 /**
  * Marketplace (§12.3).
@@ -15,62 +37,32 @@ import { solicitarActivacionForm } from '@/app/marketplace/actions'
  *  2. **Las dependencias se resuelven solas.** Marcar `ar` sin
  *     `sales-orders` es comprar algo que no va a funcionar; aqui se
  *     agregan las que faltan y se dice cuales fueron.
- *  3. **El precio que se enseña es el que se cobra.** Del tier del cliente
- *     que mira, calculado por el mismo motor que emite la factura.
+ *  3. **El precio que se enseña es el del tier del cliente que mira.**
+ *
+ * `'use client'` porque filtro, busqueda, orden y simulador son estado
+ * del navegador; los datos llegan ya resueltos del servidor (catalogo,
+ * precios del tier, capturas que existen y la solicitud abierta).
+ *
+ * Orden de la pagina, que es el de una conversacion de venta: que es esto
+ * y cuanto pagas hoy → "¿que tipo de negocio eres?" → el catalogo por area
+ * de negocio → el simulador, siempre a mano abajo.
  */
-
-const TIER_LABEL: Record<string, string> = { pyme: 'PYME', mediano: 'MEDIANO', grande: 'GRANDE' }
-
-const CATEGORY_TONE: Record<
-  CatalogEntry['category'],
-  'success' | 'brand' | 'info' | 'warning' | 'danger'
-> = {
-  core: 'success',
-  standard: 'brand',
-  advanced: 'info',
-  vertical: 'warning',
-  enterprise: 'danger',
-}
-
-/** El mismo que aplica `@regb/billing` al ciclo anual. */
-const DESCUENTO_ANUAL = 0.15
-
-const money = (n: number) =>
-  n.toLocaleString('es-DO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 type Orden = 'recomendado' | 'precio-asc' | 'precio-desc' | 'nombre'
 
 /**
- * Paquetes por tipo de negocio.
- *
- * Un dueno de colmado no sabe si necesita "standard" o "advanced": sabe
- * que vende en mostrador y que le fia a dos clientes. Esto traduce lo
- * segundo en lo primero, que es la unica forma de que el catalogo le sirva
- * a quien paga y no solo a quien lo construyo.
+ * Recomendado: lo que se puede encender hoy primero, lo que necesita algo
+ * antes despues, lo que ya tienes o viene en el plan luego, y lo que
+ * todavia no existe al final.
  */
-const PAQUETES: { id: string; nombre: string; icono: string; para: string; modulos: string[] }[] = [
-  {
-    id: 'mostrador',
-    nombre: 'Vendo en mostrador',
-    icono: 'storefront',
-    para: 'Colmado, farmacia, cafeteria',
-    modulos: ['products', 'inventory', 'pos'],
-  },
-  {
-    id: 'credito',
-    nombre: 'Vendo a credito',
-    icono: 'receipt_long',
-    para: 'Ferreteria, distribuidora',
-    modulos: ['products', 'inventory', 'sales-orders', 'ar'],
-  },
-  {
-    id: 'completo',
-    nombre: 'El ciclo completo',
-    icono: 'account_tree',
-    para: 'Vender, cobrar y declarar',
-    modulos: ['products', 'inventory', 'sales-orders', 'pos', 'ar'],
-  },
-]
+const peso = (m: CatalogEntry) =>
+  !m.isPublished
+    ? 4
+    : estaActivo(m) || m.category === 'core'
+      ? 3
+      : m.missingRequires.length > 0
+        ? 1
+        : 0
 
 export function MarketplaceView({
   catalog,
@@ -78,61 +70,64 @@ export function MarketplaceView({
   tenantName,
   roleName,
   backHref,
+  demoQuery,
   hiddenFields,
   solicitudPendiente,
+  cotizacionInicial,
+  cotizacionesPaquetes,
 }: {
   catalog: CatalogEntry[]
   tier: string
   tenantName: string
   roleName: string
   backHref: string
+  /** `?tenant=…&rol=…` en modo demo, vacio con sesion real. */
+  demoQuery: string
   hiddenFields: Record<string, string>
   /** Ya hay una peticion abierta: el cliente tiene que saberlo. */
-  solicitudPendiente: { modules: string[]; createdAt: string } | null
+  solicitudPendiente: SolicitudPendiente | null
+  /**
+   * La factura de hoy y la de lo que llega marcado (la solicitud abierta),
+   * calculadas en el servidor con `@regb/billing`.
+   */
+  cotizacionInicial: CotizacionMotor | null
+  /** Cuanto sube la factura con cada paquete, segun el mismo motor. */
+  cotizacionesPaquetes: Record<string, { aumento: number; instalacion: number }>
 }) {
-  const [filtro, setFiltro] = useState<string>('todos')
+  const porId = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog])
+
+  const [area, setArea] = useState<AreaId | 'todas'>('todas')
   const [busqueda, setBusqueda] = useState('')
   const [orden, setOrden] = useState<Orden>('recomendado')
   const [soloDisponibles, setSoloDisponibles] = useState(false)
-  const [seleccion, setSeleccion] = useState<Set<string>>(new Set())
-  const [ultimoPaquete, setUltimoPaquete] = useState<string | null>(null)
   const [pedido, setPedido] = useState(false)
 
-  const activo = (m: CatalogEntry) => m.status === 'active' || m.status === 'trial'
-  const porId = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog])
-
   /**
-   * Cierra la seleccion con sus dependencias.
-   *
-   * Es la pieza que evita la peor venta posible: cobrarle a alguien un
-   * modulo que no va a poder usar. Se recorre en anchura porque una
-   * dependencia puede arrastrar la suya.
+   * La solicitud abierta entra al simulador al llegar. Pedir de nuevo
+   * REEMPLAZA esa solicitud (una pendiente por cliente, 0035): si el
+   * simulador arrancara vacio, pedir un modulo mas borraria en silencio
+   * todo lo pedido antes. Se cargan solo los que el cliente eligio; sus
+   * requisitos los vuelve a calcular el cierre de dependencias.
    */
-  const { seleccionReal, dependenciasAnadidas } = useMemo(() => {
-    const total = new Set(seleccion)
-    const anadidos: string[] = []
-    const cola = [...seleccion]
-    while (cola.length > 0) {
-      const m = porId.get(cola.shift()!)
-      if (!m) continue
-      for (const req of m.requires) {
-        const dep = porId.get(req)
-        // Lo que ya esta activo no hay que volver a comprarlo.
-        if (!dep || total.has(req) || dep.status === 'active' || dep.status === 'trial') continue
-        total.add(req)
-        anadidos.push(req)
-        cola.push(req)
-      }
-    }
-    return { seleccionReal: total, dependenciasAnadidas: anadidos }
-  }, [seleccion, porId])
+  const [marcados, setMarcados] = useState<Set<string>>(() =>
+    // La misma funcion con la que el servidor cotizo de entrada: si no
+    // coincidieran, el simulador arrancaria "calculando".
+    seleccionDesdeSolicitud(solicitudPendiente, new Map(catalog.map((m) => [m.id, m]))),
+  )
 
-  const visibles = useMemo(() => {
+  const { total, anadidos } = useMemo(() => cerrarDependencias(marcados, porId), [marcados, porId])
+
+  // Enterprise solo existe para el tier grande: a los demas ni se les ensena.
+  const delTier = useMemo(
+    () => catalog.filter((m) => m.category !== 'enterprise' || tier === 'grande'),
+    [catalog, tier],
+  )
+
+  /** Busqueda + "solo lo que puedo encender hoy". El area se aplica despues. */
+  const filtrados = useMemo(() => {
     const q = busqueda.trim().toLowerCase()
-    const lista = catalog.filter((m) => {
-      if (m.category === 'enterprise' && tier !== 'grande') return false
-      if (filtro !== 'todos' && m.category !== filtro) return false
-      if (soloDisponibles && (!m.isPublished || activo(m))) return false
+    return delTier.filter((m) => {
+      if (soloDisponibles && !sePuedePedir(m)) return false
       if (!q) return true
       return (
         m.name.toLowerCase().includes(q) ||
@@ -140,544 +135,500 @@ export function MarketplaceView({
         m.id.includes(q)
       )
     })
+  }, [delTier, busqueda, soloDisponibles])
 
-    return [...lista].sort((a, b) => {
-      if (orden === 'nombre') return a.name.localeCompare(b.name)
+  const porArea = useMemo(() => {
+    const cuenta = new Map<AreaId, number>()
+    for (const m of filtrados) cuenta.set(areaDe(m), (cuenta.get(areaDe(m)) ?? 0) + 1)
+    return cuenta
+  }, [filtrados])
+
+  const secciones = useMemo(() => {
+    const ordenar = (a: CatalogEntry, b: CatalogEntry) => {
+      if (orden === 'nombre') return a.name.localeCompare(b.name, 'es')
       if (orden === 'precio-asc') return a.monthlyPrice - b.monthlyPrice
       if (orden === 'precio-desc') return b.monthlyPrice - a.monthlyPrice
-      // Recomendado: lo que se puede encender hoy primero, lo que ya se
-      // tiene despues, y lo que todavia no existe al final.
-      const peso = (m: CatalogEntry) =>
-        !m.isPublished ? 3 : activo(m) ? 2 : m.missingRequires.length > 0 ? 1 : 0
-      return peso(a) - peso(b) || a.name.localeCompare(b.name)
-    })
-  }, [catalog, filtro, busqueda, tier, orden, soloDisponibles])
-
-  const simulacion = useMemo(() => {
-    const elegidos = catalog.filter((m) => seleccionReal.has(m.id))
-    const mensual = elegidos.reduce((s, m) => s + m.monthlyPrice, 0)
-    return {
-      mensual,
-      instalacion: elegidos.reduce((s, m) => s + m.installPrice, 0),
-      cuenta: elegidos.length,
-      ahorroAnual: mensual * 12 * DESCUENTO_ANUAL,
+      return peso(a) - peso(b) || a.name.localeCompare(b.name, 'es')
     }
-  }, [catalog, seleccionReal])
+    return AREAS.filter((a) => area === 'todas' || a.id === area)
+      .map((a) => ({
+        area: a,
+        mods: filtrados.filter((m) => areaDe(m) === a.id).sort(ordenar),
+      }))
+      .filter((s) => s.mods.length > 0)
+  }, [filtrados, area, orden])
 
-  const actual = useMemo(
-    () => catalog.filter(activo).reduce((s, m) => s + m.monthlyPrice, 0),
-    [catalog],
-  )
+  const visibles = secciones.reduce((n, s) => n + s.mods.length, 0)
 
-  const toggle = (id: string) => {
-    setUltimoPaquete(null)
-    setSeleccion((prev) => {
+  // Cifras del encabezado.
+  const activos = delTier.filter(estaActivo)
+  const enPrueba = activos.filter((m) => m.status === 'trial')
+  const pruebasVencidas = delTier.filter((m) => m.status === 'trial_expired')
+  const paraHoy = delTier.filter(sePuedePedir).length
+  const proximamente = delTier.filter((m) => !m.isPublished).length
+  // Lo que se cobra hoy, segun el motor de facturacion (plan, modulos,
+  // descuento e ITBIS; las pruebas no se cobran).
+  const pagasHoy = cotizacionInicial?.hoy.total ?? null
+
+  const toggle = (id: string) =>
+    setMarcados((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
+
+  const limpiarFiltros = () => {
+    setBusqueda('')
+    setArea('todas')
+    setSoloDisponibles(false)
   }
 
-  const faltantesDe = (modulos: string[]) =>
-    modulos.filter((id) => {
-      const m = porId.get(id)
-      return m && !activo(m) && m.isPublished
-    })
-
-  const activos = catalog.filter(activo)
-  const disponibles = catalog.filter((m) => !activo(m) && m.isPublished).length
-  const proximamente = catalog.filter((m) => !m.isPublished).length
-  const enPrueba = activos.filter((m) => m.status === 'trial')
+  const nombres = (ids: string[]) => ids.map((id) => porId.get(id)?.name ?? id)
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-12 shrink-0 items-center gap-3 border-b border-[var(--color-border)] px-4">
+    <div className="relative flex h-full flex-col overflow-hidden bg-[var(--color-surface-base)]">
+      <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--color-border)] px-3 md:gap-3 md:px-6">
         <a
           href={backHref}
-          className="flex items-center gap-1 rounded-[var(--radius-md)] px-2 py-1 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          className={cn(
+            'inline-flex h-11 items-center gap-0.5 rounded-full pl-1.5 pr-3 text-sm font-semibold text-[var(--color-text-link)] hover:bg-[var(--color-surface-raised)] md:h-9',
+            FOCO,
+          )}
         >
-          <Icon name="arrow_back" size={18} />
+          <Icon name="chevron_left" size={22} />
           Volver
         </a>
-        <span className="text-sm font-medium text-[var(--color-text-primary)]">Marketplace</span>
+        <span className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
+          Marketplace
+        </span>
         <div className="flex-1" />
-        <span className="hidden text-xs text-[var(--color-text-muted)] sm:inline">
+        <span className="hidden truncate text-xs text-[var(--color-text-muted)] md:inline">
           {tenantName} · {roleName}
         </span>
-        <Badge tone="brand">{TIER_LABEL[tier] ?? tier}</Badge>
+        <Badge tone="brand" dot={false}>
+          Plan {tierLabel(tier)}
+        </Badge>
+        <TemaToggle />
       </header>
 
-      <main className="flex-1 overflow-y-auto p-4 pb-64 md:p-6 md:pb-56">
-        <div className="mb-4">
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-            Enciende lo que necesitas
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {activos.length} activos · {disponibles} para encender hoy · {proximamente} en camino.
-            Los precios son los de tu plan <strong>{TIER_LABEL[tier] ?? tier}</strong>, calculados
-            por el mismo motor que emite tu factura.
-          </p>
-        </div>
-
-        {(solicitudPendiente || pedido) && (
-          <div
-            role="status"
-            className="mb-4 flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-success)] bg-[color-mix(in_srgb,var(--color-semantic-success)_10%,transparent)] p-3 text-sm"
-          >
-            <Icon
-              name="mark_email_read"
-              size={20}
-              filled
-              className="shrink-0 text-[var(--color-semantic-text-success)]"
-            />
-            <p className="text-[var(--color-text-secondary)]">
-              <strong className="text-[var(--color-text-primary)]">
-                Tu solicitud esta en camino.
-              </strong>{' '}
-              {solicitudPendiente
-                ? `Pediste ${solicitudPendiente.modules.length} modulo${solicitudPendiente.modules.length === 1 ? '' : 's'}. `
-                : ''}
-              Nadie activa nada por su cuenta: te llamamos para cotizar la instalacion y ver si hay
-              datos que migrar. Si vuelves a pedir, se actualiza esta misma solicitud.
+      {/* `relative` en `main` y en cada fila que se desliza de lado: los
+          textos `sr-only` son `absolute`, y sin un ancestro posicionado se
+          escapaban del scroll horizontal y ensanchaban la pagina en movil. */}
+      <main className="relative flex-1 overflow-y-auto" id="contenido">
+        <div className="mx-auto max-w-7xl space-y-10 px-4 pb-12 pt-6 md:px-6 md:pt-10">
+          {/* ── Propuesta de valor ────────────────────────────────── */}
+          <section aria-labelledby="mk-titulo">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Marketplace de módulos · {tenantName}
             </p>
-          </div>
-        )}
-
-        {enPrueba.length > 0 && (
-          <div
-            role="note"
-            className="mb-4 flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-semantic-warning)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_10%,transparent)] p-3 text-sm"
-          >
-            <Icon
-              name="schedule"
-              size={20}
-              filled
-              className="shrink-0 text-[var(--color-semantic-text-warning)]"
-            />
-            <p className="text-[var(--color-text-secondary)]">
-              Tienes {enPrueba.length} modulo{enPrueba.length === 1 ? '' : 's'} en prueba:{' '}
-              <strong className="text-[var(--color-text-primary)]">
-                {enPrueba.map((m) => m.name).join(', ')}
+            <h1
+              id="mk-titulo"
+              className="mt-2 max-w-3xl text-3xl font-bold tracking-tight text-[var(--color-text-primary)] md:text-4xl"
+            >
+              Enciende solo lo que tu negocio usa.
+            </h1>
+            <p className="mt-3 max-w-2xl text-base text-[var(--color-text-secondary)]">
+              Cada módulo se paga aparte, al precio de tu plan {tierLabel(tier)}. Mira la pantalla
+              real antes de decidir, simula cuánto sumaría a tu factura —con el mismo cálculo que la
+              emite— y pídelo: te llamamos, lo dejamos funcionando con tus datos y{' '}
+              <strong className="font-semibold text-[var(--color-text-primary)]">
+                nada se activa sin tu visto bueno
               </strong>
-              . Al terminar dejan de verse, pero{' '}
-              <strong className="text-[var(--color-text-primary)]">tus datos se quedan</strong> por
-              si los reactivas.
+              .
             </p>
-          </div>
-        )}
 
-        {/* Traduce "que vendo" en "que activo". */}
-        <section aria-label="Por tipo de negocio" className="mb-5">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            ¿No sabes por donde empezar?
-          </p>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {PAQUETES.map((p) => {
-              const faltan = faltantesDe(p.modulos)
-              const yaLoTiene = faltan.length === 0
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setSeleccion(new Set(faltan))
-                    setUltimoPaquete(p.id)
-                  }}
-                  disabled={yaLoTiene}
-                  className={cn(
-                    'flex items-start gap-2 rounded-[var(--radius-lg)] border p-3 text-left transition-colors',
-                    'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
-                    ultimoPaquete === p.id
-                      ? 'border-[var(--color-brand-bright)] bg-[var(--color-brand-soft)]'
-                      : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] hover:border-[var(--color-border-strong)]',
-                    yaLoTiene && 'opacity-60',
-                  )}
-                >
-                  <Icon
-                    name={p.icono}
-                    size={22}
-                    className="mt-0.5 shrink-0 text-[var(--color-brand-bright)]"
-                  />
-                  <span className="min-w-0">
-                    <span className="block text-sm font-semibold text-[var(--color-text-primary)]">
-                      {p.nombre}
-                    </span>
-                    <span className="block text-xs text-[var(--color-text-muted)]">{p.para}</span>
-                    <span className="mt-1 block text-xs text-[var(--color-text-secondary)]">
-                      {yaLoTiene ? 'Ya lo tienes completo' : `Te faltan ${faltan.length}`}
-                    </span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        </section>
-
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <span className="relative flex items-center">
-            <Icon
-              name="search"
-              size={18}
-              className="pointer-events-none absolute left-2.5 text-[var(--color-text-muted)]"
-            />
-            <input
-              type="search"
-              value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
-              placeholder="Buscar modulo…"
-              aria-label="Buscar modulo"
-              className="h-9 w-full max-w-xs rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-9 pr-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            />
-          </span>
-          <Chip active={filtro === 'todos'} onClick={() => setFiltro('todos')}>
-            Todos
-          </Chip>
-          {CATEGORIES.filter((c) => c.id !== 'enterprise' || tier === 'grande').map((c) => (
-            <Chip key={c.id} active={filtro === c.id} onClick={() => setFiltro(c.id)}>
-              {c.label}
-            </Chip>
-          ))}
-
-          <label className="ml-auto flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)]">
-            <input
-              type="checkbox"
-              checked={soloDisponibles}
-              onChange={(e) => setSoloDisponibles(e.target.checked)}
-              className="h-4 w-4 accent-[var(--color-brand)]"
-            />
-            Solo lo que puedo encender hoy
-          </label>
-          <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-            Orden
-            <select
-              value={orden}
-              onChange={(e) => setOrden(e.target.value as Orden)}
-              aria-label="Ordenar modulos"
-              className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              <option value="recomendado">Recomendado</option>
-              <option value="precio-asc">Mas barato</option>
-              <option value="precio-desc">Mas caro</option>
-              <option value="nombre">Nombre</option>
-            </select>
-          </label>
-        </div>
-
-        {visibles.length === 0 ? (
-          <div className="py-16 text-center">
-            <Icon name="search_off" size={40} className="text-[var(--color-text-muted)]" />
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Nada coincide con esos filtros.
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setBusqueda('')
-                setFiltro('todos')
-                setSoloDisponibles(false)
-              }}
-              className="mt-2 text-sm text-[var(--color-text-link)] hover:underline"
-            >
-              Limpiar filtros
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-            {visibles.map((m) => (
-              <ModuleCard
-                key={m.id}
-                mod={m}
-                selected={seleccion.has(m.id)}
-                arrastrado={seleccionReal.has(m.id) && !seleccion.has(m.id)}
-                onToggle={() => toggle(m.id)}
-                detailHref={`/marketplace/${m.id}${backHref.includes('?') ? backHref.slice(backHref.indexOf('?')) : ''}`}
+            <dl className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+              <Dato
+                icono="check_circle"
+                etiqueta="Activos en tu cuenta"
+                valor={String(activos.length)}
               />
-            ))}
-          </div>
-        )}
-      </main>
+              <Dato icono="bolt" etiqueta="Para encender hoy" valor={String(paraHoy)} />
+              <Dato icono="construction" etiqueta="En camino" valor={String(proximamente)} />
+              <Dato
+                icono="payments"
+                etiqueta="Tu mensualidad hoy"
+                valor={pagasHoy === null ? '—' : usd(pagasHoy)}
+                sufijo="/mes"
+              />
+            </dl>
+          </section>
 
-      {/* ── Simulador (§12.3) ─────────────────────────────────────────── */}
-      <div className="absolute inset-x-0 bottom-0 border-t border-[var(--color-border)] bg-[var(--color-surface-deep)] p-4 shadow-[var(--shadow-lg)]">
-        <div className="mx-auto max-w-5xl space-y-2">
-          {dependenciasAnadidas.length > 0 && (
-            <p className="flex items-start gap-1.5 text-xs text-[var(--color-semantic-text-warning)]">
-              <Icon name="link" size={16} className="mt-px shrink-0" />
-              <span>
-                Se agregaron solos{' '}
-                <strong>
-                  {dependenciasAnadidas.map((id) => porId.get(id)?.name ?? id).join(', ')}
-                </strong>
-                : sin ellos lo que marcaste no funciona, y van incluidos en el calculo.
-              </span>
-            </p>
+          {/* ── Avisos ────────────────────────────────────────────── */}
+          {(solicitudPendiente || pedido || enPrueba.length > 0 || pruebasVencidas.length > 0) && (
+            <div className="space-y-3">
+              {(solicitudPendiente || pedido) && (
+                <Aviso icono="mark_email_read" tono="success" rol="status">
+                  <strong className="font-semibold text-[var(--color-text-primary)]">
+                    Tu solicitud está en camino.
+                  </strong>{' '}
+                  {solicitudPendiente &&
+                    `Pediste ${plural(solicitudPendiente.modules.length, 'módulo', 'módulos')} el ${fechaCorta(solicitudPendiente.createdAt)}; ya está cargada en el simulador. `}
+                  Nadie activa nada por su cuenta: te llamamos para cotizar la instalación y ver si
+                  hay datos que migrar. Si cambias algo y vuelves a pedir, actualizamos esa misma
+                  solicitud.
+                </Aviso>
+              )}
+              {enPrueba.length > 0 && (
+                <Aviso icono="hourglass_top" tono="warning" rol="note">
+                  Tienes {plural(enPrueba.length, 'módulo', 'módulos')} en prueba:{' '}
+                  <strong className="font-semibold text-[var(--color-text-primary)]">
+                    {enPrueba
+                      .map((m) => {
+                        const d = diasRestantes(m.trialEndsAt)
+                        return d === null
+                          ? m.name
+                          : `${m.name} (quedan ${plural(d, 'día', 'días')})`
+                      })
+                      .join(', ')}
+                  </strong>
+                  . No se cobran mientras dure la prueba. Al terminar dejan de verse, pero{' '}
+                  <strong className="font-semibold text-[var(--color-text-primary)]">
+                    tus datos se quedan
+                  </strong>{' '}
+                  por si los reactivas.
+                </Aviso>
+              )}
+              {pruebasVencidas.length > 0 && (
+                <Aviso icono="event_busy" tono="warning" rol="note">
+                  Terminó tu prueba de{' '}
+                  <strong className="font-semibold text-[var(--color-text-primary)]">
+                    {pruebasVencidas.map((m) => m.name).join(', ')}
+                  </strong>
+                  : ya no se ve ni se cobra, pero{' '}
+                  <strong className="font-semibold text-[var(--color-text-primary)]">
+                    tus datos se quedan
+                  </strong>
+                  . Si quieres seguir usándolo, márcalo y pide la activación.
+                </Aviso>
+              )}
+            </div>
           )}
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1">
-              <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
-                <Icon name="calculate" size={14} />
-                Simulador de costo
+          {/* ── Por tipo de negocio ───────────────────────────────── */}
+          <PaquetesNegocio
+            porId={porId}
+            cotizaciones={cotizacionesPaquetes}
+            enSimulador={total}
+            onCargar={(ids) => setMarcados((prev) => new Set([...prev, ...ids]))}
+            onQuitar={(ids) =>
+              setMarcados((prev) => {
+                const next = new Set(prev)
+                for (const id of ids) next.delete(id)
+                return next
+              })
+            }
+          />
+
+          {/* ── Catalogo ──────────────────────────────────────────── */}
+          <section aria-labelledby="catalogo-titulo">
+            <div className="mb-4">
+              <h2
+                id="catalogo-titulo"
+                className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]"
+              >
+                Todo el catálogo
+              </h2>
+              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                Agrupado por área de tu negocio. Toca un módulo para ver su pantalla en grande, qué
+                incluye y las preguntas de siempre.
               </p>
-              {simulacion.cuenta === 0 ? (
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  Marca modulos arriba y calcula lo que costarian.{' '}
-                  <strong className="text-[var(--color-text-primary)]">
-                    No se activa nada hasta que lo pidas.
-                  </strong>
-                </p>
-              ) : (
-                <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  {simulacion.cuenta} modulo{simulacion.cuenta === 1 ? '' : 's'}
-                  {simulacion.ahorroAnual > 0 && (
-                    <>
-                      {' · '}
-                      <span className="text-[var(--color-semantic-text-success)]">
-                        pagando anual te ahorras US$ {money(simulacion.ahorroAnual)} al ano
-                      </span>
-                    </>
-                  )}
-                </p>
-              )}
             </div>
 
-            <div className="flex flex-wrap items-end gap-5">
-              <Cifra label="Pagas hoy" valor={`US$ ${money(actual)}`} />
-              <Cifra
-                label="Pasarias a pagar"
-                valor={`US$ ${money(actual + simulacion.mensual)}`}
-                delta={simulacion.mensual > 0 ? `+US$ ${money(simulacion.mensual)}` : undefined}
-                destacado
-              />
-              <Cifra label="Instalacion, una vez" valor={`US$ ${money(simulacion.instalacion)}`} />
-            </div>
+            {/* Barra de filtros: pegada arriba en escritorio mientras se recorre el
+                catalogo. En movil ocupa media pantalla, asi que ahi se va con el scroll. */}
+            <div className="z-10 -mx-4 space-y-3 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface-base)_94%,transparent)] px-4 py-3 backdrop-blur md:-mx-6 md:px-6 md:sticky md:top-0">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <label className="relative flex w-full items-center sm:w-72">
+                  <span className="sr-only">Buscar módulo</span>
+                  <Icon
+                    name="search"
+                    size={18}
+                    className="pointer-events-none absolute left-3 text-[var(--color-text-muted)]"
+                  />
+                  <input
+                    type="search"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    placeholder="Buscar: nómina, cuadre, inventario…"
+                    className={cn(
+                      'h-11 w-full rounded-full border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-9 pr-4 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:border-[var(--color-brand-bright)] md:h-9',
+                      FOCO,
+                    )}
+                  />
+                </label>
 
-            <div className="flex gap-2">
-              {simulacion.cuenta > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setSeleccion(new Set())
-                    setUltimoPaquete(null)
-                  }}
+                <div className="flex flex-1 flex-wrap items-center justify-between gap-2 sm:justify-end md:gap-3">
+                  <Interruptor
+                    activo={soloDisponibles}
+                    onCambio={setSoloDisponibles}
+                    etiqueta="Solo lo que puedo encender hoy"
+                  />
+                  <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                    Ordenar
+                    <select
+                      value={orden}
+                      onChange={(e) => setOrden(e.target.value as Orden)}
+                      className={cn(
+                        'h-11 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)] md:h-9',
+                        FOCO,
+                      )}
+                    >
+                      <option value="recomendado">Recomendado</option>
+                      <option value="precio-asc">Más barato primero</option>
+                      <option value="precio-desc">Más caro primero</option>
+                      <option value="nombre">Por nombre</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <div
+                role="group"
+                aria-label="Filtrar por área"
+                className="relative -mx-4 flex gap-1.5 overflow-x-auto px-4 pb-0.5 md:mx-0 md:flex-wrap md:overflow-visible md:px-0"
+              >
+                <Chip
+                  activo={area === 'todas'}
+                  onClick={() => setArea('todas')}
+                  cuenta={filtrados.length}
                 >
-                  Limpiar
-                </Button>
-              )}
-              <form action={solicitarActivacionForm} onSubmit={() => setPedido(true)}>
-                {Object.entries(hiddenFields).map(([k, v]) => (
-                  <input key={k} type="hidden" name={k} value={v} />
+                  Todo
+                </Chip>
+                {AREAS.filter((a) => (porArea.get(a.id) ?? 0) > 0 || area === a.id).map((a) => (
+                  <Chip
+                    key={a.id}
+                    activo={area === a.id}
+                    onClick={() => setArea(a.id)}
+                    cuenta={porArea.get(a.id) ?? 0}
+                    icono={a.icon}
+                  >
+                    {a.label}
+                  </Chip>
                 ))}
-                <input type="hidden" name="modulos" value={JSON.stringify([...seleccionReal])} />
-                <input type="hidden" name="mensual" value={String(simulacion.mensual)} />
-                <input type="hidden" name="instalacion" value={String(simulacion.instalacion)} />
-                <Button size="sm" type="submit" disabled={simulacion.cuenta === 0}>
-                  Solicitar activacion
-                </Button>
-              </form>
+              </div>
             </div>
-          </div>
+
+            <p role="status" aria-live="polite" className="sr-only">
+              {plural(visibles, 'módulo', 'módulos')} a la vista
+            </p>
+
+            {visibles === 0 ? (
+              <EmptyState
+                icon="search_off"
+                title="Nada por aquí con esos filtros"
+                description="Ni buscando con linterna. Prueba con otra palabra o quita un filtro; los módulos siguen ahí."
+                action={
+                  <Button size="sm" onClick={limpiarFiltros}>
+                    Limpiar filtros
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="mt-6 space-y-12">
+                {secciones.map(({ area: a, mods }) => {
+                  const suyos = mods.filter(estaActivo).length
+                  return (
+                    <section key={a.id} aria-labelledby={`area-${a.id}`}>
+                      <div className="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <h3
+                          id={`area-${a.id}`}
+                          className="flex items-center gap-2 text-lg font-bold tracking-tight text-[var(--color-text-primary)]"
+                        >
+                          <Icon
+                            name={a.icon}
+                            size={22}
+                            className="text-[var(--color-text-muted)]"
+                          />
+                          {a.label}
+                        </h3>
+                        <p className="tabular text-sm text-[var(--color-text-muted)]">
+                          {plural(mods.length, 'módulo', 'módulos')}
+                          {suyos > 0 && ` · ${plural(suyos, 'activo', 'activos')}`}
+                        </p>
+                        <p className="basis-full text-sm text-[var(--color-text-secondary)]">
+                          {a.hint}
+                        </p>
+                      </div>
+                      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                        {mods.map((m) => (
+                          <TarjetaModulo
+                            key={m.id}
+                            mod={m}
+                            marcado={marcados.has(m.id)}
+                            arrastrado={total.has(m.id) && !marcados.has(m.id)}
+                            onToggle={() => toggle(m.id)}
+                            detailHref={`/marketplace/${m.id}${demoQuery}`}
+                            necesita={nombres(m.missingRequires)}
+                          />
+                        ))}
+                      </div>
+                    </section>
+                  )
+                })}
+              </div>
+            )}
+          </section>
         </div>
-      </div>
+      </main>
+
+      <Simulador
+        porId={porId}
+        marcados={marcados}
+        total={total}
+        anadidos={anadidos}
+        tier={tier}
+        cotizacionInicial={cotizacionInicial}
+        hiddenFields={hiddenFields}
+        notaPendiente={solicitudPendiente?.nota ?? null}
+        onQuitar={toggle}
+        onLimpiar={() => setMarcados(new Set())}
+        onPedido={() => setPedido(true)}
+      />
     </div>
   )
 }
 
-function Cifra({
-  label,
+/** Cifra del encabezado: superficie distinta, sin sombra ni borde grueso. */
+function Dato({
+  icono,
+  etiqueta,
   valor,
-  delta,
-  destacado,
+  sufijo,
 }: {
-  label: string
+  icono: string
+  etiqueta: string
   valor: string
-  // `| undefined` explicito, no `?`: con exactOptionalPropertyTypes
-  // "puede faltar" y "puede valer undefined" no son lo mismo.
-  delta?: string | undefined
-  destacado?: boolean | undefined
+  sufijo?: string
 }) {
   return (
-    <div>
-      <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
-        {label}
-      </p>
-      <p
-        className={cn(
-          'tabular text-lg font-bold',
-          destacado ? 'text-[var(--color-brand-bright)]' : 'text-[var(--color-text-primary)]',
-        )}
-      >
-        {valor}
-        {delta && (
-          <span className="ml-1.5 text-xs font-medium text-[var(--color-semantic-text-success)]">
-            {delta}
-          </span>
-        )}
-      </p>
+    <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3">
+      <dt className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+        <Icon name={icono} size={16} />
+        {etiqueta}
+      </dt>
+      <dd className="tabular mt-1 flex items-baseline gap-0.5">
+        <span className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          {valor}
+        </span>
+        {sufijo && <span className="text-xs text-[var(--color-text-muted)]">{sufijo}</span>}
+      </dd>
     </div>
   )
 }
 
-function Chip({
-  active,
-  onClick,
+/** Aviso en linea: superficie + icono de estado + texto. El color solo en el icono. */
+function Aviso({
+  icono,
+  tono,
+  rol,
   children,
 }: {
-  active: boolean
+  icono: string
+  tono: 'success' | 'warning'
+  rol: 'status' | 'note'
+  children: ReactNode
+}) {
+  return (
+    <div
+      role={rol}
+      className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 text-sm leading-relaxed text-[var(--color-text-secondary)]"
+    >
+      <Icon
+        name={icono}
+        size={22}
+        filled
+        className={cn(
+          'shrink-0',
+          tono === 'success'
+            ? 'text-[var(--color-semantic-text-success)]'
+            : 'text-[var(--color-semantic-text-warning)]',
+        )}
+      />
+      <p>{children}</p>
+    </div>
+  )
+}
+
+/** Interruptor de Apple: `role="switch"` con su estado, 44px de alto en movil. */
+function Interruptor({
+  activo,
+  onCambio,
+  etiqueta,
+}: {
+  activo: boolean
+  onCambio: (v: boolean) => void
+  etiqueta: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={activo}
+      onClick={() => onCambio(!activo)}
+      className={cn(
+        'inline-flex h-11 items-center gap-2 rounded-full pr-2 text-xs text-[var(--color-text-secondary)] md:h-9',
+        FOCO,
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'relative h-5 w-9 shrink-0 rounded-full transition-colors duration-150 ease-out',
+          activo ? 'bg-[var(--color-brand)]' : 'bg-[var(--color-border-strong)]',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-4 w-4 rounded-full bg-[var(--color-text-on-brand)] transition-transform duration-150 ease-out',
+            activo ? 'translate-x-[18px]' : 'translate-x-0.5',
+          )}
+        />
+      </span>
+      {etiqueta}
+    </button>
+  )
+}
+
+/** Filtro en pildora con su conteo. `aria-pressed` dice cual esta puesto. */
+function Chip({
+  activo,
+  onClick,
+  cuenta,
+  icono,
+  children,
+}: {
+  activo: boolean
   onClick: () => void
-  children: React.ReactNode
+  cuenta: number
+  icono?: string
+  children: ReactNode
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-pressed={active}
+      aria-pressed={activo}
       className={cn(
-        'h-9 rounded-[var(--radius-md)] px-3 text-sm transition-colors duration-100',
-        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
-        active
-          ? 'bg-[var(--color-brand)] font-medium text-[var(--color-text-on-brand)]'
-          : 'bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
+        'inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors duration-100 ease-out md:h-9',
+        FOCO,
+        activo
+          ? 'bg-[var(--color-brand)] font-semibold text-[var(--color-text-on-brand)]'
+          : 'border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]',
       )}
     >
+      {icono && <Icon name={icono} size={16} />}
       {children}
-    </button>
-  )
-}
-
-function ModuleCard({
-  mod,
-  selected,
-  arrastrado,
-  onToggle,
-  detailHref,
-}: {
-  mod: CatalogEntry
-  selected: boolean
-  /** Entro al calculo porque otro lo necesita, no porque se marcara. */
-  arrastrado: boolean
-  onToggle: () => void
-  detailHref: string
-}) {
-  const activo = mod.status === 'active' || mod.status === 'trial'
-  const esCore = mod.category === 'core'
-  const seleccionable = !activo && !esCore && mod.isPublished
-
-  const diasPrueba = mod.trialEndsAt
-    ? Math.max(0, Math.ceil((new Date(mod.trialEndsAt).getTime() - Date.now()) / 86_400_000))
-    : null
-
-  return (
-    <Card
-      className={cn(
-        'flex flex-col p-4 transition-colors duration-100',
-        selected && 'ring-2 ring-[var(--color-brand-bright)]',
-        arrastrado && 'ring-2 ring-[var(--color-semantic-warning)]',
-        !mod.isPublished && 'opacity-60',
-      )}
-    >
-      <div className="mb-2 flex items-start gap-2">
-        <Icon
-          name={mod.icon}
-          size={20}
-          className="mt-0.5 shrink-0 text-[var(--color-brand-bright)]"
-        />
-        <a
-          href={detailHref}
-          className="flex-1 text-sm font-semibold text-[var(--color-text-primary)] underline-offset-2 hover:text-[var(--color-brand-bright)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-        >
-          {mod.name}
-        </a>
-        <Badge tone={CATEGORY_TONE[mod.category]} dot={false}>
-          {CATEGORIES.find((c) => c.id === mod.category)?.label ?? mod.category}
-        </Badge>
-      </div>
-
-      <p className="mb-2 flex-1 text-xs leading-relaxed text-[var(--color-text-secondary)]">
-        {mod.description}
-      </p>
-
-      <a
-        href={detailHref}
-        className="mb-3 flex items-center gap-0.5 text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+      <span
+        className={cn(
+          'tabular text-xs',
+          activo ? 'text-[var(--color-text-on-brand)]' : 'text-[var(--color-text-muted)]',
+        )}
       >
-        Ver que incluye
-        <Icon name="arrow_forward" size={14} />
-      </a>
-
-      {/* Donde corre. Ahora importa de verdad: la app de escritorio existe. */}
-      <p className="mb-2 flex items-center gap-2 text-[10px] text-[var(--color-text-muted)]">
-        {mod.platforms.web && (
-          <span className="flex items-center gap-0.5">
-            <Icon name="language" size={12} /> Web
-          </span>
-        )}
-        {mod.platforms.desktop && (
-          <span className="flex items-center gap-0.5">
-            <Icon name="desktop_windows" size={12} /> Escritorio
-          </span>
-        )}
-        {mod.platforms.mobile && (
-          <span className="flex items-center gap-0.5">
-            <Icon name="smartphone" size={12} /> Movil
-          </span>
-        )}
-      </p>
-
-      {mod.missingRequires.length > 0 && !activo && (
-        <p className="mb-2 flex items-start gap-1 text-[11px] text-[var(--color-semantic-text-warning)]">
-          <Icon name="link" size={14} className="mt-px shrink-0" />
-          Necesita {mod.missingRequires.join(', ')} — se agrega solo al marcarlo
-        </p>
-      )}
-
-      {esCore ? (
-        <p className="mb-3 flex items-center gap-1 text-xs font-medium text-[var(--color-semantic-text-success)]">
-          <Icon name="check_circle" size={14} filled />
-          Incluido en tu plan
-        </p>
-      ) : (
-        <div className="mb-3 space-y-0.5 text-xs">
-          <div className="flex justify-between text-[var(--color-text-secondary)]">
-            <span>Instalacion</span>
-            <span className="tabular font-medium">US$ {money(mod.installPrice)}</span>
-          </div>
-          <div className="flex justify-between text-[var(--color-text-secondary)]">
-            <span>Mensual</span>
-            <span className="tabular font-medium text-[var(--color-text-primary)]">
-              US$ {money(mod.monthlyPrice)}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {activo ? (
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={mod.status === 'trial' ? 'warning' : 'success'}>
-            {mod.status === 'trial' ? `Prueba · quedan ${diasPrueba} d` : 'Activo'}
-          </Badge>
-          {!mod.enabled && <Badge tone="neutral">Apagado</Badge>}
-        </div>
-      ) : !mod.isPublished ? (
-        <Badge tone="neutral" dot={false}>
-          En camino
-        </Badge>
-      ) : esCore ? (
-        <Badge tone="success">Disponible</Badge>
-      ) : (
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-[var(--color-text-secondary)]">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggle}
-            disabled={!seleccionable}
-            className="h-4 w-4 accent-[var(--color-brand)]"
-          />
-          {arrastrado ? 'Incluido por dependencia' : 'Agregar al calculo'}
-        </label>
-      )}
-    </Card>
+        {cuenta}
+        <span className="sr-only"> módulos</span>
+      </span>
+    </button>
   )
 }

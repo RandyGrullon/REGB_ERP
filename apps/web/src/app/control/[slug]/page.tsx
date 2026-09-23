@@ -32,8 +32,10 @@ const CATEGORY_LABEL: Record<string, string> = {
 
 /**
  * Ficha 360 del cliente (§12.5): que paga, por que lo paga y que tiene
- * activo. El desglose es exactamente lo que el motor persistira en
- * `invoices.lines` cuando se emita la factura del ciclo.
+ * activo. "Proxima factura" es exactamente lo que el motor persistira en
+ * `invoices.lines` cuando se emita la del ciclo -uso medido, ITBIS e
+ * instalaciones pendientes incluidos (0128)-; la prueba
+ * `factura-mensual.accion.test.ts` compara las dos linea por linea.
  */
 export default async function ClientDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   await requireProvider()
@@ -41,7 +43,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
   const data = await loadClientDetail(slug)
   if (!data) notFound()
 
-  const { client, monthly, installation, modules } = data
+  const { client, invoice, installation, modules, usage, taxRate, pendingInstall } = data
   const fecha = (iso: string | null) =>
     iso
       ? new Date(iso).toLocaleDateString('es-DO', {
@@ -112,7 +114,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
         <StatCard
           label="Mensualidad"
           value={usd(client.monthlyTotal)}
-          hint={cycleLabel(client.billingCycle)}
+          hint={`${cycleLabel(client.billingCycle)} · ${usd(client.monthlyNet)} sin ITBIS`}
         />
         <StatCard label="Instalacion" value={usd(client.installTotal)} hint="pago unico" />
         <StatCard
@@ -132,15 +134,25 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
       <section aria-label="Desgloses" className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Desglose de la mensualidad</CardTitle>
+            <CardTitle>Proxima factura</CardTitle>
           </CardHeader>
           <CardBody>
-            <InvoiceBreakdown result={monthly} />
+            <InvoiceBreakdown result={invoice} />
+            <p className="mt-3 text-xs text-[var(--color-text-muted)]">
+              Uso medido hoy: {usage.activeUsers} usuario(s) activo(s) · {usage.branches}{' '}
+              sucursal(es) · {usage.companies} empresa(s) · {usage.storageGb} GB en archivos.
+              Transacciones: sin medir todavia, van en 0.{' '}
+              {taxRate > 0
+                ? `ITBIS ${Math.round(taxRate * 100)} % porque el cliente es de RD.`
+                : 'Sin ITBIS: el cliente no es de RD.'}
+              {pendingInstall.length > 0 &&
+                ` Incluye, una sola vez, la instalacion de: ${pendingInstall.join(', ')}.`}
+            </p>
           </CardBody>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Desglose de la instalacion</CardTitle>
+            <CardTitle>Instalacion de lo activo (referencia)</CardTitle>
           </CardHeader>
           <CardBody>
             <InvoiceBreakdown result={installation} />

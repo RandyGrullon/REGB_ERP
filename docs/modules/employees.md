@@ -55,20 +55,33 @@ jefe o un empleado ajenos -mismo patron que 0031/0040 y cada modulo de
 F6-. `impedir_referencia_ajena_empleado()` e `impedir_contrato_ajeno()`
 cierran las tres referencias desde la migracion original (0051).
 
+## Que cuenta ve este expediente en el portal (0132)
+
+`employees.user_id` vincula el expediente con UNA cuenta del equipo, unica
+por cliente. La guarda de cliente va en la llave: `(tenant_id, user_id)`
+apunta a `memberships`, asi que no se puede vincular una cuenta de otro
+cliente, y si la persona sale del equipo el expediente queda sin vinculo.
+Solo lo escribe `vincular_empleado_usuario()` con
+`employees.employee.link` (RRHH); un token no puede escribir la columna
+directo (trigger `no_vinculo_directo`). En `/empleados/:id`, la tarjeta
+"Acceso al portal" muestra a quien esta vinculado y deja vincular, cambiar
+o quitar. El correo del expediente es solo un dato de contacto: ya no
+empareja nada (ver `hr-portal.md`). Emite `employees.employee.user-linked`.
+
 ## Pantallas
 
 | Ruta | Permiso | Que hace |
 |---|---|---|
 | `/empleados` | `employees.view` | Lista con antiguedad y salario, registrar empleado |
 | `/empleados/organigrama` | `employees.view` | Arbol de jefe a subordinado |
-| `/empleados/:id` | `employees.view` | Expediente, historial de contratos, registrar contrato, dar de baja |
+| `/empleados/:id` | `employees.view` | Expediente, historial de contratos, registrar contrato, dar de baja, vincular la cuenta del portal (`employees.employee.link`) |
 
 ## Manifiesto
 
-- **Permisos:** `view`, `employee.create`, `contract.create`, `employee.terminate`, `export`
+- **Permisos:** `view`, `employee.create`, `contract.create`, `employee.terminate`, `employee.link`, `export` (0132 tambien los carga en `regb.module_catalog`, que tenia el juego generico de 0010)
 - **Widgets:** `headcount`, `new-hires`
 - **Reportes:** `employee-roster`, `org-chart`
-- **Emite:** `employees.employee.created`, `employees.employee.terminated`
+- **Emite:** `employees.employee.created`, `employees.employee.terminated`, `employees.employee.user-linked`
 - **Requiere:** ninguno · **Recomienda:** `payroll`
 
 ## Definicion de Terminado
@@ -76,7 +89,7 @@ cierran las tres referencias desde la migracion original (0051).
 | # | Punto | Estado |
 |---|---|---|
 | 1 | `manifest.ts` completo | ✅ |
-| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/employees.test.ts` — 11 casos: aislamiento, spoofing de tenant en sucursal/jefe/contrato ajenos, historial de contratos correcto (desactiva el anterior, actualiza el vigente), crear contrato para empleado ajeno bloqueado, modulo apagado, restricciones de tabla |
+| 2 | Migraciones + RLS probadas | ✅ `supabase/tests/nomina-vinculo-y-periodos.test.ts` cubre el vinculo (0132): sin token, sin permiso, de otro cliente, una cuenta = un expediente, bitacora. `supabase/tests/employees.test.ts` — 11 casos: aislamiento, spoofing de tenant en sucursal/jefe/contrato ajenos, historial de contratos correcto (desactiva el anterior, actualiza el vigente), crear contrato para empleado ajeno bloqueado, modulo apagado, restricciones de tabla |
 | 3 | Logica pura con cobertura | ✅ `employees.ts` — 16 pruebas: organigrama con arboles de 2 y 3 niveles, jefe fantasma, auto-jefe, ciclo de dos -encontro un bug real, corregido-, antiguedad en anos y dias, salario proporcional |
 | 4 | UI web responsive | ✅ verificado en navegador end-to-end: organigrama de 3 niveles renderizado correctamente, contrato nuevo registrado en vivo con el anterior pasando a historico |
 | 5 | UI movil | 🔜 F5 — sin `mobileScope`: `platforms.mobile = false` |

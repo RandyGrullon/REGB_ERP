@@ -7,7 +7,8 @@ import {
   type TipoIdentificacion,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { actionCtx, exigir } from '@/lib/module-page'
+import { PUERTAS_VENTAS_DGII, exigirAlguna, type Puerta } from '@/lib/fiscal'
+import { actionCtx } from '@/lib/module-page'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,11 +51,12 @@ const COLUMNAS_607 = [
   ['rnc_comprador', 'RNC o cedula del comprador'],
   ['tipo_identificacion', 'Tipo de identificacion (1 RNC, 2 cedula, 3 sin identificar)'],
   ['ncf', 'NCF'],
+  ['ncf_modificado', 'NCF modificado (notas de credito)'],
   ['fecha_comprobante', 'Fecha del comprobante (AAAAMMDD)'],
   ['monto_facturado', 'Monto facturado sin ITBIS'],
   ['itbis_facturado', 'ITBIS facturado'],
   ['total', 'Total'],
-  ['origen', 'Origen (factura o caja)'],
+  ['origen', 'Origen (factura, caja o nota_credito)'],
 ] as const
 
 const COLUMNAS_608 = [
@@ -66,15 +68,18 @@ const COLUMNAS_608 = [
 ] as const
 
 /**
- * De que modulo es cada reporte, y con que permiso se exporta.
+ * Por que puertas se exporta cada reporte.
  *
- * El 606 son compras (`ap`) y el 607/608 son ventas (`ar`): son negocios
- * distintos y roles distintos, aunque se declaren el mismo dia.
+ * El 606 son compras (`ap`) y el 607/608 son ventas: son negocios
+ * distintos y roles distintos, aunque se declaren el mismo dia. Las ventas
+ * las emiten DOS modulos -la factura a credito (`ar`) y el ticket de caja
+ * (`pos`)- y cualquiera de los dos basta: un colmado sin credito tambien
+ * declara su 607 (0129). Ver lib/fiscal.ts.
  */
-const DUENO: Record<'606' | '607' | '608', { modulo: string; perm: string }> = {
-  '606': { modulo: 'ap', perm: 'ap.export' },
-  '607': { modulo: 'ar', perm: 'ar.export' },
-  '608': { modulo: 'ar', perm: 'ar.export' },
+const DUENO: Record<'606' | '607' | '608', readonly Puerta[]> = {
+  '606': [{ modulo: 'ap', perm: 'ap.export', ruta: '/cobrar/dgii' }],
+  '607': PUERTAS_VENTAS_DGII,
+  '608': PUERTAS_VENTAS_DGII,
 }
 
 /** Escapa un campo para CSV. Excel en es-DO abre con `;` como separador. */
@@ -111,8 +116,31 @@ export async function GET(req: Request, { params }: { params: Promise<{ reporte:
   // Tabla y no un ternario a proposito: ramificar con `if` sobre un id de
   // modulo es justo lo que `audit:registry` prohibe en el core, y con
   // razon -un `if` se multiplica, una tabla se lee-.
-  const permiso = exigir(ctx, DUENO[reporte].modulo, DUENO[reporte].perm)
+  const permiso = exigirAlguna(ctx, DUENO[reporte])
   if (!permiso.ok) return NextResponse.json({ error: permiso.error }, { status: 403 })
+
+  // Un 607 o un 608 con ventas escondidas por un modulo apagado sale CORTO
+  // y parece completo. Mejor no entregar nada que entregar eso: el
+  // contribuyente se iria creyendo que declaro todo (0129).
+  if (reporte !== '606') {
+    const ocultas = await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx<{ modulo: string; documentos: string }[]>`
+        select modulo, documentos::text from public.ventas_fuera_de_vista(${periodo})`,
+    )
+    if (ocultas.length > 0) {
+      const n = ocultas.reduce((s, o) => s + Number(o.documentos), 0)
+      return NextResponse.json(
+        {
+          error:
+            `Hay ${n} venta(s) de ${periodo} en un modulo apagado (${ocultas.map((o) => o.modulo).join(', ')}). ` +
+            'El reporte saldria corto: enciendelo antes de declarar.',
+        },
+        { status: 409 },
+      )
+    }
+  }
 
   if (formato === 'txt') return archivoDeEnvio(reporte, periodo, ctx)
 
@@ -130,7 +158,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ reporte:
           order by ncf`
       : reporte === '607'
       ? tx<Record<string, unknown>[]>`
-          select rnc_comprador, tipo_identificacion, ncf, fecha_comprobante,
+          select rnc_comprador, tipo_identificacion, ncf, ncf_modificado, fecha_comprobante,
                  monto_facturado::text, itbis_facturado::text, total::text, origen
           from public.dgii_607
           where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
@@ -261,6 +289,11 @@ async function archivoDeEnvio(
           montoBienes: Number(f.bienes),
           montoFacturado: Number(f.monto),
           itbisFacturado: Number(f.itbis),
+          // Campo 15 = ITBIS facturado - llevado al costo (14) - sujeto a
+          // proporcionalidad (13). El sistema no modela ni 13 ni 14, asi
+          // que es el facturado entero: lo mismo que acredita el IT-1. Si
+          // iba vacio, el 606 decia "no adelanto nada" y el IT-1 si.
+          itbisPorAdelantar: Number(f.itbis),
           itbisRetenido: Number(f.itbis_retenido),
           tipoRetencionIsr: f.tipo_retencion_isr,
           retencionRenta: Number(f.retencion_renta),
@@ -279,6 +312,7 @@ async function archivoDeEnvio(
             rnc: string | null
             tipo: string
             ncf: string
+            ncf_modificado: string | null
             fecha: string
             monto: string
             itbis: string
@@ -289,12 +323,15 @@ async function archivoDeEnvio(
           }[]
         >`
           select v.rnc_comprador as rnc, v.tipo_identificacion as tipo, v.ncf,
-                 v.fecha_comprobante as fecha,
+                 v.ncf_modificado, v.fecha_comprobante as fecha,
                  v.monto_facturado::text as monto, v.itbis_facturado::text as itbis,
                  coalesce(p.efectivo, 0)::text      as efectivo,
                  coalesce(p.transferencia, 0)::text as transferencia,
                  coalesce(p.tarjeta, 0)::text       as tarjeta,
-                 case when v.origen = 'factura' then v.total else 0 end::text as credito
+                 -- La nota de credito rebaja una venta a credito: va en la
+                 -- misma forma de venta que la factura que modifica. [norma]
+                 case when v.origen in ('factura', 'nota_credito') then v.total else 0 end::text
+                   as credito
           from public.dgii_607 v
           left join lateral (
             select sum(pg.amount) filter (where pg.method = 'cash')     as efectivo,
@@ -315,6 +352,7 @@ async function archivoDeEnvio(
           rncComprador: f.rnc,
           tipoIdentificacion: f.tipo as TipoIdentificacion,
           ncf: f.ncf,
+          ncfModificado: f.ncf_modificado,
           fechaComprobante: f.fecha,
           montoFacturado: Number(f.monto),
           itbisFacturado: Number(f.itbis),

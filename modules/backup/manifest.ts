@@ -17,5 +17,16 @@ export default defineModule({
   },
   permissions: ['backup.view', 'backup.create', 'backup.edit', 'backup.delete', 'backup.export'],
   routes: [{ path: '/respaldos', label: 'Respaldos', perm: 'backup.view' }],
+
+  // Payload con numeros e ids, nunca con datos: el outbox lo leen
+  // automatizaciones y webhooks que salen a sistemas de terceros.
+  //  - created: lo emite public.crear_respaldo() (0122), en la misma
+  //    transaccion. { backup_id, kind, tablas, filas, size_bytes }
+  //  - downloaded: la ruta de descarga, la PRIMERA vez que el archivo
+  //    sale completo. { backup_id, formato }
+  events: {
+    emits: ['backup.snapshot.created', 'backup.snapshot.downloaded'],
+    listens: [],
+  },
   platforms: { web: true, desktop: true, mobile: false },
 })

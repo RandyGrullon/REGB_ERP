@@ -14,6 +14,9 @@ function demoDe(formData: FormData) {
   }
 }
 
+const limpiarError = (e: unknown): string =>
+  (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, '')
+
 export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
@@ -25,11 +28,23 @@ export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
   const currency = String(formData.get('currency') ?? 'DOP')
   if (legal.length < 3) return { ok: false, error: 'La razon social necesita al menos 3 letras.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      insert into public.companies (tenant_id, legal_name, tax_id, currency)
-      values (${ctx.tenantId}, ${legal}, ${rnc}, ${currency})`
-  })
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [empresa] = await tx<{ id: string }[]>`
+        insert into public.companies (tenant_id, legal_name, tax_id, currency)
+        values (${ctx.tenantId}, ${legal}, ${rnc}, ${currency})
+        returning id`
+
+      // Misma transaccion: si el evento no se puede escribir, la empresa
+      // tampoco queda. Sin razon social ni RNC: el payload viaja a
+      // webhooks de terceros, y quien los necesite los lee por el id.
+      await tx`
+        select public.emit_event('orgs.company.created',
+          ${JSON.stringify({ companyId: empresa!.id, currency })}::text::jsonb, 'orgs')`
+    })
+  } catch (e) {
+    return { ok: false, error: limpiarError(e) }
+  }
 
   revalidatePath('/empresas')
   return { ok: true }

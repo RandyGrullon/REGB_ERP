@@ -17,7 +17,10 @@ export default defineModule({
   },
   permissions: ['tour.view', 'tour.create', 'tour.edit', 'tour.delete', 'tour.export'],
   routes: [{ path: '/tutorial', label: 'Tutorial', perm: 'tour.view' }],
-  events: { emits: ['tour.step.completed', 'tour.finished'], listens: [] },
+  // Solo el final de una guia. `tour.finished` no cumplia el formato de
+  // emit_event() y `tour.step.completed` afirmaba algo que el sistema no
+  // sabe ("Siguiente" no comprueba el paso). Razones en docs/modules/tour.md.
+  events: { emits: ['tour.tour.completed'], listens: [] },
   platforms: { web: true, desktop: true, mobile: true },
   mobileScope: ['view'],
 })

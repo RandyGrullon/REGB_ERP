@@ -30,7 +30,9 @@ interface PeriodoOption {
 interface VolanteRow {
   employee_name: string
   position: string
+  paid_days: string | null
   gross_salary: string
+  reimbursements: string
   tss_deduction: string
   income_tax: string
   other_deductions: string
@@ -65,7 +67,8 @@ export default async function ReportesPayrollPage({
 
     const v = await tx<VolanteRow[]>`
       select emp.first_name || ' ' || emp.last_name as employee_name, emp.position,
-             l.gross_salary::text, l.tss_deduction::text, l.income_tax::text,
+             l.paid_days::text, l.gross_salary::text, l.reimbursements::text,
+             l.tss_deduction::text, l.income_tax::text,
              l.other_deductions::text, l.net_salary::text
       from public.payroll_lines l
       join public.employees emp on emp.id = l.employee_id
@@ -113,7 +116,7 @@ export default async function ReportesPayrollPage({
                 <a
                   key={p.id}
                   href={`/payroll/reports?period=${p.id}${qs ? `&${qs.slice(1)}` : ''}`}
-                  className={`rounded-[var(--radius-md)] border px-3 py-1.5 text-xs transition-colors ${
+                  className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
                     p.id === periodoActivo
                       ? 'border-[var(--color-brand-bright)] bg-[var(--color-brand-soft)] text-[var(--color-brand-bright)]'
                       : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
@@ -141,10 +144,12 @@ export default async function ReportesPayrollPage({
                     <TR>
                       <TH>Empleado</TH>
                       <TH>Cargo</TH>
+                      <TH numeric>Dias</TH>
                       <TH numeric>Bruto</TH>
+                      <TH numeric>Reembolsos</TH>
                       <TH numeric>TSS</TH>
                       <TH numeric>ISR</TH>
-                      <TH numeric>Otros</TH>
+                      <TH numeric>Prestamos y otros</TH>
                       <TH numeric>Neto</TH>
                     </TR>
                   </THead>
@@ -154,7 +159,13 @@ export default async function ReportesPayrollPage({
                         <TD className="text-[var(--color-text-primary)]">{v.employee_name}</TD>
                         <TD>{v.position}</TD>
                         <TD numeric>
+                          <span className="tabular">{v.paid_days === null ? '—' : Number(v.paid_days)}</span>
+                        </TD>
+                        <TD numeric>
                           <span className="tabular">{money(Number(v.gross_salary))}</span>
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular">{money(Number(v.reimbursements))}</span>
                         </TD>
                         <TD numeric>
                           <span className="tabular text-[var(--color-semantic-text-warning)]">

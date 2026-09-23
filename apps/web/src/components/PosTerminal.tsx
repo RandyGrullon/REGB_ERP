@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useState } from 'react'
 import { Badge, Icon, cn } from '@regb/ui'
 import {
   computeChange,
@@ -11,7 +11,7 @@ import {
   type ListaPrecio,
   type PaymentMethod,
 } from '@regb/operations'
-import { cobrarVentaForm } from '@/app/pos/actions'
+import { buscarProductoCaja, cobrarVentaAccion } from '@/app/pos/actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 /**
@@ -139,14 +139,28 @@ export function PosTerminal({
   const [recibido, setRecibido] = useState('')
   const [noEncontrado, setNoEncontrado] = useState<string | null>(null)
   const [encolada, setEncolada] = useState<string | null>(null)
+  // Productos que llegaron del servidor al escanear un codigo que no estaba
+  // entre los cargados. Se suman al catalogo local para el resto del turno.
+  const [traidos, setTraidos] = useState<PosProduct[]>([])
+  const catalogo = useMemo(() => [...products, ...traidos], [products, traidos])
 
-  const porId = useMemo(() => new Map(products.map((p) => [p.id, p])), [products])
+  // El carrito se vacia SOLO si el cobro entro. Si fallo, el aviso dice
+  // por que y el ticket armado sigue ahi para corregir y reintentar.
+  const [resultadoCobro, cobrar] = useActionState(cobrarVentaAccion, null)
+  useEffect(() => {
+    if (resultadoCobro?.ok) {
+      setLineas([])
+      setRecibido('')
+    }
+  }, [resultadoCobro])
+
+  const porId = useMemo(() => new Map(catalogo.map((p) => [p.id, p])), [catalogo])
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim()
-    if (q === '') return products.slice(0, 40)
-    return products.filter((p) => coincide(p, q)).slice(0, 40)
-  }, [busqueda, products])
+    if (q === '') return catalogo.slice(0, 40)
+    return catalogo.filter((p) => coincide(p, q)).slice(0, 40)
+  }, [busqueda, catalogo])
 
   const listasParseadas = useMemo<ListaPrecio[]>(
     () =>
@@ -212,7 +226,11 @@ export function PosTerminal({
     [lineas, porId, precioDe],
   )
 
-  const entregado = Number(recibido.replace(/,/g, '')) || 0
+  // "Recibe" vacio es pago exacto. El campo ya ensenaba el total como
+  // placeholder, asi que el cajero lo leia como lleno y el boton de cobrar
+  // seguia apagado sin decir por que.
+  const recibioAlgo = recibido.trim() !== ''
+  const entregado = recibioAlgo ? Number(recibido.replace(/,/g, '')) || 0 : totales.total
   const vuelto = computeChange(entregado, totales.total)
   const pagos = [{ method: metodo, amount: totales.total }]
   const puedeCobrar =
@@ -256,21 +274,35 @@ export function PosTerminal({
     if (codigo === '') return
 
     const exacto =
-      products.find((p) => p.barcode && p.barcode === codigo) ??
-      products.find((p) => p.sku.toLowerCase() === codigo.toLowerCase())
+      catalogo.find((p) => p.barcode && p.barcode === codigo) ??
+      catalogo.find((p) => p.sku.toLowerCase() === codigo.toLowerCase())
 
     if (exacto) {
       agregar(exacto)
       return
     }
     // Un solo resultado tambien basta: el cajero ya filtro escribiendo.
-    const coincidencias = products.filter((p) => coincide(p, codigo))
+    const coincidencias = catalogo.filter((p) => coincide(p, codigo))
     if (coincidencias.length === 1) {
       agregar(coincidencias[0]!)
       return
     }
-    setNoEncontrado(codigo)
-    setTimeout(() => setNoEncontrado(null), 2500)
+    // No esta entre lo cargado: antes de decir "no existe", se pregunta al
+    // catalogo completo. Un catalogo grande no cabe entero en la caja.
+    const input = e.currentTarget
+    void buscarProductoCaja(codigo, shiftId, {
+      tenant: hiddenFields.tenant || undefined,
+      rol: hiddenFields.rol || undefined,
+    }).then((p) => {
+      if (p) {
+        setTraidos((prev) => (prev.some((x) => x.id === p.id) ? prev : [...prev, p]))
+        agregar(p)
+        input.value = ''
+        return
+      }
+      setNoEncontrado(codigo)
+      setTimeout(() => setNoEncontrado(null), 2500)
+    })
   }
 
   /**
@@ -577,11 +609,16 @@ export function PosTerminal({
                 value={recibido}
                 onChange={(e) => setRecibido(e.target.value)}
                 inputMode="decimal"
-                placeholder={totales.total.toFixed(2)}
+                placeholder={`${totales.total.toFixed(2)} (exacto)`}
                 className="tabular h-10 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-base text-[var(--color-text-primary)]"
               />
             </label>
-            {entregado > 0 && (
+            {recibioAlgo && entregado < totales.total && (
+              <p className="text-sm text-[var(--color-semantic-text-danger)]">
+                Falta RD$ {money(totales.total - entregado)} para cubrir el total.
+              </p>
+            )}
+            {recibioAlgo && entregado >= totales.total && (
               <p className="flex justify-between text-sm">
                 <span className="text-[var(--color-text-secondary)]">Vuelto</span>
                 <span className="tabular font-bold text-[var(--color-semantic-text-success)]">
@@ -592,7 +629,7 @@ export function PosTerminal({
           </div>
         )}
 
-        <form action={cobrarVentaForm} onSubmit={alCobrar}>
+        <form action={cobrar} onSubmit={alCobrar}>
           {Object.entries(hiddenFields).map(([k, v]) => (
             <input key={k} type="hidden" name={k} value={v} />
           ))}
@@ -603,12 +640,6 @@ export function PosTerminal({
           <BotonEnvio
             
             disabled={!puedeCobrar}
-            onClick={() =>
-              setTimeout(() => {
-                setLineas([])
-                setRecibido('')
-              }, 100)
-            }
             className={cn(
               btn,
               'h-14 w-full bg-[var(--color-brand)] text-base font-bold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:cursor-not-allowed disabled:opacity-40',

@@ -1,1 +1,12 @@
 @import '@regb/ui/styles.css';
+
+/*
+ * Lo que solo se ve en un tema (el icono del boton de tema, las capturas
+ * del marketplace). Se decide por `data-theme` del <html> y no por
+ * `prefers-color-scheme`: manda lo que la persona eligio en la app, no lo
+ * que diga el sistema operativo.
+ */
+[data-theme='light'] .tema-si-oscuro,
+[data-theme='dark'] .tema-si-claro {
+  display: none !important;
+}

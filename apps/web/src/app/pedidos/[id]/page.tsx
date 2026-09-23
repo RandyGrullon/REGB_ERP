@@ -18,6 +18,8 @@ import {
 } from '@regb/ui'
 import { hasBackorder, pendingDelivery } from '@regb/operations'
 import { asUser } from '@/lib/db'
+import { situacionDeCredito, type SituacionDeCredito } from '@/lib/credito'
+import { EstadoDeCredito } from '@/components/EstadoDeCredito'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { ESTADOS } from '../estados'
@@ -37,6 +39,7 @@ interface OrderHead {
   number: string
   status: string
   order_date: string
+  customer_id: string
   customer_name: string
   customer_terms: number
   warehouse_id: string
@@ -77,17 +80,17 @@ export default async function PedidoDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'sales-orders')
 
-  const [head, lines, products] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [head, lines, products, credito, facturas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<OrderHead[]>`
       select so.id, so.number, so.status, so.order_date::text,
-             c.name as customer_name, c.payment_terms as customer_terms,
+             so.customer_id, c.name as customer_name, c.payment_terms as customer_terms,
              so.warehouse_id, w.name as warehouse_name,
              so.subtotal::text, so.discount::text, so.tax::text, so.total::text
       from public.sales_orders so
       join public.customers c on c.id = so.customer_id
       join public.warehouses w on w.id = so.warehouse_id
       where so.id = ${id} and so.tenant_id = ${ctx.tenantId}`
-    if (!h) return [null, [], []] as const
+    if (!h) return [null, [], [], null, []] as const
 
     const l = await tx<LineRow[]>`
       select l.id, l.product_id, p.sku, p.name, p.unit,
@@ -108,7 +111,25 @@ export default async function PedidoDetallePage({
             select id, sku, name, price::text from public.products
             where tenant_id = ${ctx.tenantId} and active order by name limit 300`
         : []
-    return [h, l, p] as const
+
+    // El credito se mira ANTES de confirmar, con los mismos numeros que
+    // usara la accion: si aqui dice bloqueado, confirmar dice lo mismo.
+    // Sin `ar` la RLS deja la cartera vacia y no hay vencidas que mirar.
+    const s: SituacionDeCredito | null =
+      h.status === 'draft' && l.length > 0
+        ? await situacionDeCredito(tx, ctx.tenantId, h.customer_id, {
+            excluirPedido: h.id,
+            montoDocumento: Number(h.total),
+          })
+        : null
+
+    const f = await tx<
+      { id: string; number: string; total: string; status: string; ncf: string | null }[]
+    >`
+      select id, number, total::text, status, ncf from public.customer_invoices
+      where tenant_id = ${ctx.tenantId} and source_type = 'sales_order' and source_id = ${id}
+      order by created_at`
+    return [h, l, p, s, f] as const
   })
 
   if (!head) notFound()
@@ -128,6 +149,11 @@ export default async function PedidoDetallePage({
   const puedeConfirmar = exigir(ctx, 'sales-orders', 'sales-orders.confirm').ok
   const puedeEntregar = exigir(ctx, 'sales-orders', 'sales-orders.deliver').ok
   const puedeCancelar = exigir(ctx, 'sales-orders', 'sales-orders.cancel').ok
+  // Autorizar credito es de `ar`, con el monto: un tope de rol tambien aplica.
+  const puedeAutorizar = exigir(ctx, 'ar', 'ar.credit.override', Number(head.total)).ok
+  const bloqueado = credito !== null && !credito.allowed
+  const entregado = head.status === 'delivered'
+  const aMedias = head.status === 'partially_delivered'
   const qs = ctx.demoQs
 
   const campos = (
@@ -163,7 +189,7 @@ export default async function PedidoDetallePage({
           }
           actions={
             <>
-              {enBorrador && puedeConfirmar && lines.length > 0 && (
+              {enBorrador && puedeConfirmar && lines.length > 0 && !bloqueado && (
                 <form action={confirmarPedidoForm}>
                   {campos}
                   <BotonEnvio
@@ -174,21 +200,59 @@ export default async function PedidoDetallePage({
                   </BotonEnvio>
                 </form>
               )}
-              {!cancelado && puedeCancelar && (
+              {/* Entregado completo no se cancela: la devolucion es una nota
+                  de credito sobre la factura. A medias, se cancela lo
+                  pendiente y lo entregado sigue por facturar. */}
+              {!cancelado && !entregado && puedeCancelar && (
                 <form action={cancelarPedidoForm}>
                   {campos}
                   <BotonEnvio
-                    
-                    title="Devuelve lo apartado al almacen. Lo ya entregado no se revierte."
+                    title={
+                      aMedias
+                        ? 'Cancela lo que falta por entregar y devuelve lo apartado. Lo entregado queda por facturar.'
+                        : 'Devuelve lo apartado al almacen.'
+                    }
                     className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="cancel" size={18} />
-                    Cancelar
+                    {aMedias ? 'Cancelar lo pendiente' : 'Cancelar'}
                   </BotonEnvio>
                 </form>
               )}
             </>
           }
         />
+
+        {credito && (
+          <EstadoDeCredito s={credito}>
+            {bloqueado && puedeConfirmar && puedeAutorizar && (
+              <form action={confirmarPedidoForm} className="space-y-2">
+                {campos}
+                <input type="hidden" name="creditOverride" value="1" />
+                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Motivo de la excepcion (queda escrito con tu nombre)
+                  <textarea
+                    name="overrideReason"
+                    required
+                    minLength={4}
+                    rows={2}
+                    placeholder="Ej.: cliente de 10 anos, paga el viernes con cheque"
+                    className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  <Icon name="verified_user" size={18} />
+                  Confirmar con excepcion
+                </BotonEnvio>
+              </form>
+            )}
+            {bloqueado && puedeConfirmar && !puedeAutorizar && (
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Solo quien tiene permiso para autorizar credito (ar.credit.override) puede confirmar
+                este pedido con una excepcion.
+              </p>
+            )}
+          </EstadoDeCredito>
+        )}
 
         <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
@@ -315,6 +379,36 @@ export default async function PedidoDetallePage({
               })}
             </TBody>
           </Table>
+        )}
+
+        {facturas.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Facturas de este pedido</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <ul className="divide-y divide-[var(--color-border)]">
+                {facturas.map((f) => (
+                  <li key={f.id} className="flex flex-wrap items-center gap-3 py-2 text-sm">
+                    <a
+                      href={`/cobrar/${f.id}${qs}`}
+                      className="font-semibold text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
+                      <Mono>{f.number}</Mono>
+                    </a>
+                    <span className="text-[var(--color-text-muted)]">{f.ncf ?? 'sin NCF'}</span>
+                    <span className="tabular ml-auto font-semibold text-[var(--color-text-primary)]">
+                      RD$ {money(Number(f.total))}
+                    </span>
+                    {f.status === 'void' && <Badge tone="neutral">Anulada</Badge>}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                Se factura lo entregado: si el pedido sale por partes, cada entrega se factura aparte.
+              </p>
+            </CardBody>
+          </Card>
         )}
 
         {enBorrador && puedeEditar && products.length > 0 && (

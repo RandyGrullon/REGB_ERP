@@ -292,7 +292,9 @@ export const TOURS: Tour[] = [
       {
         title: 'El comprobante fiscal sale solo',
         body: 'Cliente con RNC recibe B01, para que pueda deducir el ITBIS; el de mostrador, B02. Si no hay secuencia cargada la caja no se traba, pero el ticket lo dice.',
-        action: { label: 'Ir a Comprobantes', path: '/cobrar/ncf' },
+        // La de la caja y no /cobrar/ncf: este tour es de `pos`, y un
+        // colmado sin Por cobrar recibia un 404 en este paso (0129).
+        action: { label: 'Ir a Comprobantes', path: '/pos/comprobantes' },
         target: 'ncf-autorizacion',
       },
       {
@@ -1696,27 +1698,26 @@ export const TOURS: Tour[] = [
     steps: [
       {
         title: 'Empieza por el catalogo',
-        body: 'Productos primero, despues clientes, despues saldos. En ese orden, porque cada uno necesita el anterior.',
+        body: 'Hoy se importan productos: codigo, nombre, unidad, precio y costo. Clientes y saldos se cargan en sus pantallas.',
         action: { label: 'Ir a Importar', path: '/importar' },
       },
       {
         title: 'Baja la plantilla y llenala',
-        body: 'Cada importacion tiene su plantilla con las columnas exactas. Inventarse columnas es la causa numero uno de que falle.',
+        body: 'La plantilla trae las columnas exactas. Inventarse columnas es la causa numero uno de que falle.',
       },
       {
-        title: 'Te avisa ANTES de cargar',
-        body: 'Revisa el archivo y te ensena los errores fila por fila. Corriges el Excel y vuelves a subir.',
+        title: 'Entra lo bueno, lo malo te dice por que',
+        body: 'Cada fila con un problema se rechaza con su motivo y su numero de linea; las buenas entran. Al final ves cuantas fueron nuevas, cuantas ya existian y cuantas se rechazaron.',
         action: { label: 'Subir archivo', path: '/importar' },
         tip: 'Prueba primero con 20 filas. Si esas entran bien, sube las 3,000.',
       },
       {
-        title: 'Una importacion se deshace completa',
-        body: 'Si te equivocaste, se revierte entera. No hay que borrar 3,000 productos a mano.',
+        title: 'Los numeros no se adivinan',
+        body: '1,234.56 es mil doscientos treinta y cuatro con 56. Si una celda se puede leer de dos formas, la fila se rechaza y te dice como escribirla, en vez de guardar un precio equivocado.',
       },
       {
-        title: 'Los saldos iniciales se cargan una vez',
-        body: 'Inventario, cuentas por cobrar y por pagar del dia que arrancas. Esa es tu foto de partida.',
-        tip: 'Escoge un corte limpio: fin de mes. Arrancar a mitad de mes obliga a cuadrar dos sistemas a la vez.',
+        title: 'Una importacion se deshace completa',
+        body: 'Si te equivocaste, se revierte entera. No hay que borrar 3,000 productos a mano, y lo que ya existia antes no se toca.',
       },
     ],
   },

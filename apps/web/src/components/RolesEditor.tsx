@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge, Button, Card, cn } from '@regb/ui'
 import { matchingPatterns } from '@regb/permissions'
+import { TemaToggle } from './TemaToggle'
 import {
   createRole,
   deleteRole,
@@ -177,7 +178,8 @@ export function RolesEditor({
           >
             ←
           </a>
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">Roles</span>
+          <span className="flex-1 text-sm font-semibold text-[var(--color-text-primary)]">Roles</span>
+          <TemaToggle />
         </header>
 
         <div className="flex-1 overflow-y-auto p-2">

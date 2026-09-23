@@ -15,6 +15,19 @@ import { defineModule } from '@regb/module-registry'
  *
  * 2. La imagen se cifra y se purga a los 90 dias de aprobada la factura.
  *    Contiene RNC y montos de terceros; el dato que importa ya vive en `ap`.
+ *
+ * ESTADO: NO CONSTRUIDO. Sin tablas, sin pantallas, sin OCR. 0124 lo saco
+ * del escaparate (`is_published = false`), archivo sus activaciones y la
+ * base se niega a activarlo, para que nadie pague por el.
+ *
+ * Por eso `routes`, `dashboardWidgets` y `reports` van vacios: el manifest
+ * es lo que el registry ensena, y cada ruta declarada era un enlace del
+ * menu a un 404. El diseno de las pantallas (bandeja, por revisar,
+ * historial, documento) vive en docs/modules/invoice-capture.md; se
+ * declaran aqui el mismo dia que exista su page.tsx.
+ *
+ * Lo demas -precio, permisos, eventos, plataformas- se queda: es el
+ * contrato comercial y tecnico de lo que se va a construir.
  */
 export default defineModule({
   id: 'invoice-capture',
@@ -24,7 +37,7 @@ export default defineModule({
   category: 'advanced',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 60,
 
   pricing: {
@@ -49,20 +62,11 @@ export default defineModule({
     'invoice-capture.export',
   ],
 
-  routes: [
-    { path: '/invoice-capture', label: 'Bandeja', perm: 'invoice-capture.view' },
-    { path: '/invoice-capture/review', label: 'Por revisar', perm: 'invoice-capture.review' },
-    { path: '/invoice-capture/history', label: 'Historial', perm: 'invoice-capture.view' },
-    {
-      path: '/invoice-capture/:id',
-      label: 'Documento',
-      perm: 'invoice-capture.view',
-      hidden: true,
-    },
-  ],
-
-  dashboardWidgets: ['pending-review', 'capture-accuracy'],
-  reports: ['extraction-quality', 'monthly-volume'],
+  // Ninguna existe todavia (ver la cabecera). Sin rutas, el registry no le
+  // pone entrada en el menu aunque alguien lo tuviera licenciado.
+  routes: [],
+  dashboardWidgets: [],
+  reports: [],
 
   events: {
     emits: ['invoice-capture.document.extracted', 'invoice-capture.document.rejected'],

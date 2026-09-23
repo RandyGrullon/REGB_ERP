@@ -11,6 +11,7 @@ import { TIER_PLANS } from './tiers.js'
 import { DISCOUNT_LABELS, DISCOUNT_RATES, type DiscountKind } from './discounts.js'
 import type {
   ActiveModuleInput,
+  InstallationCharge,
   InstallationInput,
   InvoiceLine,
   InvoiceResult,
@@ -67,14 +68,25 @@ function splitIncluded<T extends { category: ModuleCategory }>(
   return { included, billable }
 }
 
+/**
+ * Cierra la factura: descuento, cargos de una sola vez, impuesto.
+ *
+ * El descuento se calcula SOLO sobre lo recurrente (`inputLines`); los
+ * cargos de una vez entran despues, sin descuento, y el impuesto va sobre
+ * todo. `subtotalCents` es la suma de todas las lineas antes del
+ * descuento, como siempre.
+ */
 function finalize(
   inputLines: InvoiceLine[],
   discount: DiscountKind,
   taxRate: number,
+  oneTime: InvoiceLine[] = [],
 ): InvoiceResult {
-  const subtotalCents = sumCents(inputLines.map((l) => l.amountCents))
+  const recurringCents = sumCents(inputLines.map((l) => l.amountCents))
+  const oneTimeCents = sumCents(oneTime.map((l) => l.amountCents))
+  const subtotalCents = (recurringCents + oneTimeCents) as Cents
   const discountRate = DISCOUNT_RATES[discount]
-  const discountCents = discountRate > 0 ? scaleCents(subtotalCents, discountRate) : toCents(0)
+  const discountCents = discountRate > 0 ? scaleCents(recurringCents, discountRate) : toCents(0)
 
   const lines = [...inputLines]
   if (discountRate > 0) {
@@ -84,6 +96,7 @@ function finalize(
       amountCents: -discountCents as Cents,
     })
   }
+  lines.push(...oneTime)
 
   const afterDiscount = (subtotalCents - discountCents) as Cents
   const taxCents = taxRate > 0 ? scaleCents(afterDiscount, taxRate) : toCents(0)
@@ -206,5 +219,36 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
     })
   }
 
-  return finalize(lines, input.discount ?? 'none', input.taxRate ?? 0)
+  return finalize(lines, input.discount ?? 'none', input.taxRate ?? 0, input.oneTimeCharges ?? [])
+}
+
+/**
+ * Cuanto cuesta instalar los modulos `pendingIds`, recien activados.
+ *
+ * Se decide sobre TODOS los modulos pagados y activos del cliente, igual
+ * que la cotizacion de instalacion: los que caen dentro de los incluidos
+ * del tier (los mas caros primero) se instalan a US$0. Un modulo en
+ * prueba no cuenta ni se cobra: su instalacion llega cuando pase a activo.
+ *
+ * Cada modulo se cobra una vez: quien llama guarda lo que ya se facturo y
+ * solo pasa aqui lo que falta.
+ */
+export function installationChargesFor(
+  tier: TenantTier,
+  activeModules: ActiveModuleInput[],
+  pendingIds: string[],
+): InstallationCharge[] {
+  const plan = TIER_PLANS[tier]
+  const paid = activeModules.filter((m) => !m.trial)
+  const { included } = splitIncluded(paid, plan.includedModules)
+  const incluidos = new Set(included.map((m) => m.moduleId))
+  const pendientes = new Set(pendingIds)
+
+  return paid
+    .filter((m) => pendientes.has(m.moduleId))
+    .map((m) =>
+      incluidos.has(m.moduleId)
+        ? { moduleId: m.moduleId, amountCents: toCents(0), included: true }
+        : { moduleId: m.moduleId, amountCents: resolveInstallPrice(m, tier), included: false },
+    )
 }

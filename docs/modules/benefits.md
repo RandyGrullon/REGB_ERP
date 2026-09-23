@@ -55,6 +55,19 @@ en el mismo insert del pago (no en un update posterior, a diferencia de
 en el `insert`, sin necesitar la variante de `update` que si hizo falta
 en `expenses`.
 
+## Descuento por nomina (0132)
+
+Al procesar un periodo, `payroll` descuenta de cada prestamo activo del
+empleado la cuota (mensual) por la fraccion del periodo -media cuota por
+quincena-, nunca mas que el saldo y nunca dejando el neto en negativo (lo
+que no alcanza sigue en el saldo). Registra el pago aqui
+(`source = 'payroll'`, `payroll_period_id`) y marca `paid` el prestamo que
+llega a cero, en la misma transaccion que la linea de nomina. Un pago que
+alguien registra a mano con un periodo de nomina se descuenta en esa
+nomina tal cual, sin duplicarlo. Un pago solo puede apuntar a un periodo
+en BORRADOR: apuntar a uno ya procesado era darlo por pagado sin que la
+nomina lo descontara (trigger `no_nomina_cerrada`).
+
 ## Pantallas
 
 | Ruta | Permiso | Que hace |
@@ -95,10 +108,10 @@ en `expenses`.
 - **Procesar reclamos ante una ARS o aseguradora real.** Registra quien
   esta inscrito en que plan y cuanto aporta cada quien -no hay
   integracion con ninguna aseguradora-.
-- **Deducir automaticamente de una nomina.** `registrarPago()` es una
-  accion manual; `source = 'payroll'` y `payroll_period_id` solo
-  registran que ese pago se hizo por esa via, sin modificar el calculo
-  de `payroll_lines`.
+- **Cobrar el interes en el saldo.** `saldoPrestamo()` es principal menos
+  pagos: un prestamo con interes se da por saldado antes de cobrar todas
+  sus cuotas (hallazgo del analisis de flujo, sin cerrar). La nomina usa
+  ese mismo saldo, asi que hereda el problema.
 - **Editar un pago ya registrado, bajo ninguna circunstancia.** Ni con
   el prestamo todavia activo. Un error se corrige con un ajuste nuevo,
   nunca editando el hecho historico.

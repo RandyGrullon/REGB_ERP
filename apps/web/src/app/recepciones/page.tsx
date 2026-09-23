@@ -19,7 +19,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { cancelarDevolucionForm, enviarDevolucionForm } from './actions'
-import { ESTADO_RECEPCION } from './estados'
+import { ESTADO_RECEPCION, ORIGEN_DEVOLUCION } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +35,7 @@ interface OrdenPendiente {
 
 interface RecepcionRow {
   id: string
+  order_id: string
   order_number: string
   supplier_name: string
   received_at: string
@@ -49,6 +50,7 @@ interface DevolucionRow {
   qty: string
   reason: string
   status: string
+  origin: string
 }
 
 const money = (n: number) =>
@@ -78,7 +80,7 @@ export default async function RecepcionesPage({
         order by po.order_date desc`
 
       const r = await tx<RecepcionRow[]>`
-        select gr.id, po.number as order_number, s.name as supplier_name,
+        select gr.id, po.id as order_id, po.number as order_number, s.name as supplier_name,
                gr.received_at::text, up.display_name as received_by_name, gr.status
         from public.goods_receipts gr
         join public.purchase_orders po on po.id = gr.purchase_order_id
@@ -90,7 +92,7 @@ export default async function RecepcionesPage({
 
       const d = await tx<DevolucionRow[]>`
         select sr.id, p.name as product_name, s.name as supplier_name,
-               sr.qty::text, sr.reason, sr.status
+               sr.qty::text, sr.reason, sr.status, sr.origin
         from public.supplier_returns sr
         join public.goods_receipt_lines grl on grl.id = sr.goods_receipt_line_id
         join public.products p on p.id = grl.product_id
@@ -206,6 +208,7 @@ export default async function RecepcionesPage({
                     <TH>Producto</TH>
                     <TH>Proveedor</TH>
                     <TH numeric>Cantidad</TH>
+                    <TH>Que se devuelve</TH>
                     <TH>Razon</TH>
                     {puedeDevolver && (
                       <TH>
@@ -221,6 +224,14 @@ export default async function RecepcionesPage({
                       <TD>{d.supplier_name}</TD>
                       <TD numeric>
                         <span className="tabular">{d.qty}</span>
+                      </TD>
+                      <TD>
+                        <span className="text-[var(--color-text-primary)]">
+                          {ORIGEN_DEVOLUCION[d.origin]?.label ?? d.origin}
+                        </span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {ORIGEN_DEVOLUCION[d.origin]?.efecto}
+                        </span>
                       </TD>
                       <TD className="max-w-56 truncate">{d.reason}</TD>
                       {puedeDevolver && (
@@ -284,7 +295,19 @@ export default async function RecepcionesPage({
                 <TBody>
                   {recepciones.map((r) => (
                     <TR key={r.id}>
-                      <TD className="text-[var(--color-text-primary)]">{r.order_number}</TD>
+                      <TD className="text-[var(--color-text-primary)]">
+                        {puedeRecibir ? (
+                          // Tambien una orden ya recibida: ahi se devuelven sus rechazos.
+                          <a
+                            href={`/recepciones/${r.order_id}${qs}`}
+                            className="underline-offset-2 hover:underline"
+                          >
+                            {r.order_number}
+                          </a>
+                        ) : (
+                          r.order_number
+                        )}
+                      </TD>
                       <TD>{r.supplier_name}</TD>
                       <TD>{r.received_by_name ?? '—'}</TD>
                       <TD>{new Date(r.received_at).toLocaleDateString('es-DO')}</TD>

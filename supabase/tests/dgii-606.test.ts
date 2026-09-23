@@ -169,9 +169,12 @@ describe('La forma de pago se deriva de los pagos reales', () => {
 
   it('la fecha de pago es la del ULTIMO pago, no la del primero', async () => {
     const id = await factura(tenantA, provA, '1104', { expense_type: '09' })
+    // Con hora de RD explicita: `paid_at` es un instante y el 606 lo fecha
+    // en Santo Domingo (0129). '2026-08-20' a secas es la medianoche UTC,
+    // que en RD todavia es el 19 a las 8 p. m.
     await sql`insert into public.supplier_payments (tenant_id, invoice_id, amount, method, paid_at)
-              values (${tenantA}, ${id}, 600, 'cash', '2026-08-10'),
-                     (${tenantA}, ${id}, 580, 'cash', '2026-08-20')`
+              values (${tenantA}, ${id}, 600, 'cash', '2026-08-10 10:00-04'),
+                     (${tenantA}, ${id}, 580, 'cash', '2026-08-20 10:00-04')`
     const [f] = await sql<{ fecha_pago: string }[]>`
       select fecha_pago from public.dgii_606 where ncf = 'B0100001104'`
     expect(f!.fecha_pago).toBe('20260820')
@@ -194,7 +197,12 @@ describe('El desglose de la retencion', () => {
 
   it('retener por ISR mas de lo retenido en total se rechaza', async () => {
     await expect(
-      factura(tenantA, provA, '1201', { retention_amount: 50, isr_retained: 100 }),
+      // Con su tipo: sin el, la rechaza antes `isr_con_tipo` (0129).
+      factura(tenantA, provA, '1201', {
+        retention_amount: 50,
+        isr_retained: 100,
+        isr_retention_type: '02',
+      }),
     ).rejects.toThrow(/isr_dentro_de_retencion/)
   })
 })

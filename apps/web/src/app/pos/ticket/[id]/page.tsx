@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { formatTaxId } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { exigir, modulePage, type DemoParams } from '@/lib/module-page'
 import { PrintButton } from '@/components/PrintButton'
 
 export const dynamic = 'force-dynamic'
@@ -35,6 +35,20 @@ interface Head {
   warehouse_name: string
   company_name: string | null
   company_tax_id: string | null
+  ncf_expires_on: string | null
+}
+
+/**
+ * La Norma 06-2018 de la DGII pide en el comprobante, ademas del NCF, el
+ * nombre del tipo de comprobante y la fecha de vencimiento de la
+ * secuencia que lo autorizo. Sin ellos el ticket de un B02 no esta
+ * completo aunque el numero sea bueno.
+ */
+const NOMBRE_COMPROBANTE: Record<string, string> = {
+  B01: 'Factura de credito fiscal',
+  B02: 'Factura de consumo',
+  B14: 'Comprobante de regimenes especiales',
+  B15: 'Comprobante gubernamental',
 }
 
 const money = (n: number) =>
@@ -49,7 +63,11 @@ export default async function TicketPage({
 }) {
   const { id } = await params
   const sp = await searchParams
-  const { ctx } = await modulePage(sp, 'pos', 'pos.report.view')
+  // El cajero que cobro tiene que poder entregar SU ticket: el aviso de
+  // "Cobrado" enlaza aqui. Con `pos.report.view` se ve cualquier ticket;
+  // con solo `pos.sell`, los que cobro esa persona.
+  const { ctx } = await modulePage(sp, 'pos', 'pos.sell')
+  const veTodos = exigir(ctx, 'pos', 'pos.report.view').ok
 
   const [head, lineas, pagos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<Head[]>`
@@ -57,7 +75,8 @@ export default async function TicketPage({
              s.discount::text, s.tax::text, s.created_at::text, s.voided,
              c.name as customer_name, c.tax_id as customer_tax_id,
              up.display_name as cashier_name, w.name as warehouse_name,
-             co.legal_name as company_name, co.tax_id as company_tax_id
+             co.legal_name as company_name, co.tax_id as company_tax_id,
+             sec.expires_on::text as ncf_expires_on
       from public.pos_sales s
       join public.pos_shifts sh on sh.id = s.shift_id
       join public.warehouses w on w.id = sh.warehouse_id
@@ -65,7 +84,17 @@ export default async function TicketPage({
       left join public.customers c on c.id = s.customer_id
       left join public.user_profiles up
         on up.tenant_id = s.tenant_id and up.user_id = s.cashier_id
-      where s.id = ${id} and s.tenant_id = ${ctx.tenantId}`
+      -- La secuencia que dio este numero: mismo tipo y rango que lo contiene.
+      left join lateral (
+        select q.expires_on from public.ncf_sequences q
+        where q.tenant_id = s.tenant_id and q.ncf_type = s.ncf_type
+          and nullif(regexp_replace(s.ncf, '^[A-Z][0-9]{2}', ''), '')::bigint
+              between q.range_from and q.range_to
+        order by q.created_at desc
+        limit 1
+      ) sec on s.ncf is not null
+      where s.id = ${id} and s.tenant_id = ${ctx.tenantId}
+        and (${veTodos} or s.cashier_id = ${ctx.userId})`
     if (!h) return [null, [], []] as const
 
     const l = await tx<
@@ -118,7 +147,24 @@ export default async function TicketPage({
             entera cuando su contador lo rechaza. Impreso, al menos sale
             del mostrador con la conversacion hecha. */}
         {head.ncf ? (
-          <p className="text-center text-[12px] font-bold">NCF: {head.ncf}</p>
+          <>
+            {head.ncf_type && NOMBRE_COMPROBANTE[head.ncf_type] && (
+              <p className="text-center font-bold uppercase">
+                {NOMBRE_COMPROBANTE[head.ncf_type]}
+              </p>
+            )}
+            <p className="text-center text-[12px] font-bold">NCF: {head.ncf}</p>
+            {head.ncf_expires_on && (
+              <p className="text-center">
+                Valido hasta:{' '}
+                {new Date(`${head.ncf_expires_on}T12:00:00`).toLocaleDateString('es-DO', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                })}
+              </p>
+            )}
+          </>
         ) : (
           <p className="border border-black py-1 text-center text-[10px] font-bold uppercase">
             Sin comprobante fiscal

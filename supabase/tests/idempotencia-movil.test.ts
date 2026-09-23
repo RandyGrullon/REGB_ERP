@@ -147,17 +147,20 @@ beforeAll(async () => {
       (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost, created_by)
     values (${tenantB}, ${almacenB1}, ${productoB}, 'adjustment_in', 100, 50, ${userB})`
 
-  // Un empleado en A, vinculado por correo al usuario: es como las
-  // funciones de gastos y vacaciones averiguan QUIEN esta pidiendo.
+  // Un empleado en A, vinculado al usuario por employees.user_id (0132):
+  // es como las funciones de gastos y vacaciones averiguan QUIEN pide.
   const correo = `ana-idem-${RUN}@prueba.do`
+  await sql`
+    insert into public.memberships (tenant_id, user_id, role_id, accepted_at)
+    values (${tenantA}, ${userA}, ${rolA}, now())`
   await sql`
     insert into public.user_profiles (tenant_id, user_id, email, display_name)
     values (${tenantA}, ${userA}, ${correo}, 'Ana')`
   const [e] = await sql`
     insert into public.employees
-      (tenant_id, code, first_name, last_name, position, salary, email, hire_date, status)
+      (tenant_id, code, first_name, last_name, position, salary, email, hire_date, status, user_id)
     values (${tenantA}, ${`E-IDEM-${RUN}`}, 'Ana', 'Prueba', 'Vendedor', 30000,
-            ${correo}, '2020-01-15', 'active')
+            ${correo}, '2020-01-15', 'active', ${userA})
     returning id`
   empA = e!.id
 })
@@ -167,6 +170,7 @@ afterAll(async () => {
   await sql`delete from public.time_off_requests where tenant_id in ${sql(ts)}`
   await sql`delete from public.expenses where tenant_id in ${sql(ts)}`
   await sql`delete from public.employees where tenant_id in ${sql(ts)}`
+  await sql`delete from public.memberships where tenant_id in ${sql(ts)}`
   await sql`delete from public.user_profiles where tenant_id in ${sql(ts)}`
   await sql`delete from public.stock_transfer_lines where tenant_id in ${sql(ts)}`
   await sql`delete from public.stock_transfers where tenant_id in ${sql(ts)}`

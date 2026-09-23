@@ -31,6 +31,12 @@ export interface ModulePageCtx {
   licensedModules: Set<string>
   /** Query string para propagar tenant/rol en modo demostracion. */
   demoQs: string
+  /**
+   * Estado de cuenta del cliente, leido de la base en cada peticion (no
+   * del JWT, que puede tener una hora). En `readonly` o peor, `exigir()`
+   * solo deja ver y exportar (0128).
+   */
+  tenantStatus?: string
 }
 
 /**
@@ -75,6 +81,7 @@ async function resolve(params: DemoParams): Promise<Resolved | null> {
         roleName: data.role.name,
         licensedModules: data.hydration.licensedModules,
         demoQs: '',
+        tenantStatus: data.tenant.status,
       },
     }
   }
@@ -97,6 +104,7 @@ async function resolve(params: DemoParams): Promise<Resolved | null> {
       roleName,
       licensedModules: data.hydration.licensedModules,
       demoQs: `?tenant=${slug}&rol=${encodeURIComponent(roleName)}`,
+      tenantStatus: data.tenant.status,
     },
   }
 }
@@ -118,7 +126,7 @@ export async function primeraRutaVisible(
 ): Promise<string | null> {
   const r = await resolve(params)
   if (!r) return null
-  if (exigir(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) return null
+  if (permisoDelRol(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) return null
 
   for (const entrada of r.data.hydration.sidebar) {
     const ruta = entrada.routes.find((x) => !x.hidden && !x.path.includes(':'))
@@ -199,7 +207,9 @@ export async function modulePage(
   const r = await resolve(params)
   if (!r) redirect(authConfigured ? '/login' : '/')
 
-  if (!exigir(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) notFound()
+  // Abrir la pantalla mira solo el rol: en solo lectura la caja se ve; lo
+  // que no se puede es cobrar, y eso lo niega `exigir()` en la accion.
+  if (!permisoDelRol(r.ctx, moduleId, perm ?? `${moduleId}.view`).ok) notFound()
 
   const platform = (params.plataforma ?? 'web') as 'web' | 'desktop' | 'mobile'
   const tenants = r.demo
@@ -248,16 +258,17 @@ export async function modulePage(
   }
 }
 
+/**
+ * El numero de la campana: lo que ESTE usuario no ha leido. Un aviso de
+ * equipo se lee por persona (0125); la cuenta la hace la misma funcion
+ * que usa /notificaciones, para que los dos numeros no discrepen.
+ */
 async function unreadCount(ctx: ModulePageCtx): Promise<number> {
   if (!ctx.licensedModules.has('notifications')) return 0
   const [row] = await asUser(
     ctx.userId,
     ctx.tenantId,
-    (tx) => tx<{ c: string }[]>`
-      select count(*) as c from public.notifications
-      where tenant_id = ${ctx.tenantId}
-        and (user_id = ${ctx.userId} or user_id is null)
-        and read_at is null`,
+    (tx) => tx<{ c: number }[]>`select public.avisos_sin_leer() as c`,
   )
   return Number(row?.c ?? 0)
 }
@@ -344,6 +355,23 @@ async function buildSearchIndex(r: Resolved): Promise<SearchEntry[]> {
   return entries
 }
 
+/**
+ * Estados de cuenta en los que no se escribe. `suspended` y `archived` ni
+ * siquiera entran con sesion real (`checkAccess`); se listan para que el
+ * modo demostracion -que no pasa por ahi- tampoco escriba.
+ */
+const SIN_ESCRITURA = new Set(['readonly', 'suspended', 'archived'])
+
+/**
+ * Acciones que solo leen: las que terminan en `view` o `export`, o tienen
+ * `view` en medio (`payroll.view.own`, `inventory.cost.view`). Todo lo
+ * demas escribe algo.
+ */
+const esLectura = (accion: string): boolean => /(^|\.)(view|export)(\.|$)/.test(accion)
+
+export const MENSAJE_SOLO_LECTURA =
+  'Tu cuenta esta en solo lectura por un pago pendiente con REGB. Puedes consultar y exportar todo; para volver a registrar, ponte al dia y se reactiva sola al pagar.'
+
 /** Para server actions: devuelve null en vez de redirigir. */
 export async function actionCtx(demo?: DemoParams): Promise<ModulePageCtx | null> {
   const r = await resolve(demo ?? {})
@@ -357,6 +385,21 @@ export async function actionCtx(demo?: DemoParams): Promise<ModulePageCtx | null
  * necesita aprobacion del gerente por encima de cierto monto).
  */
 export function exigir(
+  ctx: ModulePageCtx,
+  moduleId: string,
+  accion: string,
+  amount?: number,
+): ActionResult {
+  // Mora en solo lectura (§6.6, dia 15): se ve y se exporta, no se escribe.
+  // Antes `readonly` era solo el banner rojo y el cliente seguia operando.
+  if (ctx.tenantStatus !== undefined && SIN_ESCRITURA.has(ctx.tenantStatus) && !esLectura(accion)) {
+    return { ok: false, error: MENSAJE_SOLO_LECTURA }
+  }
+  return permisoDelRol(ctx, moduleId, accion, amount)
+}
+
+/** Solo el rol y los modulos, sin mirar el estado de cuenta. */
+function permisoDelRol(
   ctx: ModulePageCtx,
   moduleId: string,
   accion: string,

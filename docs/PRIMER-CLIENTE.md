@@ -5,7 +5,9 @@ mañana. Nada de esto es código nuevo: el código está. Lo que falta es
 **configurar y cargar datos**, y algunas cosas solo las puedes hacer tú
 porque implican crear cuentas y credenciales.
 
-Verificado contra el repo el 2 de septiembre de 2026. **Ya hay un primer
+Verificado contra el repo el 2 de septiembre de 2026; el alta del cliente
+(paso 3) y la carga de catálogo y existencias (paso 4) se rehicieron el 23
+de septiembre (migración 0133) y ya no piden SQL. **Ya hay un primer
 cliente real confirmado**: una empresa de venta de productos electrónicos,
 con ventas al contado y a crédito (15/30 días según el cliente).
 
@@ -100,38 +102,76 @@ no al vuelo.
 
 ## 3. Crear el cliente
 
-Desde `/control/onboarding`, o directo:
+**Sin SQL.** En `/control` o en `/control/onboarding`, botón **Dar de alta
+un cliente** (`/control/onboarding/nuevo`). Es un asistente de cinco pasos:
 
-```sql
-insert into regb.tenants (slug, legal_name, trade_name, tax_id, tier, status)
-values ('colmado-x', 'Colmado X SRL', 'Colmado X', '130111111', 'pyme', 'active');
-```
+1. **Cliente** — razón social, nombre comercial, **RNC o cédula** (se valida
+   el dígito verificador al salir del campo y otra vez en la base: un RNC
+   malo hace rebotar el 607 completo el día 20), identificador (se sugiere
+   solo) y plan: pyme, mediano o grande.
+2. **Módulos** — lo que compró. Lo que cada uno necesita entra solo (marcar
+   *Conteos cíclicos* trae *Inventario*) y se avisa lo recomendado. Los
+   enterprise solo se ofrecen en el plan grande; los core vienen con todo
+   cliente.
+3. **Operación** — la primera sucursal y el almacén del que descuenta la
+   caja.
+4. **Dueño** — nombre y correo.
+5. **Revisar** y **Dar de alta**.
 
-El trigger `regb.on_tenant_created()` le crea solo los 14 roles y los
-módulos core. **Usa el RNC real y correcto**: se valida con el dígito
-verificador y un RNC malo hace rebotar el 607 completo el día 20.
+Todo en una transacción (`regb.alta_de_cliente()`, migración 0133): el
+cliente con su RNC, los módulos comprados **activos** con sus
+dependencias, la **empresa principal** (`is_default`, con la razón social y
+el RNC: la que sale en cada comprobante y la que lee el 607), la sucursal,
+el **almacén predeterminado**, los 14 roles de sistema comprobados y la
+**invitación al dueño con el rol Owner** por el mecanismo de invitaciones
+(0123). Si algo falla no queda nada. Se anota en la bitácora con tu
+usuario.
 
-Activa lo que compró en `regb.tenant_modules` — o desde el marketplace,
-que es lo mismo con una pantalla delante.
+- **Repetirlo no duplica nada.** La llave es el RNC: el mismo RNC con el
+  mismo identificador dice "ya estaba dado de alta" o completa lo que
+  falte (sirve también para un cliente que se creó a mano por SQL); el
+  mismo RNC con otro identificador se niega y dice cuál es el cliente.
+- **El enlace del dueño sale una sola vez** en el resultado: cópialo y
+  mándaselo tú (WhatsApp, correo). Desde REGB Control no sale el correo:
+  la función de correo trabaja con la sesión de alguien del cliente y
+  todavía no hay nadie. Si lo pierdes, la tarjeta del cliente en el
+  tablero tiene **Enlace nuevo para el dueño** (el anterior deja de
+  servir). Vence en 7 días.
+
+Más módulos después: desde el marketplace del cliente (solicitud → la
+activas tú en `/control`).
 
 ---
 
 ## 4. Cargar sus datos
 
-En este orden, porque cada paso depende del anterior:
+En este orden, porque cada paso depende del anterior. Lo hace el dueño
+con su usuario (o tú, en la demo, con `?tenant=<identificador>&rol=Owner`):
 
-1. **Empresa y sucursales** — `/empresas`, `/sucursales`. La razón social y
-   el RNC salen impresos en cada comprobante.
-2. **Catálogo** — `/importar` con un CSV. Prueba primero con 10 filas: si
-   esas quedan bien, el resto también. Carga el **código de barras**, que es
-   lo que hace que el lector sirva.
-3. **Revisa el ITBIS** — 18% en casi todo, pero arroz, habichuela y plátano
-   van exentos. Un impuesto mal puesto no se nota vendiendo; se nota
-   declarando.
-4. **Existencias iniciales** — `/inventory/movements` como ajuste de
-   entrada **con su costo**. Sin costo, la valorización nace mal. Hazlo de
-   noche o un domingo: cargar existencias mientras se vende garantiza que
-   no cuadre.
+1. **Empresa y sucursales** — ya las creó el alta: la empresa principal con
+   su RNC, una sucursal y su almacén. `/empresas` y `/sucursales` solo si
+   tiene más de una; una sucursal nueva no crea almacén (se crea en
+   `/inventory/warehouses`).
+2. **Catálogo** — `/importar`, tarjeta *Productos*, con un CSV. Prueba
+   primero con 10 filas: si esas quedan bien, el resto también. Carga el
+   **código de barras** (columna `codigo de barras`, `ean` o `barcode`),
+   que es lo que hace que el lector sirva: formatea esa columna como
+   *Texto* en Excel o un código largo sale como `7.46E+12` (se rechaza).
+3. **El ITBIS, en el mismo CSV** — columna `itbis` con `18%`, `16%`, `0` o
+   `exento`, o una columna `exento` con si/no. Arroz, habichuela y plátano
+   van exentos. Vacío = la tasa por defecto de la empresa. Una tasa que no
+   existe (`12%`) se rechaza en su fila. Un impuesto mal puesto no se nota
+   vendiendo; se nota declarando.
+4. **Existencias iniciales** — `/importar`, tarjeta *Existencias
+   iniciales* (o desde el estado vacío de `/inventory`): un CSV con
+   `codigo` (SKU o código de barras), `almacen` (vacío = el
+   predeterminado), `cantidad` y `costo`. Cada fila entra como ajuste de
+   entrada **con su costo**; sin costo en la fila ni en el catálogo, se
+   rechaza, porque la valorización nacería mal. Un producto suelto: el
+   *Ajuste manual* de `/inventory` busca por nombre, código o código de
+   barras (ya no hay que pegar ningún id). Hazlo de noche o un domingo:
+   cargar existencias mientras se vende garantiza que no cuadre, y el
+   *Deshacer* del CSV se niega en cuanto algo se vendió.
 5. **Clientes a crédito** — `/pedidos/clientes`, con sus días de crédito.
    Esos días son los que después deciden quién está en mora. Si algún
    cliente nunca debe pagar cargo por mora aunque se atrase (por relación,
@@ -160,7 +200,9 @@ cliente lo note.
 
 ## 6. Crear sus usuarios
 
-`/usuarios`. Un usuario por persona, **nunca uno compartido**: dos personas
+El dueño ya tiene su invitación desde el alta (paso 3). Cuando entre, el
+resto del equipo lo invita él desde `/usuarios`, con el mismo mecanismo.
+Un usuario por persona, **nunca uno compartido**: dos personas
 en el mismo usuario dejan la bitácora inservible, y la bitácora es lo que
 permite deshacer un error sin discutir de memoria.
 
@@ -227,7 +269,8 @@ solo los borra con `--si`.
 |---|---|---|
 | «No me deja» | Un permiso que su rol no tiene | `/perfil`, sección *Qué puedes hacer* |
 | El ticket sale sin NCF | No hay secuencia cargada o se agotó | `/cobrar/ncf` |
-| El inventario no cuadra | Se cargaron existencias mientras se vendía | `/inventory/movements` — corregir con el movimiento contrario, nunca editando |
+| El inventario no cuadra | Se cargaron existencias mientras se vendía | `/inventory/movements` para ver qué pasó; corregir con un ajuste en `/inventory` (el movimiento contrario), nunca editando |
+| La caja no ofrece "Abrir turno" | No hay almacén (una sucursal nueva no lo crea) o el cliente no tiene el módulo de existencias | `/pos` ya lo dice con esa causa y enlaza a `/inventory/warehouses` o al marketplace |
 | El 607 rebota | Un RNC con el dígito mal | `/pedidos/clientes` — ahora se valida al guardar |
 | La caja no cuadra | Vuelto mal dado o precio desactualizado | `/pos/shifts` — mirar el arqueo con el nombre del cajero |
 | El cliente entra a un 404 | Su rol no tiene la ruta de inicio | ya resuelto: aterriza en la primera pantalla que sí puede abrir |

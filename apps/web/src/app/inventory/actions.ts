@@ -27,6 +27,66 @@ function numero(raw: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/**
+ * El producto como lo escribe la gente: su codigo, su codigo de barras (lo
+ * que teclea la pistola) o su nombre. Antes el formulario pedia pegar el
+ * UUID "desde el catalogo", uno por uno.
+ *
+ * En orden, y el primero que resuelve gana:
+ *  1. SKU o codigo de barras exactos.
+ *  2. SKU o nombre completos, sin mayusculas.
+ *  3. Parte del nombre o del SKU -solo activos-.
+ * Si en un paso coinciden varios, no se adivina: se dice cuales.
+ */
+async function resolverProducto(
+  ctx: { userId: string; tenantId: string },
+  texto: string,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const t = texto.trim()
+  const candidatos = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const exactos = await tx<{ id: string; sku: string; name: string }[]>`
+      select id, sku, name from public.products
+      where tenant_id = ${ctx.tenantId} and (sku = ${t} or barcode = ${t})
+      order by (sku = ${t}) desc
+      limit 1`
+    if (exactos.length > 0) return exactos
+
+    const iguales = await tx<{ id: string; sku: string; name: string }[]>`
+      select id, sku, name from public.products
+      where tenant_id = ${ctx.tenantId} and (lower(sku) = lower(${t}) or lower(name) = lower(${t}))
+      order by sku
+      limit 6`
+    if (iguales.length > 0) return iguales
+
+    // Los comodines de LIKE se escapan: "100%" es texto, no "todo".
+    const patron = `%${t.replace(/[\\%_]/g, '\\$&')}%`
+    return tx<{ id: string; sku: string; name: string }[]>`
+      select id, sku, name from public.products
+      where tenant_id = ${ctx.tenantId} and active
+        and (name ilike ${patron} or sku ilike ${patron})
+      order by sku
+      limit 6`
+  })
+
+  if (candidatos.length === 1) return { ok: true, id: candidatos[0]!.id }
+  if (candidatos.length === 0) {
+    return {
+      ok: false,
+      error: `No encontramos ningun producto con "${t}". Escribe su codigo, su codigo de barras o parte del nombre.`,
+    }
+  }
+  const cuantos = candidatos.length > 5 ? 'Mas de 5' : `Hay ${candidatos.length}`
+  return {
+    ok: false,
+    error: `${cuantos} productos que coinciden con "${t}": ${candidatos
+      .slice(0, 5)
+      .map((p) => `${p.sku} (${p.name})`)
+      .join(', ')}. Elige uno de la lista o escribe su codigo.`,
+  }
+}
+
 /**
  * Ajuste manual de existencias (conteo suelto, merma, rotura). Positivo
  * entra, negativo sale. Por encima del `max_amount` del rol (si tiene uno
@@ -41,15 +101,26 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
   if (!permiso.ok) return permiso
 
   const warehouseId = String(fd.get('warehouseId') ?? '')
-  const productId = String(fd.get('productId') ?? '')
+  const productIdCrudo = String(fd.get('productId') ?? '').trim()
+  const productoTexto = String(fd.get('producto') ?? '').trim()
   const qty = numero(String(fd.get('qty') ?? ''))
   const reason = String(fd.get('reason') ?? '').trim()
   const notes = String(fd.get('notes') ?? '').trim() || null
   const unitCostRaw = String(fd.get('unitCost') ?? '').trim()
   const unitCost = unitCostRaw === '' ? null : numero(unitCostRaw)
 
-  if (!warehouseId || !productId) return { ok: false, error: 'Faltan datos.' }
-  if (qty === null || qty === 0) return { ok: false, error: 'La cantidad debe ser distinta de cero.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
+  if (!productIdCrudo && !productoTexto) return { ok: false, error: 'Elige el producto.' }
+  // El id sigue sirviendo (lo manda cualquier formulario viejo); si no es
+  // un uuid, se busca como codigo o nombre en vez de reventar en la base.
+  let productId = UUID.test(productIdCrudo) ? productIdCrudo : ''
+  if (!productId) {
+    const r = await resolverProducto(ctx, productoTexto || productIdCrudo)
+    if (!r.ok) return r
+    productId = r.id
+  }
+  if (qty === null || qty === 0)
+    return { ok: false, error: 'La cantidad debe ser distinta de cero.' }
   if (reason.length < 3) return { ok: false, error: 'Indica el motivo del ajuste.' }
   if (unitCostRaw !== '' && unitCost === null) {
     return { ok: false, error: 'El costo no es un numero valido.' }
@@ -104,9 +175,7 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
    * catalogo, se deja nulo y aplica la regla del motor: no tocar el promedio.
    */
   const costoEntrada =
-    qty > 0
-      ? (unitCost ?? (datos.catalog_cost !== null ? Number(datos.catalog_cost) : null))
-      : null
+    qty > 0 ? (unitCost ?? (datos.catalog_cost !== null ? Number(datos.catalog_cost) : null)) : null
 
   // El monto entra a la comprobacion de permiso: un rol con max_amount
   // configurado no puede ajustar por encima de su limite. Sin limite
@@ -234,7 +303,9 @@ export async function cerrarConteo(fd: FormData): Promise<ActionResult> {
       where id = ${countId} and tenant_id = ${ctx.tenantId}`
     if (!count || count.status !== 'open') return
 
-    const lines = await tx<{ id: string; product_id: string; system_qty: string; counted_qty: string | null }[]>`
+    const lines = await tx<
+      { id: string; product_id: string; system_qty: string; counted_qty: string | null }[]
+    >`
       select id, product_id, system_qty::text, counted_qty::text
       from public.stock_count_lines
       where count_id = ${countId} and tenant_id = ${ctx.tenantId}`

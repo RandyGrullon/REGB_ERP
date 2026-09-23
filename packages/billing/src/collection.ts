@@ -38,6 +38,28 @@ export function monthlyPeriod(anchor: Date): { start: Date; end: Date } {
   return { start, end }
 }
 
+/**
+ * Dias que tiene el cliente para pagar desde que la factura existe.
+ *
+ * Antes la factura vencia el PRIMER dia de su periodo: generada el 23 de
+ * septiembre, nacia con 22 dias de mora y el primer dunning mandaba al
+ * cliente directo a solo lectura, sin haber visto un solo recordatorio.
+ */
+export const PAYMENT_TERM_DAYS = 15
+
+/**
+ * Vencimiento: `PAYMENT_TERM_DAYS` despues del inicio del periodo o de la
+ * emision, lo que sea MAS TARDE. Una factura del mes corriente emitida a
+ * mitad de mes no nace vencida; una emitida por adelantado vence 15 dias
+ * dentro de su propio periodo.
+ */
+export function invoiceDueDate(periodStart: Date, issuedAt: Date): Date {
+  const inicio = new Date(periodStart.getFullYear(), periodStart.getMonth(), periodStart.getDate())
+  const emision = new Date(issuedAt.getFullYear(), issuedAt.getMonth(), issuedAt.getDate())
+  const base = emision > inicio ? emision : inicio
+  return new Date(base.getFullYear(), base.getMonth(), base.getDate() + PAYMENT_TERM_DAYS)
+}
+
 /** Fecha ISO (YYYY-MM-DD) sin zona horaria, para columnas `date`. */
 export function isoDate(d: Date): string {
   const y = d.getFullYear()

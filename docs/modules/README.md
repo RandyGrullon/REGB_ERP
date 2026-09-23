@@ -100,7 +100,7 @@ catorce:
 
 | Hallazgo | Donde | Quien lo arregla |
 |---|---|---|
-| **Ninguno emite los eventos que declara** (13 temas en total) | Todos los manifiestos | Codigo de cada accion |
+| ~~**Ninguno emite los eventos que declara**~~ ✅ 23 sep: se emiten en la misma transaccion; los que no tenian sentido se quitaron. `eventos-declarados.test.ts` lo vigila | Todos los manifiestos | Hecho (ronda 2) |
 | **Ningun tour llega a 6 pasos**; la prueba del repo exige ≥4 y la DdT pide ≥6 | `tours.ts`, `tours.test.ts` | Decision: bajar la DdT o subir los tours |
 | **Varios tours prometen lo que la pantalla no tiene** (MFA, restaurar, plantillas, adjuntos por registro...) | `tours.ts` | Contenido del tour |
 | Permisos CRUD genericos declarados que ninguna accion usa (incluido `audit.edit`/`audit.delete` sobre una bitacora inmutable) | Manifiestos | Manifiestos |
@@ -109,16 +109,18 @@ catorce:
 
 Y lo que pide una migracion nueva o una decision de producto, uno por uno:
 
-| Riesgo | Ficha |
-|---|---|
-| Las particiones de `audit.log` solo se crean en migraciones; al acabarse, **cada escritura auditada falla y revierte su transaccion** | [audit.md](audit.md) |
-| El respaldo no trae ventas, facturas, inventario ni contabilidad, y el aviso le dice al cliente que si | [backup.md](backup.md) |
-| `invoice-capture` esta publicado con precio y no tiene ni una pantalla | [invoice-capture.md](invoice-capture.md) |
-| `branches.company_id` y `memberships.role_id`: FK a tabla con `tenant_id` **sin** trigger que compare tenants | [branches.md](branches.md), [users.md](users.md) |
-| Importar lee `1,234` como 1.23 y cuenta como "entraron" los SKU que ya existian | [imports.md](imports.md) |
-| La invitacion no se envia y crea un `user_id` inventado | [users.md](users.md) |
-| Un aviso de equipo tiene un solo `read_at` para todos | [notifications.md](notifications.md) |
-| `public.roles` no se audita | [audit.md](audit.md) |
+| Riesgo | Ficha | Estado |
+|---|---|---|
+| Las particiones de `audit.log` solo se crean en migraciones; al acabarse, **cada escritura auditada falla y revierte su transaccion** | [audit.md](audit.md) | ✅ 0120: tres años de margen y una prueba que avisa con 12 meses |
+| El respaldo no trae ventas, facturas, inventario ni contabilidad, y el aviso le dice al cliente que si | [backup.md](backup.md) | ✅ 0122 |
+| `invoice-capture` esta publicado con precio y no tiene ni una pantalla | [invoice-capture.md](invoice-capture.md) | ✅ 0124: despublicado y sin cobro |
+| `branches.company_id` y `memberships.role_id`: FK a tabla con `tenant_id` **sin** trigger que compare tenants | [branches.md](branches.md), [users.md](users.md) | ✅ 0121: 45 FK sin guarda y 85 solo al insertar, todas cerradas |
+| Importar lee `1,234` como 1.23 y cuenta como "entraron" los SKU que ya existian | [imports.md](imports.md) | ✅ ronda 2 |
+| La invitacion no se envia y crea un `user_id` inventado | [users.md](users.md) | ✅ 0123 |
+| Un aviso de equipo tiene un solo `read_at` para todos | [notifications.md](notifications.md) | ✅ 0125 |
+| `public.roles` no se audita | [audit.md](audit.md) | ✅ 0121 |
+| Un Cajero podia hacerse Owner por PostgREST | [users.md](users.md) | ✅ 0127 (nuevo en la ronda 2) |
+| Todo cliente nuevo nacia con los roles de fabrica viejos | [users.md](users.md) | ✅ 0135 (nuevo en la ronda 2) |
 
 ## Estado de los 14 puntos, de un vistazo
 

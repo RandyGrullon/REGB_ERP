@@ -27,11 +27,25 @@ export async function crearSucursal(formData: FormData): Promise<ActionResult> {
   if (nombre.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
   if (!companyId) return { ok: false, error: 'Elige la empresa.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      insert into public.branches (tenant_id, company_id, name, code, address)
-      values (${ctx.tenantId}, ${companyId}, ${nombre}, ${codigo}, ${direccion})`
-  })
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [sucursal] = await tx<{ id: string }[]>`
+        insert into public.branches (tenant_id, company_id, name, code, address)
+        values (${ctx.tenantId}, ${companyId}, ${nombre}, ${codigo}, ${direccion})
+        returning id`
+
+      // Misma transaccion que la sucursal. Sin nombre ni direccion: el
+      // evento dice QUE paso; la ficha se lee por el id, bajo RLS.
+      await tx`
+        select public.emit_event('branches.branch.created',
+          ${JSON.stringify({ branchId: sucursal!.id, companyId })}::text::jsonb, 'branches')`
+    })
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, ''),
+    }
+  }
 
   revalidatePath('/sucursales')
   return { ok: true }

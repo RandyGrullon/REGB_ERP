@@ -79,11 +79,11 @@ export default async function PayrollPage({
         <PageHeader
           icon="group"
           title="Nomina"
-          description="TSS e ISR calculados por periodo. Un periodo procesado queda fijo: se corrige con el siguiente, nunca reescribiendo lo ya comunicado."
+          description="Cada periodo paga su parte del mes: la quincena, medio salario. TSS e ISR con las tasas vigentes. Un periodo procesado queda fijo: se corrige con el siguiente."
           actions={
             <a
               href={`/payroll/reports${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="receipt_long" size={18} />
               Ver volantes
@@ -174,6 +174,10 @@ export default async function PayrollPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                Quincenal: del 1 al 15 y del 16 al fin de mes, medio salario cada una. Mensual: un salario.
+                Un periodo no puede cruzarse con otro: el mismo dia no se paga dos veces.
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                 Despues de crear el periodo, procesalo desde{' '}
                 <a href={`/payroll/run${qs}`} className="text-[var(--color-text-link)] hover:underline">
                   /payroll/run

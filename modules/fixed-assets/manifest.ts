@@ -16,7 +16,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 64,
 
   pricing: {

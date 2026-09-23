@@ -10,9 +10,11 @@ import { defineModule } from '@regb/module-registry'
  * certificado digital real de un contribuyente. Este modulo funciona
  * solo, sin ninguna credencial externa.
  *
- * Tampoco escucha eventos de otros modulos todavia (POS, AR, compras no
- * postean aqui solos): eso es trabajo futuro documentado en la ficha,
- * no algo que se invento sin que nadie lo pidiera.
+ * Se contabiliza sola (ADR 0001, migracion 0131): ESCUCHA los eventos de
+ * caja, cuentas por cobrar y cuentas por pagar y escribe su asiento ya
+ * contabilizado, con las cuentas del mapa del cliente
+ * (/contabilidad/mapa). Ninguno de esos modulos la importa ni la llama:
+ * si contabilidad esta apagada, venden y cobran igual y no hay asiento.
  */
 export default defineModule({
   id: 'accounting',
@@ -22,7 +24,7 @@ export default defineModule({
   category: 'advanced',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 60,
 
   pricing: {
@@ -57,6 +59,12 @@ export default defineModule({
       perm: 'accounting.view',
       icon: 'balance',
     },
+    {
+      path: '/contabilidad/mapa',
+      label: 'Mapa de cuentas',
+      perm: 'accounting.view',
+      icon: 'alt_route',
+    },
   ],
 
   dashboardWidgets: ['draft-entries-pending', 'monthly-entries-posted'],
@@ -64,7 +72,20 @@ export default defineModule({
 
   events: {
     emits: ['accounting.entry.posted'],
-    listens: [],
+    // Handlers en apps/web/src/lib/contabilidad-automatica.ts.
+    listens: [
+      'pos.sale.completed',
+      'pos.sale.voided',
+      'ar.invoice.issued',
+      'ar.invoice.voided',
+      'ar.payment.received',
+      'ar.payment.reversed',
+      'ar.credit-note.issued',
+      'ar.late-fee.applied',
+      'ap.invoice.recorded',
+      'ap.invoice.voided',
+      'ap.payment.recorded',
+    ],
   },
 
   platforms: { web: true, desktop: true, mobile: false },

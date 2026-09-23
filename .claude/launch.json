@@ -7,6 +7,12 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--dir", "D:/Users/randy/code/RegbERP", "--filter", "@regb/web", "dev"],
       "port": 3100
+    },
+    {
+      "name": "regb-web-local",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@regb/web", "dev"],
+      "port": 3100
     }
   ]
 }

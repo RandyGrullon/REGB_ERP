@@ -28,8 +28,14 @@ aire alrededor del contenido · diálogos y hojas al estilo Apple.
 - **Nunca un hex en un componente.** Siempre `var(--color-...)` en web y
   `useTema()` en móvil. `packages/ui-native/src/aurora.test.ts` falla si
   aparece uno.
-- **Tema por defecto: claro** (`apps/web/src/app/layout.tsx`), que es el
-  lienzo de Apple. El oscuro usa los tiles de Apple (#1D1D1F, #272729).
+- **Tema por defecto: oscuro, claro a un clic** (decisión del 23 sep 2026).
+  El oscuro usa los tiles de Apple (#1D1D1F, #272729); el claro es el
+  lienzo de Apple. `apps/web/src/app/layout.tsx` pinta `data-theme` desde
+  la cookie `regb-tema` (`apps/web/src/lib/tema.ts`) y `TemaToggle` la
+  cambia; está en el Shell y en las pantallas sin Shell (marketplace,
+  roles, REGB Control). Lo que solo existe en un tema se marca con
+  `.tema-si-oscuro` / `.tema-si-claro` (`globals.css`). Todo componente
+  nuevo se revisa en los dos.
 
 ## Lo que se adaptó para un ERP (y por qué)
 

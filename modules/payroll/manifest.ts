@@ -11,6 +11,11 @@ import { defineModule } from '@regb/module-registry'
  * original de este manifest traia requires vacio porque se escribio
  * antes de que existiera employees; corregido en la 0052, mismo criterio
  * que la 0043/0047 ya aplicaron para accounting/ap/budgets.
+ *
+ * Recomienda `benefits` y `expenses` desde 0132: con ellos activos, la
+ * nomina descuenta las cuotas de prestamos y paga los reembolsos
+ * asignados al periodo. Sin ellos, simplemente no hay nada que descontar
+ * ni que reembolsar -la RLS devuelve cero filas-.
  */
 export default defineModule({
   id: 'payroll',
@@ -20,7 +25,7 @@ export default defineModule({
   category: 'advanced',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'rrhh',
   navOrder: 70,
 
   pricing: {
@@ -30,7 +35,7 @@ export default defineModule({
   },
 
   requires: ['employees'],
-  recommends: ['accounting'],
+  recommends: ['accounting', 'benefits', 'expenses'],
 
   permissions: [
     'payroll.view',

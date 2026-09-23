@@ -1,4 +1,5 @@
 import {
+  Badge,
   Card,
   CardBody,
   CardHeader,
@@ -8,11 +9,11 @@ import {
   PageHeader,
   StatCard,
 } from '@regb/ui'
-import { calculatePayrollLine, TASAS_TSS_REFERENCIA_2024 } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { procesarPeriodoForm } from '../actions'
+import { calcularNomina, ErrorNomina, type NominaCalculada } from '../calculo'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -25,43 +26,37 @@ interface PeriodoDraft {
   pay_date: string
 }
 
-interface EmpleadoPendiente {
-  id: string
-  name: string
-  salary: string
-}
-
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/** Procesar nomina (modulo 62): calcula TSS e ISR de cada empleado activo pendiente en el periodo mas reciente en borrador. */
+/**
+ * Procesar nomina (modulo 62): previsualiza el periodo mas antiguo en
+ * borrador con EXACTAMENTE el calculo que va a guardar procesarPeriodo()
+ * (calculo.ts): dias pagados, reembolsos, TSS con sus dos topes, ISR,
+ * prestamos y neto.
+ */
 export default async function ProcesarNominaPage({
   searchParams,
 }: {
   searchParams: Promise<DemoParams>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'payroll')
+  const { ctx, shell } = await modulePage(params, 'payroll', 'payroll.run')
 
-  const [periodo, pendientes] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const { periodo, calculo, problema } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [p] = await tx<PeriodoDraft[]>`
       select id, period_start::text, period_end::text, pay_date::text
       from public.payroll_periods
       where tenant_id = ${ctx.tenantId} and status = 'draft'
       order by period_end
       limit 1`
-    if (!p) return [null, []] as const
-
-    const e = await tx<EmpleadoPendiente[]>`
-      select emp.id, emp.first_name || ' ' || emp.last_name as name, emp.salary::text
-      from public.employees emp
-      where emp.tenant_id = ${ctx.tenantId} and emp.status = 'active'
-        and not exists (
-          select 1 from public.payroll_lines l
-          where l.period_id = ${p.id} and l.employee_id = emp.id)
-      order by emp.last_name`
-
-    return [p, e] as const
+    if (!p) return { periodo: null, calculo: null, problema: null }
+    try {
+      return { periodo: p, calculo: await calcularNomina(tx, ctx.tenantId, p), problema: null }
+    } catch (e) {
+      if (e instanceof ErrorNomina) return { periodo: p, calculo: null, problema: e.message }
+      throw e
+    }
   })
 
   const puedeProcesar = exigir(ctx, 'payroll', 'payroll.run').ok
@@ -74,11 +69,9 @@ export default async function ProcesarNominaPage({
       year: 'numeric',
     })
 
-  const previsualizacion = pendientes.map((e) => ({
-    ...e,
-    calculo: calculatePayrollLine(Number(e.salary), TASAS_TSS_REFERENCIA_2024),
-  }))
-  const totalNeto = previsualizacion.reduce((a, e) => a + e.calculo.netSalary, 0)
+  const lineas = calculo?.lineas ?? []
+  const totalNeto = lineas.reduce((a, l) => a + l.neto, 0)
+  const vigencia = calculo?.params.vigencia
 
   return (
     <Shell {...shell} activePath="/payroll">
@@ -86,7 +79,7 @@ export default async function ProcesarNominaPage({
         <PageHeader
           icon="calculate"
           title="Procesar nomina"
-          description="Calcula TSS e ISR de cada empleado activo que todavia no tiene linea en el periodo mas antiguo en borrador."
+          description="Calcula lo que le toca a cada empleado en el periodo mas antiguo en borrador: su parte del mes, TSS, ISR, prestamos y reembolsos."
           crumbs={[{ label: 'Nomina', href: `/payroll${qs}` }, { label: 'Procesar' }]}
         />
 
@@ -98,48 +91,96 @@ export default async function ProcesarNominaPage({
           />
         ) : (
           <>
-            <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              <StatCard label="Periodo" value={`${fecha(periodo.period_start)} – ${fecha(periodo.period_end)}`} />
-              <StatCard label="Empleados pendientes" value={String(pendientes.length)} />
+            <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+              <StatCard
+                label="Periodo"
+                value={`${fecha(periodo.period_start)} – ${fecha(periodo.period_end)}`}
+              />
+              <StatCard label="Parte del mes" value={calculo ? fraccionEnPalabras(calculo) : '—'} />
+              <StatCard label="Empleados" value={String(lineas.length)} />
               <StatCard label="Neto proyectado" value={`RD$ ${money(totalNeto)}`} />
             </section>
 
-            {pendientes.length === 0 ? (
+            {problema ? (
+              <Card>
+                <CardBody className="flex items-start gap-3 text-sm">
+                  <Icon
+                    name="error"
+                    size={20}
+                    className="text-[var(--color-semantic-text-danger)]"
+                  />
+                  <div className="space-y-1">
+                    <p className="font-semibold text-[var(--color-text-primary)]">
+                      Este periodo no se puede procesar
+                    </p>
+                    <p className="text-[var(--color-text-secondary)]">{problema}</p>
+                  </div>
+                </CardBody>
+              </Card>
+            ) : lineas.length === 0 ? (
               <EmptyState
                 icon="check_circle"
-                title="Ya no queda nadie pendiente en este periodo"
-                description="Todos los empleados activos ya tienen su linea calculada."
+                title="No hay a quien pagarle en este periodo"
+                description="Nadie estuvo contratado esos dias, o todos ya tienen su linea."
               />
             ) : (
               <Card>
                 <CardHeader>
                   <CardTitle>Previsualizacion</CardTitle>
                 </CardHeader>
-                <CardBody>
+                <CardBody className="space-y-4">
+                  {vigencia && (
+                    <p className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                      <span>
+                        Tasas vigentes desde {fecha(vigencia.desde)} · tope SFS RD${' '}
+                        {money(calculo!.params.sfsCap)} · tope AFP RD${' '}
+                        {money(calculo!.params.afpCap)}
+                      </span>
+                      <Badge tone={vigencia.verificado ? 'success' : 'warning'}>
+                        {vigencia.verificado ? 'Verificadas' : 'Por confirmar'}
+                      </Badge>
+                    </p>
+                  )}
                   <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-[var(--color-border)] text-left text-xs text-[var(--color-text-muted)]">
-                          <th className="py-2">Empleado</th>
-                          <th className="py-2 text-right">Bruto</th>
-                          <th className="py-2 text-right">TSS</th>
-                          <th className="py-2 text-right">ISR</th>
+                          <th className="py-2 pr-3">Empleado</th>
+                          <th className="py-2 pr-3 text-right">Dias</th>
+                          <th className="py-2 pr-3 text-right">Bruto</th>
+                          <th className="py-2 pr-3 text-right">Reembolsos</th>
+                          <th className="py-2 pr-3 text-right">TSS</th>
+                          <th className="py-2 pr-3 text-right">ISR</th>
+                          <th className="py-2 pr-3 text-right">Prestamos</th>
                           <th className="py-2 text-right">Neto</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {previsualizacion.map((e) => (
-                          <tr key={e.id} className="border-b border-[var(--color-border-subtle)]">
-                            <td className="py-2 text-[var(--color-text-primary)]">{e.name}</td>
-                            <td className="py-2 text-right tabular">{money(e.calculo.grossSalary)}</td>
-                            <td className="py-2 text-right tabular text-[var(--color-semantic-text-warning)]">
-                              {money(e.calculo.tssDeduction)}
+                        {lineas.map((l) => (
+                          <tr
+                            key={l.employeeId}
+                            className="border-b border-[var(--color-border-subtle)]"
+                          >
+                            <td className="py-2 pr-3 text-[var(--color-text-primary)]">
+                              {l.nombre}
+                              {!l.completo && l.dias > 0 && (
+                                <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                                  prorrateado
+                                </span>
+                              )}
                             </td>
-                            <td className="py-2 text-right tabular text-[var(--color-semantic-text-warning)]">
-                              {money(e.calculo.incomeTax)}
+                            <td className="py-2 pr-3 text-right tabular">{l.dias}</td>
+                            <td className="py-2 pr-3 text-right tabular">{money(l.bruto)}</td>
+                            <td className="py-2 pr-3 text-right tabular">{money(l.reembolsos)}</td>
+                            <td className="py-2 pr-3 text-right tabular text-[var(--color-semantic-text-warning)]">
+                              {money(l.tss)}
                             </td>
+                            <td className="py-2 pr-3 text-right tabular text-[var(--color-semantic-text-warning)]">
+                              {money(l.isr)}
+                            </td>
+                            <td className="py-2 pr-3 text-right tabular">{money(l.otros)}</td>
                             <td className="py-2 text-right tabular font-semibold">
-                              {money(e.calculo.netSalary)}
+                              {money(l.neto)}
                             </td>
                           </tr>
                         ))}
@@ -148,14 +189,14 @@ export default async function ProcesarNominaPage({
                   </div>
 
                   {puedeProcesar && (
-                    <form action={procesarPeriodoForm} className="mt-4">
+                    <form action={procesarPeriodoForm}>
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="periodId" value={periodo.id} />
                       <BotonEnvio
-                        
                         title="Calcula y guarda estas lineas. El periodo queda fijo despues de procesar."
-                        className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                        className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
                         <Icon name="check" size={18} />
                         Procesar periodo
                       </BotonEnvio>
@@ -169,4 +210,11 @@ export default async function ProcesarNominaPage({
       </div>
     </Shell>
   )
+}
+
+function fraccionEnPalabras(c: NominaCalculada): string {
+  const f = c.fraccionPeriodo
+  if (f === 1) return 'Un mes'
+  if (f === 0.5) return 'Media (quincena)'
+  return `${Math.round(f * 30)} de 30 dias`
 }

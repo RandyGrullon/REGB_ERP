@@ -20,21 +20,11 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { editarMiTelefonoForm, solicitarDesdePortalForm } from './actions'
-import { resolverMiEmpleado } from './mi-empleado'
+import { misVolantes, resolverMiEmpleado, type MiVolante } from './mi-empleado'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Mi portal · REGB ERP' }
-
-interface VolanteRow {
-  period_start: string
-  period_end: string
-  pay_date: string
-  gross_salary: string
-  tss_deduction: string
-  income_tax: string
-  net_salary: string
-}
 
 interface SolicitudRow {
   id: string
@@ -90,22 +80,17 @@ export default async function PortalPage({
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
-      const yo = await resolverMiEmpleado(tx, ctx.tenantId, ctx.userId)
+      // Quien mira y sus volantes se le preguntan a la base POR EL TOKEN
+      // (0132): por el vinculo que asigno RRHH, nunca por correo.
+      const yo = await resolverMiEmpleado(tx)
 
       const an = await tx<AnuncioRow[]>`
         select id, title, body, published_at::text from public.hr_announcements
         where tenant_id = ${ctx.tenantId} order by published_at desc limit 10`
 
-      if (!yo) return { yo: null, volantes: [], solicitudes: [], tomado: 0, anuncios: an }
+      if (!yo) return { yo: null, volantes: [] as MiVolante[], solicitudes: [], tomado: 0, anuncios: an }
 
-      const v = await tx<VolanteRow[]>`
-        select pp.period_start::text, pp.period_end::text, pp.pay_date::text,
-               pl.gross_salary::text, pl.tss_deduction::text, pl.income_tax::text, pl.net_salary::text
-        from public.payroll_lines pl
-        join public.payroll_periods pp on pp.id = pl.period_id
-        where pl.tenant_id = ${ctx.tenantId} and pl.employee_id = ${yo.id} and pp.status <> 'draft'
-        order by pp.period_end desc
-        limit 12`
+      const v = await misVolantes(tx, 12)
 
       const s = await tx<SolicitudRow[]>`
         select id, start_date::text, end_date::text, business_days, status
@@ -145,8 +130,8 @@ export default async function PortalPage({
         {!yo ? (
           <EmptyState
             icon="badge"
-            title="No encontramos tu expediente"
-            description="El correo de tu cuenta no coincide con el de ningun expediente activo. Pide a RRHH que verifique el correo en tu expediente."
+            title="Tu cuenta no esta vinculada a un expediente"
+            description="Para ver tus volantes, RRHH tiene que vincular tu cuenta con tu expediente desde Empleados. No lo buscamos por tu correo: dos personas pueden compartirlo, y aqui solo se ve lo tuyo."
           />
         ) : (
           <>
@@ -203,40 +188,56 @@ export default async function PortalPage({
                 {volantes.length === 0 ? (
                   <EmptyState icon="receipt_long" title="Todavia no hay ningun volante" description="" />
                 ) : (
-                  <Table>
-                    <THead>
-                      <TR>
-                        <TH>Periodo</TH>
-                        <TH numeric>Bruto</TH>
-                        <TH numeric>TSS</TH>
-                        <TH numeric>ISR</TH>
-                        <TH numeric>Neto</TH>
-                      </TR>
-                    </THead>
-                    <TBody>
-                      {volantes.map((v, i) => (
-                        <TR key={i}>
-                          <TD>
-                            {fechaCorta(v.period_start)} → {fechaCorta(v.period_end)}
-                          </TD>
-                          <TD numeric>
-                            <span className="tabular">{money(Number(v.gross_salary))}</span>
-                          </TD>
-                          <TD numeric>
-                            <span className="tabular">{money(Number(v.tss_deduction))}</span>
-                          </TD>
-                          <TD numeric>
-                            <span className="tabular">{money(Number(v.income_tax))}</span>
-                          </TD>
-                          <TD numeric>
-                            <span className="tabular font-semibold text-[var(--color-text-primary)]">
-                              {money(Number(v.net_salary))}
-                            </span>
-                          </TD>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <THead>
+                        <TR>
+                          <TH>Periodo</TH>
+                          <TH numeric>Dias</TH>
+                          <TH numeric>Bruto</TH>
+                          <TH numeric>Reembolsos</TH>
+                          <TH numeric>TSS</TH>
+                          <TH numeric>ISR</TH>
+                          <TH numeric>Descuentos</TH>
+                          <TH numeric>Neto</TH>
                         </TR>
-                      ))}
-                    </TBody>
-                  </Table>
+                      </THead>
+                      <TBody>
+                        {volantes.map((v) => (
+                          <TR key={v.period_id}>
+                            <TD>
+                              {fechaCorta(v.period_start)} → {fechaCorta(v.period_end)}
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">
+                                {v.paid_days === null ? '—' : Number(v.paid_days)}
+                              </span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">{money(Number(v.gross_salary))}</span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">{money(Number(v.reimbursements))}</span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">{money(Number(v.tss_deduction))}</span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">{money(Number(v.income_tax))}</span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular">{money(Number(v.other_deductions))}</span>
+                            </TD>
+                            <TD numeric>
+                              <span className="tabular font-semibold text-[var(--color-text-primary)]">
+                                {money(Number(v.net_salary))}
+                              </span>
+                            </TD>
+                          </TR>
+                        ))}
+                      </TBody>
+                    </Table>
+                  </div>
                 )}
               </CardBody>
             </Card>

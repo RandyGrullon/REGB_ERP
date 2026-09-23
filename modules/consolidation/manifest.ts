@@ -25,7 +25,7 @@ export default defineModule({
   category: 'enterprise',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'finanzas',
   navOrder: 67,
 
   pricing: {

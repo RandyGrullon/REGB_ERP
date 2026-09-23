@@ -20,7 +20,12 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { daysOverdue } from '@regb/operations'
+import {
+  TIPOS_GASTO_606,
+  TIPOS_RETENCION_ISR_606,
+  daysOverdue,
+  fechaFiscal,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -93,6 +98,9 @@ export default async function PagarPage({
   const puedePagar = exigir(ctx, 'ap', 'ap.payment.record').ok
   const qs = ctx.demoQs
   const hoy = new Date()
+  // Hoy en RD, para la fecha de emision por defecto: `toISOString()` da el
+  // dia de UTC, que desde las 8 p. m. ya es mañana.
+  const hoyRD = fechaFiscal(hoy)
 
   const fecha = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
@@ -298,12 +306,41 @@ export default async function PagarPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  NCF (opcional)
+                <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  NCF del proveedor
                   <input
                     name="supplierNcf"
+                    placeholder="B0100001234"
+                    title="Si la factura trae NCF va al 606. Sin NCF no se declara."
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
+                </label>
+                <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Fecha de emision
+                  <input
+                    name="issueDate"
+                    type="date"
+                    required
+                    defaultValue={hoyRD}
+                    max={hoyRD}
+                    title="La que trae la factura: decide en que 606 se declara."
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Tipo de gasto (606)
+                  <select
+                    name="expenseType"
+                    defaultValue=""
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    <option value="">Elige, si trae NCF</option>
+                    {Object.entries(TIPOS_GASTO_606).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {k} — {v}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Subtotal
@@ -325,12 +362,55 @@ export default async function PagarPage({
                   />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Retencion
+                  De eso, servicios
                   <input
-                    name="retention"
+                    name="servicesAmount"
                     inputMode="decimal"
                     defaultValue="0"
-                    title="Se captura a mano: no hay formula fija de cuando aplica ni de cuanto."
+                    title="Parte del subtotal que son servicios (campo 8 del 606). El resto son bienes."
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  ITBIS retenido
+                  <input
+                    name="itbisRetention"
+                    inputMode="decimal"
+                    defaultValue="0"
+                    title="Lo que le retienes del ITBIS. Va al IT-1 y a la columna 12 del 606."
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  ISR retenido
+                  <input
+                    name="isrRetention"
+                    inputMode="decimal"
+                    defaultValue="0"
+                    title="Lo que le retienes de ISR. Va al IR-17 y a la columna 18 del 606, NO al IT-1."
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Tipo de retencion ISR
+                  <select
+                    name="isrRetentionType"
+                    defaultValue=""
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    <option value="">Sin ISR retenido</option>
+                    {Object.entries(TIPOS_RETENCION_ISR_606).map(([k, v]) => (
+                      <option key={k} value={k}>
+                        {k} — {v}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  NCF que modifica
+                  <input
+                    name="modifiedNcf"
+                    placeholder="Solo notas de credito"
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
@@ -342,8 +422,11 @@ export default async function PagarPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                El vencimiento sale de los dias de credito que ese proveedor te da a ti. La
-                retencion se escribe a mano — no hay calculo automatico.
+                El vencimiento sale de los dias de credito que ese proveedor te da a ti, contados
+                desde la fecha de emision. Las retenciones se escriben a mano -no hay calculo
+                automatico- y van <strong>separadas</strong>: el ITBIS retenido se paga en el IT-1 y
+                el ISR retenido en el IR-17. Con NCF, el tipo de gasto es obligatorio: sin el, el
+                606 no se puede generar.
               </p>
             </CardBody>
           </Card>

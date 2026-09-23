@@ -40,20 +40,43 @@ async function guardar(
   const { step, completed, skipped } = cambio(actual, tour.steps.length)
   const xp = completed ? tour.xp : 0
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      insert into public.tour_progress
-        (tenant_id, user_id, tour_id, step, completed, skipped, xp_awarded)
-      values (${ctx.tenantId}, ${ctx.userId}, ${tourId}, ${step},
-              ${completed}, ${skipped}, ${xp})
-      on conflict (tenant_id, user_id, tour_id) do update
-      set step = excluded.step,
-          completed = excluded.completed,
-          skipped = excluded.skipped,
-          -- El XP se otorga una sola vez, por si retoma y vuelve a terminar.
-          xp_awarded = greatest(public.tour_progress.xp_awarded, excluded.xp_awarded),
-          updated_at = now()`
-  })
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      // Como estaba antes, bloqueado hasta el commit: el evento sale solo
+      // en la TRANSICION a terminado. Un "Siguiente" repetido sobre una
+      // guia ya terminada no la termina otra vez.
+      const [antes] = await tx<{ completed: boolean }[]>`
+        select completed from public.tour_progress
+        where tenant_id = ${ctx.tenantId} and user_id = ${ctx.userId} and tour_id = ${tourId}
+        for update`
+
+      await tx`
+        insert into public.tour_progress
+          (tenant_id, user_id, tour_id, step, completed, skipped, xp_awarded)
+        values (${ctx.tenantId}, ${ctx.userId}, ${tourId}, ${step},
+                ${completed}, ${skipped}, ${xp})
+        on conflict (tenant_id, user_id, tour_id) do update
+        set step = excluded.step,
+            completed = excluded.completed,
+            skipped = excluded.skipped,
+            -- El XP se otorga una sola vez, por si retoma y vuelve a terminar.
+            xp_awarded = greatest(public.tour_progress.xp_awarded, excluded.xp_awarded),
+            updated_at = now()`
+
+      // Solo al terminar la guia. Por paso no se emite nada: "Siguiente"
+      // no comprueba que el paso se hizo (ver tour.md).
+      if (completed && !antes?.completed) {
+        await tx`
+          select public.emit_event('tour.tour.completed',
+            ${JSON.stringify({ tourId, userId: ctx.userId })}::text::jsonb, 'tour')`
+      }
+    })
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, ''),
+    }
+  }
 
   revalidatePath('/tutorial')
   return { ok: true }
@@ -83,11 +106,19 @@ export async function retrocederPaso(formData: FormData): Promise<void> {
 
 export async function saltarTour(formData: FormData): Promise<void> {
   const r = await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: true }))
-  await anotarAviso(r, 'saltarTour', 'Listo, saltamos el tutorial. Puedes retomarlo cuando quieras.')
+  await anotarAviso(
+    r,
+    'saltarTour',
+    'Listo, saltamos el tutorial. Puedes retomarlo cuando quieras.',
+  )
 }
 
 export async function retomarTour(formData: FormData): Promise<void> {
-  const r = await guardar(formData, (actual) => ({ step: actual, completed: false, skipped: false }))
+  const r = await guardar(formData, (actual) => ({
+    step: actual,
+    completed: false,
+    skipped: false,
+  }))
   await calladoSalvoError(r, 'retomarTour')
 }
 

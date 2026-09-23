@@ -18,7 +18,7 @@ El manifiesto de `accounting` dice textualmente que los formatos
 construyeron dentro de `ap` y `ar`, y funcionan —vistas
 `public.dgii_606`, `dgii_607` y `dgii_608` con `security_invoker`, la
 descarga CSV y TXT en `/api/dgii/[reporte]`, y la pantalla
-`/cobrar/dgii`—. La decision aqui fue **corregir la ficha, no reabrir la
+`/cobrar/dgii` (y su gemela de la caja, `/pos/dgii`, desde la 0129)—. La decision aqui fue **corregir la ficha, no reabrir la
 discusion duplicando las vistas**: dos verdades sobre lo que se le
 declara a la DGII es la peor clase de duplicado que existe. El calendario
 de este modulo **enlaza** a esa pantalla.
@@ -186,16 +186,39 @@ un campo de texto que cualquiera edita, y esto es lo que se le declara a
 la DGII. Lo unico que viene de afuera es el ITBIS que **me** retuvieron:
 ese dato no existe en ninguna tabla del repo.
 
+Las ventas de caja se cuentan por el dia en que se **vendieron** en hora de
+RD (`public.fecha_fiscal(sold_at)`), igual que el 607 (0129): con
+`created_at` en UTC, la venta del 30 a las 9 p. m. —o una offline que
+sincronizo al dia siguiente— se declaraba en el IT-1 del mes siguiente.
+
 ## Lo que se nego a cerrar, y por que
 
-`dgii_607` vive bajo la RLS de `ar` y `dgii_606` bajo la de `ap`. Con uno
-apagado, esa mitad de la suma vuelve en cero y el IT-1 sale mal
-**pareciendo correcto**. La regla no es simetrica a proposito:
+`dgii_607` junta la RLS de `ar` (facturas) y la de `pos` (caja), y
+`dgii_606` vive bajo la de `ap`. Con uno apagado, esa mitad de la suma
+vuelve en cero y el IT-1 sale mal **pareciendo correcto**. La regla no es
+simetrica a proposito:
 
-| Modulo apagado | Que pasa | Decision |
+| Que falta | Que pasa | Decision |
 |---|---|---|
-| `ar` | No se ve el ITBIS cobrado → se declararia de menos | **No se deja cerrar.** Declarar de menos es una multa |
+| Ventas del periodo en un modulo apagado (`ar` o `pos`) | Se declararia de menos | **No se deja cerrar.** Declarar de menos es una multa |
 | `ap` | No se ve el ITBIS adelantado → se declara de mas | Se deja cerrar, con aviso. Cuesta dinero, no una sancion |
+
+Hasta la 0129 la primera fila decia "`ar` apagado", y un colmado con
+**solo caja** no podia cerrar nunca su IT-1. La pregunta correcta no es
+"tienes `ar`" sino "hay ventas de este periodo que no ves", y la contesta
+`public.ventas_fuera_de_vista(periodo)`: cuenta —sin devolver filas ni
+montos— los documentos del periodo en un modulo apagado. Si devuelve algo,
+la liquidacion se niega nombrando el modulo y la pantalla lo dice en rojo.
+
+## El ITBIS que retuve es ITBIS, no toda la retencion
+
+`itbis_retained` sale de `dgii_606.itbis_retenido` =
+`retention_amount − isr_retained`. Hasta la 0129 `/pagar` guardaba la
+retencion en UN campo e `isr_retained` quedaba en 0: honorarios con 800 de
+ISR retenido hacian que el IT-1 cobrara 800 de un ITBIS que no existia. Ahora
+el formulario pide las dos por separado (ver [ap.md](ap.md)) y el ISR va al
+IR-17, no aqui. Probado: 540 de ITBIS + 1,000 de ISR retenidos → el IT-1
+suma **540**.
 
 ## La logica fiscal vive en `@regb/operations`, no en SQL
 
@@ -286,7 +309,11 @@ Dos arreglos que salieron de mirar el camino completo:
 | `/impuestos` | `taxes.view` | Catalogo de tasas y reglas de retencion. Escribir pide `taxes.rate.manage` o `taxes.rule.manage` |
 | `/impuestos/retenciones` | `taxes.view` | Perfil fiscal por proveedor + calculadora (GET: el resultado se comparte por enlace). Asignar pide `taxes.profile.assign` |
 | `/impuestos/liquidacion` | `taxes.view` | IT-1 del periodo, calculo vivo contra la foto cerrada. Cerrar pide `taxes.filing.close` |
-| `/impuestos/calendario` | `taxes.view` | Vencimientos del periodo y del siguiente, con enlace a `/cobrar/dgii` |
+| `/impuestos/calendario` | `taxes.view` | Vencimientos del periodo y del siguiente, con enlace a la pantalla de reportes que el rol alcance: `/cobrar/dgii` o `/pos/dgii` (`PUERTAS_VENTAS_DGII`, 0129) |
+
+El periodo por defecto de la liquidacion y del calendario se cuenta en hora
+de RD (`periodoFiscal()`), no con el mes del servidor: la noche del ultimo
+dia ya proponia el periodo equivocado.
 
 ## Manifiesto
 
@@ -324,7 +351,8 @@ Dos arreglos que salieron de mirar el camino completo:
 ## Lo que NO hace
 
 - **No genera ni toca los 606, 607 ni 608.** Ya existen completos. El
-  calendario enlaza a `/cobrar/dgii`; no lo duplica ni lo mueve.
+  calendario enlaza a `/cobrar/dgii` o a `/pos/dgii`; no los duplica ni
+  los mueve.
 - **No escribe la retencion en la factura del proveedor.**
   `supplier_invoices.retention_amount`, `isr_retained` e
   `isr_retention_type` siguen siendo de `/pagar`. Enganchar la

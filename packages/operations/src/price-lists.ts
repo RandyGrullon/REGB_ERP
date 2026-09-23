@@ -31,13 +31,25 @@ export function listaVigente(lista: ListaPrecio, asOf: Date): boolean {
  * especifica gana-: una lista propia del cliente vence a una de canal,
  * que vence a la general. Entre varias vigentes del mismo alcance, la
  * de inicio mas reciente gana.
+ *
+ * `assignedListId` es la lista ASIGNADA al cliente en su ficha
+ * (`customers.price_list_id`, desde /listas-precio). Es la decision mas
+ * explicita que existe -alguien dijo "este cliente compra con esta
+ * lista"- y gana a todo, sea cual sea el alcance de esa lista. Antes se
+ * ignoraba: la asignacion se guardaba y el pedido cobraba otra cosa. Si
+ * la asignada no esta vigente, se resuelve como si no hubiera.
  */
 export function listaAplicable(
   listas: ListaPrecio[],
-  contexto: { customerId: string | null; channel: string | null },
+  contexto: { customerId: string | null; channel: string | null; assignedListId?: string | null },
   asOf: Date,
 ): ListaPrecio | null {
   const vigentes = listas.filter((l) => listaVigente(l, asOf))
+
+  if (contexto.assignedListId) {
+    const asignada = vigentes.find((l) => l.id === contexto.assignedListId)
+    if (asignada) return asignada
+  }
   const masReciente = (candidatas: ListaPrecio[]) =>
     candidatas.length === 0
       ? null
@@ -106,7 +118,12 @@ export function resolverPrecio(
   precioBase: number,
   listas: ListaPrecio[],
   entradas: EntradaLista[],
-  contexto: { customerId: string | null; channel: string | null; cantidad: number },
+  contexto: {
+    customerId: string | null
+    channel: string | null
+    cantidad: number
+    assignedListId?: string | null
+  },
   asOf: Date,
 ): PrecioResuelto {
   const lista = listaAplicable(listas, contexto, asOf)

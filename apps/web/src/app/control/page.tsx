@@ -35,9 +35,10 @@ export const metadata = { title: 'Clientes · REGB Control' }
  * baja— y no solo lo que se cobra. Los filtros viajan por GET para que un
  * recorte util se pueda guardar como enlace.
  *
- * Todo sale de datos reales. Lo que todavia no se mide (consumo por
- * usuario, storage facturable) se dice que no se mide, en vez de ensenar
- * un cero que parece un dato.
+ * Todo sale de datos reales. Lo que todavia no se mide (transacciones,
+ * consumos por uso) se dice que no se mide, en vez de ensenar un cero que
+ * parece un dato. Usuarios, sucursales, empresas y storage si se cuentan
+ * desde 0128.
  */
 
 const TIER_LABEL = { pyme: 'PYME', mediano: 'Mediano', grande: 'Grande' } as const
@@ -167,10 +168,10 @@ export default async function ControlOverviewPage({
       const dbb = dias(extraDe(b).ultimaActividad) ?? 9999
       return dbb - da
     }
-    return b.monthlyTotal - a.monthlyTotal
+    return b.monthlyNet - a.monthlyNet
   })
 
-  const mrrFiltrado = filtrados.reduce((a, c) => a + c.monthlyTotal, 0)
+  const mrrFiltrado = filtrados.reduce((a, c) => a + c.monthlyNet, 0)
   const hayFiltro = Boolean(p.q || p.tier || p.estado || p.ciclo || p.etapa || p.riesgo)
   const riesgosos = clients.filter(enRiesgo)
   const enPrueba = clients.reduce((a, c) => a + c.trialModules, 0)
@@ -178,8 +179,18 @@ export default async function ControlOverviewPage({
 
   return (
     <div className="space-y-5">
+      {/* Alta de un cliente real (0133): antes era un insert a mano. */}
+      <div className="flex justify-end">
+        <Link
+          href="/control/onboarding/nuevo"
+          className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
+          <Icon name="person_add" size={18} />
+          Dar de alta un cliente
+        </Link>
+      </div>
       <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <StatCard label="MRR" value={usd(mrr)} hint="mensualidad de todos" />
+        <StatCard label="MRR" value={usd(mrr)} hint="mensualidad de todos, sin ITBIS" />
         <StatCard label="ARR" value={usd(mrr * 12)} hint="anualizado" />
         <StatCard label="Clientes" value={String(clients.length)} hint="sin archivar" />
         <StatCard
@@ -409,7 +420,7 @@ export default async function ControlOverviewPage({
                 <TH numeric>Modulos</TH>
                 <TH>Ciclo</TH>
                 <TH numeric>Instalacion</TH>
-                <TH numeric>Mensualidad</TH>
+                <TH numeric>Mensual sin ITBIS</TH>
               </TR>
             </THead>
             <TBody>
@@ -492,7 +503,7 @@ export default async function ControlOverviewPage({
                       <span className="tabular">{usd(c.installTotal)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular font-semibold">{usd(c.monthlyTotal)}</span>
+                      <span className="tabular font-semibold">{usd(c.monthlyNet)}</span>
                     </TD>
                   </TR>
                 )
@@ -503,12 +514,12 @@ export default async function ControlOverviewPage({
       )}
 
       <p className="text-xs text-[var(--color-text-muted)]">
-        Las cifras las calcula el motor de precios en el momento a partir de los modulos activos
-        (§6.4): no hay montos guardados que se puedan quedar viejos. El{' '}
-        <strong className="text-[var(--color-text-secondary)]">consumo real</strong> (usuarios
-        facturables, storage, transacciones) todavia no se mide — <Mono>regb.usage_meters</Mono>{' '}
-        esta vacia — asi que el precio mostrado es plan + modulos, sin excedentes. La actividad sale
-        de la bitacora de auditoria, que es el unico rastro fiable de uso que existe hoy.
+        Las cifras las calcula el motor de precios en el momento con la formula completa (§6.4):
+        plan, modulos activos, usuarios, sucursales y empresas de mas, storage en archivos, descuento
+        del ciclo e ITBIS a los clientes de RD. Es la misma cuenta que emite la factura del mes. Lo
+        que <strong className="text-[var(--color-text-secondary)]">todavia no se mide</strong> son
+        las transacciones y los consumos por uso (<Mono>regb.usage_meters</Mono> esta vacia): van en
+        cero. El MRR va sin ITBIS, que es de la DGII. La actividad sale de la bitacora de auditoria.
       </p>
     </div>
   )

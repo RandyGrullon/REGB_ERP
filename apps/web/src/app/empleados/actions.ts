@@ -151,7 +151,48 @@ export async function darDeBajaEmpleado(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+/**
+ * Vincula (o desvincula, con `userId` vacio) la cuenta que ve este
+ * expediente en el portal. Es la UNICA via: la base no deja que un token
+ * escriba `employees.user_id` directo, y la funcion vuelve a comprobar que
+ * la cuenta sea del equipo de este cliente y que no este ya en otro
+ * expediente (0132). El portal ya no empareja por correo.
+ */
+export async function vincularUsuario(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'employees', 'employees.employee.link')
+  if (!permiso.ok) return permiso
+
+  const employeeId = String(fd.get('employeeId') ?? '')
+  const userId = String(fd.get('userId') ?? '').trim() || null
+  if (!employeeId) return { ok: false, error: 'Falta el empleado.' }
+
+  try {
+    await asUser(ctx.userId, ctx.tenantId, (tx) =>
+      tx`select public.vincular_empleado_usuario(${employeeId}, ${userId})`,
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
+
+  revalidatePath(`/empleados/${employeeId}`)
+  revalidatePath('/portal')
+  return { ok: true }
+}
+
 // ── Versiones para <form action> ────────────────────────────────────────
+export async function vincularUsuarioForm(fd: FormData): Promise<void> {
+  const quita = String(fd.get('userId') ?? '').trim() === ''
+  await anotarAviso(
+    await vincularUsuario(fd),
+    'vincularUsuario',
+    quita
+      ? 'Listo, quitamos el vinculo: esa cuenta ya no ve este expediente.'
+      : 'Listo, la cuenta quedo vinculada: ya ve este expediente en su portal.',
+  )
+}
 export async function crearEmpleadoForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearEmpleado(fd), 'crearEmpleado')
 }

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  aceptadoPorDefecto,
   deriveGoodsReceiptStatus,
   detectarDiscrepancia,
+  devolucionMueveInventario,
   qtyDisponibleParaDevolver,
   transicionValidaDevolucion,
   validateInspeccion,
@@ -58,6 +60,33 @@ describe('validateInspeccion', () => {
 
   it('todo aceptado, nada rechazado: ok', () => {
     expect(validateInspeccion(10, 10, 0)).toEqual({ ok: true })
+  })
+
+  it('decimales que en coma flotante no suman exacto: ok', () => {
+    // 2.2 + 0.1 = 2.3000000000000003 en JS; en la base es 2.300 exacto.
+    expect(validateInspeccion(2.3, 2.2, 0.1)).toEqual({ ok: true })
+  })
+})
+
+describe('aceptadoPorDefecto', () => {
+  it('recepcion parcial sin rechazo: se acepta lo que llego, no lo pedido', () => {
+    expect(aceptadoPorDefecto(30, 0)).toBe(30)
+  })
+
+  it('con rechazo: lo que llego menos lo rechazado, sin residuo de coma flotante', () => {
+    expect(aceptadoPorDefecto(25, 5)).toBe(20)
+    expect(aceptadoPorDefecto(2.3, 0.1)).toBe(2.2)
+    expect(validateInspeccion(2.3, aceptadoPorDefecto(2.3, 0.1), 0.1)).toEqual({ ok: true })
+  })
+})
+
+describe('devolucionMueveInventario', () => {
+  it('lo rechazado nunca entro al inventario: devolverlo no lo toca', () => {
+    expect(devolucionMueveInventario('rejected')).toBe(false)
+  })
+
+  it('lo aceptado si entro: devolverlo sale del almacen', () => {
+    expect(devolucionMueveInventario('accepted')).toBe(true)
   })
 })
 

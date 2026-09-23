@@ -21,7 +21,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'ventas',
   navOrder: 83,
 
   pricing: {

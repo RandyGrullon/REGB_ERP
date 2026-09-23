@@ -15,27 +15,60 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { PRODUCT_COLUMNS, type ImportError } from '@regb/core'
+import { PRODUCT_COLUMNS, STOCK_COLUMNS, type ImportError } from '@regb/core'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { deshacerImportacion, importarProductos } from './actions'
+import {
+  deshacerExistencias,
+  deshacerImportacion,
+  importarExistencias,
+  importarProductos,
+} from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Importar · REGB ERP' }
 
+/** Lo que dice la pantalla de cada columna: la clave interna no le sirve a nadie. */
+const ETIQUETA_COLUMNA: Record<string, string> = {
+  sku: 'codigo',
+  name: 'nombre',
+  category: 'categoria',
+  unit: 'unidad',
+  price: 'precio',
+  cost: 'costo',
+  barcode: 'codigo de barras',
+  taxRate: 'tasa de ITBIS',
+  exempt: 'exento',
+  warehouse: 'almacen',
+  qty: 'cantidad',
+  unitCost: 'costo unitario',
+}
+
+const CAMPO_ARCHIVO =
+  'text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-surface-raised)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[var(--color-text-primary)]'
+const BOTON_PRIMARIO =
+  'inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-50'
+
 interface BatchRow {
   id: string
+  /** products: creo productos. stock: cargo existencias iniciales (0133). */
+  target: string
   file_name: string
   total_rows: number
   inserted: number
   rejected: number
+  /** Rechazos y, con `kind: 'skipped'`, las filas cuyo codigo ya existia. */
   errors: ImportError[]
   undone_at: string | null
   created_at: string
   created_by_name: string | null
 }
+
+const yaExistian = (b: BatchRow) => b.errors.filter((e) => e.kind === 'skipped')
+const rechazos = (b: BatchRow) => b.errors.filter((e) => e.kind !== 'skipped')
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`
 
 /** Importar (S12): CSV con mapeo automatico, validacion previa y deshacer. */
 export default async function ImportarPage({
@@ -50,7 +83,7 @@ export default async function ImportarPage({
     ctx.userId,
     ctx.tenantId,
     (tx) => tx<BatchRow[]>`
-      select b.id, b.file_name, b.total_rows, b.inserted, b.rejected, b.errors,
+      select b.id, b.target, b.file_name, b.total_rows, b.inserted, b.rejected, b.errors,
              b.undone_at::text, b.created_at::text, p.display_name as created_by_name
       from public.import_batches b
       left join public.user_profiles p
@@ -64,6 +97,14 @@ export default async function ImportarPage({
     exigir(ctx, 'imports', 'imports.create').ok && exigir(ctx, 'products', 'products.create').ok
   const puedeDeshacer =
     exigir(ctx, 'imports', 'imports.edit').ok && exigir(ctx, 'products', 'products.delete').ok
+  // Existencias: el permiso del destino es ajustar inventario. Sin el
+  // modulo de existencias, exigir() lo niega y la tarjeta no sale.
+  const ajustaInventario = exigir(ctx, 'inventory', 'inventory.adjust').ok
+  const puedeCargarExistencias = exigir(ctx, 'imports', 'imports.create').ok && ajustaInventario
+  const puedeDeshacerExistencias = exigir(ctx, 'imports', 'imports.edit').ok && ajustaInventario
+  const esDeExistencias = (b: BatchRow) => b.target === 'stock'
+  const deProductos = batches.filter((b) => !esDeExistencias(b))
+  const deExistencias = batches.filter(esDeExistencias)
 
   const fecha = (iso: string) =>
     new Date(iso).toLocaleString('es-DO', {
@@ -78,20 +119,37 @@ export default async function ImportarPage({
       <div className="space-y-5">
         <PageHeader
           icon="upload_file"
-          title="Importar productos"
-          description="Sube tu catalogo desde un CSV. Reconocemos los encabezados solos, validamos antes de guardar y toda importacion se puede deshacer."
+          title="Importar"
+          description="Sube tu catalogo y tus existencias iniciales desde un CSV. Reconocemos los encabezados solos, cada fila dudosa se rechaza con su motivo -un numero nunca se adivina- y toda importacion se puede deshacer."
           crumbs={[{ label: 'Catalogo', href: `/products${ctx.demoQs}` }, { label: 'Importar' }]}
         />
 
         {batches.length > 0 && (
-          <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+          <section
+            aria-label="Resumen"
+            className={`grid grid-cols-2 gap-3 ${deExistencias.length > 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+          >
             <StatCard label="Importaciones" value={String(batches.length)} hint="en el historial" />
             <StatCard
-              label="Filas cargadas"
+              label="Productos creados"
               value={String(
-                batches.filter((b) => !b.undone_at).reduce((a, b) => a + b.inserted, 0),
+                deProductos.filter((b) => !b.undone_at).reduce((a, b) => a + b.inserted, 0),
               )}
               hint="sin contar las deshechas"
+            />
+            {deExistencias.length > 0 && (
+              <StatCard
+                label="Existencias cargadas"
+                value={String(
+                  deExistencias.filter((b) => !b.undone_at).reduce((a, b) => a + b.inserted, 0),
+                )}
+                hint="lineas con costo"
+              />
+            )}
+            <StatCard
+              label="Ya existian"
+              value={String(batches.reduce((a, b) => a + yaExistian(b).length, 0))}
+              hint="no se tocaron"
             />
             <StatCard
               label="Rechazadas"
@@ -104,7 +162,7 @@ export default async function ImportarPage({
         {puedeImportar && (
           <Card data-tour="importar-csv">
             <CardHeader>
-              <CardTitle>Subir archivo CSV</CardTitle>
+              <CardTitle>Productos</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={importarProductos} className="flex flex-wrap items-center gap-3">
@@ -116,23 +174,19 @@ export default async function ImportarPage({
                   accept=".csv,text/csv"
                   required
                   aria-label="Archivo CSV con los productos"
-                  className="text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--color-surface-raised)] file:px-3 file:py-2 file:text-sm file:text-[var(--color-text-primary)]"
+                  className={CAMPO_ARCHIVO}
                 />
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                  Importar
-                </BotonEnvio>
+                <BotonEnvio className={BOTON_PRIMARIO}>Importar productos</BotonEnvio>
               </form>
 
               <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
-                <p className="mb-1 font-medium text-[var(--color-text-primary)]">
+                <p className="mb-1 font-semibold text-[var(--color-text-primary)]">
                   Columnas que reconocemos (en cualquier orden, con o sin acentos):
                 </p>
                 <ul className="space-y-0.5">
                   {(Object.keys(PRODUCT_COLUMNS) as (keyof typeof PRODUCT_COLUMNS)[]).map((k) => (
                     <li key={k}>
-                      <Mono>{k}</Mono> — {PRODUCT_COLUMNS[k].join(' · ')}
+                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> — {PRODUCT_COLUMNS[k].join(' · ')}
                       {(k === 'sku' || k === 'name') && (
                         <Badge tone="warning" dot={false} className="ml-2">
                           obligatoria
@@ -141,6 +195,80 @@ export default async function ImportarPage({
                     </li>
                   ))}
                 </ul>
+                <p className="mt-3 max-w-prose">
+                  <span className="font-semibold text-[var(--color-text-primary)]">Numeros:</span>{' '}
+                  <Mono>1,234.56</Mono> y <Mono>1.234,56</Mono> se leen igual; <Mono>RD$</Mono>,
+                  espacios y negativos tambien. Si un numero se puede leer de dos maneras —
+                  <Mono>1.234</Mono> puede ser mil o uno con decimales— la fila se rechaza y te
+                  decimos por que. Un codigo que ya existe no se sobrescribe.
+                </p>
+                <p className="mt-2 max-w-prose">
+                  <span className="font-semibold text-[var(--color-text-primary)]">ITBIS:</span>{' '}
+                  <Mono>18%</Mono>, <Mono>16%</Mono>, <Mono>0</Mono> o <Mono>exento</Mono> (tambien
+                  una columna <Mono>exento</Mono> con si/no). Vacio = la tasa por defecto de tu
+                  empresa.
+                </p>
+                <p className="mt-2 max-w-prose">
+                  <span className="font-semibold text-[var(--color-text-primary)]">
+                    Codigo de barras:
+                  </span>{' '}
+                  formatea esa columna como <em>Texto</em> en Excel antes de exportar; si no, un
+                  codigo largo se vuelve <Mono>7.46E+12</Mono> y pierde digitos (lo rechazamos). Un
+                  codigo que ya tiene otro producto tambien se rechaza, en su fila.
+                </p>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {puedeCargarExistencias && (
+          <Card id="existencias" data-tour="importar-existencias">
+            <CardHeader>
+              <CardTitle>Existencias iniciales</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <form action={importarExistencias} className="flex flex-wrap items-center gap-3">
+                <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
+                <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
+                <input
+                  type="file"
+                  name="archivo"
+                  accept=".csv,text/csv"
+                  required
+                  aria-label="Archivo CSV con las existencias iniciales"
+                  className={CAMPO_ARCHIVO}
+                />
+                <BotonEnvio className={BOTON_PRIMARIO}>Cargar existencias</BotonEnvio>
+              </form>
+
+              <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
+                <p className="mb-1 font-semibold text-[var(--color-text-primary)]">Columnas:</p>
+                <ul className="space-y-0.5">
+                  {(Object.keys(STOCK_COLUMNS) as (keyof typeof STOCK_COLUMNS)[]).map((k) => (
+                    <li key={k}>
+                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> — {STOCK_COLUMNS[k].join(' · ')}
+                      {(k === 'sku' || k === 'qty') && (
+                        <Badge tone="warning" dot={false} className="ml-2">
+                          obligatoria
+                        </Badge>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-3 max-w-prose">
+                  El codigo puede ser el SKU o el codigo de barras. Sin almacen va al
+                  predeterminado. Sin costo se usa el del catalogo, y si tampoco hay, la fila se
+                  rechaza:{' '}
+                  <strong className="text-[var(--color-text-primary)]">
+                    sin costo la valorizacion nace mal
+                  </strong>
+                  . Un producto que ya tiene existencia en ese almacen no se toca (corrigelo con un
+                  ajuste). Los numeros siguen la misma regla de arriba.
+                </p>
+                <p className="mt-2 max-w-prose">
+                  Cargalo antes de vender -de noche o un domingo-: deshacer vuelve cada linea a cero
+                  con su movimiento contrario, pero solo si nada la movio despues.
+                </p>
               </div>
             </CardBody>
           </Card>
@@ -161,11 +289,13 @@ export default async function ImportarPage({
               <THead>
                 <TR>
                   <TH>Archivo</TH>
+                  <TH>Tipo</TH>
                   <TH>Cuando</TH>
                   <TH>Quien</TH>
                   <TH numeric>Filas</TH>
-                  <TH numeric>Entraron</TH>
-                  <TH numeric>Fallaron</TH>
+                  <TH numeric>Nuevos</TH>
+                  <TH numeric>Ya existian</TH>
+                  <TH numeric>Rechazadas</TH>
                   <TH>
                     <span className="sr-only">Acciones</span>
                   </TH>
@@ -182,6 +312,11 @@ export default async function ImportarPage({
                         </Badge>
                       )}
                     </TD>
+                    <TD>
+                      <Badge tone={esDeExistencias(b) ? 'info' : 'neutral'} dot={false}>
+                        {esDeExistencias(b) ? 'Existencias' : 'Productos'}
+                      </Badge>
+                    </TD>
                     <TD>{fecha(b.created_at)}</TD>
                     <TD>{b.created_by_name ?? '—'}</TD>
                     <TD numeric>
@@ -193,6 +328,9 @@ export default async function ImportarPage({
                       </span>
                     </TD>
                     <TD numeric>
+                      <span className="tabular">{yaExistian(b).length}</span>
+                    </TD>
+                    <TD numeric>
                       <span
                         className={`tabular ${b.rejected > 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}`}
                       >
@@ -200,23 +338,36 @@ export default async function ImportarPage({
                       </span>
                     </TD>
                     <TD>
-                      {!b.undone_at && b.inserted > 0 && puedeDeshacer && (
-                        <form action={deshacerImportacion} className="inline">
-                          <input
-                            type="hidden"
-                            name="tenant"
-                            value={ctx.demoQs ? ctx.tenantSlug : ''}
-                          />
-                          <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-                          <input type="hidden" name="batchId" value={b.id} />
-                          <BotonEnvio
-                            
-                            title={`Borra los ${b.inserted} productos que creo esta importacion. No toca ningun otro.`}
-                            className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                            Deshacer
-                          </BotonEnvio>
-                        </form>
-                      )}
+                      {!b.undone_at &&
+                        b.inserted > 0 &&
+                        (esDeExistencias(b) ? puedeDeshacerExistencias : puedeDeshacer) && (
+                          <form
+                            action={esDeExistencias(b) ? deshacerExistencias : deshacerImportacion}
+                            className="inline"
+                          >
+                            <input
+                              type="hidden"
+                              name="tenant"
+                              value={ctx.demoQs ? ctx.tenantSlug : ''}
+                            />
+                            <input
+                              type="hidden"
+                              name="rol"
+                              value={ctx.demoQs ? ctx.roleName : ''}
+                            />
+                            <input type="hidden" name="batchId" value={b.id} />
+                            <BotonEnvio
+                              title={
+                                esDeExistencias(b)
+                                  ? `Registra el movimiento contrario de las ${b.inserted} existencias que cargo este archivo. El kardex conserva los dos.`
+                                  : `Borra los ${b.inserted} productos que creo esta importacion. No toca ningun otro.`
+                              }
+                              className="inline-flex min-h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                            >
+                              Deshacer
+                            </BotonEnvio>
+                          </form>
+                        )}
                     </TD>
                   </TR>
                 ))}
@@ -229,25 +380,65 @@ export default async function ImportarPage({
               {batches
                 .filter((b) => b.errors.length > 0)
                 .slice(0, 3)
-                .map((b) => (
-                  <details
-                    key={b.id}
-                    className="rounded-[var(--radius-lg)] border border-[var(--color-border)]"
-                  >
-                    <summary className="cursor-pointer px-4 py-2 text-sm text-[var(--color-text-secondary)]">
-                      {b.rejected} fila{b.rejected === 1 ? '' : 's'} rechazada
-                      {b.rejected === 1 ? '' : 's'} en {b.file_name}
-                    </summary>
-                    <ul className="space-y-1 px-4 pb-3 text-xs text-[var(--color-text-secondary)]">
-                      {b.errors.slice(0, 20).map((e, i) => (
-                        <li key={i}>
-                          {e.row > 0 ? `Linea ${e.row}` : 'Encabezado'} · <Mono>{e.column}</Mono> —{' '}
-                          {e.message}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ))}
+                .map((b) => {
+                  const malas = rechazos(b)
+                  const existian = yaExistian(b)
+                  const partes = [
+                    b.rejected > 0 && plural(b.rejected, 'fila rechazada', 'filas rechazadas'),
+                    existian.length > 0 &&
+                      plural(existian.length, 'que ya existia', 'que ya existian'),
+                  ].filter(Boolean)
+                  return (
+                    <details
+                      key={b.id}
+                      className="rounded-[var(--radius-lg)] border border-[var(--color-border)]"
+                    >
+                      <summary className="cursor-pointer px-4 py-2 text-sm text-[var(--color-text-secondary)]">
+                        {partes.join(' y ')} en {b.file_name}
+                      </summary>
+                      <div className="space-y-3 px-4 pb-3 text-xs text-[var(--color-text-secondary)]">
+                        {malas.length > 0 && (
+                          <section aria-label={`Filas rechazadas en ${b.file_name}`}>
+                            <h3 className="mb-1 font-semibold text-[var(--color-semantic-text-danger)]">
+                              Rechazadas: no entraron
+                            </h3>
+                            <ul className="space-y-1">
+                              {malas.slice(0, 20).map((e, i) => (
+                                <li key={i}>
+                                  {e.row > 0 ? `Linea ${e.row}` : 'Encabezado'} ·{' '}
+                                  <Mono>{e.column}</Mono> — {e.message}
+                                </li>
+                              ))}
+                            </ul>
+                            {malas.length > 20 && (
+                              <p className="mt-1">y {malas.length - 20} mas.</p>
+                            )}
+                          </section>
+                        )}
+                        {existian.length > 0 && (
+                          <section aria-label={`Codigos que ya existian en ${b.file_name}`}>
+                            <h3 className="mb-1 font-semibold text-[var(--color-text-primary)]">
+                              Ya existian: los dejamos como estaban
+                            </h3>
+                            <p className="mb-1">
+                              Si querias cambiarlos, editalos en Productos: importar no sobrescribe.
+                            </p>
+                            <ul className="space-y-1">
+                              {existian.slice(0, 20).map((e, i) => (
+                                <li key={i}>
+                                  Linea {e.row} · <Mono>{e.column}</Mono> — {e.message}
+                                </li>
+                              ))}
+                            </ul>
+                            {existian.length > 20 && (
+                              <p className="mt-1">y {existian.length - 20} mas.</p>
+                            )}
+                          </section>
+                        )}
+                      </div>
+                    </details>
+                  )
+                })}
             </div>
           )}
         </section>

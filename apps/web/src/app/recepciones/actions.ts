@@ -2,14 +2,17 @@
 
 import { revalidatePath } from 'next/cache'
 import {
+  aceptadoPorDefecto,
   deriveGoodsReceiptStatus,
   deriveReceiptStatus,
+  devolucionMueveInventario,
   pendingReceipt,
   qtyDisponibleParaDevolver,
   transicionValidaDevolucion,
   validateInspeccion,
   validateReceipt,
   type EstadoDevolucion,
+  type OrigenDevolucion,
   type PurchaseLineState,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
@@ -34,6 +37,14 @@ function demoDe(fd: FormData): DemoParams {
   }
 }
 
+/**
+ * Lo que la base rechace (un trigger, una restriccion, un id mal formado)
+ * vuelve como texto para la pantalla, nunca como excepcion: una accion que
+ * lanza tumba la pagina y el usuario pierde lo que escribio.
+ */
+const errorLegible = (e: unknown): string =>
+  (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, '')
+
 const num = (raw: string): number | null => {
   const t = raw.trim().replace(/,/g, '')
   if (t === '') return null
@@ -47,9 +58,20 @@ interface LineaEntrada {
   qtyAccepted: number
   qtyRejected: number
   rejectionReason: string | null
-  unitCost: number
+  /** null = no lo escribieron: se usa el costo cotizado de la orden. */
+  unitCost: number | null
 }
 
+/**
+ * Lee las lineas del formulario. Lo que el almacenista deja en blanco se
+ * completa con lo razonable, no con lo que haria fallar la recepcion:
+ *
+ *  - "Aceptado" en blanco = recibido - rechazado (aceptadoPorDefecto).
+ *    Antes la pantalla lo precargaba con lo PEDIDO, y recibir 30 de 50
+ *    sin tocarlo hacia `throw` y tumbaba la pagina.
+ *  - "Costo real" en blanco = el cotizado de la orden. Antes era 0 y
+ *    hundia el costo promedio de todo el inventario de ese producto.
+ */
 function lineasDeFormulario(fd: FormData): LineaEntrada[] {
   const ids = fd.getAll('lineId').map(String)
   const recibido = fd.getAll('qtyReceived').map((v) => num(String(v)))
@@ -67,15 +89,18 @@ function lineasDeFormulario(fd: FormData): LineaEntrada[] {
       rejectionReason: razon[i] ?? null,
       unitCost: costo[i] ?? null,
     }))
-    .filter((l): l is LineaEntrada & { qtyReceived: number } => (l.qtyReceived ?? 0) > 0)
-    .map((l) => ({
-      lineId: l.lineId,
-      qtyReceived: l.qtyReceived,
-      qtyAccepted: l.qtyAccepted ?? l.qtyReceived,
-      qtyRejected: l.qtyRejected ?? 0,
-      rejectionReason: l.rejectionReason,
-      unitCost: l.unitCost ?? 0,
-    }))
+    .filter((l): l is typeof l & { qtyReceived: number } => (l.qtyReceived ?? 0) > 0)
+    .map((l) => {
+      const qtyRejected = l.qtyRejected ?? 0
+      return {
+        lineId: l.lineId,
+        qtyReceived: l.qtyReceived,
+        qtyAccepted: l.qtyAccepted ?? aceptadoPorDefecto(l.qtyReceived, qtyRejected),
+        qtyRejected,
+        rejectionReason: l.rejectionReason,
+        unitCost: l.unitCost,
+      }
+    })
 }
 
 /** Registra una recepcion completa: una o varias lineas, una sola transaccion. */
@@ -118,27 +143,37 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
       unitCost: number
     }[] = []
 
+    // Un error de captura se DEVUELVE como texto, nunca `throw`: una
+    // excepcion dentro de la accion la convierte la pagina en el error
+    // generico de Next y el almacenista pierde todo lo que escribio. Nada
+    // se escribe hasta que todas las lineas pasan (ver el insert de abajo),
+    // asi que salir aqui no deja nada a medias.
     for (const l of lineas) {
       const [line] = await tx<
-        { product_id: string; qty_ordered: string; qty_received: string }[]
+        { product_id: string; name: string; qty_ordered: string; qty_received: string; unit_cost: string }[]
       >`
-        select product_id, qty_ordered::text, qty_received::text
-        from public.purchase_order_lines
-        where id = ${l.lineId} and order_id = ${orderId} and tenant_id = ${ctx.tenantId} for update`
-      if (!line) throw new Error(`Esa linea no pertenece a esta orden.`)
+        select l.product_id, p.name, l.qty_ordered::text, l.qty_received::text, l.unit_cost::text
+        from public.purchase_order_lines l
+        join public.products p on p.id = l.product_id
+        where l.id = ${l.lineId} and l.order_id = ${orderId} and l.tenant_id = ${ctx.tenantId}
+        for update of l`
+      if (!line) return 'Esa linea no pertenece a esta orden.'
 
       const estado: PurchaseLineState = {
         qtyOrdered: Number(line.qty_ordered),
         qtyReceived: Number(line.qty_received),
       }
       const checkRecepcion = validateReceipt(estado, l.qtyReceived)
-      if (!checkRecepcion.ok) throw new Error(checkRecepcion.error)
+      if (!checkRecepcion.ok) return `${line.name}: ${checkRecepcion.error}`
 
       const checkInspeccion = validateInspeccion(l.qtyReceived, l.qtyAccepted, l.qtyRejected)
-      if (!checkInspeccion.ok) throw new Error(checkInspeccion.error)
+      if (!checkInspeccion.ok) return `${line.name}: ${checkInspeccion.error}`
 
       if (l.qtyRejected > 0 && !l.rejectionReason) {
-        throw new Error('Escribe la razon del rechazo cuando hay unidades rechazadas.')
+        return `${line.name}: escribe la razon del rechazo cuando hay unidades rechazadas.`
+      }
+      if (l.unitCost !== null && l.unitCost < 0) {
+        return `${line.name}: el costo no puede ser negativo.`
       }
 
       preparadas.push({
@@ -149,7 +184,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
         qtyAccepted: l.qtyAccepted,
         qtyRejected: l.qtyRejected,
         rejectionReason: l.rejectionReason,
-        unitCost: l.unitCost,
+        unitCost: l.unitCost ?? Number(line.unit_cost),
       })
     }
 
@@ -203,7 +238,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
         ${JSON.stringify({ orderId, receiptId })}::text::jsonb, 'receipts')`
 
     return 'ok'
-  })
+  }).catch(errorLegible)
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'sin-confirmar') return { ok: false, error: 'Confirma la orden primero.' }
@@ -216,7 +251,17 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
-/** Registra una devolucion pendiente por unidades rechazadas en una linea. */
+/**
+ * Registra una devolucion pendiente de una linea de recepcion.
+ *
+ * `origin` dice de donde sale lo devuelto (ver `OrigenDevolucion`):
+ *  - `rejected` (por defecto): lo rechazado en la inspeccion. Nunca entro
+ *    al inventario; el tope es lo rechazado.
+ *  - `accepted`: algo aceptado que salio malo despues. Si entro, y al
+ *    enviarse sale del almacen; el tope es lo aceptado.
+ * El tope se comprueba aqui (para el mensaje) y en la base
+ * (`limitar_devolucion`, 0131), que es la que no se puede saltar.
+ */
 export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
@@ -226,14 +271,21 @@ export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
   const lineaId = String(fd.get('goodsReceiptLineId') ?? '')
   const qty = num(String(fd.get('qty') ?? ''))
   const reason = String(fd.get('reason') ?? '').trim()
+  const origenRaw = String(fd.get('origin') ?? '').trim() || 'rejected'
   if (!lineaId) return { ok: false, error: 'Falta la linea de recepcion.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
   if (!reason) return { ok: false, error: 'Escribe la razon de la devolucion.' }
+  if (origenRaw !== 'rejected' && origenRaw !== 'accepted') {
+    return { ok: false, error: 'Elige si devuelves lo rechazado o algo ya aceptado.' }
+  }
+  const origen: OrigenDevolucion = origenRaw
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [linea] = await tx<{ qty_rejected: string; receipt_id: string }[]>`
-      select qty_rejected::text, receipt_id from public.goods_receipt_lines
-      where id = ${lineaId} and tenant_id = ${ctx.tenantId}`
+    // `for update`: dos devoluciones de la misma linea a la vez no pasan
+    // las dos el mismo cupo. La linea es inmutable; el candado no la edita.
+    const [linea] = await tx<{ qty_rejected: string; qty_accepted: string; receipt_id: string }[]>`
+      select qty_rejected::text, qty_accepted::text, receipt_id from public.goods_receipt_lines
+      where id = ${lineaId} and tenant_id = ${ctx.tenantId} for update`
     if (!linea) return 'sin-linea'
 
     const [receipt] = await tx<{ supplier_id: string }[]>`
@@ -242,20 +294,23 @@ export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
 
     const [ya] = await tx<{ total: string }[]>`
       select coalesce(sum(qty), 0)::text as total from public.supplier_returns
-      where goods_receipt_line_id = ${lineaId} and tenant_id = ${ctx.tenantId} and status != 'cancelled'`
+      where goods_receipt_line_id = ${lineaId} and tenant_id = ${ctx.tenantId}
+        and origin = ${origen} and status != 'cancelled'`
 
-    const disponible = qtyDisponibleParaDevolver(Number(linea.qty_rejected), Number(ya!.total))
+    const base = Number(origen === 'accepted' ? linea.qty_accepted : linea.qty_rejected)
+    const disponible = qtyDisponibleParaDevolver(base, Number(ya!.total))
     if (qty > disponible) {
-      return `Solo hay ${disponible} unidades rechazadas disponibles para devolver.`
+      const que = origen === 'accepted' ? 'aceptadas' : 'rechazadas'
+      return `Solo hay ${disponible} unidades ${que} disponibles para devolver.`
     }
 
     await tx`
       insert into public.supplier_returns
-        (tenant_id, goods_receipt_line_id, supplier_id, qty, reason)
-      values (${ctx.tenantId}, ${lineaId}, ${receipt.supplier_id}, ${qty}, ${reason})`
+        (tenant_id, goods_receipt_line_id, supplier_id, qty, reason, origin)
+      values (${ctx.tenantId}, ${lineaId}, ${receipt.supplier_id}, ${qty}, ${reason}, ${origen})`
 
     return 'ok'
-  })
+  }).catch(errorLegible)
 
   if (resultado === 'sin-linea') return { ok: false, error: 'Esa linea de recepcion no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
@@ -278,9 +333,9 @@ async function resolverDevolucion(
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [d] = await tx<
-      { status: string; qty: string; goods_receipt_line_id: string }[]
+      { status: string; qty: string; goods_receipt_line_id: string; origin: OrigenDevolucion }[]
     >`
-      select status, qty::text, goods_receipt_line_id from public.supplier_returns
+      select status, qty::text, goods_receipt_line_id, origin from public.supplier_returns
       where id = ${devolucionId} and tenant_id = ${ctx.tenantId} for update`
     if (!d) return 'no-existe'
     if (!transicionValidaDevolucion(d.status as EstadoDevolucion, siguiente)) {
@@ -288,19 +343,22 @@ async function resolverDevolucion(
     }
 
     if (siguiente === 'sent') {
-      const [linea] = await tx<{ product_id: string; unit_cost: string }[]>`
-        select product_id, unit_cost::text from public.goods_receipt_lines
-        where id = ${d.goods_receipt_line_id} and tenant_id = ${ctx.tenantId}`
-      const [receipt] = await tx<{ warehouse_id: string }[]>`
-        select gr.warehouse_id from public.goods_receipt_lines grl
-        join public.goods_receipts gr on gr.id = grl.receipt_id
-        where grl.id = ${d.goods_receipt_line_id} and grl.tenant_id = ${ctx.tenantId}`
-      if (linea && receipt) {
+      // Solo sale del almacen lo que entro al almacen. Lo rechazado nunca
+      // entro al on_hand (registrarRecepcion solo postea lo aceptado): un
+      // movimiento de salida aqui restaba existencia que no existia
+      // (hallazgo 11 del analisis de flujo).
+      if (devolucionMueveInventario(d.origin)) {
+        const [linea] = await tx<{ product_id: string; unit_cost: string; warehouse_id: string }[]>`
+          select grl.product_id, grl.unit_cost::text, gr.warehouse_id
+          from public.goods_receipt_lines grl
+          join public.goods_receipts gr on gr.id = grl.receipt_id
+          where grl.id = ${d.goods_receipt_line_id} and grl.tenant_id = ${ctx.tenantId}`
+        if (!linea) return 'Esa devolucion no tiene su linea de recepcion.'
         await tx`
           insert into public.inventory_movements
             (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost,
              reference_type, reference_id, created_by)
-          values (${ctx.tenantId}, ${receipt.warehouse_id}, ${linea.product_id},
+          values (${ctx.tenantId}, ${linea.warehouse_id}, ${linea.product_id},
                   'return_to_supplier', ${-Number(d.qty)}, ${linea.unit_cost},
                   'supplier_return', ${devolucionId}, ${ctx.userId})`
       }
@@ -309,7 +367,7 @@ async function resolverDevolucion(
         where id = ${devolucionId} and tenant_id = ${ctx.tenantId}`
       await tx`
         select public.emit_event('receipts.return.sent',
-          ${JSON.stringify({ devolucionId })}::text::jsonb, 'receipts')`
+          ${JSON.stringify({ devolucionId, origin: d.origin })}::text::jsonb, 'receipts')`
     } else {
       await tx`
         update public.supplier_returns set status = 'cancelled', updated_at = now()
@@ -317,7 +375,7 @@ async function resolverDevolucion(
     }
 
     return 'ok'
-  })
+  }).catch(errorLegible)
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa devolucion no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }

@@ -15,6 +15,12 @@
  * Por eso el estado se calcula sobre el ultimo respaldo que SALIO, no
  * sobre el ultimo que se hizo.
  *
+ * Y solo cuentan los COMPLETOS. Hasta la migracion 0122 el respaldo
+ * traia seis tablas maestras -empresas, sucursales, roles, equipo,
+ * productos, configuracion- y ni una venta. Esos archivos siguen en la
+ * lista; uno descargado ayer ponia el aviso en verde y le decia al
+ * cliente "eso es lo que perderias", cuando perderia todas sus ventas.
+ *
  * ── Los umbrales ──────────────────────────────────────────────────────
  *
  * Un dia esta bien. A los tres ya se pierde media semana de facturacion
@@ -27,7 +33,13 @@
 export const DIAS_AVISO = 3
 export const DIAS_ALARMA = 7
 
-export type NivelRespaldo = 'sin-respaldo' | 'nunca-salio' | 'viejo' | 'muy-viejo' | 'al-dia'
+export type NivelRespaldo =
+  | 'sin-respaldo'
+  | 'solo-parciales'
+  | 'nunca-salio'
+  | 'viejo'
+  | 'muy-viejo'
+  | 'al-dia'
 
 export interface EstadoRespaldo {
   nivel: NivelRespaldo
@@ -44,15 +56,49 @@ function diasEntre(desde: Date, hasta: Date): number {
 }
 
 export interface DatosRespaldo {
-  /** Cuando se hizo el ultimo respaldo, haya salido o no. */
+  /** Cuando se hizo el ultimo respaldo COMPLETO, haya salido o no. */
   ultimo: Date | null
-  /** Cuando salio el ultimo que alguien se llevo fuera. */
+  /** Cuando salio el ultimo respaldo COMPLETO que alguien se llevo fuera. */
   ultimoFuera: Date | null
+  /** Hay respaldos del formato viejo (sin ventas). Solo cambia el aviso si no hay ningun completo. */
+  parciales?: boolean
+}
+
+/** Un respaldo de la lista, como lo ve la pantalla. */
+export interface RespaldoListado {
+  creado: Date
+  /** Cuando salio de aqui la primera vez. Null = sigue solo aqui. */
+  salio: Date | null
+  /** Formato 2 (0122): trae el negocio. False = el viejo, seis tablas maestras. */
+  completo: boolean
+}
+
+/** Resume la lista para el aviso: los parciales no cuentan como proteccion. */
+export function datosDeRespaldos(lista: readonly RespaldoListado[]): DatosRespaldo {
+  const max = (fechas: Date[]): Date | null =>
+    fechas.length === 0 ? null : new Date(Math.max(...fechas.map((f) => f.getTime())))
+  const completos = lista.filter((r) => r.completo)
+  return {
+    ultimo: max(completos.map((r) => r.creado)),
+    ultimoFuera: max(completos.flatMap((r) => (r.salio ? [r.salio] : []))),
+    parciales: lista.some((r) => !r.completo),
+  }
 }
 
 export function estadoDeRespaldos(d: DatosRespaldo, ahora: Date): EstadoRespaldo {
   const diasUltimo = d.ultimo === null ? null : diasEntre(d.ultimo, ahora)
   const diasFuera = d.ultimoFuera === null ? null : diasEntre(d.ultimoFuera, ahora)
+
+  if (d.ultimo === null && d.parciales) {
+    return {
+      nivel: 'solo-parciales',
+      diasFuera: null,
+      diasUltimo: null,
+      titulo: 'Tus respaldos no traen tus ventas',
+      detalle:
+        'Los de la lista son del formato anterior: solo traen empresas, sucursales, roles, equipo, productos y configuracion. Ni ventas, ni facturas, ni inventario, ni contabilidad. Crea uno nuevo y descargalo.',
+    }
+  }
 
   if (d.ultimo === null) {
     return {

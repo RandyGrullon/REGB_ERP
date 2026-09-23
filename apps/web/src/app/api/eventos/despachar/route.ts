@@ -28,7 +28,8 @@ export const dynamic = 'force-dynamic'
  * poder dispararlo con un curl.
  */
 export async function POST(req: Request) {
-  const secreto = process.env.REGB_CRON_SECRET
+  // `CRON_SECRET` es el nombre que usa Vercel Cron para el mismo secreto.
+  const secreto = process.env.REGB_CRON_SECRET || process.env.CRON_SECRET
   const enviado = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
 
   if (secreto) {
@@ -54,3 +55,11 @@ export async function POST(req: Request) {
     )
   }
 }
+
+/**
+ * Vercel Cron llama con GET (y `Authorization: Bearer $CRON_SECRET`). Mismo
+ * secreto, mismo efecto: sin esto, un cron de Vercel recibia 405 y los
+ * asientos, automatizaciones y webhooks se quedaban en la cola sin que
+ * nadie se enterara.
+ */
+export const GET = POST

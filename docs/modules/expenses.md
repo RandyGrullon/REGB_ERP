@@ -28,15 +28,19 @@ calculo se muestra siempre en pantalla, nunca se guarda como columna:
 si el NCF resultara invalido despues, no habria un numero guardado
 desincronizado que corregir.
 
-## Reembolso en nomina: un hecho, no una integracion real
+## Reembolso en nomina: llega al volante (0132)
 
-`payroll_period_id` (nullable, en `expenses`) registra en que periodo
-se pago un reembolso y por que metodo -nomina, transferencia o
-efectivo-, pero **no modifica el calculo de `payroll_lines`**: esa
-integracion real -sumar el reembolso al neto de un volante- es una
-fase futura, declarada aqui, en el manifest y en la migracion.
-Mientras tanto, el campo es puramente informativo, con su propia
-validacion cruzada de tenant (ver abajo).
+Un gasto reembolsado con metodo `payroll` y un `payroll_period_id` se
+PAGA en esa nomina: al procesarla, `payroll` lo suma al neto del
+empleado como ingreso **no gravado** (columna `reimbursements`: no es
+base de TSS ni de ISR). Si el empleado no cobra salario en ese periodo,
+igual se le hace una linea con el reembolso.
+
+Solo se puede apuntar a un periodo en **borrador** (trigger
+`no_nomina_cerrada`): apuntar a una nomina ya procesada era darlo por
+pagado sin que nadie lo pagara. El estado pasa a `reimbursed` al
+asignarlo, antes de que la nomina se procese: el pago real ocurre al
+procesar ese periodo.
 
 ## `approved` no es un estado terminal
 
@@ -100,9 +104,10 @@ rellena despues de crear la fila-.
   pide un servicio de vision por computadora con credenciales que este
   sistema no tiene-. El monto, la fecha y el proveedor se escriben a
   mano.
-- **Sumar el reembolso al calculo de una nomina.** Registra que un
-  gasto se reembolso en un periodo y por que metodo, pero no modifica
-  `payroll_lines` -esa integracion real es una fase futura-.
+- **Reembolsar por nomina sin periodo.** Con metodo `payroll` y "Sin
+  periodo" el gasto queda `reimbursed` y ninguna nomina lo paga: la
+  pantalla de aprobar deberia exigir el periodo en ese caso (pendiente del
+  dueño de `expenses`).
 - **Politicas de gasto por categoria o limite de monto.** Cualquier
   monto en cualquier categoria se puede reportar; la aprobacion es
   manual y sin un limite automatico que la bloquee.

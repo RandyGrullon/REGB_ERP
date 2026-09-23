@@ -84,8 +84,26 @@ export const manifestSchema = z
      * Cada modulo declara la suya para que el shell siga sin conocer ni un
      * solo id de modulo (§2.2).
      */
+    //
+    // Las de operacion van por AREA DE NEGOCIO (las mismas del
+    // marketplace): con 67 modulos en una sola "operacion", la distribuidora
+    // tenia mas de 150 enlaces seguidos en el menu. `operacion` queda como
+    // cajon generico para un modulo que no encaje en ninguna.
     navSection: z
-      .enum(['inicio', 'operacion', 'administracion', 'datos', 'ayuda'])
+      .enum([
+        'inicio',
+        'ventas',
+        'inventario',
+        'finanzas',
+        'rrhh',
+        'produccion',
+        'proyectos',
+        'industria',
+        'operacion',
+        'administracion',
+        'datos',
+        'ayuda',
+      ])
       .default('operacion'),
     /** Orden dentro de la seccion. Menor va primero; empate resuelve por nombre. */
     navOrder: z.number().int().default(100),

@@ -14,4 +14,10 @@ export const COOKIE_AVISO = 'regb_aviso'
 export interface Aviso {
   tipo: 'ok' | 'error'
   texto: string
+  /**
+   * El siguiente paso natural, cuando lo hay. Ej.: tras cobrar, el
+   * ticket con su NCF para imprimirlo: sin esto el cajero tenia que ir a
+   * buscarlo a Cierres.
+   */
+  enlace?: { href: string; texto: string } | undefined
 }

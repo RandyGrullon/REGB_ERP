@@ -14,7 +14,7 @@ export default defineModule({
   category: 'standard',
   version: '0.1.0',
 
-  navSection: 'operacion',
+  navSection: 'ventas',
   navOrder: 40,
 
   pricing: {
@@ -46,6 +46,12 @@ export default defineModule({
       label: 'Clientes',
       perm: 'sales-orders.customers.manage',
       icon: 'contacts',
+    },
+    {
+      path: '/pedidos/clientes/:id',
+      label: 'Ficha del cliente',
+      perm: 'sales-orders.customers.manage',
+      hidden: true,
     },
     { path: '/pedidos/:id', label: 'Detalle', perm: 'sales-orders.view', hidden: true },
   ],

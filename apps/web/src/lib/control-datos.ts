@@ -246,8 +246,16 @@ export async function cargarSalud(): Promise<Salud> {
     join regb.tenants t on t.id = s.tenant_id
     where s.is_active
       and (s.next_number > s.range_to
-           or s.expires_on < current_date
+           or s.expires_on < public.hoy_fiscal()
            or (s.range_to - s.next_number + 1) <= 50)
+      -- Una secuencia agotada no es un riesgo si el cliente ya cargo la
+      -- siguiente (0129: conviven y se consumen en orden). Avisar igual
+      -- hacia llamar a un cliente que ya hizo lo correcto.
+      and not exists (
+        select 1 from public.ncf_sequences o
+        where o.tenant_id = s.tenant_id and o.ncf_type = s.ncf_type and o.id <> s.id
+          and o.is_active and o.expires_on >= public.hoy_fiscal()
+          and (o.range_to - o.next_number + 1) > 50)
     order by (s.range_to - s.next_number + 1)`
 
   const ncfEnRiesgo = ncf.map((n) => ({

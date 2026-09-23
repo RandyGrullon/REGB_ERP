@@ -15,12 +15,12 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { daysOverdue } from '@regb/operations'
+import { TIPOS_GASTO_606, TIPOS_RETENCION_ISR_606, daysOverdue } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { ESTADO_FACTURA } from '../estados'
-import { anularFacturaForm, registrarPagoForm } from '../actions'
+import { anularFacturaForm, clasificarFacturaForm, registrarPagoForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +39,11 @@ interface InvoiceHead {
   supplier_ncf: string | null
   void_reason: string | null
   notes: string | null
+  expense_type: string | null
+  services_amount: string
+  isr_retained: string
+  isr_retention_type: string | null
+  modified_ncf: string | null
 }
 
 interface PaymentRow {
@@ -77,7 +82,9 @@ export default async function FacturaProveedorDetallePage({
       select i.id, i.supplier_invoice_number, s.name as supplier_name,
              i.issue_date::text, i.due_date::text,
              i.subtotal::text, i.tax::text, i.retention_amount::text, i.total::text,
-             i.status, i.supplier_ncf, i.void_reason, i.notes
+             i.status, i.supplier_ncf, i.void_reason, i.notes,
+             i.expense_type, i.services_amount::text, i.isr_retained::text,
+             i.isr_retention_type, i.modified_ncf
       from public.supplier_invoices i
       join public.suppliers s on s.id = i.supplier_id
       where i.id = ${id} and i.tenant_id = ${ctx.tenantId}`
@@ -108,6 +115,9 @@ export default async function FacturaProveedorDetallePage({
 
   const puedePagar = exigir(ctx, 'ap', 'ap.payment.record').ok
   const puedeAnular = exigir(ctx, 'ap', 'ap.invoice.void').ok
+  const puedeClasificar = exigir(ctx, 'ap', 'ap.invoice.create').ok
+  const retencion = Number(head.retention_amount)
+  const isr = Number(head.isr_retained)
   const qs = ctx.demoQs
 
   const fecha = (iso: string) =>
@@ -243,6 +253,115 @@ export default async function FacturaProveedorDetallePage({
                   Registrar pago
                 </BotonEnvio>
               </form>
+            </CardBody>
+          </Card>
+        )}
+
+        {head.supplier_ncf && head.status !== 'void' && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Datos para el 606</CardTitle>
+            </CardHeader>
+            <CardBody className="space-y-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm lg:grid-cols-4">
+                <dt className="text-xs text-[var(--color-text-muted)]">Tipo de gasto</dt>
+                <dd>
+                  {head.expense_type ? (
+                    `${head.expense_type} — ${TIPOS_GASTO_606[head.expense_type] ?? ''}`
+                  ) : (
+                    <Badge tone="danger">sin clasificar</Badge>
+                  )}
+                </dd>
+                <dt className="text-xs text-[var(--color-text-muted)]">Servicios / bienes</dt>
+                <dd className="tabular">
+                  {money(Number(head.services_amount))} /{' '}
+                  {money(Number(head.subtotal) - Number(head.services_amount))}
+                </dd>
+                <dt className="text-xs text-[var(--color-text-muted)]">ITBIS retenido</dt>
+                <dd className="tabular">{money(retencion - isr)}</dd>
+                <dt className="text-xs text-[var(--color-text-muted)]">ISR retenido</dt>
+                <dd className="tabular">
+                  {money(isr)}
+                  {head.isr_retention_type &&
+                    ` (${head.isr_retention_type} — ${TIPOS_RETENCION_ISR_606[head.isr_retention_type] ?? ''})`}
+                </dd>
+              </dl>
+
+              {puedeClasificar && (
+                <form action={clasificarFacturaForm} className="flex flex-wrap items-end gap-3">
+                  {campos}
+                  <label className="flex min-w-56 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Tipo de gasto
+                    <select
+                      name="expenseType"
+                      required
+                      defaultValue={head.expense_type ?? ''}
+                      className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                    >
+                      <option value="" disabled>
+                        Elige (01-11)
+                      </option>
+                      {Object.entries(TIPOS_GASTO_606).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {k} — {v}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    De eso, servicios
+                    <input
+                      name="servicesAmount"
+                      inputMode="decimal"
+                      defaultValue={Number(head.services_amount).toFixed(2)}
+                      className="tabular h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-sm text-[var(--color-text-primary)]"
+                    />
+                  </label>
+                  <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    ISR de la retencion
+                    <input
+                      name="isrRetention"
+                      inputMode="decimal"
+                      defaultValue={isr.toFixed(2)}
+                      title={`De los ${money(retencion)} retenidos, cuanto fue ISR. El resto se declara como ITBIS retenido.`}
+                      className="tabular h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-sm text-[var(--color-text-primary)]"
+                    />
+                  </label>
+                  <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Tipo de retencion ISR
+                    <select
+                      name="isrRetentionType"
+                      defaultValue={head.isr_retention_type ?? ''}
+                      className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                    >
+                      <option value="">Sin ISR retenido</option>
+                      {Object.entries(TIPOS_RETENCION_ISR_606).map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {k} — {v}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    NCF que modifica
+                    <input
+                      name="modifiedNcf"
+                      defaultValue={head.modified_ncf ?? ''}
+                      placeholder="Solo notas de credito"
+                      className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                    />
+                  </label>
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    <Icon name="sell" size={18} />
+                    Guardar clasificacion
+                  </BotonEnvio>
+                </form>
+              )}
+              <p className="text-xs text-[var(--color-text-muted)]">
+                El 606 no se genera con una sola compra sin tipo de gasto. De lo retenido, lo que
+                no sea ISR se declara como ITBIS retenido: el ITBIS entra al IT-1 y el ISR al
+                IR-17.
+              </p>
             </CardBody>
           </Card>
         )}
