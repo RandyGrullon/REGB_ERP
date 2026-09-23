@@ -141,7 +141,7 @@ export default async function AsientoDetallePage({
                         ? 'Deja el asiento inmutable: se corrige con uno inverso, no editando'
                         : validacion.error
                     }
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40">
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40">
                     <Icon name="check_circle" size={18} />
                     Contabilizar
                   </BotonEnvio>
@@ -153,7 +153,7 @@ export default async function AsientoDetallePage({
                   <BotonEnvio
                     
                     title="Solo se puede borrar un borrador; nunca uno ya contabilizado"
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="delete" size={18} />
                     Borrar
                   </BotonEnvio>
@@ -228,7 +228,7 @@ export default async function AsientoDetallePage({
                         <BotonEnvio
                           
                           aria-label={`Quitar linea de ${l.account_name}`}
-                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>
@@ -292,7 +292,7 @@ export default async function AsientoDetallePage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
                 </BotonEnvio>

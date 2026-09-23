@@ -190,7 +190,7 @@ export default async function LotesPage({
                   </label>
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="add" size={14} />
                     Registrar
                   </BotonEnvio>
@@ -235,7 +235,7 @@ export default async function LotesPage({
                   </label>
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="output" size={14} />
                     Consumir
                   </BotonEnvio>
@@ -296,7 +296,7 @@ export default async function LotesPage({
                             />
                             <BotonEnvio
                               
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Recall
                             </BotonEnvio>
                           </form>
@@ -350,7 +350,7 @@ export default async function LotesPage({
                             <input type="hidden" name="recallId" value={r.id} />
                             <BotonEnvio
                               
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Cerrar
                             </BotonEnvio>
                           </form>

@@ -193,7 +193,7 @@ export default async function EmpleadoDetallePage({
                     </label>
                     <BotonEnvio
                       
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="trending_up" size={18} />
                       Registrar contrato
                     </BotonEnvio>
@@ -220,7 +220,7 @@ export default async function EmpleadoDetallePage({
                     </label>
                     <BotonEnvio
                       
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="person_remove" size={18} />
                       Dar de baja
                     </BotonEnvio>

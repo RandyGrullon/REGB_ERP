@@ -185,7 +185,7 @@ export default async function BomDetallePage({
               {enBorrador && puedeGestionar && lineas.length > 0 && (
                 <form action={activarBomForm}>
                   {campos}
-                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="check_circle" size={14} />
                     Activar
                   </BotonEnvio>
@@ -234,7 +234,7 @@ export default async function BomDetallePage({
                         <BotonEnvio
                           
                           aria-label={`Quitar ${l.name}`}
-                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>
@@ -260,7 +260,7 @@ export default async function BomDetallePage({
                           <BotonEnvio
                             
                             aria-label={`Quitar sustituto ${s.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
@@ -306,7 +306,7 @@ export default async function BomDetallePage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

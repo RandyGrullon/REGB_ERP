@@ -243,7 +243,7 @@ export default async function CierresPage({
                           <BotonEnvio
                             
                             aria-label={`Anular ${v.number}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="block" size={16} />
                           </BotonEnvio>
                         </form>

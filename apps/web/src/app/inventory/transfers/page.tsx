@@ -181,7 +181,7 @@ export default async function TransfersPage({
                 </label>
                 <BotonEnvio
                   
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Transferir
                 </BotonEnvio>
               </form>

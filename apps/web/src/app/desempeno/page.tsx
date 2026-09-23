@@ -242,7 +242,7 @@ export default async function DesempenoPage({
                                   <BotonEnvio
                                     
                                     aria-label={`Guardar progreso de ${k.description}`}
-                                    className="flex h-9 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                    className="flex h-9 items-center rounded-full border border-[var(--color-border)] px-2 text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                     <Icon name="save" size={14} />
                                   </BotonEnvio>
                                 </form>
@@ -262,7 +262,7 @@ export default async function DesempenoPage({
                         <input name="unit" placeholder="Unidad" className={`w-20 ${claseInput}`} />
                         <BotonEnvio
                           
-                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="add" size={14} />
                           Agregar KR
                         </BotonEnvio>
@@ -298,7 +298,7 @@ export default async function DesempenoPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Nuevo objetivo
                 </BotonEnvio>
@@ -355,7 +355,7 @@ export default async function DesempenoPage({
                               <input name="notes" placeholder="Notas" className={claseInput} />
                               <BotonEnvio
                                 
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                className="flex h-9 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 Cerrar
                               </BotonEnvio>
@@ -389,7 +389,7 @@ export default async function DesempenoPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="event" size={14} />
                   Agendar 1:1
                 </BotonEnvio>
@@ -474,7 +474,7 @@ export default async function DesempenoPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Enviar
                 </BotonEnvio>
@@ -525,7 +525,7 @@ export default async function DesempenoPage({
                                 <input type="hidden" name="status" value="completed" />
                                 <BotonEnvio
                                   
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
+                                  className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                                   Completar
                                 </BotonEnvio>
                               </form>
@@ -536,7 +536,7 @@ export default async function DesempenoPage({
                                 <input type="hidden" name="status" value="cancelled" />
                                 <BotonEnvio
                                   
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                  className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Cancelar
                                 </BotonEnvio>
                               </form>
@@ -578,7 +578,7 @@ export default async function DesempenoPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Crear plan
                 </BotonEnvio>

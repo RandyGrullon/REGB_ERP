@@ -112,7 +112,7 @@ export default async function AprobarVacacionesPage({
                         <input type="hidden" name="decision" value="approved" />
                         <BotonEnvio
                           
-                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
+                          className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                           <Icon name="check" size={14} />
                           Aprobar
                         </BotonEnvio>
@@ -124,7 +124,7 @@ export default async function AprobarVacacionesPage({
                         <input type="hidden" name="decision" value="rejected" />
                         <BotonEnvio
                           
-                          className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="close" size={14} />
                           Rechazar
                         </BotonEnvio>

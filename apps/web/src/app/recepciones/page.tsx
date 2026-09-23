@@ -173,7 +173,7 @@ export default async function RecepcionesPage({
                         <TD>
                           <a
                             href={`/recepciones/${o.id}${qs}`}
-                            className="flex h-8 w-fit items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                            className="flex h-8 w-fit items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
                           >
                             <Icon name="inventory_2" size={14} />
                             Recibir
@@ -232,7 +232,7 @@ export default async function RecepcionesPage({
                               <input type="hidden" name="devolucionId" value={d.id} />
                               <BotonEnvio
                                 
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="local_shipping" size={14} />
                                 Enviar
                               </BotonEnvio>
@@ -243,7 +243,7 @@ export default async function RecepcionesPage({
                               <input type="hidden" name="devolucionId" value={d.id} />
                               <BotonEnvio
                                 
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="close" size={14} />
                                 Cancelar
                               </BotonEnvio>

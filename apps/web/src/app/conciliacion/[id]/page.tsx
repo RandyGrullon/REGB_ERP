@@ -270,7 +270,7 @@ export default async function ImportConciliacionPage({
                               <BotonEnvio
                                 
                                 title={sugerido ? 'Sugerido por el sistema' : 'Confirmar el emparejamiento elegido'}
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 {sugerido ? 'Confirmar' : 'Conciliar'}
                               </BotonEnvio>

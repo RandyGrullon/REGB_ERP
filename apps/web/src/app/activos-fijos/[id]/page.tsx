@@ -199,7 +199,7 @@ export default async function ActivoFijoDetallePage({
                     </label>
                     <BotonEnvio
                       
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="price_change" size={18} />
                       Registrar revaluo
                     </BotonEnvio>
@@ -236,7 +236,7 @@ export default async function ActivoFijoDetallePage({
                     <BotonEnvio
                       
                       title="No se puede deshacer: un activo dado de baja queda historico"
-                      className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="remove_circle" size={18} />
                       Dar de baja
                     </BotonEnvio>

@@ -531,7 +531,7 @@ export default async function CorridaConsolidacionPage({
                     className={claseInput}
                   />
                 </label>
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="remove_circle" size={18} />
                   Eliminar del grupo
                 </BotonEnvio>
@@ -555,7 +555,7 @@ export default async function CorridaConsolidacionPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="runId" value={head.id} />
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="lock" size={18} />
                   Cerrar corrida
                 </BotonEnvio>

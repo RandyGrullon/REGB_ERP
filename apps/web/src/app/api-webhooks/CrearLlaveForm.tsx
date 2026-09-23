@@ -56,7 +56,7 @@ export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string })
         <BotonEnvio
           
           disabled={enviando}
-          className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60">
+          className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60">
           Crear llave
         </BotonEnvio>
       </form>

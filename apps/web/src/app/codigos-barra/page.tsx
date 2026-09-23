@@ -127,7 +127,7 @@ export default async function CodigosBarraPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="auto_awesome" size={14} />
                   Generar codigos faltantes ({sinCodigo})
                 </BotonEnvio>

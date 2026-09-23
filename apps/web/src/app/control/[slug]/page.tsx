@@ -102,7 +102,7 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ s
           </label>
           <BotonEnvio
             
-            className="h-10 rounded-[var(--radius-md)] bg-[var(--color-accent-plum)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+            className="h-10 rounded-full bg-[var(--color-accent-plum)] px-4 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
             Entrar 60 min
           </BotonEnvio>
         </form>

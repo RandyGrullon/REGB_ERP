@@ -206,7 +206,7 @@ export default async function CapacitacionPage({
                               />
                               <BotonEnvio
                                 
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                className="flex h-9 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="check" size={14} />
                                 Registrar
                               </BotonEnvio>
@@ -225,7 +225,7 @@ export default async function CapacitacionPage({
                               />
                               <BotonEnvio
                                 
-                                className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="workspace_premium" size={14} />
                                 Emitir certificado
                               </BotonEnvio>
@@ -265,7 +265,7 @@ export default async function CapacitacionPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Inscribir
                 </BotonEnvio>
@@ -301,7 +301,7 @@ export default async function CapacitacionPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={14} />
                   Publicar curso
                 </BotonEnvio>
@@ -357,7 +357,7 @@ export default async function CapacitacionPage({
                   </label>
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="add" size={14} />
                     Agregar
                   </BotonEnvio>
@@ -393,7 +393,7 @@ export default async function CapacitacionPage({
                     </label>
                     <BotonEnvio
                       
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="save" size={14} />
                       Evaluar
                     </BotonEnvio>

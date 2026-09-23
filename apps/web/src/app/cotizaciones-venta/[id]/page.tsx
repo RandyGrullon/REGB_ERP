@@ -259,7 +259,7 @@ export default async function CotizacionDetallePage({
                         <BotonEnvio
                           
                           aria-label={`Quitar ${l.name}`}
-                          className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>

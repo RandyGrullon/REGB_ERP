@@ -246,7 +246,7 @@ export default async function ControlOverviewPage({
                     <BotonEnvio
                       
                       title="Enciende los modulos en prueba de 14 dias y avisa al cliente"
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="rocket_launch" size={14} />
                       Activar en prueba
                     </BotonEnvio>
@@ -256,7 +256,7 @@ export default async function ControlOverviewPage({
                     <BotonEnvio
                       
                       title="Ya lo llamaste; sale de la lista sin activar nada"
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="call" size={14} />
                       Ya lo llame
                     </BotonEnvio>
@@ -271,7 +271,7 @@ export default async function ControlOverviewPage({
                     />
                     <BotonEnvio
                       
-                      className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] px-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      className="flex h-8 items-center gap-1 rounded-full px-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       Descartar
                     </BotonEnvio>
                   </form>

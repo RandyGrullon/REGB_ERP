@@ -131,14 +131,14 @@ export function GuiaFlotante({ guia }: { guia: PasoGuia }) {
           {guia.siguiente !== null ? (
             <a
               href={guia.siguiente}
-              className="h-9 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="h-9 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               Siguiente paso
             </a>
           ) : (
             <a
               href={guia.tutorial}
-              className="h-9 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="h-9 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               Terminar el tour
             </a>

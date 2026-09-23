@@ -64,7 +64,7 @@ export default async function ControlLayout({ children }: { children: ReactNode 
               
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
-              className="flex items-center gap-1.5 rounded-[var(--radius-md)] px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+              className="flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
               <Icon name="logout" size={16} />
               <span className="hidden sm:inline">Salir</span>
             </BotonEnvio>

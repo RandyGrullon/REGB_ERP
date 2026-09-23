@@ -197,7 +197,7 @@ export default async function CosteoProyectoPage({
                         <input type="hidden" name="costId" value={c.id} />
                         <BotonEnvio
                           
-                          className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                          className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                           Facturar
                         </BotonEnvio>
                       </form>

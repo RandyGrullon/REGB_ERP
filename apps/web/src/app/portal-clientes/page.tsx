@@ -126,7 +126,7 @@ export default async function PortalClientesPage({
                           <input type="hidden" name="inviteId" value={i.id} />
                           <BotonEnvio
                             
-                            className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                            className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="block" size={12} />
                             Revocar
                           </BotonEnvio>
@@ -174,7 +174,7 @@ export default async function PortalClientesPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Invitar
                 </BotonEnvio>

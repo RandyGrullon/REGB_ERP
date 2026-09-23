@@ -115,7 +115,7 @@ export default async function PagarPage({
               <BotonEnvio
                 
                 title="Marca vencidas las que pasaron su fecha. Se puede pulsar las veces que sea."
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                 <Icon name="update" size={18} />
                 Actualizar vencidas
               </BotonEnvio>
@@ -252,7 +252,7 @@ export default async function PagarPage({
                             <BotonEnvio
                               
                               aria-label={`Registrar pago de ${f.supplier_invoice_number}`}
-                              className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                              className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                               <Icon name="payments" size={18} />
                             </BotonEnvio>
                           </form>
@@ -336,7 +336,7 @@ export default async function PagarPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>

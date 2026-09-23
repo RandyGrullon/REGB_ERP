@@ -162,7 +162,7 @@ export default async function CobrarPage({
                 <BotonEnvio
                   
                   title="Marca vencidas las que pasaron su fecha. Se puede pulsar las veces que sea."
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="update" size={18} />
                   Actualizar vencidas
                 </BotonEnvio>
@@ -213,7 +213,7 @@ export default async function CobrarPage({
                     <input type="hidden" name="orderId" value={o.id} />
                     <BotonEnvio
                       
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="receipt_long" size={16} />
                       Facturar
                     </BotonEnvio>
@@ -343,7 +343,7 @@ export default async function CobrarPage({
                               <BotonEnvio
                                 
                                 aria-label={`Registrar cobro de ${f.number}`}
-                                className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                                 <Icon name="payments" size={18} />
                               </BotonEnvio>
                             </form>
@@ -372,7 +372,7 @@ export default async function CobrarPage({
                                 <BotonEnvio
                                   
                                   aria-label={`Aplicar cargo por mora a ${f.number}`}
-                                  className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-semantic-text-warning)] transition-colors hover:bg-[var(--color-surface-raised)]">
+                                  className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-semantic-text-warning)] transition-colors hover:bg-[var(--color-surface-raised)]">
                                   <Icon name="schedule" size={18} />
                                 </BotonEnvio>
                               </form>
@@ -412,7 +412,7 @@ export default async function CobrarPage({
                       <input type="hidden" name="id" value={c.id} />
                       <BotonEnvio
                         
-                        className="flex items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]">
+                        className="flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)]">
                         {c.late_fee_exempt ? (
                           <Badge tone="neutral" dot={false}>
                             Exento — quitar

@@ -121,7 +121,7 @@ export default async function HistorialTasaPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <BotonEnvio
                   
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   Calcular
                 </BotonEnvio>
               </form>

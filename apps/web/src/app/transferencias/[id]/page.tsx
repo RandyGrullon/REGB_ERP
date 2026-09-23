@@ -142,7 +142,7 @@ export default async function TransferenciaDetallePage({
                   {campos}
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="local_shipping" size={14} />
                     Despachar
                   </BotonEnvio>
@@ -153,7 +153,7 @@ export default async function TransferenciaDetallePage({
                   {campos}
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="cancel" size={14} />
                     Cancelar
                   </BotonEnvio>
@@ -205,7 +205,7 @@ export default async function TransferenciaDetallePage({
                 <div className="border-t border-[var(--color-border)] p-3">
                   <BotonEnvio
                     
-                    className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="inventory_2" size={18} />
                     Registrar recepcion
                   </BotonEnvio>
@@ -271,7 +271,7 @@ export default async function TransferenciaDetallePage({
                           <BotonEnvio
                             
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
@@ -312,7 +312,7 @@ export default async function TransferenciaDetallePage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

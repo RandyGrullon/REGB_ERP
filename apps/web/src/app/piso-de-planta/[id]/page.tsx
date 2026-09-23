@@ -154,7 +154,7 @@ export default async function TerminalPage({
                   Horas por unidad
                   <input name="idealCycleHours" required inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <BotonEnvio  className="flex h-11 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-11 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="check_circle" size={16} />
                   Guardar
                 </BotonEnvio>

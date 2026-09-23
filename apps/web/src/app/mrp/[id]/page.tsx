@@ -184,7 +184,7 @@ export default async function MrpDetallePage({
                             </select>
                             <BotonEnvio
                               
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
                             </BotonEnvio>
@@ -195,7 +195,7 @@ export default async function MrpDetallePage({
                             <input type="hidden" name="suggestionId" value={s.id} />
                             <BotonEnvio
                               
-                              className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
                             </BotonEnvio>
@@ -207,7 +207,7 @@ export default async function MrpDetallePage({
                           <BotonEnvio
                             
                             aria-label={`Descartar sugerencia de ${s.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
                             <Icon name="close" size={16} />
                           </BotonEnvio>
                         </form>

@@ -257,7 +257,7 @@ export default async function ArchivosPage({
                         aria-label={
                           enPapelera ? `Restaurar ${f.name}` : `Enviar ${f.name} a la papelera`
                         }
-                        className="grid h-9 w-9 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                        className="grid h-9 w-9 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                         <Icon name={enPapelera ? 'restore_from_trash' : 'delete'} size={18} />
                       </BotonEnvio>
                     </form>
@@ -293,7 +293,7 @@ export default async function ArchivosPage({
                 />
                 <BotonEnvio
                   
-                  className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   Subir
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">

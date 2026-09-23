@@ -1,5 +1,5 @@
 /* ────────────────────────────────────────────────────────────────
-   Aurora — hoja base
+   Hoja base — lenguaje Apple (skill apple-design-system)
    Los tokens vienen de @regb/config, generados desde tokens.json.
    Aqui solo se mapean a utilidades de Tailwind y se fijan los
    comportamientos globales.
@@ -13,15 +13,15 @@
    deja la caja registradora con botones en blanco. Ver components/Icon.tsx. */
 @import 'material-symbols/rounded.css';
 
-/* Tipografia: IBM Plex, disenada para software empresarial.
-   Mas formal que una grotesca neutra, con numeros de altura uniforme —que
-   es lo que hace legible una tabla de montos— y una mono a juego para SKU,
-   RNC y numeros de factura.
+/* Tipografia: SF Pro en equipos Apple (via -apple-system) e Inter en el
+   resto, que es lo que pide el lenguaje de Apple fuera de su plataforma.
+   Inter tiene numeros tabulares, que es lo que hace legible una tabla de
+   montos. La mono de IBM Plex se queda para SKU, RNC y NCF.
 
-   Se sirve desde node_modules por la misma razon que los iconos. Antes los
-   tokens declaraban "Inter" sin cargarla nunca: la app llevaba todo este
-   tiempo cayendo a la fuente del sistema, distinta en cada maquina. */
-@import '@fontsource-variable/ibm-plex-sans';
+   Se sirve desde node_modules por la misma razon que los iconos: la caja
+   tiene que vender sin internet, y una fuente del CDN que no carga cambia
+   la tipografia de la maquina del cliente sin avisar. */
+@import '@fontsource-variable/inter';
 @import '@fontsource/ibm-plex-mono/400.css';
 @import '@fontsource/ibm-plex-mono/500.css';
 
@@ -76,6 +76,23 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+
+  /* Regla de Apple: la escala de pesos es 400 / 600 / 700 y el 500 esta
+     prohibido. Hay 327 usos de `font-medium` repartidos por las pantallas;
+     en vez de tocarlos uno por uno se remapea aqui, en un solo sitio, y
+     `font-medium` pasa a pintar 600. */
+  --font-weight-medium: 600;
+
+  /* Regla de Apple: cero sombras de chrome. La profundidad es cambio de
+     superficie y lineas finas. Las utilidades shadow-* quedan vacias en
+     vez de borrarlas de cada componente. */
+  --shadow-2xs: none;
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+  --shadow-xl: none;
+  --shadow-2xl: none;
 }
 
 html,

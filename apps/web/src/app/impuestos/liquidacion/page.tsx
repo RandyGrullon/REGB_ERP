@@ -494,7 +494,7 @@ export default async function LiquidacionPage({
                     Numero de recibo
                     <input name="receiptNumber" placeholder="Opcional" className={claseInput} />
                   </label>
-                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="check" size={18} />
                     Marcar como pagada
                   </BotonEnvio>
@@ -537,7 +537,7 @@ export default async function LiquidacionPage({
                       />
                     </label>
                   </div>
-                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="lock" size={18} />
                     Cerrar y guardar la foto
                   </BotonEnvio>

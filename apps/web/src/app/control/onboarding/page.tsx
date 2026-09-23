@@ -101,7 +101,7 @@ export default async function OnboardingPage() {
                           
                           disabled={si === 0}
                           aria-label={`Retroceder ${c.legal_name}`}
-                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
+                          className="rounded-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
                           ←
                         </BotonEnvio>
                       </form>
@@ -112,7 +112,7 @@ export default async function OnboardingPage() {
                           
                           disabled={si === STAGES.length - 1}
                           aria-label={`Avanzar ${c.legal_name}`}
-                          className="rounded-[var(--radius-sm)] px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
+                          className="rounded-full px-2 py-0.5 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] disabled:opacity-30">
                           →
                         </BotonEnvio>
                       </form>

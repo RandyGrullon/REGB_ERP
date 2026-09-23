@@ -118,7 +118,7 @@ export default async function PipelinePage({
                             <input type="hidden" name="siguiente" value={siguienteEtapa[o.stage]} />
                             <BotonEnvio
                               
-                              className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="arrow_forward" size={12} />
                               {ETAPA_OPORTUNIDAD[siguienteEtapa[o.stage]!]}
                             </BotonEnvio>
@@ -166,7 +166,7 @@ export default async function PipelinePage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

@@ -228,7 +228,7 @@ export default async function FacturaDetallePage({
                 <BotonEnvio
                   
                   title="Una factura con cobros no se anula: se emite nota de credito"
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)]">
                   <Icon name="cancel" size={16} />
                   Anular
                 </BotonEnvio>
@@ -287,7 +287,7 @@ export default async function FacturaDetallePage({
                   />
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="payments" size={16} />
                     Registrar cobro
                   </BotonEnvio>
@@ -316,7 +316,7 @@ export default async function FacturaDetallePage({
                   />
                   <BotonEnvio
                     
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-warning)] hover:bg-[var(--color-surface-raised)]">
+                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-warning)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="schedule" size={16} />
                     Aplicar cargo por mora
                   </BotonEnvio>

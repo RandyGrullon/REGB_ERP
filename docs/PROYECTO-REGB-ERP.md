@@ -1177,6 +1177,14 @@ create policy provider_only on regb.tenants for all using (rls.is_provider());
 
 ## 11. Design System "Aurora" — identidad propia
 
+> **Reemplazado el 23 sep 2026.** REGB ERP usa ahora el lenguaje visual de
+> Apple: un solo acento azul, botones en píldora, cero sombras, pesos
+> 400/600/700 y tema claro por defecto. Las reglas están en la skill
+> `.claude/skills/apple-design-system/` y su aterrizaje en el repo en
+> `.claude/skills/aurora-ui/SKILL.md`. Lo que sigue en esta sección es la
+> identidad anterior, conservada como historia: la estructura de tokens y
+> el layout siguen valiendo; los colores, radios y sombras ya no.
+
 ### 11.1 Filosofía
 
 > **Oscuro por defecto. Denso pero respirable. Todo a un `Ctrl+K` de distancia.**

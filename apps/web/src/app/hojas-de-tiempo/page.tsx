@@ -136,7 +136,7 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="submitted" />
-                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Enviar
                             </BotonEnvio>
                           </form>
@@ -148,7 +148,7 @@ export default async function HojasDeTiempoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="approved" />
-                              <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              <BotonEnvio  className="flex h-7 items-center rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 Aprobar
                               </BotonEnvio>
                             </form>
@@ -157,7 +157,7 @@ export default async function HojasDeTiempoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="rejected" />
-                              <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
                               </BotonEnvio>
                             </form>
@@ -169,7 +169,7 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="draft" />
-                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Corregir
                             </BotonEnvio>
                           </form>
@@ -224,7 +224,7 @@ export default async function HojasDeTiempoPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

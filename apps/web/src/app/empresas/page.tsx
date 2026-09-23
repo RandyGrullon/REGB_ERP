@@ -76,7 +76,7 @@ export default async function EmpresasPage({
             <input type="hidden" name="id" value={c.id} />
             <BotonEnvio
               
-              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
               Hacer principal
             </BotonEnvio>
           </form>
@@ -152,7 +152,7 @@ export default async function EmpresasPage({
                       <BotonEnvio
                         
                         aria-label={`Guardar cambios de ${c.legal_name}`}
-                        className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
                         <Icon name="save" size={16} />
                       </BotonEnvio>
                     </form>
@@ -217,7 +217,7 @@ export default async function EmpresasPage({
                 </label>
                 <BotonEnvio
                   
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Agregar
                 </BotonEnvio>
               </form>

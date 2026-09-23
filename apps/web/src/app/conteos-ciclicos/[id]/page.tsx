@@ -127,7 +127,7 @@ export default async function ConteoDetallePage({
                     
                     disabled={!todoContado}
                     title={!todoContado ? 'Todavia hay productos sin contar' : ''}
-                    className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
                     <Icon name="send" size={14} />
                     Enviar a aprobacion
                   </BotonEnvio>
@@ -139,7 +139,7 @@ export default async function ConteoDetallePage({
                     {campos}
                     <BotonEnvio
                       
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
+                      className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
                       <Icon name="check" size={14} />
                       Aprobar y ajustar
                     </BotonEnvio>
@@ -148,7 +148,7 @@ export default async function ConteoDetallePage({
                     {campos}
                     <BotonEnvio
                       
-                      className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="close" size={14} />
                       Rechazar
                     </BotonEnvio>
@@ -193,7 +193,7 @@ export default async function ConteoDetallePage({
                             />
                             <BotonEnvio
                               
-                              className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Guardar
                             </BotonEnvio>
                           </form>

@@ -185,7 +185,7 @@ export default async function ProyectoDetallePage({
                           <input type="hidden" name="siguiente" value={SIGUIENTE[t.status]} />
                           <BotonEnvio
                             
-                            className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                             <Icon name="arrow_forward" size={12} />
                             {ESTADO_TAREA[SIGUIENTE[t.status]!]}
                           </BotonEnvio>
@@ -205,7 +205,7 @@ export default async function ProyectoDetallePage({
                               </option>
                             ))}
                           </select>
-                          <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                             +Dep.
                           </BotonEnvio>
                         </form>
@@ -268,7 +268,7 @@ export default async function ProyectoDetallePage({
                           <form action={completarHitoForm}>
                             {campos}
                             <input type="hidden" name="milestoneId" value={h.id} />
-                            <BotonEnvio  className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Completar
                             </BotonEnvio>
                           </form>

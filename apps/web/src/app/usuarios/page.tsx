@@ -116,7 +116,7 @@ export default async function UsuariosPage({
                       </select>{' '}
                       <BotonEnvio
                         
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                        className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         Cambiar
                       </BotonEnvio>
                     </form>
@@ -142,7 +142,7 @@ export default async function UsuariosPage({
                       <input type="hidden" name="userId" value={m.user_id} />
                       <BotonEnvio
                         
-                        className="rounded-[var(--radius-sm)] border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                        className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         {m.is_active ? 'Desactivar' : 'Reactivar'}
                       </BotonEnvio>
                     </form>
@@ -198,7 +198,7 @@ export default async function UsuariosPage({
                 </label>
                 <BotonEnvio
                   
-                  className="h-10 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Invitar
                 </BotonEnvio>
               </form>

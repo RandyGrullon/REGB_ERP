@@ -232,7 +232,7 @@ export default async function ImpuestosPage({
               <form action={sembrarTasasForm} className="flex flex-wrap items-center gap-3">
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="download" size={18} />
                   Sembrar 18%, 16% y exento
                 </BotonEnvio>
@@ -290,7 +290,7 @@ export default async function ImpuestosPage({
                   <input type="checkbox" name="isDefault" />
                   Por defecto
                 </label>
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>
@@ -441,7 +441,7 @@ export default async function ImpuestosPage({
                     </select>
                   </label>
                 </div>
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
                   Registrar regla
                 </BotonEnvio>

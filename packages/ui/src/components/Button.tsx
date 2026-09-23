@@ -3,15 +3,19 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { cn } from '../utils'
 
 /**
- * Boton de Aurora.
+ * Boton, en el lenguaje de Apple.
  *
- * El foco usa `brand-bright`, no `brand`: el blurple puro da 2.74:1 sobre
- * fondo oscuro y el anillo no se ve (§11.7).
+ * Pildora (`rounded-full`) en todos los tamaños: en Apple la forma de
+ * pildora ES la señal de "esto es una accion", asi que un boton que no la
+ * tiene se lee como una etiqueta. Peso 600: el 500 esta prohibido.
+ *
+ * El foco usa `brand-bright`: sobre fondo oscuro el azul de relleno se
+ * pierde y el anillo no se ve.
  */
 const button = cva(
   [
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
-    'font-medium select-none',
+    'font-semibold select-none',
     'transition-colors duration-100 ease-out',
     'active:translate-y-px',
     'focus-visible:outline-2 focus-visible:outline-offset-2',
@@ -33,10 +37,10 @@ const button = cva(
       },
       size: {
         // 44px de alto en `md`: objetivo tactil minimo en movil (§11.7).
-        sm: 'h-8 px-3 text-[13px] rounded-[var(--radius-md)]',
-        md: 'h-11 px-4 text-sm rounded-[var(--radius-md)]',
-        lg: 'h-12 px-6 text-base rounded-[var(--radius-md)]',
-        icon: 'h-11 w-11 rounded-[var(--radius-md)]',
+        sm: 'h-8 px-4 text-[13px] rounded-full',
+        md: 'h-11 px-5 text-sm rounded-full',
+        lg: 'h-12 px-7 text-base rounded-full',
+        icon: 'h-11 w-11 rounded-full',
       },
     },
     defaultVariants: { variant: 'primary', size: 'md' },

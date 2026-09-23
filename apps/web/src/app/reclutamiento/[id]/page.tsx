@@ -150,7 +150,7 @@ export default async function VacanteDetallePage({
                 </select>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
                   Guardar
                 </BotonEnvio>
@@ -191,7 +191,7 @@ export default async function VacanteDetallePage({
                                 <input type="hidden" name="stage" value={siguiente} />
                                 <BotonEnvio
                                   
-                                  className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                  className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                   Avanzar a {ETAPA_APLICACION[siguiente]}
                                 </BotonEnvio>
                               </form>
@@ -204,7 +204,7 @@ export default async function VacanteDetallePage({
                               <input type="hidden" name="stage" value="rejected" />
                               <BotonEnvio
                                 
-                                className="flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
                               </BotonEnvio>
                             </form>
@@ -248,7 +248,7 @@ export default async function VacanteDetallePage({
                         </label>
                         <BotonEnvio
                           
-                          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="event" size={14} />
                           Agendar
                         </BotonEnvio>
@@ -287,7 +287,7 @@ export default async function VacanteDetallePage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Aplicar
                 </BotonEnvio>

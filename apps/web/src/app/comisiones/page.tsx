@@ -176,7 +176,7 @@ export default async function ComisionesPage({
                             <input type="hidden" name="siguiente" value="rejected" />
                             <BotonEnvio
                               
-                              className="grid h-8 w-8 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                              className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
                               aria-label="Rechazar comision">
                               <Icon name="close" size={16} />
                             </BotonEnvio>
@@ -240,7 +240,7 @@ export default async function ComisionesPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

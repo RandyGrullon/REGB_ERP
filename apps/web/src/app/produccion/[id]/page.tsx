@@ -134,14 +134,14 @@ export default async function OrdenDetallePage({
                 <>
                   <form action={liberarOrdenForm}>
                     {campos}
-                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="rocket_launch" size={14} />
                       Liberar
                     </BotonEnvio>
                   </form>
                   <form action={cancelarOrdenForm}>
                     {campos}
-                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="cancel" size={14} />
                       Cancelar
                     </BotonEnvio>
@@ -245,7 +245,7 @@ export default async function OrdenDetallePage({
                   Notas
                   <input name="notes" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="fact_check" size={14} />
                   Reportar
                 </BotonEnvio>

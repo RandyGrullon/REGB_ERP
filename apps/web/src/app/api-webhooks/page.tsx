@@ -143,7 +143,7 @@ export default async function ApiWebhooksPage({
                             <input type="hidden" name="keyId" value={k.id} />
                             <BotonEnvio
                               
-                              className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                              className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Revocar
                             </BotonEnvio>
                           </form>
@@ -197,7 +197,7 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="endpointId" value={e.id} />
                               <BotonEnvio
                                 
-                                className="flex h-7 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                                className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="send" size={12} />
                                 Probar
                               </BotonEnvio>
@@ -209,7 +209,7 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="siguiente" value={e.status === 'active' ? 'paused' : 'active'} />
                               <BotonEnvio
                                 
-                                className="flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                                className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 {e.status === 'active' ? 'Pausar' : 'Reanudar'}
                               </BotonEnvio>
                             </form>
@@ -246,7 +246,7 @@ export default async function ApiWebhooksPage({
                 </label>
                 <BotonEnvio
                   
-                  className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

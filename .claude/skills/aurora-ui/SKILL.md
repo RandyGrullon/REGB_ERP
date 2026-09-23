@@ -1,64 +1,72 @@
 ---
 name: aurora-ui
-description: Genera componentes del design system Aurora (estética Aurora) de REGB ERP, en versión web y React Native, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
+description: Genera o revisa componentes y pantallas de REGB ERP (web y React Native) con el lenguaje visual de Apple que usa el proyecto desde el 23 sep 2026, con tokens correctos, todos los estados y accesibilidad AA. Úsalo cuando se pida crear o revisar un componente de UI, una pantalla, un mockup o auditar el estilo de la app.
 ---
 
-# Aurora — design system de REGB ERP
+# Diseño de REGB ERP — lenguaje Apple
 
-Identidad propia: oscuro por defecto, denso, plano, con teal profundo como marca. Sensación de herramienta de trabajo, no de app de consumo.
+Desde el 23 de septiembre de 2026 REGB ERP usa el lenguaje de Apple. **La
+fuente de las reglas es la skill `apple-design-system`** (`.claude/skills/
+apple-design-system/`): léela primero. Este archivo solo dice cómo se
+aterriza en ESTE repo.
 
-## Tokens — úsalos siempre, nunca hex sueltos
+> El nombre "Aurora" sobrevive en los identificadores del código por no
+> tocar 170 pantallas. La identidad Aurora anterior —oscuro por defecto,
+> teal como marca— ya no existe.
 
-```css
-/* Superficies (oscuro, default) */
---bg-deepest: #1e1f22 --bg-deep: #2b2d31 --bg-base: #313338 --bg-raised: #383a40
-  --bg-overlay: #404249 --bg-input: #1e1f22 --border: #3f4147 --border-strong: #4e5058
-  /* Superficies (claro) */ --bg-deepest: #e3e5e8 --bg-deep: #f2f3f5 --bg-base: #ffffff
-  --bg-raised: #f8f9fa --border: #e3e5e8 /* Marca */ --brand: #5865f2 --brand-hover: #4752c4
-  --brand-active: #3c45a5 --accent-fuchsia: #eb459e (REGB Control) --accent-teal: #00b0b9 (IA)
-  /* Semánticos */ --success: #23a559 --warning: #f0b232 --danger: #f23f43 --info: #00a8fc
-  --neutral: #80848e /* Texto (oscuro / claro) */ --text-primary: #f2f3f5 / #060607
-  --text-secondary: #b5bac1 / #4e5058 --text-muted: #80848e --text-link: #00a8fc / #0068e0
-  /* Forma */ radios: 4 (badge) · 8 (botón/input) · 12 (tarjeta) · 16 (modal) · 999 (avatar)
-  espaciado: múltiplos de 4 sombras: sm 0 1px 2px rgba(0, 0, 0, 0.2) · md 0 4px 12px
-  rgba(0, 0, 0, 0.3) · lg 0 8px 24px rgba(0, 0, 0, 0.4) foco: 0 0 0 3px rgba(88, 101, 242, 0.35);
-```
+## Las 8 reglas, en corto
 
-## Tipografía
+Un solo acento azul · botones en píldora · cero sombras · pesos 400/600/700
+(el 500 prohibido) · líneas finas, no bordes gruesos · radios de la escala ·
+aire alrededor del contenido · diálogos y hojas al estilo Apple.
 
-Inter para UI · `tabular-nums` en toda columna numérica · JetBrains Mono para SKU/RNC/código.
-Escala: display 32/40·700 · h1 24/32·700 · h2 20/28·600 · h3 16/24·600 · **body 14/20·400** · body-sm 13/18 · caption 12/16·500 · overline 11/14·700 MAYÚS.
+## Dónde vive cada cosa
 
-## Layout canónico
+- **Colores, radios, sombras, tipografía:** `packages/config/tokens.json`,
+  temas `light` y `dark`. Se genera `tokens.css` con
+  `pnpm --filter @regb/config build`. Web, escritorio y móvil leen de ahí.
+- **Nunca un hex en un componente.** Siempre `var(--color-...)` en web y
+  `useTema()` en móvil. `packages/ui-native/src/aurora.test.ts` falla si
+  aparece uno.
+- **Tema por defecto: claro** (`apps/web/src/app/layout.tsx`), que es el
+  lienzo de Apple. El oscuro usa los tiles de Apple (#1D1D1F, #272729).
 
-`rail 72px` (empresas) · `sidebar 240px` (módulos, grupos colapsables en overline) · `contenido flex` · `members 240px` (opcional).
-En <768px: sidebar → drawer, aparece nav inferior de 5 elementos.
+## Lo que se adaptó para un ERP (y por qué)
+
+| Regla de Apple | En REGB | Motivo |
+|---|---|---|
+| Cuerpo 17px | Cuerpo **14px** | La escala de Apple es para páginas de producto; a 17px las tablas de montos no caben |
+| Rojo `#FF3B30`, verde `#34C759` | En claro, rellenos y texto con variantes de alto contraste (`#D70015`, `#1E7A34`). En oscuro, los vivos (`#FF453A`, `#30D158`) y texto aún más claro (`#FF6961`) | En claro, los vivos con blanco encima dan 2–3:1. En oscuro pasa al revés: los de alto contraste desaparecen sobre el fondo (2.8:1) |
+| Gris de texto `#7A7A7A` | `#6E6E73` en claro, `#98989D` en oscuro | El de la guía da 4.3:1 sobre blanco; el `#86868B` de Apple, 4.1:1 sobre tarjeta oscura |
+| Hover del botón `#0077ED` (oscuro) | `#0068D6` | Con texto blanco, el de Apple da 4.3:1 |
+
+Todo lo anterior lo vigila `packages/config/src/contrast.test.ts`: si un
+color nuevo no llega a AA, la puerta se pone roja. No bajes el umbral para
+que pase — cambia el color.
+| Un solo acento | La zona del proveedor (REGB Control) se marca con la barra negra/clara, no con un segundo color | Antes era ciruela |
+| Inter fuera de Apple | SF Pro en Apple (`-apple-system`), Inter en el resto, servida desde node_modules | La caja tiene que funcionar sin internet |
+
+## Atajos que ya están resueltos en la hoja base
+
+`packages/ui/src/styles.css` remapea en un solo sitio lo que Apple prohíbe:
+
+- `font-medium` pinta **600** (había 327 usos del peso 500).
+- Todas las utilidades `shadow-*` quedan en `none`.
+
+No hace falta, por tanto, buscarlos a mano. Sí hay que respetar la regla
+al escribir código nuevo: usa `font-semibold` y no pongas sombras.
+
+## Botones
+
+- `Button` de `@regb/ui` ya es píldora en todos los tamaños.
+- Un botón hecho a mano (`<button>`, `BotonEnvio`, enlace de acción) lleva
+  `rounded-full`. Los contenedores con fondo azul que NO son acciones —el
+  logo, insignias, barras de progreso— no.
 
 ## Qué entregas por componente
 
-1. Versión web en `packages/ui/` (React + Tailwind + CVA)
-2. Versión native en `packages/ui-native/` (mismos tokens desde `tokens.json`)
-3. Todos los estados: `default · hover · active · focus · disabled · loading · error · empty`
-4. Ambos temas verificados
-5. Props tipadas, sin `any`
-6. Nota de accesibilidad: rol ARIA, navegación por teclado, contraste medido
-
-## Las leyes (revísalas antes de entregar)
-
-- [ ] Cero hex hardcodeado — todo por token
-- [ ] Contraste ≥ 4.5:1 en ambos temas
-- [ ] Foco visible siempre; nunca `outline:none` sin reemplazo
-- [ ] Estado nunca comunicado solo por color: color + icono + texto
-- [ ] Táctil ≥ 44×44 px
-- [ ] `prefers-reduced-motion` respetado
-- [ ] Filas de tabla de 40px, encabezado sticky
-- [ ] Estado vacío con ilustración + humor + acción + enlace al tour
-- [ ] Alcanzable desde `Ctrl+K` si es una acción
-
-## Microcopy
-
-Español dominicano, tuteo, cálido y directo. "Guardamos tu cambio" > "Operación exitosa". Errores en formato **qué pasó · por qué · qué hacer**.
-
-## Mockups
-
-Cuando te pidan una pantalla, entrega el mockup ASCII al estilo de §12 del documento maestro antes de escribir código. Es más rápido de iterar.
+1. Versión web en `packages/ui/` (React + Tailwind + CVA).
+2. Versión native en `packages/ui-native/`, con los mismos tokens.
+3. Todos los estados: reposo, hover, foco visible, activo, deshabilitado,
+   cargando, error y vacío.
+4. Contraste AA comprobado en los dos temas.
