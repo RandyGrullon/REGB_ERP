@@ -5,8 +5,156 @@
 > entre los agentes especializados del proyecto (`.claude/agents/`) y lo
 > integra con la puerta `gate:f0` en verde.
 >
+> - [Ronda 3 — 23 y 24 de septiembre de 2026](#ronda-3--23-y-24-de-septiembre-de-2026): el cliente misterioso — la app usada de punta a punta por cada rol, en el navegador, y lo que un cliente habría notado.
 > - [Ronda 2 — 23 de septiembre de 2026](#ronda-2--23-de-septiembre-de-2026): lo que quedó pendiente de la ronda 1, lo que salió de usar la app como cliente y de analizar el flujo de punta a punta.
 > - [Ronda 1 — 22 de septiembre de 2026](#ronda-1--22-de-septiembre-de-2026)
+
+---
+
+## Ronda 3 — 23 y 24 de septiembre de 2026
+
+### En una línea
+
+**Se usó la app de punta a punta como la usaría cada cliente —el dueño del
+colmado, su cajera en el teléfono, el vendedor, el contador, el almacenista,
+RRHH, el empleado y el proveedor en REGB Control— y se arregló lo que un
+cliente habría notado.** Salieron 38 hallazgos en el recorrido del líder, 79
+en los de los agentes y 17 más al integrar. Casi ninguno lo veía una prueba:
+funcionaban, pero no como los necesita alguien que vende arroz o paga una
+quincena.
+
+### Cómo se dividió
+
+El líder recorrió el colmado en el navegador (dueño y cajera, escritorio y
+375 px, tema oscuro y claro) y, en paralelo, cuatro agentes se repartieron
+el resto, cada uno con su base clonada y su número de migración:
+
+| Agente | Recorrido | Migración |
+|---|---|---|
+| `regb-module-builder` + `regb-web` | Crédito y cobros: cotización → pedido → entrega → factura → cobro → mora → nota de crédito | 0136 |
+| `regb-module-builder` + `regb-db` | Compras y contabilidad: requisición → RFQ → orden → recepción → factura y pago al proveedor → asientos, 606, IT-1, traslados, conteos, lotes | 0137 |
+| `regb-module-builder` + `regb-security` | RRHH y nómina: empleado → vacaciones → gastos → préstamos → quincena → volante en el portal | 0138 |
+| `regb-billing` + `regb-web` | REGB Control: alta de cliente, onboarding, solicitudes, facturación, mora, salud | 0139 |
+
+La 0140, la 0141 y la 0142 son del líder, al integrar.
+
+### Lo que encontró el líder usando la app como cliente
+
+**Lo que habría hecho perder una venta o un cliente:**
+
+- **El recorrido guiado no guardaba nada.** Se recorrían las cinco pantallas,
+  se pulsaba «Terminar el tour» y el tutorial volvía a «Paso 1 de 5»: el paso
+  «Haz el recorrido» del inicio no se marcaba nunca. Ahora «Siguiente» y
+  «Terminar» guardan y después navegan (solo a rutas de la app).
+- **El cajero entraba al Marketplace** con solo escribir la ruta: veía la
+  mensualidad del dueño y podía pedir módulos que se le cobran a él. Ahora
+  el cajero ve un 404, el Admin ve y simula sin poder pedir, y la acción
+  exige `subscription.manage` en el servidor.
+- **Importar pedía «un CSV» sin plantilla.** Ahora hay «Descargar plantilla»
+  (productos y existencias, con ejemplos dominicanos y listas para Excel) y
+  el paso a paso para guardarla desde Excel. La plantilla, subida tal cual,
+  crea el producto con su ITBIS.
+- **No se podía crear un producto al 16 %** (aceite, azúcar, café): solo
+  exento o la tasa por defecto. Ahora se elige 18, 16 o exento.
+- **La invitación traía el rol «Admin» preseleccionado**: un dueño apurado le
+  daba todo al cajero. Ahora el rol se elige, solo aparecen los roles que
+  verían algo en ese negocio y el enlace se manda por WhatsApp.
+- **212 fechas del servidor sin zona horaria**: en un servidor UTC, la venta
+  de las 9 de la noche salía con fecha de mañana. `instrumentation.ts` fija
+  la hora de Santo Domingo.
+
+**Lo que se veía descuidado o confundía:**
+
+- Inicio: pasos por hacer primero, el dinero del día antes que lo demás,
+  saludo según la hora y un solo número de módulos activos (antes había
+  tres: 18, 20 y 17, según la pantalla).
+- Caja en el teléfono: las cifras en una línea y una barra fija «Ticket ·
+  N · RD$» que baja al ticket y no tapa «Cobrar»; el tope de descuento del
+  rol se avisa al escribir, no 14 segundos después al cobrar.
+- Ticket: nombre comercial, dirección, teléfono y la hora de la venta, con
+  «Volver a la caja». Turnos: el conteo es ciego de verdad. Cierres: «hoy»
+  por defecto, con período.
+- Auditoría en español, con el antes y el después de cada cambio; los
+  filtros ya no desaparecen al usarlos.
+- Respaldos sin «ransomware», «JSON» ni nombres de tablas. Una página 404
+  propia, en español, que conserva el negocio al volver.
+- La búsqueda (Ctrl K) lleva a la ficha del producto, no a la lista, y
+  encuentra 200 productos en vez de 50.
+- Tildes en toda la app: el menú (51 módulos, con el nombre del catálogo),
+  los widgets, las pantallas y los mensajes de permisos, que ahora dicen
+  «Tu rol no permite hacer esto; pídeselo a quien administra tu cuenta» en
+  vez de `El rol "X" no concede "time-off.approve"`.
+
+### Lo que resolvió cada agente
+
+- **Crédito y cobros (16 arreglos, 0136).** El vendedor no podía cotizar
+  (404); una cotización aprobada no pasaba a pedido; se entregaba sin
+  existencia; el contador no tenía dónde fijar el límite de crédito;
+  «Vencido» y «Cartera» daban montos distintos. Ahora «Convertir en
+  pedido», precio desde la lista del cliente, impresión de la cotización y
+  «Facturar lo entregado» desde el pedido.
+- **Compras y contabilidad (14 arreglos, 0137).** Lo trasladado llegaba a
+  costo cero y la recepción ignoraba el descuento de la orden: el costo
+  promedio quedaba mal. Se podía despachar sin existencia, adjudicar una
+  oferta que no era la mejor y ponerle lote a lo ya recibido sumándolo dos
+  veces. El almacenista veía costos que su rol tiene negados.
+- **RRHH y nómina (14 arreglos, 0138).** RRHH no podía aprobar vacaciones ni
+  reembolsar gastos (404); el gerente de sucursal veía los salarios de toda
+  la empresa; se aprobaban días sin saldo; una tasa de «2» se guardaba como
+  200 % al mes. La quincena cuadra al centavo con el cálculo a mano.
+- **REGB Control (15 arreglos, 0139).** Una venta cerrada no podía activarse
+  de pago ni una prueba pasar a pago; emitir facturas era un clic sin ver
+  montos; la suplantación no se cerraba nunca. Ahora hay vista previa,
+  confirmación en dos pasos y «Pasar a pago».
+
+### Lo que hizo el líder al integrar
+
+- **Seed:** la factura demo de la distribuidora salía por **US$ 71,251**
+  porque el seed activa los módulos después de 0128 y dejaba 60
+  instalaciones pendientes; ahora se registran como contratadas. Asiento de
+  apertura (Caja y Bancos ya no salen negativos), SO-0001 con su línea,
+  secuencias B01/B02/B04 de la distribuidora y una cédula válida.
+- **0140:** el nombre comercial que pone el alta llega a la configuración
+  (el checklist ya no lo pide dos veces y el ticket lo imprime).
+- **0141:** el Almacenista registra los lotes de lo que recibe.
+- **0142:** `quotes.sales_order_id` (de la 0136) no tenía guarda de cliente:
+  una cotización de A podía enlazarse al pedido de B. La red de
+  `fk-guardas.test.ts` lo cazó en la puerta.
+- Traslado simple de inventario con revisión de existencia; `PageHeader` en
+  el teléfono; banner de suplantación legible en oscuro; «+ ITBIS» en la
+  instalación del marketplace; reportes DGII con el RNC del proveedor, el
+  origen en español y el NCF que modifica cada B04; tours que ya no
+  prometen horarios, calendario ni foto del comprobante.
+
+### Lo que queda pendiente
+
+| Pendiente | Por qué importa | Quién |
+|---|---|---|
+| Un formulario que da error se vacía (React 19) | El usuario pierde lo que escribió | Siguiente ronda |
+| Pagar a un proveedor no crea el retiro en tesorería; la factura del proveedor no se liga a la orden | Se registra dos veces | Siguiente ronda |
+| Sin cierre de período; recepciones, ajustes y traslados sin asiento | La contabilidad automática no está completa | Siguiente ronda |
+| Horarios por empleado, feriados, SUIR, IR-3, volante en PDF, asiento de nómina | La nómina aún no reemplaza la del cliente | Siguiente ronda |
+| Instalación del plan en la primera factura, prorrateo, cliente archivado a los 90 días | Reglas de cobro de REGB | Decisión del dueño |
+| Vigencia de listas de precio y facturas vencidas en hora UTC | Una lista arranca a las 8 p. m. del día anterior | Siguiente ronda (toca la caja) |
+| Nota de crédito B04 sin impresión | El cliente no la puede entregar | Siguiente ronda |
+| e-CF | Obligatorio desde el **15 nov 2026** | Certificado DGII |
+
+### Resultado
+
+| | 23 sep (ronda 2) | 24 sep (ronda 3) |
+|---|---:|---:|
+| Migraciones | 134 | **141** (0136–0142; la 0126 no existe) |
+| Pruebas de base de datos | 1,342 | **1,343** en 96 archivos |
+| Pruebas de la web (acciones reales y estáticas) | 319 | **411** en 51 archivos |
+| Pruebas de lógica pura (paquetes) | 1,653 | **1,669** |
+| Rutas registradas | 159 | **160**, sin colisión |
+
+Puerta `gate:f0` en verde: typecheck y lint en los 184 paquetes, las
+**3,423 pruebas**, y `audit:secrets`, `audit:identidad`, `audit:registry` y
+`audit:manifests`. Las 141 migraciones y la semilla de la demo aplican desde
+una base vacía; se comprobó en esa base cada arreglo de la semilla (cero
+instalaciones pendientes, apertura contabilizada, SO-0001 con su línea,
+secuencias NCF de la distribuidora).
 
 ---
 

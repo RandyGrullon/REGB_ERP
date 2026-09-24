@@ -38,7 +38,7 @@ afterAll(async () => {
 describe('crearEmpresa emite orgs.company.created', () => {
   it('una empresa nueva deja un solo evento, con su id y su moneda', async () => {
     const r = await crearEmpresa(
-      c.fd({ legal: 'Ferreteria del Cibao SRL', rnc: '1-31-99999-1', currency: 'USD' }),
+      c.fd({ legal: 'Ferreteria del Cibao SRL', rnc: '1-31-99999-9', currency: 'USD' }),
     )
     expect(r).toEqual({ ok: true })
 

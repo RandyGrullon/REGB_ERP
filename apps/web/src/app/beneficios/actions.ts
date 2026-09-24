@@ -110,8 +110,8 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
   if (!FUENTES_PAGO.includes(source))
     return { ok: false, error: 'Elige una fuente de pago valida.' }
   // "Por nomina" sin nomina bajaba el saldo sin que nadie pagara (0138).
-  if (source === 'payroll' && !payrollPeriodId) {
-    // registry:allow — 'payroll' es la forma de pago de la cuota, no el modulo
+  const porNomina = source === 'payroll' // registry:allow — forma de pago de la cuota, no el modulo
+  if (porNomina && !payrollPeriodId) {
     return { ok: false, error: 'Un pago por nómina se registra al procesar la nómina, no a mano.' }
   }
 

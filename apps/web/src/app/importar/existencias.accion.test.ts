@@ -300,7 +300,7 @@ describe('permisos y limites', () => {
     expect(l.inserted).toBe(1)
     expect(l.rejected).toBe(1)
     expect(l.errors[0]).toMatchObject({ row: 2, column: 'qty' })
-    expect(l.errors[0]!.message).toContain('limite')
+    expect(l.errors[0]!.message).toContain('límite')
   })
 
   it('sin ningun almacen activo lo dice y no deja lote', async () => {

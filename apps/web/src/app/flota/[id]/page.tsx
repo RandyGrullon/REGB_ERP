@@ -165,6 +165,8 @@ export default async function VehiculoDetallePage({
       Number(ultimoMantenimiento.next_due_km) - Number(ultimoMantenimiento.odometer_km),
     )
 
+  const enTaller = head.status === 'maintenance' // registry:allow — estado del vehiculo, no el modulo
+
   return (
     <Shell {...shell} activePath="/flota">
       <div className="space-y-5">
@@ -177,17 +179,8 @@ export default async function VehiculoDetallePage({
           crumbs={[{ label: 'Flota', href: `/flota${qs}` }, { label: head.plate }]}
           meta={
             <div className="flex items-center gap-2">
-              <Badge
-                tone={
-                  head.status === 'active'
-                    ? 'success'
-                    : head.status === 'maintenance'
-                      ? 'warning'
-                      : 'neutral'
-                }
-              >
+              <Badge tone={head.status === 'active' ? 'success' : enTaller ? 'warning' : 'neutral'}>
                 {' '}
-                {/* registry:allow -- estado de vehiculo, no id de modulo */}
                 {ESTADO_VEHICULO[head.status] ?? head.status}
               </Badge>
               <span className="text-xs text-[var(--color-text-muted)]">

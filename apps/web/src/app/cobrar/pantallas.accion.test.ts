@@ -180,7 +180,7 @@ describe('Pantallas de venta a credito', () => {
     const html = await pintar(import('../pedidos/[id]/page'), { id: pedidoBloqueado }, 'Vendedor')
     expect(html).toContain('Credito bloqueado')
     expect(html).not.toContain('Confirmar con excepcion')
-    expect(html).toContain('quien autoriza credito')
+    expect(html).toContain('quien autoriza crédito')
     // Cliente misterioso: el nombre interno del permiso no es para el vendedor.
     expect(html).not.toContain('ar.credit.override')
   })
@@ -255,13 +255,13 @@ describe('Pantallas de venta a credito', () => {
     expect(html).toContain('Factura de consumo')
     expect(html).toContain('Valida hasta')
     expect(html).toContain('Producto TV-65')
-    expect(html).toContain('Credito a 30 dias')
+    expect(html).toContain('Crédito a 30 días')
   })
 
   it('la cartera muestra la politica y deja cambiarla al dueno', async () => {
     const html = await pintar(import('./cartera/page'))
     expect(html).toContain('Politica de credito')
-    expect(html).toContain('mas de 30 dias')
+    expect(html).toContain('más de 30 días')
     expect(html).toContain('name="overdueDays"')
   })
 

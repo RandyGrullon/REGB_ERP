@@ -292,7 +292,7 @@ describe('Guardas de la accion', () => {
   it('un rol sin taxes.filing.close no cierra, aunque llame directo a la accion', async () => {
     const r = await cerrarLiquidacion(c.fd({ period: '202406' }, 'Auxiliar'))
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/denegado "taxes.filing.close"/)
+    if (!r.ok) expect(r.error).toMatch(/tiene esto bloqueado a propósito/)
     expect(await declaracion(c.tenantId, '202406')).toBeUndefined()
   })
 
