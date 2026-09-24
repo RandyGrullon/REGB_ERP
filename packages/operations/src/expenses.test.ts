@@ -3,6 +3,7 @@ import {
   esDeducibleDeItbis,
   itbisIncluidoEn,
   totalPendienteDeReembolso,
+  validarReembolso,
   totalPorCategoria,
 } from './expenses.js'
 
@@ -64,5 +65,21 @@ describe('totalPorCategoria', () => {
 
   it('sin gastos, el desglose esta vacio', () => {
     expect(totalPorCategoria([])).toEqual({})
+  })
+})
+
+describe('validarReembolso', () => {
+  it('por nomina sin periodo se rechaza: nadie lo pagaria nunca', () => {
+    expect(validarReembolso('payroll', null)).toMatch(/nómina en borrador/)
+  })
+
+  it('por nomina con periodo, por transferencia o en efectivo pasa', () => {
+    expect(validarReembolso('payroll', 'p-1')).toBeNull()
+    expect(validarReembolso('transfer', null)).toBeNull()
+    expect(validarReembolso('cash', null)).toBeNull()
+  })
+
+  it('un metodo que no existe se rechaza', () => {
+    expect(validarReembolso('cheque', null)).toMatch(/método de reembolso/)
   })
 })

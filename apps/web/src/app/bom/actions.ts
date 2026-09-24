@@ -79,9 +79,13 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.bom_lines (bom_id, tenant_id, component_product_id, quantity_per_unit, is_substitute_for)
-      values (${bomId}, ${ctx.tenantId}, ${componentProductId}, ${quantityPerUnit}, ${isSubstituteFor})`)
+      values (${bomId}, ${ctx.tenantId}, ${componentProductId}, ${quantityPerUnit}, ${isSubstituteFor})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -103,8 +107,12 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-      delete from public.bom_lines where id = ${lineId} and tenant_id = ${ctx.tenantId}`)
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
+      delete from public.bom_lines where id = ${lineId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

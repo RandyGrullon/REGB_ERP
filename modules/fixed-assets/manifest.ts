@@ -11,7 +11,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'fixed-assets',
   name: 'Activos fijos',
-  description: 'Alta, depreciacion, revaluo y baja de vehiculos, equipos y otros activos.',
+  description: 'Alta, depreciación, revalúo y baja de vehículos, equipos y otros activos.',
   icon: 'directions_car',
   category: 'standard',
   version: '0.1.0',

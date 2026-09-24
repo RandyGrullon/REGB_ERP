@@ -17,7 +17,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'automations',
   name: 'Automatizaciones',
-  description: 'Reglas si-esto-entonces-aquello, sin codigo, entre modulos.',
+  description: 'Reglas si-esto-entonces-aquello, sin código, entre módulos.',
   icon: 'bolt',
   category: 'advanced',
   version: '0.1.0',

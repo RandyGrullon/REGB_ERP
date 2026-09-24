@@ -64,13 +64,13 @@ export const TOURS: Tour[] = [
       },
       {
         title: 'Sube tu catalogo',
-        body: 'Exporta tus productos a CSV desde donde los tengas hoy y subelos. Si algo sale mal, deshaces la importacion completa.',
+        body: 'Descarga la plantilla, llénala en Excel con tus productos y súbela. Si algo sale mal, deshaces la importación completa.',
         action: { label: 'Ir a Importar', path: '/importar' },
         target: 'importar-csv',
       },
       {
         title: 'Ajusta lo que ve cada rol',
-        body: 'El cajero no necesita ver los costos. Oculta modulos por rol y la ruta directa devuelve 403, no datos.',
+        body: 'El cajero no necesita ver los costos. Oculta módulos por rol: aunque alguien escriba la dirección a mano, no entra.',
         action: { label: 'Ir a Roles y permisos', path: '/roles' },
         target: 'rol-modulos-visibles',
       },
@@ -84,7 +84,7 @@ export const TOURS: Tour[] = [
     // permisos los declara cada modulo pero quien los reparte es 'users'.
     moduleId: 'users',
     title: 'Como ocultar modulos a un rol',
-    summary: 'Quien ve que, y por que la URL directa tampoco funciona.',
+    summary: 'Quién ve qué, y por qué escribir la dirección a mano tampoco sirve.',
     xp: 30,
     steps: [
       {
@@ -618,8 +618,8 @@ export const TOURS: Tour[] = [
     xp: 30,
     steps: [
       {
-        title: 'Define el horario de cada quien',
-        body: 'Sin horario no hay tardanza que medir: el sistema no sabe si las 9:15 es tarde o temprano.',
+        title: 'Cada quien marca su entrada y su salida',
+        body: 'Con los marcajes el sistema calcula las horas trabajadas, la tardanza (contra las 8:00 de la mañana) y las horas extra.',
         action: { label: 'Ir a Asistencia', path: '/asistencia' },
       },
       {
@@ -629,8 +629,8 @@ export const TOURS: Tour[] = [
         tip: 'Deja la geocerca holgada. Un GPS urbano se equivoca 20 metros facil y vas a pasar el dia corrigiendo marcajes buenos.',
       },
       {
-        title: 'Las horas extra se aprueban, no se acumulan solas',
-        body: 'Quedarse tarde no es hora extra hasta que el supervisor la aprueba. Asi no te llega una sorpresa en la nomina.',
+        title: 'Las horas extra se ven aquí',
+        body: 'Cada marcaje dice cuántas horas pasaron de la jornada. Revísalas antes de la nómina: todavía no pasan solas al pago.',
       },
       {
         title: 'Corregir un marcaje deja rastro',
@@ -652,8 +652,8 @@ export const TOURS: Tour[] = [
         action: { label: 'Ir a Vacaciones', path: '/vacaciones' },
       },
       {
-        title: 'La persona pide, el supervisor aprueba',
-        body: 'La solicitud va a quien le reporta segun el organigrama. Si no hay supervisor marcado, no hay a quien mandarla.',
+        title: 'La persona pide, RRHH aprueba',
+        body: 'La aprueba quien tenga permiso de aprobar (RRHH o el dueño), viendo el saldo de la persona. Sin saldo no se aprueba.',
       },
       {
         title: 'Una solicitud resuelta ya no se toca',
@@ -661,8 +661,8 @@ export const TOURS: Tour[] = [
         action: { label: 'Aprobar solicitudes', path: '/vacaciones/aprobar' },
       },
       {
-        title: 'Mira el calendario antes de aprobar',
-        body: 'Dos de la misma area la misma semana deja un hueco. El calendario te lo ensena antes de que sea un problema.',
+        title: 'Mira quién más está fuera antes de aprobar',
+        body: 'El inicio te dice quién está fuera hoy. Dos de la misma área la misma semana deja un hueco.',
         tip: 'En temporada alta cierra las fechas por adelantado. Negar despues de aprobar es lo que crea resentimiento.',
       },
     ],
@@ -675,8 +675,8 @@ export const TOURS: Tour[] = [
     xp: 25,
     steps: [
       {
-        title: 'Con foto del comprobante',
-        body: 'Sin comprobante no hay gasto deducible. La foto se adjunta desde el telefono en el momento, no el viernes de memoria.',
+        title: 'Con su comprobante',
+        body: 'Anota el NCF y lo que dice el comprobante al registrarlo, en el momento, no el viernes de memoria. Guarda el papel: es el que vale ante la DGII.',
         action: { label: 'Ir a Gastos', path: '/gastos' },
       },
       {
@@ -686,12 +686,12 @@ export const TOURS: Tour[] = [
       },
       {
         title: 'Aprobar es de quien supervisa',
-        body: 'El gasto va al supervisor. Un gasto rechazado o ya reembolsado queda inmutable.',
+        body: 'Lo aprueba quien tenga permiso (RRHH o el dueño). Un gasto rechazado o ya reembolsado ya no se cambia.',
         action: { label: 'Aprobar gastos', path: '/gastos/aprobar' },
       },
       {
-        title: 'El reembolso sale por tesoreria',
-        body: 'Cuando apruebas, queda por pagar. Se paga como cualquier otra cosa y afecta tu flujo de caja.',
+        title: 'El reembolso: por nómina o aparte',
+        body: 'Aprobado, queda por reembolsar. Se paga en la próxima nómina en borrador o aparte, y afecta tu flujo de caja.',
         action: { label: 'Ver tesoreria', path: '/tesoreria' },
       },
     ],

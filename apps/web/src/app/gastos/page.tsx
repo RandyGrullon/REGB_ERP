@@ -62,11 +62,7 @@ const fechaCorta = (iso: string) => {
 }
 
 /** Gastos & Reembolsos (modulo 68): reportar, aprobar y ver el ITBIS deducible. */
-export default async function GastosPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function GastosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'expenses')
 
@@ -92,6 +88,7 @@ export default async function GastosPage({
     gastos.map((g) => ({ status: g.status, amount: Number(g.amount) })),
   )
   const puedeReportar = exigir(ctx, 'expenses', 'expenses.submit').ok
+  const puedeAprobar = exigir(ctx, 'expenses', 'expenses.approve').ok
   const qs = ctx.demoQs
 
   const claseInput =
@@ -103,15 +100,17 @@ export default async function GastosPage({
         <PageHeader
           icon="receipt_long"
           title="Gastos & Reembolsos"
-          description="El monto y el proveedor se registran a mano -sin OCR real-. El ITBIS deducible se calcula solo con un NCF fiscal valido."
+          description="Reporta el gasto con su monto y su proveedor. Con un NCF válido del proveedor, la empresa puede deducir el ITBIS."
           actions={
-            <a
-              href={`/gastos/aprobar${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              <Icon name="fact_check" size={18} />
-              Aprobar gastos
-            </a>
+            puedeAprobar && (
+              <a
+                href={`/gastos/aprobar${qs}`}
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="fact_check" size={18} />
+                Aprobar gastos
+              </a>
+            )
           }
         />
 
@@ -131,7 +130,7 @@ export default async function GastosPage({
             <THead>
               <TR>
                 <TH>Empleado</TH>
-                <TH>Categoria</TH>
+                <TH>Categoría</TH>
                 <TH>Fecha</TH>
                 <TH>Proveedor</TH>
                 <TH numeric>Monto</TH>
@@ -200,7 +199,13 @@ export default async function GastosPage({
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="amount" required inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex min-w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Proveedor
@@ -218,16 +223,14 @@ export default async function GastosPage({
                   Nota del recibo
                   <input name="receiptNote" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="send" size={18} />
                   Reportar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Sin OCR: el monto y el proveedor se escriben a mano. El ITBIS solo se calcula como
-                deducible si el NCF es valido.
+                El ITBIS del gasto solo es deducible para la empresa si el NCF del proveedor es
+                válido. Sin NCF, el reembolso al empleado se paga igual.
               </p>
             </CardBody>
           </Card>

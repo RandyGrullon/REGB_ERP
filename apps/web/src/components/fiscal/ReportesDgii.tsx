@@ -58,6 +58,8 @@ interface Fila607 {
   monto_facturado: string
   itbis_facturado: string
   total: string
+  /** El NCF que corrige una nota de credito (B04). Nulo en lo demas. */
+  ncf_modificado: string | null
 }
 
 interface Fila608 {
@@ -83,7 +85,14 @@ function fecha(yyyymmdd: string): string {
   })
 }
 
-const ID_LABEL: Record<string, string> = { '1': 'RNC', '2': 'Cedula', '3': 'Sin identificar' }
+const ID_LABEL: Record<string, string> = { '1': 'RNC', '2': 'Cédula', '3': 'Sin identificar' }
+
+/** De donde sale cada linea del 607/608, como lo dice un contador. */
+const ORIGEN: Record<string, string> = {
+  caja: 'Caja',
+  factura: 'Factura',
+  nota_credito: 'Nota de crédito',
+}
 
 /**
  * Descarga del reporte.
@@ -111,7 +120,7 @@ function Descargar({
       download
       aria-disabled={vacio}
       title={
-        vacio ? 'No hay nada que descargar en este periodo' : 'Descarga en CSV para tu contador'
+        vacio ? 'No hay nada que descargar en este período' : 'Descarga en CSV para tu contador'
       }
       className={`flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
         vacio
@@ -203,7 +212,8 @@ export async function ReportesDgii({
 
       const v = await tx<Fila607[]>`
       select origen, rnc_comprador, tipo_identificacion, ncf, ncf_type,
-             fecha_comprobante, monto_facturado::text, itbis_facturado::text, total::text
+             fecha_comprobante, monto_facturado::text, itbis_facturado::text, total::text,
+             ncf_modificado
       from public.dgii_607
       where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
       order by ncf`
@@ -343,7 +353,7 @@ export async function ReportesDgii({
           El <strong className="text-[var(--color-text-primary)]">TXT de envio</strong> sigue el
           formato de la Norma General 07-2018, pero{' '}
           <strong className="text-[var(--color-text-primary)]">
-            todavia no se ha comparado con un archivo tuyo ya aceptado
+            todavía no se ha comparado con un archivo tuyo ya aceptado
           </strong>{' '}
           por la DGII. Antes de tu primer envio, abrelo al lado de uno que hayas subido bien y
           avisanos si algo no cuadra. Mientras tanto, el CSV es el camino seguro: lo revisa tu
@@ -381,7 +391,7 @@ export async function ReportesDgii({
           <section aria-labelledby="t606" className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="t606" className="text-sm font-semibold text-[var(--color-text-primary)]">
-                606 · Compras del periodo
+                606 · Compras del período
               </h2>
               <span className="flex gap-2">
                 <DescargarTxt
@@ -420,8 +430,10 @@ export async function ReportesDgii({
                       </TD>
                       <TD>
                         {f.proveedor}
-                        <span className="ml-2 text-xs text-[var(--color-text-muted)]">
-                          {ID_LABEL[f.tipo_identificacion]}
+                        {/* El numero, no solo la palabra "RNC" pegada al nombre
+                            ("…SRLRNC" al copiar o con lector de pantalla). */}
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {ID_LABEL[f.tipo_identificacion]} <Mono>{f.rnc_proveedor}</Mono>
                         </span>
                       </TD>
                       <TD>
@@ -439,7 +451,7 @@ export async function ReportesDgii({
                       <TD>{fecha(f.fecha_comprobante)}</TD>
                       <TD>
                         {f.fecha_pago === null ? (
-                          <span className="text-xs text-[var(--color-text-muted)]">a credito</span>
+                          <span className="text-xs text-[var(--color-text-muted)]">a crédito</span>
                         ) : (
                           <span className="text-xs text-[var(--color-text-secondary)]">
                             {fecha(f.fecha_pago)} · {FORMAS_PAGO_606[f.forma_pago]}
@@ -464,7 +476,7 @@ export async function ReportesDgii({
       <section aria-labelledby="t607" className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id="t607" className="text-sm font-semibold text-[var(--color-text-primary)]">
-            607 · Ventas del periodo
+            607 · Ventas del período
           </h2>
           <span className="flex gap-2">
             <DescargarTxt reporte="607" periodo={periodo} qs={qs} vacio={ventas.length === 0} />
@@ -495,10 +507,15 @@ export async function ReportesDgii({
                 <TR key={f.ncf}>
                   <TD>
                     <Mono>{f.ncf}</Mono>
+                    {f.ncf_modificado && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        modifica <Mono>{f.ncf_modificado}</Mono>
+                      </span>
+                    )}
                   </TD>
                   <TD>
                     <Badge tone="neutral" dot={false}>
-                      {f.origen}
+                      {ORIGEN[f.origen] ?? f.origen}
                     </Badge>
                   </TD>
                   <TD>
@@ -567,7 +584,7 @@ export async function ReportesDgii({
         </div>
         {anulados.length === 0 ? (
           <p className="rounded-[var(--radius-lg)] border border-dashed border-[var(--color-border)] p-4 text-sm text-[var(--color-text-muted)]">
-            Ninguno en este periodo. Es lo normal y lo deseable.
+            Ninguno en este período. Es lo normal y lo deseable.
           </p>
         ) : (
           <Table>
@@ -588,7 +605,7 @@ export async function ReportesDgii({
                   </TD>
                   <TD>
                     <Badge tone="neutral" dot={false}>
-                      {f.origen}
+                      {ORIGEN[f.origen] ?? f.origen}
                     </Badge>
                   </TD>
                   <TD>{fecha(f.fecha_comprobante)}</TD>

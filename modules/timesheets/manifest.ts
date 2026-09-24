@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'timesheets',
   name: 'Hojas de tiempo',
-  description: 'Registro por tarea, aprobacion y facturacion por horas.',
+  description: 'Registro por tarea, aprobación y facturación por horas.',
   icon: 'timer',
   category: 'standard',
   version: '0.1.0',

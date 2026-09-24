@@ -36,7 +36,9 @@ let wh: string
 let prod: string
 
 async function estadoPedido(orderId: string): Promise<string> {
-  const [o] = await db()<{ status: string }[]>`select status from public.sales_orders where id = ${orderId}`
+  const [o] = await db()<
+    { status: string }[]
+  >`select status from public.sales_orders where id = ${orderId}`
   return o!.status
 }
 
@@ -114,7 +116,9 @@ describe('Cliente con facturas vencidas', () => {
     )
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/ar\.credit\.override/)
+    // Dice quien la autoriza, sin el nombre interno del permiso.
+    expect(r.error).toMatch(/la autoriza el dueno/)
+    expect(r.error).not.toMatch(/ar\.credit/)
     expect(await estadoPedido(pedidoMartillo)).toBe('draft')
   })
 

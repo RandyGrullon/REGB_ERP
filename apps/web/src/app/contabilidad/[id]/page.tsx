@@ -20,7 +20,7 @@ import { validateEntryLines } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { ESTADOS } from '../estados'
+import { ESTADOS, ORIGEN_ASIENTO } from '../estados'
 import {
   agregarLineaForm,
   borrarAsientoForm,
@@ -37,6 +37,10 @@ interface EntryHead {
   entry_date: string
   description: string
   status: string
+  source_type: string
+  /** Factura de proveedor o de cliente de donde salio el asiento, si la hay. */
+  factura_ap: string | null
+  factura_ar: string | null
 }
 
 interface LineRow {
@@ -65,10 +69,37 @@ export default async function AsientoDetallePage({
   const { ctx, shell } = await modulePage(sp, 'accounting')
 
   const [head, lines, cuentas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    // El documento de origen, para poder ir del asiento a la factura sin
+    // buscarla a mano: antes el asiento automatico decia "Pago de la
+    // factura SERV-77" y no habia como llegar a ella. Bajo la RLS de quien
+    // mira: si no ve cuentas por pagar o por cobrar, sale null y no hay
+    // enlace (que seria un 404).
     const [h] = await tx<EntryHead[]>`
-      select id, number, entry_date::text, description, status
-      from public.journal_entries
-      where id = ${id} and tenant_id = ${ctx.tenantId}`
+      select e.id, e.number, e.entry_date::text, e.description, e.status, e.source_type,
+             case
+               when e.source_type in ('ap_invoice', 'ap_invoice_void') then
+                 (select i.id::text from public.supplier_invoices i
+                   where i.id = e.source_id and i.tenant_id = e.tenant_id)
+               when e.source_type = 'ap_payment' then
+                 (select p.invoice_id::text from public.supplier_payments p
+                   where p.id = e.source_id and p.tenant_id = e.tenant_id)
+             end as factura_ap,
+             case
+               when e.source_type in ('ar_invoice', 'ar_invoice_void') then
+                 (select i.id::text from public.customer_invoices i
+                   where i.id = e.source_id and i.tenant_id = e.tenant_id)
+               when e.source_type in ('ar_payment', 'ar_payment_reversal') then
+                 (select p.invoice_id::text from public.customer_payments p
+                   where p.id = e.source_id and p.tenant_id = e.tenant_id)
+               when e.source_type = 'ar_credit_note' then
+                 (select n.invoice_id::text from public.customer_credit_notes n
+                   where n.id = e.source_id and n.tenant_id = e.tenant_id)
+               when e.source_type = 'ar_late_fee' then
+                 (select f.invoice_id::text from public.invoice_late_fees f
+                   where f.id = e.source_id and f.tenant_id = e.tenant_id)
+             end as factura_ar
+      from public.journal_entries e
+      where e.id = ${id} and e.tenant_id = ${ctx.tenantId}`
     if (!h) return [null, [], []] as const
 
     const l = await tx<LineRow[]>`
@@ -99,6 +130,12 @@ export default async function AsientoDetallePage({
     lines.map((l) => ({ debit: Number(l.debit), credit: Number(l.credit) })),
   )
 
+  const origen =
+    head.factura_ap && exigir(ctx, 'ap', 'ap.view').ok
+      ? { href: `/pagar/${head.factura_ap}${ctx.demoQs}`, texto: 'Ver la factura del proveedor' }
+      : head.factura_ar && exigir(ctx, 'ar', 'ar.view').ok
+        ? { href: `/cobrar/${head.factura_ar}${ctx.demoQs}`, texto: 'Ver la factura del cliente' }
+        : null
   const puedeEditar = exigir(ctx, 'accounting', 'accounting.entry.create').ok
   const puedeContabilizar = exigir(ctx, 'accounting', 'accounting.entry.post').ok
   const puedeBorrar = exigir(ctx, 'accounting', 'accounting.entry.delete').ok
@@ -127,21 +164,39 @@ export default async function AsientoDetallePage({
           title={head.number}
           description={`${head.description} · ${fecha(head.entry_date)}`}
           crumbs={[{ label: 'Contabilidad', href: `/contabilidad${qs}` }, { label: head.number }]}
-          meta={<Badge tone={e.tone}>{e.label}</Badge>}
+          meta={
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={e.tone}>{e.label}</Badge>
+              {head.source_type !== 'manual' && (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  {ORIGEN_ASIENTO[head.source_type] ?? 'Automatico'}
+                </span>
+              )}
+              {origen && (
+                <a
+                  href={origen.href}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
+                  <Icon name="open_in_new" size={14} />
+                  {origen.texto}
+                </a>
+              )}
+            </div>
+          }
           actions={
             <>
               {enBorrador && puedeContabilizar && (
                 <form action={contabilizarAsientoForm}>
                   {campos}
                   <BotonEnvio
-                    
                     disabled={!validacion.ok}
                     title={
                       validacion.ok
                         ? 'Deja el asiento inmutable: se corrige con uno inverso, no editando'
                         : validacion.error
                     }
-                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40">
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
                     <Icon name="check_circle" size={18} />
                     Contabilizar
                   </BotonEnvio>
@@ -151,9 +206,9 @@ export default async function AsientoDetallePage({
                 <form action={borrarAsientoForm}>
                   {campos}
                   <BotonEnvio
-                    
                     title="Solo se puede borrar un borrador; nunca uno ya contabilizado"
-                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  >
                     <Icon name="delete" size={18} />
                     Borrar
                   </BotonEnvio>
@@ -169,7 +224,7 @@ export default async function AsientoDetallePage({
           <StatCard
             label="Diferencia"
             value={`RD$ ${money(Math.abs(totalDebito - totalCredito))}`}
-            hint={totalDebito === totalCredito ? 'cuadra' : 'no cuadra todavia'}
+            hint={totalDebito === totalCredito ? 'cuadra' : 'no cuadra todavía'}
           />
         </section>
 
@@ -182,7 +237,7 @@ export default async function AsientoDetallePage({
         {lines.length === 0 ? (
           <Card>
             <CardBody className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-              Este asiento no tiene lineas todavia. Agrega al menos dos abajo.
+              Este asiento no tiene líneas todavía. Agrega al menos dos abajo.
             </CardBody>
           </Card>
         ) : (
@@ -192,7 +247,7 @@ export default async function AsientoDetallePage({
                 <TH>Cuenta</TH>
                 <TH>Nota</TH>
                 <TH numeric>Debito</TH>
-                <TH numeric>Credito</TH>
+                <TH numeric>Crédito</TH>
                 {enBorrador && puedeEditar && (
                   <TH>
                     <span className="sr-only">Acciones</span>
@@ -226,9 +281,9 @@ export default async function AsientoDetallePage({
                         {campos}
                         <input type="hidden" name="lineId" value={l.id} />
                         <BotonEnvio
-                          
-                          aria-label={`Quitar linea de ${l.account_name}`}
-                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          aria-label={`Quitar línea de ${l.account_name}`}
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                        >
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>
@@ -243,7 +298,7 @@ export default async function AsientoDetallePage({
         {enBorrador && puedeEditar && cuentas.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Agregar linea</CardTitle>
+              <CardTitle>Agregar línea</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={agregarLineaForm} className="flex flex-wrap items-end gap-3">
@@ -270,7 +325,7 @@ export default async function AsientoDetallePage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
                     <option value="debit">Debito</option>
-                    <option value="credit">Credito</option>
+                    <option value="credit">Crédito</option>
                   </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -290,9 +345,7 @@ export default async function AsientoDetallePage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
                 </BotonEnvio>
@@ -309,7 +362,7 @@ export default async function AsientoDetallePage({
                 href={`/contabilidad/cuentas${qs}`}
                 className="text-[var(--color-text-link)] hover:underline"
               >
-                Ir al catalogo
+                Ir al catálogo
               </a>
               .
             </CardBody>

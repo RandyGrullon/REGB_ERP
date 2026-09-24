@@ -129,7 +129,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                   <dd className="truncate">{perfil?.email ?? shell.data.user.email ?? '—'}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <dt className="text-[var(--color-text-secondary)]">Telefono</dt>
+                  <dt className="text-[var(--color-text-secondary)]">Teléfono</dt>
                   <dd>{perfil?.phone ?? '—'}</dd>
                 </div>
                 <div className="flex justify-between gap-4">
@@ -195,7 +195,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                     <strong className="text-[var(--color-text-primary)]">
                       Soporte puede entrar a tu empresa
                     </strong>{' '}
-                    para ayudarte, pero solo dejando escrito el motivo y con la sesion registrada.
+                    para ayudarte, pero solo dejando escrito el motivo y con la sesión registrada.
                     Si ves el aviso de acompanamiento en la barra, es eso.
                   </span>
                 </li>
@@ -215,8 +215,8 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                 </li>
               </ul>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-                Cambiar la contrasena y activar la verificacion en dos pasos se hacen desde el
-                proveedor de identidad. Llegan cuando se conecte el inicio de sesion real.
+                Cambiar la contraseña y activar la verificacion en dos pasos se hacen desde el
+                proveedor de identidad. Llegan cuando se conecte el inicio de sesión real.
               </p>
             </CardBody>
           </Card>
@@ -243,18 +243,18 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
               </p>
             ) : porModulo.size === 0 ? (
               <p className="py-2 text-sm text-[var(--color-text-muted)]">
-                Tu rol no tiene ningun permiso asignado. Habla con quien administra los usuarios.
+                Tu rol no tiene ningún permiso asignado. Habla con quien administra los usuarios.
               </p>
             ) : (
               <>
                 <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
-                  Si una pantalla no te aparece o un boton no te deja, la razon esta aqui. Enseñale
+                  Si una pantalla no te aparece o un boton no te deja, la razón esta aquí. Enseñale
                   esta lista a quien administra los usuarios y sabra exactamente que activarte.
                 </p>
                 <Table>
                   <THead>
                     <TR>
-                      <TH>Modulo</TH>
+                      <TH>Módulo</TH>
                       <TH>Permiso</TH>
                       <TH>Puedes</TH>
                     </TR>

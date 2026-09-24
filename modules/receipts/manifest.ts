@@ -17,7 +17,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'receipts',
   name: 'Recepciones',
-  description: 'Entrada de mercancia con inspeccion, discrepancias y devolucion al proveedor.',
+  description: 'Entrada de mercancía con inspección, discrepancias y devolución al proveedor.',
   icon: 'inventory_2',
   category: 'standard',
   version: '0.1.0',

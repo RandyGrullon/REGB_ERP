@@ -27,12 +27,19 @@ export default async function ConfiguracionPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'settings')
 
-  const [settings] = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    (tx) => tx<SettingsRow[]>`
-      select trade_name, timezone, currency, date_format
-      from public.tenant_settings where tenant_id = ${ctx.tenantId}`,
+  const [[settings], [modulos]] = await asUser(ctx.userId, ctx.tenantId, (tx) =>
+    Promise.all([
+      tx<SettingsRow[]>`
+        select trade_name, timezone, currency, date_format
+        from public.tenant_settings where tenant_id = ${ctx.tenantId}`,
+      // Mismo criterio que el inicio y el marketplace: activos y pruebas
+      // vigentes. Antes cada pantalla daba un numero distinto.
+      tx<{ n: string }[]>`
+        select count(*)::text as n from regb.tenant_modules tm
+        where tm.tenant_id = ${ctx.tenantId}
+          and (tm.status = 'active'
+               or (tm.status = 'trial' and tm.trial_ends_at >= current_date))`,
+    ]),
   )
 
   const puedeEditar = exigir(ctx, 'settings', 'settings.edit').ok
@@ -112,9 +119,7 @@ export default async function ConfiguracionPage({
               </div>
 
               {puedeEditar ? (
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Guardar cambios
                 </BotonEnvio>
               ) : (
@@ -128,13 +133,12 @@ export default async function ConfiguracionPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Plan y modulos</CardTitle>
+            <CardTitle>Plan y módulos</CardTitle>
           </CardHeader>
           <CardBody className="text-sm text-[var(--color-text-secondary)]">
             <p>
               Estas en el plan <strong>{shell.data.tenant.tier.toUpperCase()}</strong> con{' '}
-              {shell.data.activeModules.length} modulos activos. Activar o apagar modulos se hace
-              desde el{' '}
+              {Number(modulos?.n ?? 0)} módulos activos. Activar o apagar módulos se hace desde el{' '}
               <a
                 href={`/marketplace${ctx.demoQs}`}
                 className="text-[var(--color-text-link)] hover:underline"

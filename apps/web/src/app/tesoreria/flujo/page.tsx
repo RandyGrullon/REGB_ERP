@@ -88,14 +88,29 @@ export default async function FlujoDeCajaPage({
         <PageHeader
           icon="ssid_chart"
           title="Flujo de caja proyectado"
-          description={`Ocho semanas hacia adelante: el efectivo de hoy, mas lo que esperas cobrar, menos lo que tienes que pagar. Lo vencido cuenta en la semana 1 -ya deberia haber entrado o salido-.`}
-          crumbs={[{ label: 'Tesoreria', href: `/tesoreria${ctx.demoQs}` }, { label: 'Flujo de caja' }]}
+          description={`Ocho semanas hacia adelante: el efectivo de hoy, más lo que esperas cobrar, menos lo que tienes que pagar. Lo vencido cuenta en la semana 1 -ya debería haber entrado o salido-.`}
+          crumbs={[
+            { label: 'Tesoreria', href: `/tesoreria${ctx.demoQs}` },
+            { label: 'Flujo de caja' },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Efectivo hoy" value={`RD$ ${money(efectivoHoy)}`} hint="en cuentas activas" />
-          <StatCard label="Entra" value={`RD$ ${money(totalEntra)}`} hint={`${entradas.length} facturas por cobrar`} />
-          <StatCard label="Sale" value={`RD$ ${money(totalSale)}`} hint={`${salidas.length} facturas por pagar`} />
+          <StatCard
+            label="Efectivo hoy"
+            value={`RD$ ${money(efectivoHoy)}`}
+            hint="en cuentas activas"
+          />
+          <StatCard
+            label="Entra"
+            value={`RD$ ${money(totalEntra)}`}
+            hint={`${entradas.length} facturas por cobrar`}
+          />
+          <StatCard
+            label="Sale"
+            value={`RD$ ${money(totalSale)}`}
+            hint={`${salidas.length} facturas por pagar`}
+          />
           <StatCard
             label="Efectivo en 8 semanas"
             value={`RD$ ${money(finalProyectado)}`}
@@ -116,9 +131,9 @@ export default async function FlujoDeCajaPage({
                 <strong className="text-[var(--color-semantic-text-danger)]">
                   El efectivo se pone en rojo en la semana {enRojo + 1}
                 </strong>{' '}
-                ({rango(proyeccion[enRojo]!.weekStart, proyeccion[enRojo]!.weekEnd)}). Con lo que hay
-                hoy y lo que esta programado, no alcanza. Adelanta cobros o corre pagos antes de que
-                llegue.
+                ({rango(proyeccion[enRojo]!.weekStart, proyeccion[enRojo]!.weekEnd)}). Con lo que
+                hay hoy y lo que esta programado, no alcanza. Adelanta cobros o corre pagos antes de
+                que llegue.
               </p>
             </CardBody>
           </Card>

@@ -1,5 +1,15 @@
 import { notFound } from 'next/navigation'
-import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, Mono, PageHeader, StatCard } from '@regb/ui'
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Icon,
+  Mono,
+  PageHeader,
+  StatCard,
+} from '@regb/ui'
 import type { EstadoPedidoCanal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -84,12 +94,22 @@ export default async function PedidoCanalDetallePage({
         <PageHeader
           icon="storefront"
           title={head.external_order_id}
-          crumbs={[{ label: 'E-commerce sync', href: `/ecommerce${qs}` }, { label: head.external_order_id }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_PEDIDO_CANAL[head.status] ?? head.status}</Badge>}
+          crumbs={[
+            { label: 'E-commerce sync', href: `/ecommerce${qs}` },
+            { label: head.external_order_id },
+          ]}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_PEDIDO_CANAL[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Canal" value={`${head.channel_name} (${PLATAFORMA_CANAL[head.platform] ?? head.platform})`} />
+          <StatCard
+            label="Canal"
+            value={`${head.channel_name} (${PLATAFORMA_CANAL[head.platform] ?? head.platform})`}
+          />
           <StatCard label="Cliente" value={head.customer_name} />
           <StatCard label="Total" value={`RD$ ${money(Number(head.total))}`} />
           <StatCard label="Recibido" value={new Date(head.received_at).toLocaleString('es-DO')} />
@@ -100,7 +120,7 @@ export default async function PedidoCanalDetallePage({
             <form action={transicionarPedidoForm}>
               {campos}
               <input type="hidden" name="siguiente" value="imported" />
-              <BotonEnvio  className={botonSecundarioClase}>
+              <BotonEnvio className={botonSecundarioClase}>
                 <Icon name="check_circle" size={14} />
                 Importar
               </BotonEnvio>
@@ -108,25 +128,26 @@ export default async function PedidoCanalDetallePage({
             <form action={transicionarPedidoForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <BotonEnvio  className={botonSecundarioClase}>
-                Cancelar
-              </BotonEnvio>
+              <BotonEnvio className={botonSecundarioClase}>Cancelar</BotonEnvio>
             </form>
           </div>
         )}
 
         <Card>
           <CardHeader>
-            <CardTitle>Lineas</CardTitle>
+            <CardTitle>Líneas</CardTitle>
           </CardHeader>
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
               {lineas.map((l) => (
                 <li key={l.id} className="flex items-center justify-between gap-3 py-2">
                   <div>
-                    <p className="text-sm text-[var(--color-text-primary)]">{l.product_name ?? 'Sin vincular'}</p>
+                    <p className="text-sm text-[var(--color-text-primary)]">
+                      {l.product_name ?? 'Sin vincular'}
+                    </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      SKU externo <Mono>{l.external_sku}</Mono> · {l.quantity} x RD$ {money(Number(l.unit_price))}
+                      SKU externo <Mono>{l.external_sku}</Mono> · {l.quantity} x RD${' '}
+                      {money(Number(l.unit_price))}
                     </p>
                   </div>
                   <span className="tabular text-sm text-[var(--color-text-primary)]">

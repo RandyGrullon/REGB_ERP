@@ -49,10 +49,14 @@ export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.transfer_orders
         (tenant_id, from_warehouse_id, to_warehouse_id, notes, created_by)
-      values (${ctx.tenantId}, ${fromWarehouseId}, ${toWarehouseId}, ${notes}, ${ctx.userId})`)
+      values (${ctx.tenantId}, ${fromWarehouseId}, ${toWarehouseId}, ${notes}, ${ctx.userId})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -82,6 +86,14 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
     if (!order) return 'no-existe'
     if (order.status !== 'draft') return 'Solo se puede agregar lineas mientras esta en borrador.'
 
+    // Un servicio (envio, instalacion) no tiene existencias: aceptarlo aqui
+    // solo aplazaba el error al momento de despachar el camion.
+    const [p] = await tx<{ tracks_stock: boolean; sku: string }[]>`
+      select tracks_stock, sku from public.products
+      where id = ${productId} and tenant_id = ${ctx.tenantId}`
+    if (!p) return 'Ese producto no existe.'
+    if (!p.tracks_stock) return `${p.sku} es un servicio: no tiene existencias que trasladar.`
+
     await tx`
       insert into public.transfer_order_lines (order_id, tenant_id, product_id, qty_requested)
       values (${orderId}, ${ctx.tenantId}, ${productId}, ${qty})`
@@ -107,8 +119,12 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-      delete from public.transfer_order_lines where id = ${lineId} and tenant_id = ${ctx.tenantId}`)
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
+      delete from public.transfer_order_lines where id = ${lineId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -141,6 +157,30 @@ export async function despacharTransferencia(fd: FormData): Promise<ActionResult
       select id, product_id, qty_requested::text from public.transfer_order_lines
       where order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (lineas.length === 0) return 'Agrega al menos una linea antes de despachar.'
+
+    // No se despacha lo que no esta. El kardex suma y resta sin mirar: sin
+    // esto, el origen quedaba en negativo y el destino recibia existencia
+    // inventada -el mismo agujero que 0111 cerro para el movil-. Se suma
+    // por producto (dos lineas del mismo cuentan juntas) y se mira lo
+    // FISICO: lo reservado esta en el estante y se puede mover.
+    const faltantes = await tx<{ sku: string; pedido: string; hay: string }[]>`
+      select p.sku, sum(l.qty_requested)::text as pedido,
+             coalesce(max(sl.qty_on_hand), 0)::text as hay
+      from public.transfer_order_lines l
+      join public.products p on p.id = l.product_id
+      left join public.stock_levels sl
+        on sl.tenant_id = l.tenant_id and sl.warehouse_id = ${order.from_warehouse_id}
+       and sl.product_id = l.product_id
+      where l.order_id = ${orderId} and l.tenant_id = ${ctx.tenantId}
+      group by p.sku
+      having sum(l.qty_requested) > coalesce(max(sl.qty_on_hand), 0)
+      order by p.sku`
+    if (faltantes.length > 0) {
+      const detalle = faltantes
+        .map((f) => `${f.sku}: hay ${Number(f.hay)}, se piden ${Number(f.pedido)}`)
+        .join('; ')
+      return `No hay suficiente en el almacen de origen (${detalle}).`
+    }
 
     for (const l of lineas) {
       await tx`
@@ -196,29 +236,42 @@ export async function recibirTransferencia(fd: FormData): Promise<ActionResult> 
       return 'Esa transferencia ya no se puede recibir.'
     }
 
-    for (let i = 0; i < lineIds.length; i++) {
-      const lineId = lineIds[i]
-      const qtyReceivedRaw = recibidos[i]
-      if (!lineId || qtyReceivedRaw === null || qtyReceivedRaw === undefined || qtyReceivedRaw < 0) {
-        continue
+    // Se valida TODO antes de escribir nada. Antes una linea en blanco se
+    // saltaba en silencio -la transferencia quedaba "recibida" con esa
+    // linea sin recibir, y la mercancia en ningun almacen- y se podia
+    // recibir mas de lo que salio, creando existencia de la nada.
+    const lineas = await tx<{ id: string; product_id: string; sku: string; qty_sent: string }[]>`
+      select l.id, l.product_id, p.sku, coalesce(l.qty_sent, 0)::text as qty_sent
+      from public.transfer_order_lines l
+      join public.products p on p.id = l.product_id
+      where l.order_id = ${orderId} and l.tenant_id = ${ctx.tenantId}`
+    const porId = new Map(lineIds.map((id, i) => [id, recibidos[i] ?? null]))
+    const aRecibir: { id: string; productId: string; qty: number }[] = []
+    for (const l of lineas) {
+      const qty = porId.get(l.id)
+      if (qty === null || qty === undefined) {
+        return `${l.sku}: escribe cuanto llego (0 si no llego nada).`
       }
-      const qtyReceived = qtyReceivedRaw
+      if (qty < 0) return `${l.sku}: la cantidad recibida no puede ser negativa.`
+      if (qty > Number(l.qty_sent)) {
+        return `${l.sku}: salieron ${Number(l.qty_sent)} y no pueden llegar ${qty}. Si llego de mas, fue un error al despachar: cuentalo en el origen.`
+      }
+      aRecibir.push({ id: l.id, productId: l.product_id, qty })
+    }
 
-      const [line] = await tx<{ product_id: string }[]>`
-        select product_id from public.transfer_order_lines
-        where id = ${lineId} and order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
-      if (!line) continue
-
+    for (const r of aRecibir) {
       await tx`
-        update public.transfer_order_lines set qty_received = ${qtyReceived}
-        where id = ${lineId} and tenant_id = ${ctx.tenantId}`
+        update public.transfer_order_lines set qty_received = ${r.qty}
+        where id = ${r.id} and tenant_id = ${ctx.tenantId}`
 
-      if (qtyReceived > 0) {
+      // Sin unit_cost a proposito: el costo lo pone la base (0137), que
+      // copia el de la salida del origen. Sin eso entraba a costo cero.
+      if (r.qty > 0) {
         await tx`
           insert into public.inventory_movements
             (tenant_id, warehouse_id, product_id, movement_type, qty, reference_type, reference_id, created_by)
-          values (${ctx.tenantId}, ${order.to_warehouse_id}, ${line.product_id},
-                  'transfer_in', ${qtyReceived}, 'transfer_order', ${orderId}, ${ctx.userId})`
+          values (${ctx.tenantId}, ${order.to_warehouse_id}, ${r.productId},
+                  'transfer_in', ${r.qty}, 'transfer_order', ${orderId}, ${ctx.userId})`
       }
     }
 
@@ -285,10 +338,18 @@ export async function quitarLineaForm(fd: FormData): Promise<void> {
   await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 export async function despacharTransferenciaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await despacharTransferencia(fd), 'despacharTransferencia')
+  await anotarAviso(
+    await despacharTransferencia(fd),
+    'despacharTransferencia',
+    'Listo, salio del almacen: queda en transito hasta que la reciban.',
+  )
 }
 export async function recibirTransferenciaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await recibirTransferencia(fd), 'recibirTransferencia')
+  await anotarAviso(
+    await recibirTransferencia(fd),
+    'recibirTransferencia',
+    'Listo, la mercancia entro al almacen de destino.',
+  )
 }
 export async function cancelarTransferenciaForm(fd: FormData): Promise<void> {
   await anotarAviso(await cancelarTransferencia(fd), 'cancelarTransferencia')

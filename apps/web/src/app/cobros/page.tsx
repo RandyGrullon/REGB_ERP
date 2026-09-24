@@ -61,11 +61,7 @@ const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 /** Pasarelas de cobro (modulo 27): links de cobro y cobro recurrente, confirmados a mano. */
-export default async function CobrosPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function CobrosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'payments')
 
@@ -96,7 +92,9 @@ export default async function CobrosPage({
 
   const pendientes = links.filter((l) => l.status === 'pending')
   const totalPendiente = pendientes.reduce((a, l) => a + Number(l.amount), 0)
-  const totalPagado = links.filter((l) => l.status === 'paid').reduce((a, l) => a + Number(l.amount), 0)
+  const totalPagado = links
+    .filter((l) => l.status === 'paid')
+    .reduce((a, l) => a + Number(l.amount), 0)
 
   const puedeCrear = exigir(ctx, 'payments', 'payments.link.create').ok
   const puedeConfirmar = exigir(ctx, 'payments', 'payments.link.confirm').ok
@@ -130,9 +128,16 @@ export default async function CobrosPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Pendiente" value={`RD$ ${money(totalPendiente)}`} hint={`${pendientes.length} links`} />
+          <StatCard
+            label="Pendiente"
+            value={`RD$ ${money(totalPendiente)}`}
+            hint={`${pendientes.length} links`}
+          />
           <StatCard label="Pagado" value={`RD$ ${money(totalPagado)}`} />
-          <StatCard label="Cobros recurrentes" value={String(recurrentes.filter((r) => r.is_active).length)} />
+          <StatCard
+            label="Cobros recurrentes"
+            value={String(recurrentes.filter((r) => r.is_active).length)}
+          />
         </section>
 
         {links.length === 0 ? (
@@ -145,13 +150,13 @@ export default async function CobrosPage({
           <Table>
             <THead>
               <TR>
-                <TH>Descripcion</TH>
+                <TH>Descripción</TH>
                 <TH>Cliente</TH>
                 <TH numeric>Monto</TH>
                 <TH>Pasarela</TH>
                 <TH>Estado</TH>
                 <TH>Vence</TH>
-                {(puedeConfirmar) && (
+                {puedeConfirmar && (
                   <TH>
                     <span className="sr-only">Acciones</span>
                   </TH>
@@ -188,10 +193,10 @@ export default async function CobrosPage({
                                 className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
                               />
                               <BotonEnvio
-                                
                                 aria-label={`Confirmar pago de ${l.description}`}
                                 title="Confirma que el pago ya llego -manual, sin pasarela real conectada-"
-                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
+                              >
                                 <Icon name="check_circle" size={18} />
                               </BotonEnvio>
                             </form>
@@ -199,9 +204,9 @@ export default async function CobrosPage({
                               {campos}
                               <input type="hidden" name="linkId" value={l.id} />
                               <BotonEnvio
-                                
                                 aria-label={`Cancelar ${l.description}`}
-                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]">
+                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]"
+                              >
                                 <Icon name="cancel" size={18} />
                               </BotonEnvio>
                             </form>
@@ -237,7 +242,13 @@ export default async function CobrosPage({
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Descripcion
-                  <input name="description" required minLength={3} placeholder="Anticipo del pedido" className={claseInput} />
+                  <input
+                    name="description"
+                    required
+                    minLength={3}
+                    placeholder="Anticipo del pedido"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto
@@ -253,9 +264,7 @@ export default async function CobrosPage({
                   Vence
                   <input name="expiresAt" type="date" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add_link" size={18} />
                   Generar
                 </BotonEnvio>
@@ -271,17 +280,17 @@ export default async function CobrosPage({
           <CardBody>
             {recurrentes.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no hay ningun cobro recurrente configurado.
+                Todavía no hay ningún cobro recurrente configurado.
               </p>
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Cliente</TH>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH numeric>Monto</TH>
                     <TH>Frecuencia</TH>
-                    <TH>Proximo cobro</TH>
+                    <TH>Próximo cobro</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -303,9 +312,9 @@ export default async function CobrosPage({
               <form action={correrRecurrentesForm} className="mt-3">
                 {campos}
                 <BotonEnvio
-                  
                   title="Genera un link por cada cobro recurrente ya vencido"
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
+                >
                   <Icon name="event_repeat" size={16} />
                   Generar cobros vencidos
                 </BotonEnvio>
@@ -334,7 +343,13 @@ export default async function CobrosPage({
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Descripcion
-                  <input name="description" required minLength={3} placeholder="Mantenimiento mensual" className={claseInput} />
+                  <input
+                    name="description"
+                    required
+                    minLength={3}
+                    placeholder="Mantenimiento mensual"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto
@@ -355,12 +370,10 @@ export default async function CobrosPage({
                   </select>
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Proximo cobro
+                  Próximo cobro
                   <input name="nextChargeDate" type="date" required className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
                   Configurar
                 </BotonEnvio>

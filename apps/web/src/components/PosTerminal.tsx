@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useEffect, useMemo, useState } from 'react'
+import { useActionState, useEffect, useMemo, useRef, useState } from 'react'
 import { Badge, Icon, cn } from '@regb/ui'
 import {
   computeChange,
@@ -122,6 +122,7 @@ export function PosTerminal({
   listas,
   entradas,
   puedeDescuento,
+  topeDescuento = null,
   hiddenFields,
 }: {
   shiftId: string
@@ -130,6 +131,8 @@ export function PosTerminal({
   listas: PosLista[]
   entradas: PosEntrada[]
   puedeDescuento: boolean
+  /** Descuento maximo del rol, en %. `null` = sin tope. */
+  topeDescuento?: number | null
   hiddenFields: Record<string, string>
 }) {
   const [busqueda, setBusqueda] = useState('')
@@ -155,6 +158,22 @@ export function PosTerminal({
   }, [resultadoCobro])
 
   const porId = useMemo(() => new Map(catalogo.map((p) => [p.id, p])), [catalogo])
+
+  // La barra fija del telefono se quita cuando el ticket ya esta a la
+  // vista: si no, tapa el boton Cobrar justo cuando se va a usar.
+  const ticketRef = useRef<HTMLElement>(null)
+  const [ticketVisible, setTicketVisible] = useState(false)
+  useEffect(() => {
+    const el = ticketRef.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    // Cuenta como "a la vista" cuando el ticket sube a la mitad de arriba
+    // de la pantalla; si solo asoma el titulo abajo, la barra sigue.
+    const obs = new IntersectionObserver(([e]) => setTicketVisible(e?.isIntersecting ?? false), {
+      rootMargin: '0px 0px -45% 0px',
+    })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   const filtrados = useMemo(() => {
     const q = busqueda.trim()
@@ -233,7 +252,11 @@ export function PosTerminal({
   const entregado = recibioAlgo ? Number(recibido.replace(/,/g, '')) || 0 : totales.total
   const vuelto = computeChange(entregado, totales.total)
   const pagos = [{ method: metodo, amount: totales.total }]
+  // Una linea por encima del tope del rol no se cobra aqui: se avisa en la
+  // propia linea y el boton espera, en vez de ir al servidor a enterarse.
+  const excedeTope = topeDescuento !== null && lineas.some((l) => l.discountPct > topeDescuento)
   const puedeCobrar =
+    !excedeTope &&
     lineas.length > 0 &&
     paymentsBalance(pagos, totales.total) &&
     (metodo !== 'cash' || entregado >= totales.total)
@@ -397,7 +420,7 @@ export function PosTerminal({
           >
             <Icon name="barcode_reader" size={18} />
             Ningun producto con el codigo <strong>{noEncontrado}</strong>. Revisa que este en el
-            catalogo con su codigo de barras.
+            catálogo con su código de barras.
           </p>
         )}
 
@@ -450,8 +473,10 @@ export function PosTerminal({
 
       {/* ── Ticket ────────────────────────────────────────────────── */}
       <section
+        id="ticket-caja"
+        ref={ticketRef}
         aria-label="Ticket"
-        className="flex flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
+        className="flex scroll-mt-16 flex-col gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
       >
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-[var(--color-text-primary)]">Ticket</h2>
@@ -545,15 +570,21 @@ export function PosTerminal({
                     <input
                       type="number"
                       min={0}
-                      max={100}
+                      max={topeDescuento ?? 100}
                       value={l.discountPct || ''}
                       onChange={(e) => cambiarDescuento(l.productId, Number(e.target.value))}
                       placeholder="%"
                       aria-label={`Descuento de ${p.name}`}
-                      className="h-8 w-12 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-center text-xs text-[var(--color-text-primary)]"
+                      aria-invalid={topeDescuento !== null && l.discountPct > topeDescuento}
+                      className="h-8 w-12 rounded-[var(--radius-sm)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-center text-xs text-[var(--color-text-primary)] aria-[invalid=true]:border-[var(--color-semantic-danger)]"
                     />
                   )}
                 </div>
+                {topeDescuento !== null && l.discountPct > topeDescuento && (
+                  <p role="alert" className="mt-1 text-xs text-[var(--color-semantic-text-danger)]">
+                    Tu rol descuenta hasta {topeDescuento}%. Más que eso lo aplica un supervisor.
+                  </p>
+                )}
               </li>
             )
           })}
@@ -638,7 +669,6 @@ export function PosTerminal({
           <input type="hidden" name="cart" value={JSON.stringify(lineas)} />
           <input type="hidden" name="payments" value={JSON.stringify(pagos)} />
           <BotonEnvio
-            
             disabled={!puedeCobrar}
             className={cn(
               btn,
@@ -660,6 +690,24 @@ export function PosTerminal({
           </p>
         )}
       </section>
+
+      {/* En el telefono el ticket queda debajo de todos los productos: con
+          algo en el carrito, una barra fija lleva al cobro sin buscarlo. */}
+      {lineas.length > 0 && !ticketVisible && (
+        <a
+          href="#ticket-caja"
+          className="fixed inset-x-3 bottom-3 z-30 flex h-14 items-center justify-between rounded-[var(--radius-full)] bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] lg:hidden"
+        >
+          <span>
+            Ticket · {lineas.reduce((n, l) => n + l.qty, 0)} artículo
+            {lineas.reduce((n, l) => n + l.qty, 0) === 1 ? '' : 's'}
+          </span>
+          <span className="tabular flex items-center gap-1">
+            RD$ {money(totales.total)}
+            <Icon name="arrow_downward" size={18} />
+          </span>
+        </a>
+      )}
     </div>
   )
 }

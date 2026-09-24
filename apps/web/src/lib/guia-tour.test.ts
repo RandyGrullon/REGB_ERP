@@ -39,9 +39,7 @@ function pintaLaGuia(archivo: string): boolean {
 }
 
 const destinos = [
-  ...new Set(
-    TOURS.flatMap((t) => t.steps.flatMap((s) => (s.action ? [s.action.path] : []))),
-  ),
+  ...new Set(TOURS.flatMap((t) => t.steps.flatMap((s) => (s.action ? [s.action.path] : [])))),
 ].sort()
 
 describe('Los destinos de los tours', () => {
@@ -106,4 +104,3 @@ describe('Las anclas que los tours señalan', () => {
     expect(objetivos.filter((o) => !anclas.has(o))).toEqual([])
   })
 })
-

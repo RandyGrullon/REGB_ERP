@@ -150,9 +150,9 @@ export default async function ImpuestosPage({
             <strong className="text-[var(--color-text-primary)]">
               nacen los productos que crees o importes desde ahora
             </strong>
-            , y de ahi la toman la caja, los pedidos, las cotizaciones y las ordenes de compra. Los
+            , y de ahi la toman la caja, los pedidos, las cotizaciones y las órdenes de compra. Los
             productos que ya existen conservan la suya: cambiarla aqui no los reescribe. Si la tasa
-            por defecto tiene vigencia futura, hasta ese dia los productos nuevos nacen al 18%.
+            por defecto tiene vigencia futura, hasta ese día los productos nuevos nacen al 18%.
           </p>
         </div>
 
@@ -318,7 +318,7 @@ export default async function ImpuestosPage({
                   <TH>Proveedor</TH>
                   <TH>Se aplica sobre</TH>
                   <TH numeric>Porcentaje</TH>
-                  <TH>Codigo DGII</TH>
+                  <TH>Código DGII</TH>
                   {puedeReglas && <TH>&nbsp;</TH>}
                 </TR>
               </THead>
@@ -432,7 +432,7 @@ export default async function ImpuestosPage({
                   <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Codigo DGII (solo ISR)
                     <select name="dgiiIsrType" defaultValue="" className={claseInput}>
-                      <option value="">— sin codigo —</option>
+                      <option value="">— sin código —</option>
                       {Object.entries(TIPOS_RETENCION_ISR_606).map(([codigo, texto]) => (
                         <option key={codigo} value={codigo}>
                           {codigo} · {texto}

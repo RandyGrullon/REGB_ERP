@@ -12,7 +12,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'manufacturing',
-  name: 'Ordenes de produccion',
+  name: 'Órdenes de producción',
   description: 'Lanzamiento, consumo, reporte de avance y mermas.',
   icon: 'precision_manufacturing',
   category: 'advanced',
@@ -32,7 +32,7 @@ export default defineModule({
   permissions: ['manufacturing.view', 'manufacturing.manage', 'manufacturing.report'],
 
   routes: [
-    { path: '/produccion', label: 'Ordenes de produccion', perm: 'manufacturing.view' },
+    { path: '/produccion', label: 'Órdenes de producción', perm: 'manufacturing.view' },
     { path: '/produccion/:id', label: 'Detalle', perm: 'manufacturing.view', hidden: true },
   ],
 

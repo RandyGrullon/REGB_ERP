@@ -29,12 +29,12 @@ export default async function SinAccesoPage() {
           {icono}
         </p>
         <h1 className="mt-3 text-lg font-semibold text-[var(--color-text-primary)]">
-          Todavia no puedes entrar
+          Todavía no puedes entrar
         </h1>
         <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
           {estado?.blocked
             ? estado.message
-            : 'Tu sesion no tiene una empresa asociada. Pidele a tu administrador que te invite.'}
+            : 'Tu sesión no tiene una empresa asociada. Pidele a tu administrador que te invite.'}
         </p>
 
         {session && (
@@ -44,9 +44,7 @@ export default async function SinAccesoPage() {
         )}
 
         <form action="/auth/salir" method="post" className="mt-5">
-          <BotonEnvio
-            
-            className="text-sm text-[var(--color-text-link)] underline-offset-4 hover:underline">
+          <BotonEnvio className="text-sm text-[var(--color-text-link)] underline-offset-4 hover:underline">
             Salir y entrar con otra cuenta
           </BotonEnvio>
         </form>

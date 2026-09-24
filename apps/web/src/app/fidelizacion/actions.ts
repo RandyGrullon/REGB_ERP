@@ -1,7 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { transicionValidaCupon, transicionValidaReferido, type EstadoCupon, type EstadoReferido } from '@regb/operations'
+import {
+  transicionValidaCupon,
+  transicionValidaReferido,
+  type EstadoCupon,
+  type EstadoReferido,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -32,12 +37,17 @@ export async function registrarPuntos(fd: FormData): Promise<ActionResult> {
   const reason = String(fd.get('reason') ?? '').trim()
 
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
-  if (!Number.isFinite(puntos) || puntos === 0) return { ok: false, error: 'Los puntos no pueden ser cero.' }
+  if (!Number.isFinite(puntos) || puntos === 0)
+    return { ok: false, error: 'Los puntos no pueden ser cero.' }
   if (!reason) return { ok: false, error: 'Escribe una razon.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.loyalty_transactions (tenant_id, customer_id, points, reason, source_type, created_by)
-    values (${ctx.tenantId}, ${customerId}, ${puntos}, ${reason}, 'manual', ${ctx.userId})`)
+    values (${ctx.tenantId}, ${customerId}, ${puntos}, ${reason}, 'manual', ${ctx.userId})`,
+  )
 
   revalidatePath('/fidelizacion')
   revalidatePath(`/fidelizacion/${customerId}`)
@@ -50,22 +60,31 @@ export async function crearCupon(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
-  const code = String(fd.get('code') ?? '').trim().toUpperCase()
+  const code = String(fd.get('code') ?? '')
+    .trim()
+    .toUpperCase()
   const customerId = String(fd.get('customerId') ?? '') || null
   const discountType = String(fd.get('discountType') ?? '')
   const discountValueRaw = Number(fd.get('discountValue') ?? '')
   const expiresAtRaw = String(fd.get('expiresAt') ?? '')
 
   if (!code) return { ok: false, error: 'Falta el codigo del cupon.' }
-  if (!['percentage', 'fixed'].includes(discountType)) return { ok: false, error: 'Elige un tipo de descuento valido.' }
-  if (!Number.isFinite(discountValueRaw) || discountValueRaw <= 0) return { ok: false, error: 'El descuento debe ser mayor que cero.' }
+  if (!['percentage', 'fixed'].includes(discountType))
+    return { ok: false, error: 'Elige un tipo de descuento valido.' }
+  if (!Number.isFinite(discountValueRaw) || discountValueRaw <= 0)
+    return { ok: false, error: 'El descuento debe ser mayor que cero.' }
   const discountValue = discountType === 'percentage' ? discountValueRaw / 100 : discountValueRaw
-  if (discountType === 'percentage' && discountValue > 1) return { ok: false, error: 'Un descuento porcentual no puede ser mayor que 100%.' }
+  if (discountType === 'percentage' && discountValue > 1)
+    return { ok: false, error: 'Un descuento porcentual no puede ser mayor que 100%.' }
   const expiresAt = expiresAtRaw || null
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.loyalty_coupons (tenant_id, code, customer_id, discount_type, discount_value, expires_at, created_by)
-    values (${ctx.tenantId}, ${code}, ${customerId}, ${discountType}, ${discountValue}, ${expiresAt}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${code}, ${customerId}, ${discountType}, ${discountValue}, ${expiresAt}, ${ctx.userId})`,
+  )
 
   revalidatePath('/fidelizacion/cupones')
   return { ok: true }
@@ -120,12 +139,18 @@ export async function crearReferido(fd: FormData): Promise<ActionResult> {
 
   if (!referrerCustomerId) return { ok: false, error: 'Falta el cliente que refiere.' }
   if (!referredCustomerId) return { ok: false, error: 'Elige a quien refiere.' }
-  if (referrerCustomerId === referredCustomerId) return { ok: false, error: 'Un cliente no puede referirse a si mismo.' }
-  if (!Number.isFinite(bonusPoints) || bonusPoints <= 0) return { ok: false, error: 'El bono debe ser mayor que cero.' }
+  if (referrerCustomerId === referredCustomerId)
+    return { ok: false, error: 'Un cliente no puede referirse a si mismo.' }
+  if (!Number.isFinite(bonusPoints) || bonusPoints <= 0)
+    return { ok: false, error: 'El bono debe ser mayor que cero.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.loyalty_referrals (tenant_id, referrer_customer_id, referred_customer_id, bonus_points)
-    values (${ctx.tenantId}, ${referrerCustomerId}, ${referredCustomerId}, ${bonusPoints})`)
+    values (${ctx.tenantId}, ${referrerCustomerId}, ${referredCustomerId}, ${bonusPoints})`,
+  )
 
   revalidatePath(`/fidelizacion/${referrerCustomerId}`)
   return { ok: true }
@@ -142,7 +167,9 @@ export async function transicionarReferido(fd: FormData): Promise<ActionResult> 
   const siguiente = String(fd.get('siguiente') ?? '') as EstadoReferido
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [r] = await tx<{ status: EstadoReferido; referrer_customer_id: string; bonus_points: number }[]>`
+    const [r] = await tx<
+      { status: EstadoReferido; referrer_customer_id: string; bonus_points: number }[]
+    >`
       select status, referrer_customer_id, bonus_points from public.loyalty_referrals
       where id = ${referralId} and tenant_id = ${ctx.tenantId} for update`
     if (!r) return 'no-existe'

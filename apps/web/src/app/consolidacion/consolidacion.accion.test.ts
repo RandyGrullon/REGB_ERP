@@ -162,7 +162,10 @@ describe('generarCorrida congela la foto', () => {
     const r = await generarCorrida(
       c.fd({ groupId: grupo, periodStart: '2026-07-01', periodEnd: '2026-09-30' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Ese grupo ya tiene una corrida para ese mismo periodo.' })
+    expect(r).toEqual({
+      ok: false,
+      error: 'Ese grupo ya tiene una corrida para ese mismo periodo.',
+    })
     expect(await corridas(grupo)).toHaveLength(1)
   })
 

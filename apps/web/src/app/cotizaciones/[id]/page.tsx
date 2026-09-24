@@ -46,6 +46,12 @@ interface ProveedorOption {
   name: string
 }
 
+interface InvitacionRow {
+  supplier_id: string
+  supplier_name: string
+  invited_at: string
+}
+
 const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 
@@ -64,24 +70,38 @@ export default async function RfqDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'rfq')
 
-  const { rfq, cotizaciones, proveedores } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [head] = await tx<RfqHead[]>`
+  const { rfq, cotizaciones, proveedores, invitados } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [head] = await tx<RfqHead[]>`
       select id, title, description, status from public.rfqs where id = ${id} and tenant_id = ${ctx.tenantId}`
 
-    if (!head) return { rfq: null, cotizaciones: [], proveedores: [] }
+      if (!head) return { rfq: null, cotizaciones: [], proveedores: [], invitados: [] }
 
-    const q = await tx<CotizacionRow[]>`
+      const q = await tx<CotizacionRow[]>`
       select rq.id, rq.supplier_id, s.name as supplier_name, rq.total_amount::text, rq.lead_time_days, rq.notes
       from public.rfq_quotes rq
       join public.suppliers s on s.id = rq.supplier_id
       where rq.tenant_id = ${ctx.tenantId} and rq.rfq_id = ${id}
       order by rq.total_amount`
 
-    const p = await tx<ProveedorOption[]>`
+      const p = await tx<ProveedorOption[]>`
       select id, name from public.suppliers where tenant_id = ${ctx.tenantId} and is_active order by name`
 
-    return { rfq: head, cotizaciones: q, proveedores: p }
-  })
+      // Antes "Invitar" guardaba la invitacion y no se veia en ningun lado:
+      // parecia un boton muerto y no habia forma de saber a quien faltaba
+      // pedirle precio.
+      const i = await tx<InvitacionRow[]>`
+      select ri.supplier_id, s.name as supplier_name, ri.invited_at::text
+      from public.rfq_invitations ri
+      join public.suppliers s on s.id = ri.supplier_id
+      where ri.tenant_id = ${ctx.tenantId} and ri.rfq_id = ${id}
+      order by ri.invited_at`
+
+      return { rfq: head, cotizaciones: q, proveedores: p, invitados: i }
+    },
+  )
 
   if (!rfq) notFound()
 
@@ -94,6 +114,10 @@ export default async function RfqDetallePage({
   )
 
   const puedeGestionar = exigir(ctx, 'rfq', 'rfq.manage').ok
+  // A quien todavia no se invito, y quien todavia no cotizo: invitar dos
+  // veces al mismo o registrarle una segunda cotizacion rebota en la base.
+  const porInvitar = proveedores.filter((p) => !invitados.some((i) => i.supplier_id === p.id))
+  const porCotizar = proveedores.filter((p) => !cotizaciones.some((c) => c.supplier_id === p.id))
   const puedeAdjudicar = exigir(ctx, 'rfq', 'rfq.award').ok
   const qs = ctx.demoQs
 
@@ -105,11 +129,19 @@ export default async function RfqDetallePage({
           title={rfq.title}
           description={rfq.description ?? ''}
           crumbs={[{ label: 'Cotizaciones', href: `/cotizaciones${qs}` }, { label: rfq.title }]}
-          actions={<Badge tone={rfq.status === 'awarded' ? 'success' : 'warning'}>{ESTADO_RFQ[rfq.status] ?? rfq.status}</Badge>}
+          actions={
+            <Badge tone={rfq.status === 'awarded' ? 'success' : 'warning'}>
+              {ESTADO_RFQ[rfq.status] ?? rfq.status}
+            </Badge>
+          }
         />
 
         {cotizaciones.length === 0 ? (
-          <EmptyState icon="request_quote" title="Todavia no hay ninguna cotizacion registrada" description="" />
+          <EmptyState
+            icon="request_quote"
+            title="Todavia no hay ninguna cotizacion registrada"
+            description=""
+          />
         ) : (
           <Table>
             <THead>
@@ -120,7 +152,7 @@ export default async function RfqDetallePage({
                 <TH>Notas</TH>
                 {rfq.status === 'open' && puedeAdjudicar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -131,7 +163,9 @@ export default async function RfqDetallePage({
                   <TD className="text-[var(--color-text-primary)]">
                     {c.supplier_name}
                     {c.supplier_id === ganador && (
-                      <Badge tone="success">Mejor oferta</Badge>
+                      <Badge tone="success" className="ml-2">
+                        Mejor oferta
+                      </Badge>
                     )}
                   </TD>
                   <TD numeric>
@@ -143,18 +177,21 @@ export default async function RfqDetallePage({
                   <TD className="max-w-56 truncate">{c.notes ?? '—'}</TD>
                   {rfq.status === 'open' && puedeAdjudicar && (
                     <TD>
-                      <form action={adjudicarRfqForm}>
-                        <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                        <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                        <input type="hidden" name="rfqId" value={rfq.id} />
-                        <input type="hidden" name="supplierId" value={c.supplier_id} />
-                        <BotonEnvio
-                          
-                          className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                          <Icon name="emoji_events" size={14} />
-                          Adjudicar
-                        </BotonEnvio>
-                      </form>
+                      {/* Solo la mejor oferta: la regla del modulo es que gana
+                          el monto más bajo, no quien compra. El servidor lo
+                          vuelve a comprobar. */}
+                      {c.supplier_id === ganador && (
+                        <form action={adjudicarRfqForm}>
+                          <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                          <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                          <input type="hidden" name="rfqId" value={rfq.id} />
+                          <input type="hidden" name="supplierId" value={c.supplier_id} />
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            <Icon name="emoji_events" size={14} />
+                            Adjudicar
+                          </BotonEnvio>
+                        </form>
+                      )}
                     </TD>
                   )}
                 </TR>
@@ -163,77 +200,127 @@ export default async function RfqDetallePage({
           </Table>
         )}
 
+        {invitados.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Invitados</CardTitle>
+            </CardHeader>
+            <CardBody className="p-0">
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Proveedor</TH>
+                    <TH>Invitado</TH>
+                    <TH>Cotizacion</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {invitados.map((i) => {
+                    const cotizo = cotizaciones.some((c) => c.supplier_id === i.supplier_id)
+                    return (
+                      <TR key={i.supplier_id}>
+                        <TD className="text-[var(--color-text-primary)]">{i.supplier_name}</TD>
+                        <TD>
+                          {new Date(i.invited_at).toLocaleDateString('es-DO', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </TD>
+                        <TD>
+                          <Badge tone={cotizo ? 'success' : 'warning'}>
+                            {cotizo ? 'Ya cotizo' : 'Esperando precio'}
+                          </Badge>
+                        </TD>
+                      </TR>
+                    )
+                  })}
+                </TBody>
+              </Table>
+            </CardBody>
+          </Card>
+        )}
+
         {puedeGestionar && rfq.status === 'open' && proveedores.length > 0 && (
           <>
-            <Card>
-              <CardHeader>
-                <CardTitle>Invitar proveedor</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <form action={invitarProveedorForm} className="flex flex-wrap items-end gap-3">
-                  <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                  <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                  <input type="hidden" name="rfqId" value={rfq.id} />
-                  <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Proveedor
-                    <select name="supplierId" required className={claseInput}>
-                      {proveedores.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                    <Icon name="mail" size={14} />
-                    Invitar
-                  </BotonEnvio>
-                </form>
-              </CardBody>
-            </Card>
+            {porInvitar.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Invitar proveedor</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <form action={invitarProveedorForm} className="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                    <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                    <input type="hidden" name="rfqId" value={rfq.id} />
+                    <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Proveedor
+                      <select name="supplierId" required className={claseInput}>
+                        {porInvitar.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      <Icon name="mail" size={14} />
+                      Invitar
+                    </BotonEnvio>
+                  </form>
+                </CardBody>
+              </Card>
+            )}
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Registrar cotizacion</CardTitle>
-              </CardHeader>
-              <CardBody>
-                <form action={registrarCotizacionForm} className="flex flex-wrap items-end gap-3">
-                  <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                  <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                  <input type="hidden" name="rfqId" value={rfq.id} />
-                  <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Proveedor
-                    <select name="supplierId" required className={claseInput}>
-                      {proveedores.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Monto total
-                    <input name="totalAmount" required inputMode="decimal" className={`tabular ${claseInput}`} />
-                  </label>
-                  <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Plazo (dias)
-                    <input name="leadTimeDays" required inputMode="numeric" className={`tabular ${claseInput}`} />
-                  </label>
-                  <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Notas
-                    <input name="notes" className={claseInput} />
-                  </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                    <Icon name="send" size={14} />
-                    Registrar
-                  </BotonEnvio>
-                </form>
-              </CardBody>
-            </Card>
+            {porCotizar.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Registrar cotizacion</CardTitle>
+                </CardHeader>
+                <CardBody>
+                  <form action={registrarCotizacionForm} className="flex flex-wrap items-end gap-3">
+                    <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                    <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                    <input type="hidden" name="rfqId" value={rfq.id} />
+                    <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Proveedor
+                      <select name="supplierId" required className={claseInput}>
+                        {porCotizar.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Monto total
+                      <input
+                        name="totalAmount"
+                        required
+                        inputMode="decimal"
+                        className={`tabular ${claseInput}`}
+                      />
+                    </label>
+                    <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Plazo (dias)
+                      <input
+                        name="leadTimeDays"
+                        required
+                        inputMode="numeric"
+                        className={`tabular ${claseInput}`}
+                      />
+                    </label>
+                    <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Notas
+                      <input name="notes" className={claseInput} />
+                    </label>
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                      <Icon name="send" size={14} />
+                      Registrar
+                    </BotonEnvio>
+                  </form>
+                </CardBody>
+              </Card>
+            )}
           </>
         )}
       </div>

@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'e-sign',
-  name: 'Firma electronica',
+  name: 'Firma electrónica',
   description: 'Firma de contratos y cotizaciones con validez legal y trazabilidad.',
   icon: 'draw',
   category: 'advanced',
@@ -34,7 +34,7 @@ export default defineModule({
   permissions: ['e-sign.view', 'e-sign.manage'],
 
   routes: [
-    { path: '/firma-electronica', label: 'Firma electronica', perm: 'e-sign.view' },
+    { path: '/firma-electronica', label: 'Firma electrónica', perm: 'e-sign.view' },
     { path: '/firma-electronica/:id', label: 'Detalle de la firma', perm: 'e-sign.view', hidden: true },
   ],
 

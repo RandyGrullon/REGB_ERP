@@ -57,12 +57,12 @@ interface Linea {
 }
 
 const NOMBRE_COMPROBANTE: Record<string, string> = {
-  B01: 'Factura de credito fiscal',
+  B01: 'Factura de crédito fiscal',
   B02: 'Factura de consumo',
   B14: 'Comprobante de regimenes especiales',
   B15: 'Comprobante gubernamental',
-  E31: 'Factura de credito fiscal electronica',
-  E32: 'Factura de consumo electronica',
+  E31: 'Factura de crédito fiscal electrónica',
+  E32: 'Factura de consumo electrónica',
 }
 
 const money = (n: number) =>
@@ -92,7 +92,11 @@ export default async function FacturaImprimirPage({
              i.ncf, i.ncf_type, i.buyer_tax_id,
              i.subtotal::text, i.discount::text, i.tax::text, i.total::text,
              c.name as customer_name, c.tax_id as customer_tax_id,
-             c.address as customer_address, c.payment_terms,
+             c.address as customer_address,
+             -- El plazo de ESTA factura, no el que el cliente tenga hoy: si
+             -- después le cambian los días, la factura impresa no puede
+             -- decir "15 dias" con un vencimiento a 30.
+             (i.due_date - i.issue_date)::int as payment_terms,
              co.legal_name as company_name, co.tax_id as company_tax_id,
              co.address as company_address, co.phone as company_phone,
              sec.expires_on::text as ncf_expires_on,
@@ -170,7 +174,7 @@ export default async function FacturaImprimirPage({
             ) : (
               <p className="border border-black px-2 py-1 text-[11px] font-bold uppercase">
                 Sin comprobante fiscal
-                <span className="block font-normal normal-case">no valida para credito fiscal</span>
+                <span className="block font-normal normal-case">no valida para crédito fiscal</span>
               </p>
             )}
             <p className="mt-1">Factura {h.number}</p>
@@ -193,7 +197,7 @@ export default async function FacturaImprimirPage({
           </div>
           <div className="text-right">
             <p className="font-bold">Condiciones</p>
-            <p>{h.payment_terms === 0 ? 'Contado' : `Credito a ${h.payment_terms} dias`}</p>
+            <p>{h.payment_terms === 0 ? 'Contado' : `Crédito a ${h.payment_terms} días`}</p>
             <p>Vence: {fecha(h.due_date)}</p>
             {h.order_number && <p>Pedido: {h.order_number}</p>}
           </div>
@@ -202,7 +206,7 @@ export default async function FacturaImprimirPage({
         <table className="mt-3 w-full border-collapse">
           <thead>
             <tr className="border-b border-black text-left">
-              <th className="py-1 pr-2 font-bold">Descripcion</th>
+              <th className="py-1 pr-2 font-bold">Descripción</th>
               <th className="py-1 pr-2 text-right font-bold">Cant.</th>
               <th className="py-1 pr-2 text-right font-bold">Precio</th>
               <th className="py-1 pr-2 text-right font-bold">ITBIS</th>

@@ -78,7 +78,8 @@ export async function resolverRequisicion(fd: FormData): Promise<ActionResult> {
   const decision = String(fd.get('decision') ?? '')
   const note = String(fd.get('note') ?? '').trim() || null
   if (!requisitionId) return { ok: false, error: 'Falta la requisicion.' }
-  if (decision !== 'approved' && decision !== 'rejected') return { ok: false, error: 'Decision invalida.' }
+  if (decision !== 'approved' && decision !== 'rejected')
+    return { ok: false, error: 'Decision invalida.' }
 
   try {
     let amountError: string | null = null
@@ -91,7 +92,12 @@ export async function resolverRequisicion(fd: FormData): Promise<ActionResult> {
         throw new Error('Esa requisicion ya fue resuelta.')
       }
 
-      const permiso = exigir(ctx, 'requisitions', 'requisitions.approve', Number(row.estimated_amount))
+      const permiso = exigir(
+        ctx,
+        'requisitions',
+        'requisitions.approve',
+        Number(row.estimated_amount),
+      )
       if (!permiso.ok) {
         amountError = permiso.error
         return
@@ -153,10 +159,21 @@ export async function marcarConvertida(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function crearRequisicionForm(fd: FormData): Promise<void> {
-  await anotarAviso(await crearRequisicion(fd), 'crearRequisicion')
+  await anotarAviso(
+    await crearRequisicion(fd),
+    'crearRequisicion',
+    'Listo, quedo pendiente de aprobar.',
+  )
 }
 export async function resolverRequisicionForm(fd: FormData): Promise<void> {
-  await anotarAviso(await resolverRequisicion(fd), 'resolverRequisicion')
+  // "resolver" no es un verbo que el aviso conozca: salia "Guardamos tu
+  // cambio" tanto al aprobar como al rechazar.
+  const aprobada = String(fd.get('decision') ?? '') === 'approved'
+  await anotarAviso(
+    await resolverRequisicion(fd),
+    'resolverRequisicion',
+    aprobada ? 'Listo, quedo aprobada.' : 'Listo, quedo rechazada.',
+  )
 }
 export async function marcarConvertidaForm(fd: FormData): Promise<void> {
   await anotarAviso(await marcarConvertida(fd), 'marcarConvertida')

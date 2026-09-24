@@ -15,6 +15,7 @@ import {
   cancelarPedido,
   confirmarPedido,
   crearCliente,
+  crearPedido,
   editarCliente,
   entregarLinea,
 } from './actions'
@@ -35,12 +36,17 @@ import { facturarPedido } from '../cobrar/actions'
 
 const VENDEDOR = { 'sales-orders.*': true, 'ar.view': true, 'products.view': true }
 const DUENO = { '*': true }
+// Lleva la cartera: fija limites, no gestiona clientes.
+const CONTADOR = { 'ar.*': true, 'sales-orders.view': true }
+const ALMACENISTA = { 'sales-orders.view': true, 'sales-orders.deliver': true }
 
 let c: ClientePrueba
 let wh: string
 
 async function estado(orderId: string): Promise<string> {
-  const [o] = await db()<{ status: string }[]>`select status from public.sales_orders where id = ${orderId}`
+  const [o] = await db()<
+    { status: string }[]
+  >`select status from public.sales_orders where id = ${orderId}`
   return o!.status
 }
 
@@ -56,7 +62,7 @@ beforeAll(async () => {
     prefijo: 'accion-pedidos',
     nombre: 'Ferreteria de Prueba SRL',
     modulos: [...MODULOS_CREDITO, 'price-lists'],
-    roles: { Vendedor: VENDEDOR, Dueno: DUENO },
+    roles: { Vendedor: VENDEDOR, Dueno: DUENO, Contador: CONTADOR, Almacenista: ALMACENISTA },
   })
   wh = await almacen(c.tenantId)
   await secuencia(c.tenantId, 'B02')
@@ -146,9 +152,11 @@ describe('Cancelar un pedido', () => {
     })
     expect(await confirmarPedido(c.fd({ orderId: ped }, 'Vendedor'))).toEqual({ ok: true })
     const l = await lineaDe(ped)
-    expect(await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '4' }, 'Vendedor'))).toEqual({
-      ok: true,
-    })
+    expect(await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '4' }, 'Vendedor'))).toEqual(
+      {
+        ok: true,
+      },
+    )
     expect(await cancelarPedido(c.fd({ orderId: ped }, 'Vendedor'))).toEqual({ ok: true })
     expect(await estado(ped)).toBe('cancelled')
 
@@ -214,14 +222,23 @@ describe('La lista de precios asignada al cliente', () => {
 // ─────────────────────────────────────────────────────────────────────────
 describe('Ficha del cliente', () => {
   it('un RNC malo se corrige; uno invalido no se guarda', async () => {
-    const cli = await cliente(c.tenantId, { nombre: 'Ferreteria El Martillo SRL', rnc: '131223345' })
+    const cli = await cliente(c.tenantId, {
+      nombre: 'Ferreteria El Martillo SRL',
+      rnc: '131223345',
+    })
     const malo = await editarCliente(
-      c.fd({ id: cli, name: 'Ferreteria El Martillo SRL', taxId: '131-22334-4', terms: '30' }, 'Vendedor'),
+      c.fd(
+        { id: cli, name: 'Ferreteria El Martillo SRL', taxId: '131-22334-4', terms: '30' },
+        'Vendedor',
+      ),
     )
     expect(malo.ok).toBe(false)
 
     const bueno = await editarCliente(
-      c.fd({ id: cli, name: 'Ferreteria El Martillo SRL', taxId: '401-00755-1', terms: '15' }, 'Vendedor'),
+      c.fd(
+        { id: cli, name: 'Ferreteria El Martillo SRL', taxId: '401-00755-1', terms: '15' },
+        'Vendedor',
+      ),
     )
     expect(bueno).toEqual({ ok: true })
     const [f] = await db()<{ tax_id: string; payment_terms: number }[]>`
@@ -236,7 +253,9 @@ describe('Ficha del cliente', () => {
     )
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/ar\.credit\.manage/)
+    // Dice quien lo decide, sin el nombre interno del permiso.
+    expect(r.error).toMatch(/limites de credito/)
+    expect(r.error).not.toMatch(/ar\.credit/)
     const [f] = await db()<{ credit_limit: string | null }[]>`
       select credit_limit::text from public.customers where id = ${cli}`
     expect(f!.credit_limit).toBeNull()
@@ -253,7 +272,9 @@ describe('Ficha del cliente', () => {
       select credit_limit::text from public.customers where id = ${cli}`
     expect(Number(f!.credit_limit)).toBe(75000)
 
-    await editarCliente(c.fd({ id: cli, name: 'Cliente Con Limite', terms: '30', creditLimit: '' }, 'Dueno'))
+    await editarCliente(
+      c.fd({ id: cli, name: 'Cliente Con Limite', terms: '30', creditLimit: '' }, 'Dueno'),
+    )
     ;[f] = await db()<{ credit_limit: string | null }[]>`
       select credit_limit::text from public.customers where id = ${cli}`
     expect(f!.credit_limit).toBeNull()
@@ -265,7 +286,120 @@ describe('Ficha del cliente', () => {
     )
     expect(r.ok).toBe(false)
     expect(
-      await crearCliente(c.fd({ name: 'Alta Con Limite SRL', terms: '30', creditLimit: '50000' }, 'Dueno')),
+      await crearCliente(
+        c.fd({ name: 'Alta Con Limite SRL', terms: '30', creditLimit: '50000' }, 'Dueno'),
+      ),
     ).toEqual({ ok: true })
+  })
+
+  // Cliente misterioso (23 sep 2026): el contador -quien decide cuanto se
+  // fia, `ar.credit.manage`- recibia 404 en la ficha y no tenia ningun
+  // otro sitio donde fijar un limite. Ahora lo fija, y SOLO el limite.
+  it('el contador fija el limite sin poder tocar los datos del cliente', async () => {
+    const cli = await cliente(c.tenantId, {
+      nombre: 'Colmado La Bendicion SRL',
+      rnc: '130555125',
+      dias: 15,
+    })
+    const r = await editarCliente(
+      c.fd(
+        { id: cli, name: 'Nombre Cambiado Por El Contador', terms: '90', creditLimit: '50,000' },
+        'Contador',
+      ),
+    )
+    expect(r).toEqual({ ok: true })
+    const [f] = await db()<{ name: string; payment_terms: number; credit_limit: string | null }[]>`
+      select name, payment_terms, credit_limit::text from public.customers where id = ${cli}`
+    expect(f!.name).toBe('Colmado La Bendicion SRL')
+    expect(f!.payment_terms).toBe(15)
+    expect(Number(f!.credit_limit)).toBe(50000)
+  })
+
+  it('quien no gestiona clientes ni la cartera no cambia nada', async () => {
+    const cli = await cliente(c.tenantId, { nombre: 'Cliente Intocable' })
+    const r = await editarCliente(
+      c.fd({ id: cli, name: 'Otro', terms: '0', creditLimit: '1' }, 'Almacenista'),
+    )
+    expect(r.ok).toBe(false)
+    const [f] = await db()<{ name: string; credit_limit: string | null }[]>`
+      select name, credit_limit::text from public.customers where id = ${cli}`
+    expect(f).toEqual({ name: 'Cliente Intocable', credit_limit: null })
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────
+describe('Crear y entregar', () => {
+  it('crear el borrador devuelve el pedido, para llevar al vendedor a el', async () => {
+    const cli = await cliente(c.tenantId, { nombre: 'Cliente Borrador' })
+    const r = await crearPedido(c.fd({ customerId: cli, warehouseId: wh }, 'Vendedor'))
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.orderId).toBeTruthy()
+    const [o] = await db()<{ number: string; status: string }[]>`
+      select number, status from public.sales_orders where id = ${r.orderId!}`
+    expect(o).toEqual({ number: r.number, status: 'draft' })
+  })
+
+  // Cliente misterioso: un pedido confirmado con todo en backorder se podia
+  // "entregar" completo sin una sola unidad en el almacen. La existencia
+  // quedaba en negativo y se facturaba mercancia que nunca salio.
+  it('no se entrega lo que no esta en el almacen', async () => {
+    const prod = await producto(c.tenantId, wh, { sku: 'POCO-4', precio: 100, existencia: 4 })
+    const cli = await cliente(c.tenantId, { nombre: 'Cliente Backorder Parcial' })
+    const ped = await pedido(c.tenantId, {
+      customerId: cli,
+      warehouseId: wh,
+      productId: prod,
+      cantidad: 10,
+      precio: 100,
+      estado: 'draft',
+    })
+    expect(await confirmarPedido(c.fd({ orderId: ped }, 'Vendedor'))).toEqual({ ok: true })
+    const l = await lineaDe(ped)
+    expect(Number(l.qty_reserved)).toBe(4)
+
+    const demas = await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '10' }, 'Vendedor'))
+    expect(demas.ok).toBe(false)
+    if (demas.ok) return
+    expect(demas.error).toMatch(/solo hay 4/)
+
+    expect(await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '4' }, 'Vendedor'))).toEqual(
+      {
+        ok: true,
+      },
+    )
+    const [s] = await db()<{ q: string }[]>`
+      select qty_on_hand::text as q from public.stock_levels
+      where tenant_id = ${c.tenantId} and product_id = ${prod}`
+    expect(Number(s!.q)).toBe(0)
+
+    // Con el almacen vacio, ni una unidad mas.
+    const nada = await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '1' }, 'Vendedor'))
+    expect(nada.ok).toBe(false)
+    expect(await estado(ped)).toBe('partially_delivered')
+  })
+
+  it('un servicio (sin existencia) se entrega igual', async () => {
+    const [serv] = await db()<{ id: string }[]>`
+      insert into public.products (tenant_id, sku, name, price, tax_rate, tracks_stock, unit)
+      values (${c.tenantId}, 'ENVIO-T', 'Envio a domicilio', 350, 0.18, false, 'servicio')
+      returning id`
+    const cli = await cliente(c.tenantId, { nombre: 'Cliente Servicio' })
+    const ped = await pedido(c.tenantId, {
+      customerId: cli,
+      warehouseId: wh,
+      productId: serv!.id,
+      cantidad: 1,
+      precio: 350,
+      estado: 'draft',
+    })
+    expect(await confirmarPedido(c.fd({ orderId: ped }, 'Vendedor'))).toEqual({ ok: true })
+    const l = await lineaDe(ped)
+    expect(await entregarLinea(c.fd({ orderId: ped, lineId: l.id, qty: '1' }, 'Vendedor'))).toEqual(
+      {
+        ok: true,
+      },
+    )
+    expect(await estado(ped)).toBe('delivered')
   })
 })

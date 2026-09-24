@@ -3,7 +3,13 @@
 import { revalidatePath } from 'next/cache'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
-import { actionCtx, type ActionResult, type DemoParams } from '@/lib/module-page'
+import {
+  actionCtx,
+  exigir,
+  MENSAJE_SOLO_LECTURA,
+  type ActionResult,
+  type DemoParams,
+} from '@/lib/module-page'
 import { cotizarConMotor } from '@/lib/marketplace'
 import type { CotizacionMotor } from '@/lib/catalog'
 
@@ -49,6 +55,9 @@ export async function cotizarSeleccion(entrada: {
   return cotizarConMotor(ctx.tenantId, modulos)
 }
 
+/** Lo que oye quien no puede pedir: a quien acudir, no el nombre del permiso. */
+const MENSAJE_SOLO_DUENO = 'Solo el dueño de la cuenta puede pedir módulos: pídeselo a él.'
+
 export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
   const demo: DemoParams = {
     tenant: String(fd.get('tenant') ?? '') || undefined,
@@ -56,6 +65,18 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
   }
   const ctx = await actionCtx(demo)
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+
+  // Pedir un modulo le sube la factura al dueño: no lo decide un cajero.
+  // Owner lo tiene por `*`; el Admin de fabrica lo tiene negado a proposito
+  // ("todo menos la facturacion de REGB", 0006). Ocultar el boton no basta:
+  // la accion es un endpoint y se comprueba aqui (§8.3).
+  const permiso = exigir(ctx, 'marketplace', 'subscription.manage')
+  if (!permiso.ok) {
+    return {
+      ok: false,
+      error: permiso.error === MENSAJE_SOLO_LECTURA ? permiso.error : MENSAJE_SOLO_DUENO,
+    }
+  }
 
   let modulos: string[]
   try {

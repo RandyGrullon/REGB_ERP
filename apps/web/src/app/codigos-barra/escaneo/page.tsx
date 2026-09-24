@@ -71,7 +71,10 @@ export default async function EscaneoPage({
           icon="qr_code_scanner"
           title="Escaneo"
           description="Escanea con la camara, o escribe el codigo -un lector fisico funciona exactamente igual-."
-          crumbs={[{ label: 'Codigos de barra', href: `/codigos-barra${qs}` }, { label: 'Escaneo' }]}
+          crumbs={[
+            { label: 'Codigos de barra', href: `/codigos-barra${qs}` },
+            { label: 'Escaneo' },
+          ]}
         />
 
         <Card>
@@ -93,7 +96,7 @@ export default async function EscaneoPage({
               {!producto ? (
                 <p className="flex items-center gap-2 text-sm text-[var(--color-semantic-text-danger)]">
                   <Badge tone="danger">Sin coincidencia</Badge>
-                  Ningun producto tiene ese codigo de barras.
+                  Ningún producto tiene ese código de barras.
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -102,14 +105,15 @@ export default async function EscaneoPage({
                       <Mono>{producto.sku}</Mono> {producto.name}
                     </p>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                      RD$ {Number(producto.price).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                      RD${' '}
+                      {Number(producto.price).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
                     </p>
                   </div>
                   {existencias.length > 0 && (
                     <Table>
                       <THead>
                         <TR>
-                          <TH>Almacen</TH>
+                          <TH>Almacén</TH>
                           <TH numeric>Existencia</TH>
                         </TR>
                       </THead>

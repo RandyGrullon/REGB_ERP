@@ -123,7 +123,7 @@ describe('modulos incluidos — mas caros primero', () => {
     }
     const monthly = calculateMonthly({ tier: 'mediano', activeModules, usage })
     // includedModules mediano = 5, solo hay 3 activos: todos entran, ninguno se factura.
-    const modulesLine = monthly.lines.find((l) => l.label === 'Modulos activos')
+    const modulesLine = monthly.lines.find((l) => l.label === 'Módulos activos')
     expect(modulesLine?.amountCents).toBe(0)
     expect(modulesLine?.detail).toContain('0 de 3 facturables')
   })
@@ -146,7 +146,7 @@ describe('price_override siempre gana sobre el catalogo (regla 5)', () => {
       transactions: 0,
     }
     const monthly = calculateMonthly({ tier: 'pyme', activeModules, usage })
-    const modulesLine = monthly.lines.find((l) => l.label === 'Modulos activos')
+    const modulesLine = monthly.lines.find((l) => l.label === 'Módulos activos')
     expect(modulesLine?.amountCents).toBe(toCents(5))
   })
 })
@@ -166,10 +166,10 @@ describe('modulos en prueba', () => {
     }
     const monthly = calculateMonthly({ tier: 'pyme', activeModules, usage })
 
-    const modulesLine = monthly.lines.find((l) => l.label === 'Modulos activos')
+    const modulesLine = monthly.lines.find((l) => l.label === 'Módulos activos')
     expect(modulesLine?.amountCents).toBe(toCents(19)) // solo inventory, pyme no tiene incluidos
 
-    const trialLine = monthly.lines.find((l) => l.label === 'Modulos en prueba')
+    const trialLine = monthly.lines.find((l) => l.label === 'Módulos en prueba')
     expect(trialLine?.amountCents).toBe(0)
     expect(trialLine?.detail).toContain('1,')
   })

@@ -49,11 +49,7 @@ const badgeEstado = (estado: string): 'success' | 'warning' | 'neutral' => {
 }
 
 /** Lista de materiales (modulo 55): multinivel, versiones, sustitutos y costeo. */
-export default async function BomPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function BomPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'bom')
 
@@ -90,7 +86,11 @@ export default async function BomPage({
         </section>
 
         {boms.length === 0 ? (
-          <EmptyState icon="account_tree" title="Todavia no hay ningun BOM" description="Crea el primero abajo." />
+          <EmptyState
+            icon="account_tree"
+            title="Todavia no hay ningun BOM"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -160,9 +160,7 @@ export default async function BomPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

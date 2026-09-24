@@ -1,7 +1,13 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { asignarRoundRobin, puntuarLead, transicionValidaLead, type EstadoLead, type FuenteLead } from '@regb/operations'
+import {
+  asignarRoundRobin,
+  puntuarLead,
+  transicionValidaLead,
+  type EstadoLead,
+  type FuenteLead,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -39,11 +45,19 @@ export async function crearLead(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Elige una fuente valida.' }
   }
 
-  const score = puntuarLead({ tieneEmail: email !== null, tieneTelefono: phone !== null, fuente: source })
+  const score = puntuarLead({
+    tieneEmail: email !== null,
+    tieneTelefono: phone !== null,
+    fuente: source,
+  })
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.leads (tenant_id, name, company, email, phone, source, score)
-    values (${ctx.tenantId}, ${name}, ${company}, ${email}, ${phone}, ${source}, ${score})`)
+    values (${ctx.tenantId}, ${name}, ${company}, ${email}, ${phone}, ${source}, ${score})`,
+  )
 
   revalidatePath('/crm')
   return { ok: true }
@@ -96,12 +110,17 @@ export async function registrarActividad(fd: FormData): Promise<ActionResult> {
   const type = String(fd.get('type') ?? '')
   const notes = String(fd.get('notes') ?? '').trim()
 
-  if (!['call', 'email', 'meeting', 'note'].includes(type)) return { ok: false, error: 'Elige un tipo valido.' }
+  if (!['call', 'email', 'meeting', 'note'].includes(type))
+    return { ok: false, error: 'Elige un tipo valido.' }
   if (!notes) return { ok: false, error: 'Escribe que paso.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.lead_activities (tenant_id, lead_id, type, notes, created_by)
-    values (${ctx.tenantId}, ${leadId}, ${type}, ${notes}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${leadId}, ${type}, ${notes}, ${ctx.userId})`,
+  )
 
   revalidatePath(`/crm/${leadId}`)
   return { ok: true }

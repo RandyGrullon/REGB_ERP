@@ -106,7 +106,7 @@ export default async function ProductDetailPage({
                     disabled={!puedeEditar}
                     className={inputCls}
                   >
-                    <option value="">Sin categoria</option>
+                    <option value="">Sin categoría</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -124,7 +124,7 @@ export default async function ProductDetailPage({
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo de barras
+                  Código de barras
                   <input
                     name="barcode"
                     defaultValue={product.barcode ?? ''}
@@ -174,21 +174,23 @@ export default async function ProductDetailPage({
                     className={inputCls}
                   />
                 </label>
-                <label className="flex items-center gap-2 pt-5 text-xs text-[var(--color-text-secondary)]">
-                  <input
-                    type="checkbox"
-                    name="exento"
-                    defaultChecked={Number(product.tax_rate) === 0}
+                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  ITBIS
+                  <select
+                    name="tasa"
+                    defaultValue={String(Number(product.tax_rate))}
                     disabled={!puedeEditar}
-                  />
-                  Exento de ITBIS
+                    className={inputCls}
+                  >
+                    <option value="0.18">18 % (general)</option>
+                    <option value="0.16">16 % (aceite, azúcar, café…)</option>
+                    <option value="0">Exento (arroz, habichuelas…)</option>
+                  </select>
                 </label>
               </div>
 
               {puedeEditar ? (
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Guardar cambios
                 </BotonEnvio>
               ) : (

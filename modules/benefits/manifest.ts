@@ -11,7 +11,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'benefits',
   name: 'Beneficios',
-  description: 'Seguros, prestamos internos, adelantos y plan de beneficios.',
+  description: 'Seguros, préstamos internos, adelantos y plan de beneficios.',
   icon: 'volunteer_activism',
   category: 'standard',
   version: '0.1.0',
@@ -35,7 +35,7 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/beneficios', label: 'Prestamos & Adelantos', perm: 'benefits.view' },
+    { path: '/beneficios', label: 'Préstamos & Adelantos', perm: 'benefits.view' },
     { path: '/beneficios/planes', label: 'Planes & Inscripciones', perm: 'benefits.manage-enrollments' },
   ],
 

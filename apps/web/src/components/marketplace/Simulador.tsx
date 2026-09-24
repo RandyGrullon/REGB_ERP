@@ -38,6 +38,7 @@ export function Simulador({
   tier,
   cotizacionInicial,
   hiddenFields,
+  puedePedir = true,
   notaPendiente,
   onQuitar,
   onLimpiar,
@@ -54,6 +55,8 @@ export function Simulador({
   /** La cotizacion con la que llega la pagina (calculada en el servidor). */
   cotizacionInicial: CotizacionMotor | null
   hiddenFields: Record<string, string>
+  /** Sin `subscription.manage` se simula, pero el pedido lo hace el dueño. */
+  puedePedir?: boolean
   /** La nota de la solicitud abierta se conserva al actualizarla. */
   notaPendiente: string | null
   onQuitar: (id: string) => void
@@ -132,7 +135,10 @@ export function Simulador({
         delta={aumento > 0 ? usd(aumento) : undefined}
         destacado
       />
-      <Cifra etiqueta="Instalación, una vez" valor={usd(cotizacion?.instalacionTotal ?? 0)} />
+      <Cifra
+        etiqueta="Instalación, una vez (+ ITBIS)"
+        valor={usd(cotizacion?.instalacionTotal ?? 0)}
+      />
     </>
   )
 
@@ -378,16 +384,22 @@ export function Simulador({
           )}
 
           {/* Sin montos ocultos: el servidor vuelve a cotizar con el motor al guardar. */}
-          <form action={solicitarActivacionForm} onSubmit={onPedido}>
-            {Object.entries(hiddenFields).map(([k, v]) => (
-              <input key={k} type="hidden" name={k} value={v} />
-            ))}
-            <input type="hidden" name="modulos" value={JSON.stringify([...total])} />
-            {notaPendiente && <input type="hidden" name="nota" value={notaPendiente} />}
-            <BotonEnvio className={PILL_PRIMARIO} disabled={cuenta === 0}>
-              Solicitar<span className="hidden sm:inline"> activación</span>
-            </BotonEnvio>
-          </form>
+          {!puedePedir ? (
+            <p className="max-w-48 text-xs text-[var(--color-text-secondary)]">
+              Solo el dueño de la cuenta puede pedir módulos: muéstrale esta simulación.
+            </p>
+          ) : (
+            <form action={solicitarActivacionForm} onSubmit={onPedido}>
+              {Object.entries(hiddenFields).map(([k, v]) => (
+                <input key={k} type="hidden" name={k} value={v} />
+              ))}
+              <input type="hidden" name="modulos" value={JSON.stringify([...total])} />
+              {notaPendiente && <input type="hidden" name="nota" value={notaPendiente} />}
+              <BotonEnvio className={PILL_PRIMARIO} disabled={cuenta === 0}>
+                Solicitar<span className="hidden sm:inline"> activación</span>
+              </BotonEnvio>
+            </form>
+          )}
         </div>
       </div>
     </section>

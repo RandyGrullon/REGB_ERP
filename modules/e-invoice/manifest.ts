@@ -18,7 +18,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'e-invoice',
-  name: 'Facturacion electronica',
+  name: 'Facturación electrónica',
   description: 'e-CF de la DGII, acuses, modo contingencia y las URL que la DGII invoca.',
   icon: 'receipt_long',
   category: 'advanced',
@@ -38,7 +38,7 @@ export default defineModule({
   permissions: ['e-invoice.view', 'e-invoice.manage', 'e-invoice.emit'],
 
   routes: [
-    { path: '/facturacion-electronica', label: 'Facturacion electronica', perm: 'e-invoice.view' },
+    { path: '/facturacion-electronica', label: 'Facturación electrónica', perm: 'e-invoice.view' },
   ],
 
   dashboardWidgets: ['ecf-por-remitir'],

@@ -1,4 +1,18 @@
-import { Badge, Icon, Mono, PageHeader, StatCard, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
+import {
+  Badge,
+  Icon,
+  Mono,
+  PageHeader,
+  StatCard,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+  Toolbar,
+  ToolbarActions,
+} from '@regb/ui'
 import { buildTrialBalance } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
@@ -20,12 +34,15 @@ const money = (n: number) =>
 export default async function BalanzaPage({
   searchParams,
 }: {
-  searchParams: Promise<DemoParams>
+  searchParams: Promise<DemoParams & { hasta?: string }>
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'accounting')
+  const hasta = /^\d{4}-\d{2}-\d{2}$/.test(params.hasta ?? '') ? params.hasta! : null
 
-  const filas = await asUser(ctx.userId, ctx.tenantId, (tx) => filasBalanza(tx, ctx.tenantId))
+  const filas = await asUser(ctx.userId, ctx.tenantId, (tx) =>
+    filasBalanza(tx, ctx.tenantId, hasta),
+  )
   const inactivas = new Set(filas.filter((f) => !f.isActive).map((f) => f.accountId))
   const balanza = buildTrialBalance(filas)
 
@@ -37,9 +54,26 @@ export default async function BalanzaPage({
         <PageHeader
           icon="balance"
           title="Balanza de comprobacion"
-          description="Solo lo ya contabilizado. Un borrador todavia no es un hecho contable."
+          description={
+            hasta
+              ? `Lo contabilizado con fecha hasta el ${new Date(`${hasta}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}. Un borrador todavía no es un hecho contable.`
+              : 'Solo lo ya contabilizado. Un borrador todavía no es un hecho contable.'
+          }
           crumbs={[{ label: 'Contabilidad', href: `/contabilidad${qs}` }, { label: 'Balanza' }]}
         />
+
+        <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
+          <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+            Al día
+            <input
+              type="date"
+              name="hasta"
+              defaultValue={hasta ?? ''}
+              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <ToolbarActions hasFilters={hasta !== null} clearHref={`/contabilidad/balanza${qs}`} />
+        </Toolbar>
 
         <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Total debito" value={`RD$ ${money(balanza.totalDebit)}`} />
@@ -49,8 +83,8 @@ export default async function BalanzaPage({
             value={balanza.balanced ? 'Cuadra' : 'No cuadra'}
             hint={
               balanza.balanced
-                ? 'debito = credito'
-                : 'algo se conto sin pasar por post_journal_entry()'
+                ? 'debito = crédito'
+                : 'algun asiento entro sin pasar por Contabilizar'
             }
           />
         </section>
@@ -61,14 +95,14 @@ export default async function BalanzaPage({
             className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-danger)]"
           >
             <Icon name="error" size={18} />
-            La balanza no cuadra. Esto no deberia pasar nunca si todo se contabilizo con
-            &ldquo;Contabilizar&rdquo; — revisa si algun asiento se insento por otro camino.
+            La balanza no cuadra. Esto no debería pasar nunca si todo se contabilizo con
+            &ldquo;Contabilizar&rdquo; — avisale a soporte: algun asiento entro por otro camino.
           </p>
         )}
 
         {balanza.rows.length === 0 ? (
           <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-            Todavia no hay ningun asiento contabilizado.
+            Todavía no hay ningún asiento contabilizado.
           </p>
         ) : (
           <Table>
@@ -77,7 +111,7 @@ export default async function BalanzaPage({
                 <TH>Cuenta</TH>
                 <TH>Tipo</TH>
                 <TH numeric>Debito</TH>
-                <TH numeric>Credito</TH>
+                <TH numeric>Crédito</TH>
                 <TH numeric>Saldo</TH>
               </TR>
             </THead>
@@ -92,7 +126,12 @@ export default async function BalanzaPage({
                       <Mono>{r.accountCode}</Mono> {r.accountName}
                     </a>
                     {inactivas.has(r.accountId) && (
-                      <Badge tone="neutral" dot={false} className="ml-1" title="Desactivada, pero con saldo">
+                      <Badge
+                        tone="neutral"
+                        dot={false}
+                        className="ml-1"
+                        title="Desactivada, pero con saldo"
+                      >
                         desactivada
                       </Badge>
                     )}
@@ -110,7 +149,12 @@ export default async function BalanzaPage({
                     >
                       {money(r.balance)}
                       {r.balance < 0 && (
-                        <Badge tone="danger" dot={false} className="ml-1" title="Saldo al reves de lo normal">
+                        <Badge
+                          tone="danger"
+                          dot={false}
+                          className="ml-1"
+                          title="Saldo al reves de lo normal"
+                        >
                           al reves
                         </Badge>
                       )}

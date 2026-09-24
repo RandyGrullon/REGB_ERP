@@ -237,7 +237,8 @@ export default async function CorridaConsolidacionPage({
   // dormida, aunque la hoja historica si la siga pintando.
   const cuentasActivas = cuentas.filter((c) => c.is_active)
   const abierta = head.status === 'draft'
-  const puedeEliminar = abierta && exigir(ctx, 'consolidation', 'consolidation.elimination.create').ok
+  const puedeEliminar =
+    abierta && exigir(ctx, 'consolidation', 'consolidation.elimination.create').ok
   const puedeCerrar = abierta && exigir(ctx, 'consolidation', 'consolidation.run.close').ok
   const qs = ctx.demoQs
 
@@ -259,10 +260,10 @@ export default async function CorridaConsolidacionPage({
 
         <p className="text-xs text-[var(--color-text-muted)]">
           La foto de esta corrida es el ACUMULADO de todo lo contabilizado hasta el{' '}
-          {fecha(head.period_end)}, no solo el movimiento entre las dos fechas. Es a proposito:
-          una cuenta por cobrar entre dos empresas del grupo nacida antes valdria cero si la foto
-          solo mirara el periodo, y no habria nada que eliminar. Mientras el sistema no tenga
-          cierre anual, ingresos y gastos tambien salen acumulados.
+          {fecha(head.period_end)}, no solo el movimiento entre las dos fechas. Es a proposito: una
+          cuenta por cobrar entre dos empresas del grupo nacida antes valdria cero si la foto solo
+          mirara el período, y no habria nada que eliminar. Mientras el sistema no tenga cierre
+          anual, ingresos y gastos también salen acumulados.
         </p>
 
         <section aria-label="Lo que se elimino" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -281,8 +282,8 @@ export default async function CorridaConsolidacionPage({
             value={`${head.presentation_currency} ${money(hoja.totals.totalDebit)}`}
             hint={
               hoja.totals.balanced
-                ? `credito ${money(hoja.totals.totalCredit)}: cuadra`
-                : `credito ${money(hoja.totals.totalCredit)}: la hoja no cuadra`
+                ? `crédito ${money(hoja.totals.totalCredit)}: cuadra`
+                : `crédito ${money(hoja.totals.totalCredit)}: la hoja no cuadra`
             }
           />
           <StatCard
@@ -290,7 +291,7 @@ export default async function CorridaConsolidacionPage({
             value={abierta ? 'Borrador' : 'Cerrada'}
             hint={
               abierta
-                ? 'todavia se puede capturar y corregir'
+                ? 'todavía se puede capturar y corregir'
                 : `cerrada el ${head.closed_at ? fecha(head.closed_at) : '—'}`
             }
           />
@@ -304,7 +305,7 @@ export default async function CorridaConsolidacionPage({
             <Icon name="error" size={18} />
             La hoja consolidada no cuadra: debito {money(hoja.totals.totalDebit)} contra credito{' '}
             {money(hoja.totals.totalCredit)}. Si cada asiento cuadro al contabilizarse, esto no
-            deberia pasar nunca.
+            debería pasar nunca.
           </p>
         )}
 
@@ -329,7 +330,7 @@ export default async function CorridaConsolidacionPage({
           <CardBody>
             {hoja.rows.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Esta corrida no encontro ningun asiento contabilizado en el periodo. Revisa las
+                Esta corrida no encontro ningún asiento contabilizado en el período. Revisa las
                 fechas, o que los asientos esten contabilizados y no en borrador.
               </p>
             ) : (
@@ -345,7 +346,7 @@ export default async function CorridaConsolidacionPage({
                     ))}
                     <TH numeric>Combinado</TH>
                     <TH numeric>Elim. debito</TH>
-                    <TH numeric>Elim. credito</TH>
+                    <TH numeric>Elim. crédito</TH>
                     <TH numeric>Consolidado</TH>
                   </TR>
                 </THead>
@@ -392,14 +393,14 @@ export default async function CorridaConsolidacionPage({
           <CardBody>
             {eliminaciones.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no se ha eliminado nada. Sin eliminaciones, la columna consolidada es la
-                simple suma de las empresas -y el grupo se declara mas grande de lo que es-.
+                Todavía no se ha eliminado nada. Sin eliminaciones, la columna consolidada es la
+                simple suma de las empresas -y el grupo se declara más grande de lo que es-.
               </p>
             ) : (
               <Table>
                 <THead>
                   <TR>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH>Entre</TH>
                     <TH>Tipo</TH>
                     <TH>Cuentas</TH>
@@ -501,7 +502,7 @@ export default async function CorridaConsolidacionPage({
                     </select>
                   </label>
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Cuenta al credito
+                    Cuenta al crédito
                     <select name="creditAccountId" required className={claseInput}>
                       {cuentasActivas.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -537,7 +538,7 @@ export default async function CorridaConsolidacionPage({
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Es un par: un mismo monto al debito de una cuenta y al credito de otra, asi la
-                  consolidacion no se puede descuadrar. Un caso de tres patas se captura como dos
+                  consolidación no se puede descuadrar. Un caso de tres patas se captura como dos
                   eliminaciones.
                 </p>
               </form>

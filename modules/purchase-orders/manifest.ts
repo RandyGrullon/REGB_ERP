@@ -17,8 +17,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'purchase-orders',
-  name: 'Ordenes de compra',
-  description: 'Pedidos a proveedores con recepcion parcial y costo real de entrada.',
+  name: 'Órdenes de compra',
+  description: 'Pedidos a proveedores con recepción parcial y costo real de entrada.',
   icon: 'local_shipping',
   category: 'standard',
   version: '0.1.0',
@@ -48,7 +48,7 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/compras', label: 'Ordenes de compra', perm: 'purchase-orders.view' },
+    { path: '/compras', label: 'Órdenes de compra', perm: 'purchase-orders.view' },
     {
       path: '/compras/proveedores',
       label: 'Proveedores',

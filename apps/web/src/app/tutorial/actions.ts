@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { TOURS } from '@regb/core'
 import { asUser } from '@/lib/db'
 import { actionCtx, exigir, type ActionResult } from '@/lib/module-page'
@@ -125,4 +126,26 @@ export async function retomarTour(formData: FormData): Promise<void> {
 export async function reiniciarTour(formData: FormData): Promise<void> {
   const r = await guardar(formData, () => ({ step: 0, completed: false, skipped: false }))
   await anotarAviso(r, 'reiniciarTour', 'Listo, el tutorial empieza de nuevo.')
+}
+
+/**
+ * "Siguiente paso" y "Terminar" de la guia flotante, la que acompaña al
+ * usuario por las pantallas. Antes eran enlaces y no guardaban nada: quien
+ * recorria las cinco pantallas y pulsaba "Terminar el tour" volvia al
+ * tutorial en "Paso 1 de 5", 0 completadas, y el paso "Haz el recorrido"
+ * del inicio no se marcaba nunca. Ahora guarda y despues navega.
+ */
+export async function pasoDesdeGuia(formData: FormData): Promise<void> {
+  const tour = TOURS.find((t) => t.id === String(formData.get('tourId') ?? ''))
+  const termina = tour !== undefined && Number(formData.get('step') ?? 0) + 1 >= tour.steps.length
+  const r = await guardar(formData, (actual, total) => {
+    const siguiente = actual + 1
+    return { step: Math.min(siguiente, total), completed: siguiente >= total, skipped: false }
+  })
+  if (!r.ok || !termina) await calladoSalvoError(r, 'pasoDesdeGuia')
+  else await anotarAviso(r, 'pasoDesdeGuia', `Terminaste "${tour.title}". +${tour.xp} puntos.`)
+
+  // Solo rutas de la propia app: el destino viene del formulario.
+  const destino = String(formData.get('destino') ?? '')
+  redirect(destino.startsWith('/') && !destino.startsWith('//') ? destino : '/tutorial')
 }

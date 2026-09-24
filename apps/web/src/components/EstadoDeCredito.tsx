@@ -43,7 +43,7 @@ export function EstadoDeCredito({
 
   return (
     <section
-      aria-label={titulo ?? 'Credito del cliente'}
+      aria-label={titulo ?? 'Crédito del cliente'}
       className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
     >
       <div className="flex items-start gap-3">
@@ -58,7 +58,7 @@ export function EstadoDeCredito({
         </span>
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-            {titulo ?? (bloqueado ? 'Credito bloqueado' : 'Credito al dia')}
+            {titulo ?? (bloqueado ? 'Crédito bloqueado' : 'Crédito al día')}
           </p>
           {bloqueado && s.mensaje && (
             <p className="text-sm text-[var(--color-text-secondary)]">{s.mensaje}</p>
@@ -93,7 +93,7 @@ export function EstadoDeCredito({
             </dd>
           </div>
           <div>
-            <dt className="text-[var(--color-text-muted)]">Mas atrasada</dt>
+            <dt className="text-[var(--color-text-muted)]">Más atrasada</dt>
             <dd
               className={`tabular text-sm font-semibold ${
                 atrasado
@@ -101,18 +101,20 @@ export function EstadoDeCredito({
                   : 'text-[var(--color-text-primary)]'
               }`}
             >
-              {atrasado ? `${s.oldestOverdueDays} dias` : 'Al dia'}
+              {atrasado ? `${s.oldestOverdueDays} días` : 'Al día'}
               <span className="block text-[11px] font-normal text-[var(--color-text-muted)]">
                 {s.overdueBlockDays === null
                   ? 'sin bloqueo por vencidas'
-                  : `bloquea desde ${s.overdueBlockDays + 1} dias`}
+                  : `bloquea desde ${s.overdueBlockDays + 1} días`}
               </span>
             </dd>
           </div>
         </dl>
       )}
 
-      {children && <div className="mt-3 border-t border-[var(--color-border)] pt-3">{children}</div>}
+      {children && (
+        <div className="mt-3 border-t border-[var(--color-border)] pt-3">{children}</div>
+      )}
     </section>
   )
 }

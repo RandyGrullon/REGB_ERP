@@ -80,7 +80,7 @@ export default async function ListasPrecioPage({
         customerId: null,
         channel: l.channel,
         startDate: new Date(`${l.start_date}T00:00:00`),
-        endDate: l.end_date ? new Date(`${l.end_date}T00:00:00`) : null,
+        endDate: l.end_date ? new Date(`${l.end_date}T23:59:59`) : null,
         status: l.status,
       },
       hoy,
@@ -96,7 +96,7 @@ export default async function ListasPrecioPage({
         <PageHeader
           icon="sell"
           title="Listas de precios"
-          description="La lista mas especifica gana siempre -cliente, luego canal, luego general-, calculado siempre contra la fecha de hoy."
+          description="Los pedidos y las cotizaciones toman el precio de aqui solos. Si un cliente tiene una lista asignada, esa manda; si no, la mas especifica vigente hoy: la del cliente, luego la del canal, luego la general. Los precios son sin ITBIS."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -105,7 +105,11 @@ export default async function ListasPrecioPage({
         </section>
 
         {listas.length === 0 ? (
-          <EmptyState icon="sell" title="Todavia no hay ninguna lista" description="Crea la primera abajo." />
+          <EmptyState
+            icon="sell"
+            title="Todavia no hay ninguna lista"
+            description="Crea la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -116,7 +120,7 @@ export default async function ListasPrecioPage({
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -130,7 +134,7 @@ export default async function ListasPrecioPage({
                     customerId: null,
                     channel: l.channel,
                     startDate: new Date(`${l.start_date}T00:00:00`),
-                    endDate: l.end_date ? new Date(`${l.end_date}T00:00:00`) : null,
+                    endDate: l.end_date ? new Date(`${l.end_date}T23:59:59`) : null,
                     status: l.status,
                   },
                   hoy,
@@ -151,7 +155,9 @@ export default async function ListasPrecioPage({
                       {l.channel ? ` · ${l.channel}` : ''}
                     </TD>
                     <TD>
-                      <Badge tone={vigente ? 'success' : 'neutral'}>{vigente ? 'Vigente hoy' : 'Fuera de rango'}</Badge>
+                      <Badge tone={vigente ? 'success' : 'neutral'}>
+                        {vigente ? 'Vigente hoy' : 'Fuera de rango'}
+                      </Badge>
                     </TD>
                     <TD>
                       <Badge tone={l.status === 'active' ? 'success' : 'neutral'}>
@@ -164,10 +170,12 @@ export default async function ListasPrecioPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="listId" value={l.id} />
-                          <input type="hidden" name="status" value={l.status === 'active' ? 'inactive' : 'active'} />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <input
+                            type="hidden"
+                            name="status"
+                            value={l.status === 'active' ? 'inactive' : 'active'}
+                          />
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             {l.status === 'active' ? 'Desactivar' : 'Activar'}
                           </BotonEnvio>
                         </form>
@@ -216,7 +224,7 @@ export default async function ListasPrecioPage({
                 </label>
                 <label className="flex min-w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Canal (si es por canal)
-                  <input name="channel" placeholder="wholesale" className={claseInput} />
+                  <input name="channel" placeholder="mayoreo" className={claseInput} />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Desde
@@ -226,9 +234,7 @@ export default async function ListasPrecioPage({
                   Hasta (opcional)
                   <input type="date" name="endDate" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear lista
                 </BotonEnvio>
@@ -267,9 +273,7 @@ export default async function ListasPrecioPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
                   Asignar
                 </BotonEnvio>

@@ -128,7 +128,11 @@ export default async function ContabilidadPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Borradores" value={String(totales?.borradores ?? 0)} hint="sin contabilizar" />
+          <StatCard
+            label="Borradores"
+            value={String(totales?.borradores ?? 0)}
+            hint="sin contabilizar"
+          />
           <StatCard label="Contabilizados" value={String(totales?.contabilizados ?? 0)} />
           <StatCard label="Mostrados" value={String(asientos.length)} />
         </section>
@@ -149,22 +153,22 @@ export default async function ContabilidadPage({
         {asientos.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'account_balance'}
-            title={hayFiltros ? 'Ningun asiento coincide' : 'Todavia no hay asientos'}
+            title={hayFiltros ? 'Ningún asiento coincide' : 'Todavía no hay asientos'}
             description={
               hayFiltros
-                ? 'Prueba con otro numero o descripcion.'
-                : 'Crea el primero abajo. Necesitas al menos dos cuentas en el catalogo.'
+                ? 'Prueba con otro número o descripción.'
+                : 'Crea el primero abajo. Necesitas al menos dos cuentas en el catálogo.'
             }
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Numero</TH>
+                <TH>Número</TH>
                 <TH>Fecha</TH>
-                <TH>Descripcion</TH>
+                <TH>Descripción</TH>
                 <TH>Origen</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH>Estado</TH>
                 <TH numeric>Total</TH>
               </TR>
@@ -188,7 +192,11 @@ export default async function ContabilidadPage({
                       {a.source_type === 'manual' ? (
                         <span className="text-[var(--color-text-muted)]">Manual</span>
                       ) : (
-                        <Badge tone="info" dot={false} title="Generado solo a partir de la operacion">
+                        <Badge
+                          tone="info"
+                          dot={false}
+                          title="Generado solo a partir de la operacion"
+                        >
                           {ORIGEN_ASIENTO[a.source_type] ?? a.source_type}
                         </Badge>
                       )}
@@ -237,16 +245,14 @@ export default async function ContabilidadPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Crear borrador
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Se crea en borrador. Le agregas las lineas despues; solo se contabiliza cuando
-                debito y credito cuadran.
+                debito y crédito cuadran.
               </p>
             </CardBody>
           </Card>

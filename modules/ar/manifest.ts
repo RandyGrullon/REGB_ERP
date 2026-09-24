@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'ar',
   name: 'Por cobrar',
-  description: 'Facturas, antiguedad de saldos, recordatorios y notas de credito.',
+  description: 'Facturas, antigüedad de saldos, recordatorios y notas de crédito.',
   icon: 'request_quote',
   category: 'standard',
   version: '0.1.0',

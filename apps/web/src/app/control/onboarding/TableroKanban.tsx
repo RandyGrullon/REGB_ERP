@@ -172,9 +172,9 @@ export function TableroKanban({
                 {cards.length === 0 && (
                   <p className="px-2 py-6 text-center text-xs text-[var(--color-text-muted)]">
                     {esDestino
-                      ? 'Suelta aqui'
+                      ? 'Suelta aquí'
                       : hayFiltro
-                        ? 'Ningun cliente del filtro en esta etapa'
+                        ? 'Ningún cliente del filtro en esta etapa'
                         : 'Sin clientes en esta etapa'}
                   </p>
                 )}
@@ -296,7 +296,7 @@ function Tarjeta({
           disabled={!siguiente}
           onClick={() => siguiente && moverA(c, siguiente.id)}
           aria-label={
-            siguiente ? `Mover ${c.legal_name} a ${siguiente.label}` : 'Ya esta en la ultima etapa'
+            siguiente ? `Mover ${c.legal_name} a ${siguiente.label}` : 'Ya esta en la última etapa'
           }
           className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-30"
         >

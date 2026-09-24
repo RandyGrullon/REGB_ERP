@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { PROPOSITOS_CONTABLES } from '@regb/operations'
+import { PROPOSITOS_CONTABLES, fechaFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -47,11 +47,22 @@ export async function crearCuenta(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Elige un tipo de cuenta valido.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      insert into public.accounts (tenant_id, code, name, type)
-      values (${ctx.tenantId}, ${code}, ${name}, ${type})`
-  })
+  // Un codigo repetido lanzaba la excepcion de la base sin atrapar y la
+  // pantalla entera caia en el error generico: el contador perdia lo que
+  // escribio sin saber por que.
+  try {
+    await asUser(ctx.userId, ctx.tenantId, (tx) => {
+      return tx`
+        insert into public.accounts (tenant_id, code, name, type)
+        values (${ctx.tenantId}, ${code}, ${name}, ${type})`
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    if (msg.includes('duplicate key')) {
+      return { ok: false, error: `Ya tienes una cuenta con el codigo ${code}.` }
+    }
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
 
   revalidatePath('/contabilidad/cuentas')
   return { ok: true }
@@ -66,12 +77,38 @@ export async function alternarCuenta(fd: FormData): Promise<ActionResult> {
   const id = String(fd.get('id') ?? '')
   if (!id) return { ok: false, error: 'Faltan datos.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
+  const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [cuenta] = await tx<{ code: string; name: string; is_active: boolean }[]>`
+      select code, name, is_active from public.accounts
+      where id = ${id} and tenant_id = ${ctx.tenantId}`
+    if (!cuenta) return 'Esa cuenta no existe.'
+
+    // Desactivar una cuenta que usa el mapa rompe los asientos automaticos
+    // en silencio: el despachador reintenta y reintenta, y las ventas y
+    // pagos de ese rato no llegan al mayor hasta que alguien lo nota. Se
+    // dice aqui, en palabras del contador, que uso hay que mover primero.
+    if (cuenta.is_active) {
+      const usos = await tx<{ purpose: string }[]>`
+        select purpose from public.accounting_account_map
+        where tenant_id = ${ctx.tenantId} and account_id = ${id}`
+      if (usos.length > 0) {
+        const nombres = usos
+          .map(
+            (u) =>
+              PROPOSITOS_CONTABLES.find((p) => p.proposito === u.purpose)?.etiqueta ?? u.purpose,
+          )
+          .join(', ')
+        return `La cuenta ${cuenta.code} ${cuenta.name} la usan los asientos automaticos (${nombres}). Asigna otra en el Mapa de cuentas antes de desactivarla.`
+      }
+    }
+
+    await tx`
       update public.accounts set is_active = not is_active, updated_at = now()
       where id = ${id} and tenant_id = ${ctx.tenantId}`
+    return 'ok'
   })
 
+  if (res !== 'ok') return { ok: false, error: res }
   revalidatePath('/contabilidad/cuentas')
   return { ok: true }
 }
@@ -88,16 +125,27 @@ export async function crearAsiento(fd: FormData): Promise<ActionResult> {
   const description = String(fd.get('description') ?? '').trim()
   const entryDate = String(fd.get('entryDate') ?? '').trim()
   if (description.length < 3) return { ok: false, error: 'Describe de que trata el asiento.' }
+  if (entryDate !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
+    return { ok: false, error: 'La fecha del asiento no es valida.' }
+  }
 
-  await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [n] = await tx<{ next_journal_entry_number: string }[]>`
-      select public.next_journal_entry_number(${ctx.tenantId})`
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [n] = await tx<{ next_journal_entry_number: string }[]>`
+        select public.next_journal_entry_number(${ctx.tenantId})`
 
-    await tx`
-      insert into public.journal_entries (tenant_id, number, description, entry_date, created_by)
-      values (${ctx.tenantId}, ${n!.next_journal_entry_number}, ${description},
-              ${entryDate || new Date().toISOString().slice(0, 10)}, ${ctx.userId})`
-  })
+      // Sin fecha, HOY en Santo Domingo. `toISOString()` es el dia de UTC:
+      // un asiento creado despues de las 8 de la noche salia con fecha de
+      // mañana -y el ultimo dia del mes, en el mes siguiente-.
+      await tx`
+        insert into public.journal_entries (tenant_id, number, description, entry_date, created_by)
+        values (${ctx.tenantId}, ${n!.next_journal_entry_number}, ${description},
+                ${entryDate || fechaFiscal(new Date())}, ${ctx.userId})`
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
 
   revalidatePath('/contabilidad')
   return { ok: true }
@@ -174,9 +222,7 @@ export async function contabilizarAsiento(fd: FormData): Promise<ActionResult> {
   if (!entryId) return { ok: false, error: 'Faltan datos.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.post_journal_entry(${entryId})`,
-    )
+    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.post_journal_entry(${entryId})`)
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -198,8 +244,11 @@ export async function borrarAsiento(fd: FormData): Promise<ActionResult> {
   if (!entryId) return { ok: false, error: 'Faltan datos.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`delete from public.journal_entries where id = ${entryId} and tenant_id = ${ctx.tenantId}`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) =>
+        tx`delete from public.journal_entries where id = ${entryId} and tenant_id = ${ctx.tenantId}`,
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -267,8 +316,10 @@ export async function crearCuentasPorDefecto(fd: FormData): Promise<ActionResult
   if (!permiso.ok) return permiso
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.asegurar_mapa_contable(${ctx.tenantId})`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.asegurar_mapa_contable(${ctx.tenantId})`,
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'

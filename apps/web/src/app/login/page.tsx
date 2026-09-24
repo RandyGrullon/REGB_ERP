@@ -28,11 +28,11 @@ export default async function LoginPage({
         ) : (
           <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
             <p className="text-sm font-medium text-[var(--color-semantic-text-warning)]">
-              Modo demostracion
+              Modo demostración
             </p>
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              No hay un Supabase configurado, asi que el login esta desactivado y la app usa una
-              sesion simulada.
+              No hay un Supabase configurado, así que el login esta desactivado y la app usa una
+              sesión simulada.
             </p>
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
               Para activarlo, copia{' '}
@@ -44,7 +44,7 @@ export default async function LoginPage({
               href="/"
               className="mt-4 inline-block text-sm text-[var(--color-text-link)] underline-offset-4 hover:underline"
             >
-              Entrar en modo demostracion →
+              Entrar en modo demostración →
             </a>
           </div>
         )}

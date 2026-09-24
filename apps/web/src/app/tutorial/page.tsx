@@ -141,14 +141,12 @@ export default async function TutorialPage({
                   {completado ? (
                     <div className="mt-3 flex items-center gap-2">
                       <p className="flex-1 text-sm text-[var(--color-text-secondary)]">
-                        Terminaste esta guia. Puedes repasarla cuando quieras.
+                        Terminaste esta guía. Puedes repasarla cuando quieras.
                       </p>
                       {puedeEditar && (
                         <form action={reiniciarTour}>
                           {campos(tour, 0)}
-                          <BotonEnvio  className={btnSec}>
-                            Repasar
-                          </BotonEnvio>
+                          <BotonEnvio className={btnSec}>Repasar</BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -160,9 +158,7 @@ export default async function TutorialPage({
                       {puedeEditar && (
                         <form action={retomarTour}>
                           {campos(tour, step)}
-                          <BotonEnvio  className={btnPri}>
-                            Retomar
-                          </BotonEnvio>
+                          <BotonEnvio className={btnPri}>Retomar</BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -189,9 +185,9 @@ export default async function TutorialPage({
                             <a
                               /*
                                 El tour y el paso viajan en la URL para
-                                que la guia siga DENTRO de la pantalla de
+                                que la guía siga DENTRO de la pantalla de
                                 destino. Antes se aterrizaba alli sin el
-                                paso y habia que volver aqui para leer el
+                                paso y habia que volver aquí para leer el
                                 siguiente: un tutorial que obliga a salirse
                                 de la pantalla no lo termina nadie.
                               */
@@ -206,23 +202,19 @@ export default async function TutorialPage({
                               {step > 0 && (
                                 <form action={retrocederPaso}>
                                   {campos(tour, step)}
-                                  <BotonEnvio  className={btnSec}>
-                                    Atras
-                                  </BotonEnvio>
+                                  <BotonEnvio className={btnSec}>Atras</BotonEnvio>
                                 </form>
                               )}
                               <form action={avanzarPaso}>
                                 {campos(tour, step)}
-                                <BotonEnvio  className={btnSec}>
+                                <BotonEnvio className={btnSec}>
                                   {step + 1 === tour.steps.length ? 'Terminar' : 'Siguiente'}
                                 </BotonEnvio>
                               </form>
                               <form action={saltarTour} className="ml-auto">
                                 {campos(tour, step)}
-                                <BotonEnvio
-                                  
-                                  className="text-xs text-[var(--color-text-muted)] underline">
-                                  Saltar esta guia
+                                <BotonEnvio className="text-xs text-[var(--color-text-muted)] underline">
+                                  Saltar esta guía
                                 </BotonEnvio>
                               </form>
                             </>

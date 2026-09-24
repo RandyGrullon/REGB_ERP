@@ -77,6 +77,11 @@ export default async function AsistenciaPage({
   })
 
   const abiertos = marcajes.filter((m) => !m.check_out)
+  // Hoy en RD: antes el recuadro contaba los ultimos 50 marcajes de
+  // cualquier dia y decia que eran de hoy.
+  const diaRD = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' })
+  const hoyRD = diaRD(new Date())
+  const deHoy = marcajes.filter((m) => diaRD(new Date(m.check_in)) === hoyRD)
   const puedeMarcar = exigir(ctx, 'attendance', 'attendance.check-in').ok
   const qs = ctx.demoQs
 
@@ -102,7 +107,7 @@ export default async function AsistenciaPage({
           actions={
             <a
               href={`/asistencia/geocercas${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="fence" size={18} />
               Geocercas
@@ -111,8 +116,12 @@ export default async function AsistenciaPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Marcajes abiertos" value={String(abiertos.length)} hint="sin salida todavia" />
-          <StatCard label="Marcajes hoy" value={String(marcajes.length)} />
+          <StatCard
+            label="Marcajes abiertos"
+            value={String(abiertos.length)}
+            hint="sin salida todavia"
+          />
+          <StatCard label="Marcajes hoy" value={String(deHoy.length)} />
         </section>
 
         {marcajes.length === 0 ? (
@@ -131,10 +140,10 @@ export default async function AsistenciaPage({
                 <TH numeric>Horas</TH>
                 <TH numeric>Extra</TH>
                 <TH numeric>Tardanza</TH>
-                <TH>Metodo</TH>
+                <TH>Método</TH>
                 {puedeMarcar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -151,17 +160,23 @@ export default async function AsistenciaPage({
                   <TR key={m.id}>
                     <TD className="text-[var(--color-text-primary)]">{m.employee_name}</TD>
                     <TD>{fechaHora(m.check_in)}</TD>
-                    <TD>{m.check_out ? fechaHora(m.check_out) : <Badge tone="warning">Abierto</Badge>}</TD>
+                    <TD>
+                      {m.check_out ? fechaHora(m.check_out) : <Badge tone="warning">Abierto</Badge>}
+                    </TD>
                     <TD numeric>
                       <span className="tabular">{horas ?? '—'}</span>
                     </TD>
                     <TD numeric>
-                      <span className={`tabular ${extra ? 'text-[var(--color-semantic-text-warning)]' : ''}`}>
+                      <span
+                        className={`tabular ${extra ? 'text-[var(--color-semantic-text-warning)]' : ''}`}
+                      >
                         {extra ?? '—'}
                       </span>
                     </TD>
                     <TD numeric>
-                      <span className={`tabular ${tardanza > 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}`}>
+                      <span
+                        className={`tabular ${tardanza > 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}`}
+                      >
                         {tardanza > 0 ? `${tardanza} min` : '—'}
                       </span>
                     </TD>
@@ -180,9 +195,7 @@ export default async function AsistenciaPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="recordId" value={m.id} />
-                            <BotonEnvio
-                              
-                              className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="logout" size={14} />
                               Salida
                             </BotonEnvio>
@@ -229,22 +242,30 @@ export default async function AsistenciaPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Latitud
-                  <input name="lat" inputMode="decimal" placeholder="18.4861" className={`tabular ${claseInput}`} />
+                  <input
+                    name="lat"
+                    inputMode="decimal"
+                    placeholder="18.4861"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Longitud
-                  <input name="lng" inputMode="decimal" placeholder="-69.9312" className={`tabular ${claseInput}`} />
+                  <input
+                    name="lng"
+                    inputMode="decimal"
+                    placeholder="-69.9312"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="login" size={18} />
                   Marcar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Latitud/longitud son opcionales -sin ellas, el marcaje queda manual-. La app movil las
-                completa sola con el GPS del telefono.
+                Latitud/longitud son opcionales -sin ellas, el marcaje queda manual-. La app móvil
+                las completa sola con el GPS del teléfono.
               </p>
             </CardBody>
           </Card>

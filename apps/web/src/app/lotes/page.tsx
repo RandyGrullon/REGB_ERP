@@ -19,12 +19,7 @@ import { loteProximoAVencer, loteVigente } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import {
-  abrirRecallForm,
-  cerrarRecallForm,
-  consumirFefoForm,
-  registrarLoteForm,
-} from './actions'
+import { abrirRecallForm, cerrarRecallForm, consumirFefoForm, registrarLoteForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -63,11 +58,7 @@ const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 
 /** Lotes, series y vencimientos (modulo 49): FEFO real, no una tabla que alguien revisa a mano. */
-export default async function LotesPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function LotesPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'lots-serials')
 
@@ -77,7 +68,9 @@ export default async function LotesPage({
     async (tx) => {
       const p = await tx<ProductoOption[]>`
         select id, sku, name from public.products
-        where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+        -- Un servicio (envio, instalacion) no tiene lotes ni existencias:
+        -- ofrecerlo aquí terminaba en el error del kardex al registrar.
+        where tenant_id = ${ctx.tenantId} and active and tracks_stock order by name limit 300`
       const a = await tx<AlmacenOption[]>`
         select id, name from public.warehouses
         where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
@@ -173,7 +166,7 @@ export default async function LotesPage({
                     </select>
                   </label>
                   <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Numero de lote/serie
+                    Número de lote/serie
                     <input name="lotNumber" required className={claseInput} />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -182,15 +175,34 @@ export default async function LotesPage({
                   </label>
                   <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Cantidad
-                    <input name="qty" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                    <input
+                      name="qty"
+                      required
+                      inputMode="decimal"
+                      className={`tabular ${claseInput}`}
+                    />
+                  </label>
+                  <label className="flex min-w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    De donde sale
+                    {/* Lo que llego por Recepciones YA esta en el inventario:
+                        registrar su lote como entrada lo contaba dos veces. */}
+                    <select name="origen" defaultValue="existente" className={claseInput}>
+                      <option value="existente">
+                        Ya esta en el almacén (llego por una recepción)
+                      </option>
+                      <option value="entrada">Entra ahora al inventario</option>
+                    </select>
                   </label>
                   <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Costo unitario
-                    <input name="unitCost" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                    <input
+                      name="unitCost"
+                      inputMode="decimal"
+                      placeholder="solo si entra"
+                      className={`tabular ${claseInput}`}
+                    />
                   </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="add" size={14} />
                     Registrar
                   </BotonEnvio>
@@ -200,7 +212,7 @@ export default async function LotesPage({
 
             <Card>
               <CardHeader>
-                <CardTitle>Consumir stock (FEFO automatico)</CardTitle>
+                <CardTitle>Consumir stock (FEFO automático)</CardTitle>
               </CardHeader>
               <CardBody>
                 <form action={consumirFefoForm} className="flex flex-wrap items-end gap-3">
@@ -227,22 +239,25 @@ export default async function LotesPage({
                   </label>
                   <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Cantidad
-                    <input name="qty" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                    <input
+                      name="qty"
+                      required
+                      inputMode="decimal"
+                      className={`tabular ${claseInput}`}
+                    />
                   </label>
                   <label className="flex min-w-32 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Razon
                     <input name="notes" placeholder="Venta, merma, etc." className={claseInput} />
                   </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="output" size={14} />
                     Consumir
                   </BotonEnvio>
                 </form>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  El sistema elige solo de que lote sacar cada unidad -el que vence mas pronto
-                  primero-. No esta conectado al checkout de ventas todavia.
+                  El sistema elige solo de que lote sacar cada unidad -el que vence más pronto
+                  primero-. No esta conectado al checkout de ventas todavía.
                 </p>
               </CardBody>
             </Card>
@@ -266,7 +281,7 @@ export default async function LotesPage({
                     <TH numeric>Existencia total</TH>
                     {puedeRecall && (
                       <TH>
-                        <span className="sr-only">Accion</span>
+                        <span className="sr-only">Acción</span>
                       </TH>
                     )}
                   </TR>
@@ -284,19 +299,20 @@ export default async function LotesPage({
                       </TD>
                       {puedeRecall && (
                         <TD>
-                          <form action={abrirRecallForm} className="flex flex-wrap items-center gap-1">
+                          <form
+                            action={abrirRecallForm}
+                            className="flex flex-wrap items-center gap-1"
+                          >
                             {campos}
                             <input type="hidden" name="productId" value={l.product_id} />
                             <input type="hidden" name="lotId" value={l.id} />
                             <input
                               name="reason"
                               placeholder="Razon del recall"
-                              aria-label={`Razon del recall de ${l.product_name} lote ${l.lot_number}`}
+                              aria-label={`Razón del recall de ${l.product_name} lote ${l.lot_number}`}
                               className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
-                            <BotonEnvio
-                              
-                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Recall
                             </BotonEnvio>
                           </form>
@@ -323,11 +339,11 @@ export default async function LotesPage({
                   <TR>
                     <TH>Producto</TH>
                     <TH>Lote</TH>
-                    <TH>Razon</TH>
+                    <TH>Razón</TH>
                     <TH>Estado</TH>
                     {puedeRecall && (
                       <TH>
-                        <span className="sr-only">Accion</span>
+                        <span className="sr-only">Acción</span>
                       </TH>
                     )}
                   </TR>
@@ -348,9 +364,7 @@ export default async function LotesPage({
                           <form action={cerrarRecallForm}>
                             {campos}
                             <input type="hidden" name="recallId" value={r.id} />
-                            <BotonEnvio
-                              
-                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Cerrar
                             </BotonEnvio>
                           </form>

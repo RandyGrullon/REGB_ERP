@@ -66,6 +66,22 @@ export default async function EmpleadosPage({
   const puedeCrear = exigir(ctx, 'employees', 'employees.employee.create').ok
   const qs = ctx.demoQs
   const hoy = new Date()
+  // El siguiente codigo libre (E-003 → E-004), para no tener que ir a
+  // mirar la lista antes de dar de alta a alguien.
+  const siguienteCodigo = (() => {
+    let prefijo = 'E-'
+    let mayor = 0
+    let ancho = 3
+    for (const e of empleados) {
+      const m = /^(.*?)(\d+)$/.exec(e.code)
+      if (m && Number(m[2]) >= mayor) {
+        prefijo = m[1]!
+        mayor = Number(m[2])
+        ancho = m[2]!.length
+      }
+    }
+    return `${prefijo}${String(mayor + 1).padStart(ancho, '0')}`
+  })()
 
   const fecha = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
@@ -97,7 +113,11 @@ export default async function EmpleadosPage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Empleados activos" value={String(activos.length)} />
-          <StatCard label="Nomina mensual" value={`RD$ ${money(nominaTotal)}`} hint="salarios activos" />
+          <StatCard
+            label="Nomina mensual"
+            value={`RD$ ${money(nominaTotal)}`}
+            hint="salarios activos"
+          />
           <StatCard
             label="Dados de baja"
             value={String(empleados.filter((e) => e.status === 'terminated').length)}
@@ -118,14 +138,17 @@ export default async function EmpleadosPage({
                 <TH>Cargo</TH>
                 <TH>Departamento</TH>
                 <TH>Ingreso</TH>
-                <TH numeric>Antiguedad</TH>
+                <TH numeric>Antigüedad</TH>
                 <TH numeric>Salario</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
             <TBody>
               {empleados.map((e) => {
-                const es = ESTADO_EMPLEADO[e.status] ?? { label: e.status, tone: 'neutral' as const }
+                const es = ESTADO_EMPLEADO[e.status] ?? {
+                  label: e.status,
+                  tone: 'neutral' as const,
+                }
                 const anos = yearsOfService(new Date(`${e.hire_date.slice(0, 10)}T12:00:00`), hoy)
                 return (
                   <TR key={e.id} className={e.status === 'terminated' ? 'opacity-50' : ''}>
@@ -169,8 +192,13 @@ export default async function EmpleadosPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
-                  <input name="code" required placeholder="E-001" className={claseInput} />
+                  Código
+                  <input
+                    name="code"
+                    required
+                    defaultValue={siguienteCodigo}
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
@@ -189,15 +217,33 @@ export default async function EmpleadosPage({
                   <input name="department" placeholder="Ventas" className={claseInput} />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Cedula
-                  <input name="nationalId" placeholder="001-1234567-8" className={claseInput} />
+                  Cédula
+                  <input
+                    name="nationalId"
+                    inputMode="numeric"
+                    placeholder="001-1234567-8"
+                    className={claseInput}
+                  />
+                </label>
+                <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Correo (opcional)
+                  <input name="email" type="email" autoComplete="off" className={claseInput} />
+                </label>
+                <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Teléfono (opcional)
+                  <input
+                    name="phone"
+                    type="tel"
+                    placeholder="809-555-0101"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha de ingreso
                   <input name="hireDate" type="date" required className={claseInput} />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Salario
+                  Salario mensual (RD$)
                   <input
                     name="salary"
                     required
@@ -217,9 +263,7 @@ export default async function EmpleadosPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="person_add" size={18} />
                   Registrar
                 </BotonEnvio>

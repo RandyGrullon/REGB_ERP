@@ -160,12 +160,18 @@ export default async function ImportConciliacionPage({
         <PageHeader
           icon="compare_arrows"
           title={`${head.account_name} · ${head.bank_name}`}
-          description={`Periodo ${fecha(head.period_start)} – ${fecha(head.period_end)}`}
-          crumbs={[{ label: 'Conciliacion', href: `/conciliacion${qs}` }, { label: head.account_name }]}
+          description={`Período ${fecha(head.period_start)} – ${fecha(head.period_end)}`}
+          crumbs={[
+            { label: 'Conciliacion', href: `/conciliacion${qs}` },
+            { label: head.account_name },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Saldo del estado" value={`RD$ ${money(Number(head.statement_balance))}`} />
+          <StatCard
+            label="Saldo del estado"
+            value={`RD$ ${money(Number(head.statement_balance))}`}
+          />
           <StatCard label="Conciliadas" value={String(resumen.matched)} hint="con su movimiento" />
           <StatCard
             label="Pendientes"
@@ -177,14 +183,14 @@ export default async function ImportConciliacionPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lineas del estado</CardTitle>
+            <CardTitle>Líneas del estado</CardTitle>
           </CardHeader>
           <CardBody>
             <Table>
               <THead>
                 <TR>
                   <TH>Fecha</TH>
-                  <TH>Descripcion</TH>
+                  <TH>Descripción</TH>
                   <TH numeric>Monto</TH>
                   <TH>Estado</TH>
                   <TH>Emparejar con</TH>
@@ -226,9 +232,9 @@ export default async function ImportConciliacionPage({
                                 {campos}
                                 <input type="hidden" name="lineId" value={l.id} />
                                 <BotonEnvio
-                                  
                                   title="Deshacer esta conciliacion"
-                                  className="text-xs text-[var(--color-text-link)] hover:underline">
+                                  className="text-xs text-[var(--color-text-link)] hover:underline"
+                                >
                                   Deshacer
                                 </BotonEnvio>
                               </form>
@@ -239,9 +245,7 @@ export default async function ImportConciliacionPage({
                           <form action={reactivarLineaForm}>
                             {campos}
                             <input type="hidden" name="lineId" value={l.id} />
-                            <BotonEnvio
-                              
-                              className="text-xs text-[var(--color-text-link)] hover:underline">
+                            <BotonEnvio className="text-xs text-[var(--color-text-link)] hover:underline">
                               Reactivar
                             </BotonEnvio>
                           </form>
@@ -268,9 +272,13 @@ export default async function ImportConciliacionPage({
                                 ))}
                               </select>
                               <BotonEnvio
-                                
-                                title={sugerido ? 'Sugerido por el sistema' : 'Confirmar el emparejamiento elegido'}
-                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                title={
+                                  sugerido
+                                    ? 'Sugerido por el sistema'
+                                    : 'Confirmar el emparejamiento elegido'
+                                }
+                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                              >
                                 <Icon name="check" size={14} />
                                 {sugerido ? 'Confirmar' : 'Conciliar'}
                               </BotonEnvio>
@@ -279,9 +287,9 @@ export default async function ImportConciliacionPage({
                               {campos}
                               <input type="hidden" name="lineId" value={l.id} />
                               <BotonEnvio
-                                
                                 title="Esta linea nunca va a tener pareja"
-                                className="text-xs text-[var(--color-text-muted)] hover:underline">
+                                className="text-xs text-[var(--color-text-muted)] hover:underline"
+                              >
                                 Ignorar
                               </BotonEnvio>
                             </form>
@@ -295,7 +303,7 @@ export default async function ImportConciliacionPage({
             </Table>
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
               La sugerencia es por monto, signo y fecha cercana -nunca es automatica del todo-: cada
-              conciliacion la confirma una persona.
+              conciliación la confirma una persona.
             </p>
           </CardBody>
         </Card>

@@ -19,7 +19,7 @@ export const metadata = { title: 'Onboarding · REGB Control' }
 
 /**
  * Kanban de onboarding (S17): cada cliente nuevo recorre
- * vendido → migracion → configuracion → capacitacion → en vivo.
+ * vendido → migración → configuración → capacitación → en vivo.
  *
  * Los clientes sin fila se registran en 'sold' al cargar (idempotente):
  * ningun cliente puede existir fuera del tablero.
@@ -153,7 +153,7 @@ export default async function OnboardingPage({
         <p className="text-xs text-[var(--color-text-secondary)]">
           Mostrando {visibles.length} de {todas.length}{' '}
           {todas.length === 1 ? 'cliente' : 'clientes'}
-          {filtro.q !== '' && <> que coinciden con &ldquo;{filtro.q}&rdquo;</>}
+          {filtro.q !== '' && <> · búsqueda &ldquo;{filtro.q}&rdquo;</>}
           {filtro.tamanos.length > 0 && (
             <> · tamaño {filtro.tamanos.map((t) => TAMANO_TEXTO[t]).join(' o ')}</>
           )}
@@ -164,9 +164,9 @@ export default async function OnboardingPage({
       <TableroKanban tarjetas={visibles} hayFiltro={hayFiltro} />
 
       <p className="text-xs text-[var(--color-text-muted)]">
-        Llegar a &quot;En vivo&quot; fija el go-live del cliente. Ningun cliente existe fuera del
-        tablero: los nuevos entran solos en &quot;Vendido&quot;. Un cliente se da de alta con el
-        boton de arriba, no por SQL.
+        Llegar a &quot;En vivo&quot; fija la fecha en que el cliente empezó a operar, y volver atrás
+        no la borra. Ningún cliente existe fuera del tablero: los nuevos entran solos en
+        &quot;Vendido&quot;.
       </p>
     </div>
   )

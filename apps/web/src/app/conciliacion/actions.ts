@@ -129,14 +129,20 @@ export async function confirmarMatch(fd: FormData): Promise<ActionResult> {
   const lineId = String(fd.get('lineId') ?? '')
   const transactionId = String(fd.get('transactionId') ?? '')
   const importId = String(fd.get('importId') ?? '')
-  if (!lineId || !transactionId) return { ok: false, error: 'Elige el movimiento con el que concilia.' }
+  if (!lineId || !transactionId)
+    return { ok: false, error: 'Elige el movimiento con el que concilia.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.match_statement_line(${lineId}, ${transactionId})`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.match_statement_line(${lineId}, ${transactionId})`,
     )
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.emit_event('bank-rec.line.matched',
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) =>
+        tx`select public.emit_event('bank-rec.line.matched',
         ${JSON.stringify({ lineId, transactionId })}::text::jsonb, 'bank-rec')`,
     )
   } catch (e) {
@@ -162,7 +168,11 @@ export async function desconciliar(fd: FormData): Promise<ActionResult> {
   const importId = String(fd.get('importId') ?? '')
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.unmatch_statement_line(${lineId})`)
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`select public.unmatch_statement_line(${lineId})`,
+  )
 
   revalidatePath(`/conciliacion/${importId}`)
   return { ok: true }
@@ -179,9 +189,13 @@ export async function ignorarLinea(fd: FormData): Promise<ActionResult> {
   const importId = String(fd.get('importId') ?? '')
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.bank_statement_lines set match_status = 'ignored'
-    where id = ${lineId} and tenant_id = ${ctx.tenantId} and match_status = 'pending'`)
+    where id = ${lineId} and tenant_id = ${ctx.tenantId} and match_status = 'pending'`,
+  )
 
   revalidatePath(`/conciliacion/${importId}`)
   return { ok: true }
@@ -198,9 +212,13 @@ export async function reactivarLinea(fd: FormData): Promise<ActionResult> {
   const importId = String(fd.get('importId') ?? '')
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.bank_statement_lines set match_status = 'pending'
-    where id = ${lineId} and tenant_id = ${ctx.tenantId} and match_status = 'ignored'`)
+    where id = ${lineId} and tenant_id = ${ctx.tenantId} and match_status = 'ignored'`,
+  )
 
   revalidatePath(`/conciliacion/${importId}`)
   return { ok: true }

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import {
   deriveOrderStatus,
   documentTotals,
@@ -107,12 +108,18 @@ function leerLimite(
   const raw = String(fd.get('creditLimit') ?? '').trim()
   const permiso = exigir(ctx, 'ar', 'ar.credit.manage')
   if (!permiso.ok) {
-    return { error: `Fijar el limite de credito requiere ar.credit.manage: ${permiso.error}` }
+    return {
+      error:
+        'Tu rol no puede fijar limites de credito: eso lo decide quien lleva la cartera. ' +
+        'Pideselo al dueno o al contador.',
+    }
   }
   if (raw === '') return { presente: true, valor: null }
   const valor = num(raw)
   if (valor === null || valor < 0) {
-    return { error: 'El limite de credito es un monto de 0 en adelante, o vacio para no tener limite.' }
+    return {
+      error: 'El limite de credito es un monto de 0 en adelante, o vacio para no tener limite.',
+    }
   }
   return { presente: true, valor: Math.round(valor * 100) / 100 }
 }
@@ -154,10 +161,18 @@ export async function editarCliente(fd: FormData): Promise<ActionResult> {
     const ctx = await actionCtx(demoDe(fd))
     if (!ctx) return { ok: false, error: 'Sesion no valida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage')
-    if (!permiso.ok) return permiso
 
     const id = String(fd.get('id') ?? '')
     if (!id) return { ok: false, error: 'Faltan datos.' }
+
+    // Quien lleva la cartera (el contador: `ar.credit.manage`) fija el
+    // limite aunque no pueda tocar los datos del cliente. Antes la ficha le
+    // daba 404 y el limite solo lo podia poner el dueno.
+    if (!permiso.ok) {
+      if (!exigir(ctx, 'ar', 'ar.credit.manage').ok) return permiso // registry:allow — permiso opcional del contador (fijar limite); sin `ar` el rol no lo tiene y se niega igual
+      return fijarSoloLimite(fd, ctx, id)
+    }
+
     const datos = leerCliente(fd)
     if ('error' in datos) return { ok: false, error: datos.error }
     const limite = leerLimite(fd, ctx)
@@ -190,6 +205,33 @@ export async function editarCliente(fd: FormData): Promise<ActionResult> {
   })
 }
 
+/** Solo el limite de credito: lo que el contador puede cambiar de un cliente. */
+async function fijarSoloLimite(
+  fd: FormData,
+  ctx: Parameters<typeof exigir>[0],
+  id: string,
+): Promise<ActionResult> {
+  const limite = leerLimite(fd, ctx)
+  if ('error' in limite) return { ok: false, error: limite.error }
+  if (!limite.presente) return { ok: false, error: 'Indica el limite de credito.' }
+
+  const filas = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
+    update public.customers
+    set credit_limit = ${limite.valor}, updated_at = now()
+    where id = ${id} and tenant_id = ${ctx.tenantId}
+    returning id`,
+  )
+  if (filas.length === 0) return { ok: false, error: 'Ese cliente no existe.' }
+
+  revalidatePath('/pedidos/clientes')
+  revalidatePath(`/pedidos/clientes/${id}`)
+  revalidatePath('/cobrar')
+  return { ok: true }
+}
+
 export async function alternarCliente(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('alternarCliente', async () => {
     const ctx = await actionCtx(demoDe(fd))
@@ -213,9 +255,13 @@ export async function alternarCliente(fd: FormData): Promise<ActionResult> {
 
 // ── Pedidos ──────────────────────────────────────────────────────────────
 
+/** Lo que devuelve crear un pedido: el id, para llevar al vendedor a el. */
+export type PedidoCreado = ActionResult & { orderId?: string; number?: string }
+
 /** Crea el pedido en borrador. Las lineas se agregan despues. */
-export async function crearPedido(fd: FormData): Promise<ActionResult> {
-  return sinExcepciones('crearPedido', async () => {
+export async function crearPedido(fd: FormData): Promise<PedidoCreado> {
+  const salida: { orderId?: string; number?: string } = {}
+  const r = await sinExcepciones('crearPedido', async (): Promise<ActionResult> => {
     const ctx = await actionCtx(demoDe(fd))
     if (!ctx) return { ok: false, error: 'Sesion no valida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.create')
@@ -225,19 +271,23 @@ export async function crearPedido(fd: FormData): Promise<ActionResult> {
     const warehouseId = String(fd.get('warehouseId') ?? '')
     if (!customerId || !warehouseId) return { ok: false, error: 'Elige cliente y almacen.' }
 
-    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const creado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [n] = await tx<{ next_sales_order_number: string }[]>`
         select public.next_sales_order_number(${ctx.tenantId})`
-      await tx`
+      const [o] = await tx<{ id: string }[]>`
         insert into public.sales_orders
           (tenant_id, number, customer_id, warehouse_id, created_by)
         values (${ctx.tenantId}, ${n!.next_sales_order_number}, ${customerId},
-                ${warehouseId}, ${ctx.userId})`
+                ${warehouseId}, ${ctx.userId})
+        returning id`
+      return { orderId: o!.id, number: n!.next_sales_order_number }
     })
 
     revalidatePath('/pedidos')
+    Object.assign(salida, creado)
     return { ok: true }
   })
+  return r.ok ? { ...r, ...salida } : r
 }
 
 /** Recalcula totales del encabezado a partir de sus lineas. */
@@ -524,10 +574,11 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
           qty_reserved: string
           qty_delivered: string
           tracks_stock: boolean
+          unit: string
         }[]
       >`
         select sol.product_id, sol.qty_ordered::text, sol.qty_reserved::text,
-               sol.qty_delivered::text, p.tracks_stock
+               sol.qty_delivered::text, p.tracks_stock, p.unit
         from public.sales_order_lines sol
         join public.products p on p.id = sol.product_id
         where sol.id = ${lineId} and sol.order_id = ${orderId} and sol.tenant_id = ${ctx.tenantId}
@@ -541,6 +592,27 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
       }
       const check = validateDelivery(estado, qty)
       if (!check.ok) return check.error
+
+      // Lo que se entrega tiene que EXISTIR: lo apartado para esta linea
+      // mas lo libre del almacen. Antes se podia "entregar" el backorder
+      // completo sin una sola unidad en el almacen: la existencia quedaba
+      // en negativo y se facturaba mercancia que nunca salio.
+      if (line.tracks_stock) {
+        const [nivel] = await tx<{ qty_on_hand: string; qty_reserved: string }[]>`
+          select qty_on_hand::text, qty_reserved::text from public.stock_levels
+          where tenant_id = ${ctx.tenantId} and warehouse_id = ${order.warehouse_id}
+            and product_id = ${line.product_id}`
+        const libre = nivel
+          ? Math.max(0, Number(nivel.qty_on_hand) - Number(nivel.qty_reserved))
+          : 0
+        const entregable = Math.round((estado.qtyReserved + libre) * 1000) / 1000
+        if (qty > entregable) {
+          return entregable > 0
+            ? `En el almacen solo hay ${entregable} ${line.unit} para este pedido; se intento entregar ${qty}. ` +
+                'Lo demas sigue en backorder hasta que entre mercancia.'
+            : 'No hay existencia en el almacen para entregar esta linea: sigue en backorder hasta que entre mercancia.'
+        }
+      }
 
       // Lo apartado que se consume al entregar. Se descuenta de la linea
       // tambien en los conceptos sin existencias -ahi solo es contabilidad
@@ -708,7 +780,21 @@ export async function alternarClienteForm(fd: FormData): Promise<void> {
   await anotarAviso(await alternarCliente(fd), 'alternarCliente')
 }
 export async function crearPedidoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await crearPedido(fd), 'crearPedido')
+  const r = await crearPedido(fd)
+  if (!r.ok || !r.orderId) {
+    await anotarAviso(r, 'crearPedido')
+    return
+  }
+  // El borrador se crea para agregarle productos: se lleva al vendedor a
+  // el. Antes se quedaba en la lista y tenia que buscarlo entre los demas.
+  await anotarAviso(
+    r,
+    'crearPedido',
+    `Pedido ${r.number} creado en borrador. Agregale los productos.`,
+  )
+  const { tenant, rol } = demoDe(fd)
+  const qs = tenant ? `?tenant=${tenant}&rol=${encodeURIComponent(rol ?? 'Owner')}` : ''
+  redirect(`/pedidos/${r.orderId}${qs}`)
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
   await anotarAviso(await agregarLinea(fd), 'agregarLinea')
@@ -724,7 +810,9 @@ export async function confirmarPedidoForm(fd: FormData): Promise<void> {
   await anotarAviso(
     r,
     'confirmarPedido',
-    conExcepcion ? 'Confirmado con excepcion de credito. Quedo escrita con tu nombre y el motivo.' : undefined,
+    conExcepcion
+      ? 'Confirmado con excepcion de credito. Quedo escrita con tu nombre y el motivo.'
+      : undefined,
   )
 }
 export async function entregarLineaForm(fd: FormData): Promise<void> {

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { mejorCotizacion } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -35,9 +36,13 @@ export async function crearRfq(fd: FormData): Promise<ActionResult> {
   if (!title) return { ok: false, error: 'Escribe el titulo.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.rfqs (tenant_id, title, description, deadline)
-      values (${ctx.tenantId}, ${title}, ${description}, ${deadline})`)
+      values (${ctx.tenantId}, ${title}, ${description}, ${deadline})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -60,11 +65,17 @@ export async function invitarProveedor(fd: FormData): Promise<ActionResult> {
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.rfq_invitations (tenant_id, rfq_id, supplier_id)
-      values (${ctx.tenantId}, ${rfqId}, ${supplierId})`)
+      values (${ctx.tenantId}, ${rfqId}, ${supplierId})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
+    if (msg.includes('duplicate key'))
+      return { ok: false, error: 'Ese proveedor ya esta invitado.' }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
 
@@ -87,17 +98,28 @@ export async function registrarCotizacion(fd: FormData): Promise<ActionResult> {
 
   if (!rfqId) return { ok: false, error: 'Falta el RFQ.' }
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
-  if (totalAmount === null || totalAmount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (totalAmount === null || totalAmount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (!Number.isInteger(leadTimeDays) || leadTimeDays < 0) {
     return { ok: false, error: 'El plazo de entrega debe ser un entero de 0 o mas dias.' }
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.rfq_quotes (tenant_id, rfq_id, supplier_id, total_amount, lead_time_days, notes)
-      values (${ctx.tenantId}, ${rfqId}, ${supplierId}, ${totalAmount}, ${leadTimeDays}, ${notes})`)
+      values (${ctx.tenantId}, ${rfqId}, ${supplierId}, ${totalAmount}, ${leadTimeDays}, ${notes})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
+    if (msg.includes('duplicate key')) {
+      return {
+        ok: false,
+        error: 'Ese proveedor ya cotizo en este RFQ. Una cotizacion registrada no se cambia.',
+      }
+    }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
 
@@ -124,6 +146,34 @@ export async function adjudicarRfq(fd: FormData): Promise<ActionResult> {
       if (!row) throw new Error('Ese RFQ no existe.')
       if (row.status !== 'open') throw new Error('Ese RFQ ya fue resuelto.')
 
+      // La regla que el modulo promete -"gana siempre el monto mas bajo,
+      // nunca a criterio de quien compra"- la hace cumplir el servidor, no
+      // solo la insignia de la pantalla. Antes cualquier fila tenia su
+      // boton "Adjudicar" y la accion aceptaba cualquier proveedor, aunque
+      // no hubiera cotizado.
+      const cotizaciones = await tx<
+        { supplier_id: string; total_amount: string; lead_time_days: number }[]
+      >`
+        select supplier_id, total_amount::text, lead_time_days from public.rfq_quotes
+        where rfq_id = ${rfqId} and tenant_id = ${ctx.tenantId}`
+      if (cotizaciones.length === 0)
+        throw new Error('Registra al menos una cotizacion antes de adjudicar.')
+      const ganador = mejorCotizacion(
+        cotizaciones.map((c) => ({
+          supplierId: c.supplier_id,
+          totalAmount: Number(c.total_amount),
+          leadTimeDays: c.lead_time_days,
+        })),
+      )
+      if (!cotizaciones.some((c) => c.supplier_id === supplierId)) {
+        throw new Error('Ese proveedor no cotizo en este RFQ.')
+      }
+      if (supplierId !== ganador) {
+        throw new Error(
+          'Se adjudica a la mejor oferta: el monto mas bajo y, si empatan, el plazo mas corto.',
+        )
+      }
+
       await tx`
         update public.rfqs
         set status = 'awarded', awarded_supplier_id = ${supplierId}, awarded_at = now(), updated_at = now()
@@ -148,11 +198,21 @@ export async function crearRfqForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearRfq(fd), 'crearRfq')
 }
 export async function invitarProveedorForm(fd: FormData): Promise<void> {
-  await anotarAviso(await invitarProveedor(fd), 'invitarProveedor')
+  await anotarAviso(await invitarProveedor(fd), 'invitarProveedor', 'Listo, quedo invitado.')
 }
 export async function registrarCotizacionForm(fd: FormData): Promise<void> {
-  await anotarAviso(await registrarCotizacion(fd), 'registrarCotizacion')
+  await anotarAviso(
+    await registrarCotizacion(fd),
+    'registrarCotizacion',
+    'Listo, anotamos su cotizacion.',
+  )
 }
 export async function adjudicarRfqForm(fd: FormData): Promise<void> {
-  await anotarAviso(await adjudicarRfq(fd), 'adjudicarRfq')
+  // "adjudicar" no esta entre los verbos que el aviso reconoce: salia
+  // "Guardamos tu cambio", que no dice a quien se le dio la compra.
+  await anotarAviso(
+    await adjudicarRfq(fd),
+    'adjudicarRfq',
+    'Listo, quedo adjudicado a la mejor oferta.',
+  )
 }

@@ -71,7 +71,9 @@ export default async function ContratosPage({
   })
 
   const vencenPronto = contratos.filter(
-    (c) => c.status === 'active' && !contratoVigente(new Date(c.end_date), new Date(Date.now() + 30 * 86_400_000)),
+    (c) =>
+      c.status === 'active' &&
+      !contratoVigente(new Date(c.end_date), new Date(Date.now() + 30 * 86_400_000)),
   ).length
   const puedeGestionar = exigir(ctx, 'contracts', 'contracts.manage').ok
   const qs = ctx.demoQs
@@ -91,7 +93,11 @@ export default async function ContratosPage({
         </section>
 
         {contratos.length === 0 ? (
-          <EmptyState icon="assignment" title="Todavia no hay ningun contrato" description="Crea el primero abajo." />
+          <EmptyState
+            icon="assignment"
+            title="Todavia no hay ningun contrato"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -107,7 +113,10 @@ export default async function ContratosPage({
               {contratos.map((c) => (
                 <TR key={c.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/contratos/${c.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/contratos/${c.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       <Mono>{c.contract_number}</Mono>
                     </a>
                   </TD>
@@ -119,7 +128,9 @@ export default async function ContratosPage({
                     {new Date(c.end_date).toLocaleDateString('es-DO')}
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(c.status)}>{ESTADO_CONTRATO[c.status] ?? c.status}</Badge>
+                    <Badge tone={badgeEstado(c.status)}>
+                      {ESTADO_CONTRATO[c.status] ?? c.status}
+                    </Badge>
                   </TD>
                 </TR>
               ))}
@@ -164,27 +175,45 @@ export default async function ContratosPage({
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Inicio
-                  <input type="date" name="startDate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="startDate"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fin
-                  <input type="date" name="endDate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="endDate"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="baseAmount" required inputMode="decimal" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular" />
+                  <input
+                    name="baseAmount"
+                    required
+                    inputMode="decimal"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Escalamiento %
-                  <input name="escalationPct" placeholder="0.10 = 10%" inputMode="decimal" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular" />
+                  <input
+                    name="escalationPct"
+                    placeholder="0.10 = 10%"
+                    inputMode="decimal"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
+                  />
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="autoRenew" />
-                  Renovacion automatica
+                  Renovacion automática
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

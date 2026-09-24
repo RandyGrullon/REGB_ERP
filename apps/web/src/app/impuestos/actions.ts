@@ -65,7 +65,8 @@ export async function crearTasa(fd: FormData): Promise<ActionResult> {
     })
   } catch (e) {
     const msg = limpioError(e)
-    if (msg.includes('duplicate key')) return { ok: false, error: 'Ya existe una tasa con ese codigo.' }
+    if (msg.includes('duplicate key'))
+      return { ok: false, error: 'Ya existe una tasa con ese codigo.' }
     return { ok: false, error: msg }
   }
 
@@ -187,7 +188,8 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
     )
   } catch (e) {
     const msg = limpioError(e)
-    if (msg.includes('duplicate key')) return { ok: false, error: 'Ya existe una regla con ese codigo.' }
+    if (msg.includes('duplicate key'))
+      return { ok: false, error: 'Ya existe una regla con ese codigo.' }
     return { ok: false, error: msg }
   }
 

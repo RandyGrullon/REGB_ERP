@@ -71,7 +71,7 @@ export default async function WarehousesPage({
           <THead>
             <TR>
               <TH>Nombre</TH>
-              <TH>Codigo</TH>
+              <TH>Código</TH>
               <TH>Sucursal</TH>
               <TH>Estado</TH>
             </TR>
@@ -93,7 +93,7 @@ export default async function WarehousesPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Nuevo almacen</CardTitle>
+            <CardTitle>Nuevo almacén</CardTitle>
           </CardHeader>
           <CardBody>
             <form action={crearAlmacenForm} className="flex flex-wrap items-end gap-3">
@@ -124,7 +124,7 @@ export default async function WarehousesPage({
                   defaultValue=""
                   className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                 >
-                  <option value="">Sin sucursal (deposito central)</option>
+                  <option value="">Sin sucursal (depósito central)</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
@@ -132,9 +132,7 @@ export default async function WarehousesPage({
                   ))}
                 </select>
               </label>
-              <BotonEnvio
-                
-                className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+              <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                 Crear
               </BotonEnvio>
             </form>

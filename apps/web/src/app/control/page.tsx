@@ -42,12 +42,23 @@ export const metadata = { title: 'Clientes · REGB Control' }
  */
 
 const TIER_LABEL = { pyme: 'PYME', mediano: 'Mediano', grande: 'Grande' } as const
+// Los mismos nombres que el tablero de onboarding: si aqui dice "En
+// produccion" y alli "En vivo", parecen dos etapas distintas.
 const ETAPA_LABEL: Record<string, string> = {
   sold: 'Vendido',
-  migration: 'Migracion',
-  config: 'Configuracion',
-  training: 'Capacitacion',
-  live: 'En produccion',
+  migration: 'Migración',
+  config: 'Configuración',
+  training: 'Capacitación',
+  live: 'En vivo',
+}
+
+/** El filtro de estado ensenaba los valores del enum: `past_due`, `readonly`... */
+const ESTADO_LABEL: Record<string, string> = {
+  trial: 'En prueba',
+  active: 'Activo',
+  past_due: 'En mora',
+  readonly: 'Solo lectura',
+  suspended: 'Suspendido',
 }
 
 interface Params {
@@ -81,7 +92,7 @@ function Silencio({ d }: { d: number | null }) {
         ? 'text-[var(--color-semantic-text-warning)]'
         : 'text-[var(--color-text-secondary)]'
   return (
-    <span className={tono} title={`Ultimo movimiento hace ${d} dias`}>
+    <span className={tono} title={`Último movimiento hace ${d} días`}>
       {d === 0 ? 'hoy' : `hace ${d} d`}
     </span>
   )
@@ -194,12 +205,12 @@ export default async function ControlOverviewPage({
         <StatCard label="ARR" value={usd(mrr * 12)} hint="anualizado" />
         <StatCard label="Clientes" value={String(clients.length)} hint="sin archivar" />
         <StatCard
-          label="Modulos de pago"
+          label="Módulos de pago"
           value={String(modulosDePago)}
           hint={enPrueba > 0 ? `+ ${enPrueba} en prueba` : 'ninguno en prueba'}
         />
         <StatCard
-          label="Requieren atencion"
+          label="Requieren atención"
           value={String(riesgosos.length)}
           hint="mora, silencio o salud baja"
         />
@@ -207,7 +218,7 @@ export default async function ControlOverviewPage({
 
       {solicitudes.length > 0 && (
         <section
-          aria-label="Solicitudes de activacion"
+          aria-label="Solicitudes de activación"
           className="rounded-[var(--radius-lg)] border border-[var(--color-semantic-success)] bg-[color-mix(in_srgb,var(--color-semantic-success)_8%,transparent)] p-4"
         >
           <h2 className="flex items-center gap-2 text-sm font-semibold text-[var(--color-text-primary)]">
@@ -218,77 +229,113 @@ export default async function ControlOverviewPage({
               className="text-[var(--color-semantic-text-success)]"
             />
             {solicitudes.length} cliente{solicitudes.length === 1 ? '' : 's'} quiere
-            {solicitudes.length === 1 ? '' : 'n'} activar modulos
+            {solicitudes.length === 1 ? '' : 'n'} activar módulos
           </h2>
           <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
-            Es lo unico de este panel donde alguien esta diciendo que quiere pagarte mas. Llamalo
-            hoy: la cotizacion que vio esta guardada, asi que la conversacion arranca del mismo
-            numero.
+            Es lo único de este panel donde alguien está diciendo que quiere pagarte más. Llámalo
+            hoy: la cotización que vio está guardada, así que la conversación arranca del mismo
+            número. Después de la llamada, actívalo en prueba o, si ya dijo que sí, de pago.
           </p>
-          <ul className="mt-3 space-y-2">
-            {solicitudes.map((s) => (
-              <li
-                key={s.id}
-                className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[var(--color-border-subtle)] pt-2 text-sm first:border-0 first:pt-0"
-              >
-                <Link
-                  href={`/control/${s.slug}`}
-                  className="font-medium text-[var(--color-text-link)] hover:underline"
+          <ul className="mt-3 space-y-3">
+            {solicitudes.map((s) => {
+              const hace = Math.max(0, dias(s.desde) ?? 0)
+              const conItbis = s.impuesto > 0
+              return (
+                <li
+                  key={s.id}
+                  className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-t border-[var(--color-border)] pt-3 text-sm first:border-0 first:pt-0"
                 >
-                  {s.tenant}
-                </Link>
-                <span className="text-xs text-[var(--color-text-secondary)]">
-                  {s.modulos.join(', ')}
-                </span>
-                <span className="tabular text-xs text-[var(--color-text-muted)]">
-                  {usd(s.mensual)}/mes + {usd(s.instalacion)} de instalacion
-                </span>
-                <span className="ml-auto text-xs text-[var(--color-text-muted)]">
-                  hace {Math.max(0, dias(s.desde) ?? 0)} d
-                </span>
-                {s.nota && (
-                  <span className="w-full text-xs italic text-[var(--color-text-secondary)]">
-                    &ldquo;{s.nota}&rdquo;
+                  <Link
+                    href={`/control/${s.slug}`}
+                    className="font-semibold text-[var(--color-text-link)] hover:underline"
+                  >
+                    {s.tenant}
+                  </Link>
+                  <span className="text-sm text-[var(--color-text-primary)]">
+                    {s.nombres.join(', ')}
                   </span>
-                )}
-                <span className="flex w-full flex-wrap gap-2 pt-1">
-                  <form action={activarSolicitud}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <BotonEnvio
-                      
-                      title="Enciende los modulos en prueba de 14 dias y avisa al cliente"
-                      className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
-                      <Icon name="rocket_launch" size={14} />
-                      Activar en prueba
-                    </BotonEnvio>
-                  </form>
-                  <form action={marcarContactada}>
-                    <input type="hidden" name="id" value={s.id} />
-                    <BotonEnvio
-                      
-                      title="Ya lo llamaste; sale de la lista sin activar nada"
-                      className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
-                      <Icon name="call" size={14} />
-                      Ya lo llame
-                    </BotonEnvio>
-                  </form>
-                  <form action={descartarSolicitud} className="flex items-center gap-1">
-                    <input type="hidden" name="id" value={s.id} />
-                    <input
-                      name="motivo"
-                      placeholder="motivo"
-                      aria-label="Motivo para descartar la solicitud"
-                      className="h-8 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                    />
-                    <BotonEnvio
-                      
-                      className="flex h-8 items-center gap-1 rounded-full px-2 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
-                      Descartar
-                    </BotonEnvio>
-                  </form>
-                </span>
-              </li>
-            ))}
+                  {s.pidePrueba && <Badge tone="info">quiere probar primero</Badge>}
+                  <span className="ml-auto text-xs text-[var(--color-text-muted)]">
+                    {hace === 0 ? 'hoy' : `hace ${hace} d`}
+                  </span>
+                  <span className="tabular w-full text-xs text-[var(--color-text-secondary)]">
+                    Le subiría la factura {usd(s.mensual)} al mes
+                    {conItbis ? ' con ITBIS' : ''} · instalación {usd(s.instalacion)}
+                    {conItbis ? ' más ITBIS' : ''}, una sola vez
+                  </span>
+                  {s.nota && (
+                    <span className="w-full text-xs italic text-[var(--color-text-secondary)]">
+                      &ldquo;{s.nota}&rdquo;
+                    </span>
+                  )}
+                  <span className="flex w-full flex-wrap items-start gap-2 pt-1">
+                    <form action={activarSolicitud}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <input type="hidden" name="modo" value="prueba" />
+                      <BotonEnvio
+                        title="Enciende los módulos en prueba de 14 días, sin cobrar, y avisa al cliente"
+                        className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
+                        <Icon name="rocket_launch" size={14} />
+                        Activar en prueba 14 días
+                      </BotonEnvio>
+                    </form>
+                    {/* De pago cobra: se confirma con lo que implica delante. */}
+                    <details>
+                      <summary className="inline-flex h-9 cursor-pointer list-none items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] [&::-webkit-details-marker]:hidden">
+                        <Icon name="payments" size={14} />
+                        Activar de pago…
+                      </summary>
+                      <form
+                        action={activarSolicitud}
+                        className="mt-2 flex max-w-md flex-col gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3 text-xs text-[var(--color-text-secondary)]"
+                      >
+                        <input type="hidden" name="id" value={s.id} />
+                        <input type="hidden" name="modo" value="pago" />
+                        <p>
+                          Quedan activos desde ya y la próxima factura le cobra la instalación y la
+                          mensualidad nueva. Hazlo solo si el cliente ya aceptó el precio.
+                        </p>
+                        <BotonEnvio className="flex h-9 items-center justify-center gap-1.5 self-start rounded-full bg-[var(--color-brand)] px-4 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                          Sí, activar de pago
+                        </BotonEnvio>
+                      </form>
+                    </details>
+                    <form action={marcarContactada}>
+                      <input type="hidden" name="id" value={s.id} />
+                      <BotonEnvio
+                        title="Ya lo llamaste; sale de la lista sin activar nada"
+                        className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
+                        <Icon name="call" size={14} />
+                        Ya lo llamé
+                      </BotonEnvio>
+                    </form>
+                    {/* Descartar se lleva la venta: dos pasos y con motivo. */}
+                    <details>
+                      <summary className="inline-flex h-9 cursor-pointer list-none items-center rounded-full px-3 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] [&::-webkit-details-marker]:hidden">
+                        Descartar…
+                      </summary>
+                      <form
+                        action={descartarSolicitud}
+                        className="mt-2 flex flex-wrap items-center gap-2"
+                      >
+                        <input type="hidden" name="id" value={s.id} />
+                        <input
+                          name="motivo"
+                          placeholder="Motivo (queda en el historial)"
+                          aria-label="Motivo para descartar la solicitud"
+                          className="h-9 w-56 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-xs text-[var(--color-text-primary)]"
+                        />
+                        <BotonEnvio className="flex h-9 items-center rounded-full border border-[var(--color-semantic-danger)] px-3 text-xs font-semibold text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                          Descartar solicitud
+                        </BotonEnvio>
+                      </form>
+                    </details>
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         </section>
       )}
@@ -306,7 +353,7 @@ export default async function ControlOverviewPage({
           />
           <p className="text-[var(--color-text-secondary)]">
             Hay <strong className="text-[var(--color-text-primary)]">{riesgosos.length}</strong>{' '}
-            cliente{riesgosos.length === 1 ? '' : 's'} en mora, en silencio hace mas de 14 dias, con
+            cliente{riesgosos.length === 1 ? '' : 's'} en mora, en silencio hace más de 14 días, con
             salud bajo 70 o con un bloqueo de onboarding.{' '}
             <Link
               href="/control?riesgo=1&orden=silencio"
@@ -340,7 +387,11 @@ export default async function ControlOverviewPage({
       )}
 
       <Toolbar>
-        <SearchField name="q" defaultValue={p.q ?? ''} placeholder="Nombre, marca o slug…" />
+        <SearchField
+          name="q"
+          defaultValue={p.q ?? ''}
+          placeholder="Nombre, marca o identificador…"
+        />
         <FilterSelect label="Tier" name="tier" defaultValue={p.tier ?? ''} className="w-32">
           <option value="">Todos</option>
           {(['pyme', 'mediano', 'grande'] as const).map((t) => (
@@ -351,9 +402,9 @@ export default async function ControlOverviewPage({
         </FilterSelect>
         <FilterSelect label="Estado" name="estado" defaultValue={p.estado ?? ''} className="w-36">
           <option value="">Todos</option>
-          {['trial', 'active', 'past_due', 'readonly', 'suspended'].map((s) => (
+          {Object.entries(ESTADO_LABEL).map(([s, label]) => (
             <option key={s} value={s}>
-              {s}
+              {label}
             </option>
           ))}
         </FilterSelect>
@@ -376,7 +427,7 @@ export default async function ControlOverviewPage({
         <FilterSelect label="Ordenar por" name="orden" defaultValue={orden} className="w-40">
           <option value="mrr">Mensualidad</option>
           <option value="salud">Salud (peor primero)</option>
-          <option value="silencio">Silencio (mas primero)</option>
+          <option value="silencio">Silencio (más primero)</option>
           <option value="nombre">Nombre</option>
         </FilterSelect>
         <label className="flex h-10 items-center gap-1.5 self-end text-xs text-[var(--color-text-secondary)]">
@@ -402,8 +453,8 @@ export default async function ControlOverviewPage({
       {filtrados.length === 0 ? (
         <EmptyState
           icon="filter_alt_off"
-          title="Ningun cliente cumple ese filtro"
-          description="Prueba a limpiar alguno. El buscador acepta nombre, marca comercial o slug."
+          title="Ningún cliente cumple ese filtro"
+          description="Prueba a limpiar alguno. El buscador acepta nombre, marca comercial o identificador."
         />
       ) : (
         <section aria-label="Clientes">
@@ -415,11 +466,11 @@ export default async function ControlOverviewPage({
                 <TH>Estado</TH>
                 <TH>Onboarding</TH>
                 <TH numeric>Salud</TH>
-                <TH>Ultimo movimiento</TH>
+                <TH>Último movimiento</TH>
                 <TH numeric>Equipo</TH>
-                <TH numeric>Modulos</TH>
+                <TH numeric>Módulos</TH>
                 <TH>Ciclo</TH>
-                <TH numeric>Instalacion</TH>
+                <TH numeric>Instalación</TH>
                 <TH numeric>Mensual sin ITBIS</TH>
               </TR>
             </THead>
@@ -514,12 +565,12 @@ export default async function ControlOverviewPage({
       )}
 
       <p className="text-xs text-[var(--color-text-muted)]">
-        Las cifras las calcula el motor de precios en el momento con la formula completa (§6.4):
-        plan, modulos activos, usuarios, sucursales y empresas de mas, storage en archivos, descuento
-        del ciclo e ITBIS a los clientes de RD. Es la misma cuenta que emite la factura del mes. Lo
-        que <strong className="text-[var(--color-text-secondary)]">todavia no se mide</strong> son
-        las transacciones y los consumos por uso (<Mono>regb.usage_meters</Mono> esta vacia): van en
-        cero. El MRR va sin ITBIS, que es de la DGII. La actividad sale de la bitacora de auditoria.
+        Las cifras las calcula el motor de precios en el momento, con la misma cuenta que emite la
+        factura del mes: plan, módulos activos, usuarios, sucursales y empresas de más, archivos,
+        descuento del ciclo e ITBIS a los clientes de RD. Lo que{' '}
+        <strong className="text-[var(--color-text-secondary)]">todavía no se mide</strong> son las
+        transacciones y los consumos por uso: van en cero. El MRR va sin ITBIS, que es de la DGII.
+        La actividad sale de la bitácora de auditoría.
       </p>
     </div>
   )

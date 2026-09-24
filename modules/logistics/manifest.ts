@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'logistics',
-  name: 'Logistica & Rutas',
+  name: 'Logística & Rutas',
   description: 'Planificacion de rutas, seguimiento GPS y prueba de entrega.',
   icon: 'route',
   category: 'advanced',

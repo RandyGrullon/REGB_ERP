@@ -113,16 +113,18 @@ export default async function MonedasPage({
           <THead>
             <TR>
               <TH>Moneda</TH>
-              <TH numeric>Ultima tasa</TH>
+              <TH numeric>Última tasa</TH>
               <TH>Fecha</TH>
-              <TH>Antiguedad</TH>
+              <TH>Antigüedad</TH>
             </TR>
           </THead>
           <TBody>
             {monedas.map((m) => {
               const historial = porMoneda.get(m.code) ?? []
               const ultima = historial[historial.length - 1]
-              const dias = ultima ? daysSinceRate(new Date(`${ultima.rate_date.slice(0, 10)}T12:00:00`), hoy) : null
+              const dias = ultima
+                ? daysSinceRate(new Date(`${ultima.rate_date.slice(0, 10)}T12:00:00`), hoy)
+                : null
               return (
                 <TR key={m.code}>
                   <TD>
@@ -174,7 +176,11 @@ export default async function MonedasPage({
               </label>
               <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                 Moneda
-                <select name="currency" defaultValue={params.currency ?? monedas[0]?.code} className={claseInput}>
+                <select
+                  name="currency"
+                  defaultValue={params.currency ?? monedas[0]?.code}
+                  className={claseInput}
+                >
                   {monedas.map((m) => (
                     <option key={m.code} value={m.code}>
                       {m.code}
@@ -184,20 +190,27 @@ export default async function MonedasPage({
               </label>
               <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                 Direccion
-                <select name="direction" defaultValue={params.direction ?? 'to_dop'} className={claseInput}>
+                <select
+                  name="direction"
+                  defaultValue={params.direction ?? 'to_dop'}
+                  className={claseInput}
+                >
                   <option value="to_dop">A pesos (RD$)</option>
                   <option value="from_dop">De pesos (RD$) a la moneda</option>
                 </select>
               </label>
               <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                 Fecha
-                <input name="date" type="date" defaultValue={params.date ?? ''} className={claseInput} />
+                <input
+                  name="date"
+                  type="date"
+                  defaultValue={params.date ?? ''}
+                  className={claseInput}
+                />
               </label>
               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-              <BotonEnvio
-                
-                className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+              <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                 <Icon name="calculate" size={18} />
                 Convertir
               </BotonEnvio>
@@ -213,7 +226,7 @@ export default async function MonedasPage({
               </p>
             )}
             <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-              Sin tasa exacta de esa fecha, se usa la mas reciente conocida ANTES de ella -nunca una
+              Sin tasa exacta de esa fecha, se usa la más reciente conocida ANTES de ella -nunca una
               futura-.
             </p>
           </CardBody>
@@ -252,9 +265,7 @@ export default async function MonedasPage({
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
                   Guardar
                 </BotonEnvio>

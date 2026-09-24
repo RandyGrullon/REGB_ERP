@@ -37,12 +37,17 @@ export async function crearCampana(fd: FormData): Promise<ActionResult> {
   const utmCampaign = String(fd.get('utmCampaign') ?? '').trim() || null
 
   if (!name) return { ok: false, error: 'Falta el nombre.' }
-  if (!['email', 'whatsapp'].includes(channel)) return { ok: false, error: 'Elige un canal valido.' }
+  if (!['email', 'whatsapp'].includes(channel))
+    return { ok: false, error: 'Elige un canal valido.' }
   if (!message) return { ok: false, error: 'Falta el mensaje.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.campaigns (tenant_id, name, channel, subject, message, target_status, target_source, utm_source, utm_medium, utm_campaign, created_by)
-    values (${ctx.tenantId}, ${name}, ${channel}, ${subject}, ${message}, ${targetStatus}, ${targetSource}, 'crm', ${channel}, ${utmCampaign}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${name}, ${channel}, ${subject}, ${message}, ${targetStatus}, ${targetSource}, 'crm', ${channel}, ${utmCampaign}, ${ctx.userId})`,
+  )
 
   revalidatePath('/marketing')
   return { ok: true }
@@ -86,11 +91,14 @@ export async function enviarCampana(fd: FormData): Promise<ActionResult> {
   const campaignId = String(fd.get('campaignId') ?? '')
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [c] = await tx<{ status: EstadoCampana; target_status: string | null; target_source: string | null }[]>`
+    const [c] = await tx<
+      { status: EstadoCampana; target_status: string | null; target_source: string | null }[]
+    >`
       select status, target_status, target_source from public.campaigns
       where id = ${campaignId} and tenant_id = ${ctx.tenantId} for update`
     if (!c) return 'no-existe'
-    if (!transicionValidaCampana(c.status, 'sent')) return 'Esa campana no se puede enviar en su estado actual.'
+    if (!transicionValidaCampana(c.status, 'sent'))
+      return 'Esa campana no se puede enviar en su estado actual.'
 
     const leads = await tx<{ id: string }[]>`
       select id from public.leads

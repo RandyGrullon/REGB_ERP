@@ -72,9 +72,9 @@ export default async function SucursalesPage({
           <THead>
             <TR>
               <TH>Sucursal</TH>
-              <TH>Codigo</TH>
+              <TH>Código</TH>
               <TH>Empresa</TH>
-              <TH>Direccion</TH>
+              <TH>Dirección</TH>
               <TH>Estado</TH>
               {puedeEditar && (
                 <TH>
@@ -101,9 +101,7 @@ export default async function SucursalesPage({
                       <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={b.id} />
-                      <BotonEnvio
-                        
-                        className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                         {b.is_active ? 'Cerrar' : 'Reabrir'}
                       </BotonEnvio>
                     </form>
@@ -163,9 +161,7 @@ export default async function SucursalesPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Abrir
                 </BotonEnvio>
               </form>

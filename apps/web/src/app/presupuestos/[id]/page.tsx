@@ -19,7 +19,11 @@ import { buildBudgetVsActual, type AccountType } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { activarPresupuestoForm, cerrarPresupuestoForm, ponerLineaPresupuestoForm } from '../actions'
+import {
+  activarPresupuestoForm,
+  cerrarPresupuestoForm,
+  ponerLineaPresupuestoForm,
+} from '../actions'
 import { ESTADO_LINEA_PRESUPUESTO, ESTADO_PRESUPUESTO, MESES } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
@@ -93,7 +97,7 @@ export default async function PresupuestoDetallePage({
                coalesce(l.amount, 0) as budgeted,
                coalesce(r.debito, 0) as total_debit,
                coalesce(r.credito, 0) as total_credit
-        from lineas l
+        from líneas l
         full outer join real r on r.account_id = l.account_id and r.mes = l.period_month
       )
       select c.account_id, c.month, c.budgeted::text, c.total_debit::text, c.total_credit::text,
@@ -153,9 +157,7 @@ export default async function PresupuestoDetallePage({
               {head.status === 'draft' && puedeEditar && (
                 <form action={activarPresupuestoForm}>
                   {campos}
-                  <BotonEnvio
-                    
-                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="play_arrow" size={18} />
                     Activar
                   </BotonEnvio>
@@ -165,9 +167,9 @@ export default async function PresupuestoDetallePage({
                 <form action={cerrarPresupuestoForm}>
                   {campos}
                   <BotonEnvio
-                    
                     title="Un presupuesto cerrado queda fijo: no se puede volver a editar"
-                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
+                  >
                     <Icon name="lock" size={18} />
                     Cerrar
                   </BotonEnvio>
@@ -225,9 +227,7 @@ export default async function PresupuestoDetallePage({
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="check" size={18} />
                   Guardar
                 </BotonEnvio>
@@ -243,7 +243,7 @@ export default async function PresupuestoDetallePage({
           <CardBody>
             {comparativo.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no hay ningun monto planeado ni movimiento contabilizado para este ano.
+                Todavía no hay ningún monto planeado ni movimiento contabilizado para este año.
               </p>
             ) : (
               <Table>
@@ -260,7 +260,10 @@ export default async function PresupuestoDetallePage({
                 <TBody>
                   {comparativo.map((r) => {
                     const f = porFila.get(`${r.accountId}-${r.month}`)!
-                    const e2 = ESTADO_LINEA_PRESUPUESTO[r.status] ?? { label: r.status, tone: 'neutral' as const }
+                    const e2 = ESTADO_LINEA_PRESUPUESTO[r.status] ?? {
+                      label: r.status,
+                      tone: 'neutral' as const,
+                    }
                     return (
                       <TR key={`${r.accountId}-${r.month}`}>
                         <TD className="text-[var(--color-text-primary)]">
@@ -299,8 +302,8 @@ export default async function PresupuestoDetallePage({
               </Table>
             )}
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              El real sale de los asientos ya contabilizados de este ano fiscal. Una cuenta con
-              gasto real y ningun monto planeado aparece en rojo desde el primer peso.
+              El real sale de los asientos ya contabilizados de este año fiscal. Una cuenta con
+              gasto real y ningún monto planeado aparece en rojo desde el primer peso.
             </p>
           </CardBody>
         </Card>

@@ -45,7 +45,9 @@ export default async function AnunciosPage({
   searchParams: Promise<DemoParams>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'hr-portal')
+  // Publicar es de RRHH (manifest: hr-portal.manage-announcements). Con
+  // hr-portal.view, el Empleado abria el formulario y cada envio fallaba.
+  const { ctx, shell } = await modulePage(params, 'hr-portal', 'hr-portal.manage-announcements')
 
   const anuncios = await asUser(
     ctx.userId,
@@ -86,9 +88,7 @@ export default async function AnunciosPage({
                 Contenido
                 <textarea name="body" required rows={3} className={`${claseInput} h-auto py-2`} />
               </label>
-              <BotonEnvio
-                
-                className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+              <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                 <Icon name="campaign" size={18} />
                 Publicar
               </BotonEnvio>
@@ -97,7 +97,11 @@ export default async function AnunciosPage({
         </Card>
 
         {anuncios.length === 0 ? (
-          <EmptyState icon="campaign" title="Todavia no has publicado ningun anuncio" description="" />
+          <EmptyState
+            icon="campaign"
+            title="Todavia no has publicado ningun anuncio"
+            description=""
+          />
         ) : (
           <Table>
             <THead>

@@ -88,7 +88,7 @@ export default async function CodigosBarraPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Catalogo</CardTitle>
+            <CardTitle>Catálogo</CardTitle>
           </CardHeader>
           <CardBody className="p-0">
             {productos.length === 0 ? (
@@ -99,7 +99,7 @@ export default async function CodigosBarraPage({
                   <TR>
                     <TH>SKU</TH>
                     <TH>Producto</TH>
-                    <TH>Codigo de barras</TH>
+                    <TH>Código de barras</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -113,7 +113,7 @@ export default async function CodigosBarraPage({
                         {p.barcode ? (
                           <Mono>{p.barcode}</Mono>
                         ) : (
-                          <Badge tone="warning">Sin codigo</Badge>
+                          <Badge tone="warning">Sin código</Badge>
                         )}
                       </TD>
                     </TR>
@@ -122,12 +122,13 @@ export default async function CodigosBarraPage({
               </Table>
             )}
             {puedeGenerar && sinCodigo > 0 && (
-              <form action={generarCodigosFaltantesForm} className="border-t border-[var(--color-border)] p-3">
+              <form
+                action={generarCodigosFaltantesForm}
+                className="border-t border-[var(--color-border)] p-3"
+              >
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="auto_awesome" size={14} />
                   Generar codigos faltantes ({sinCodigo})
                 </BotonEnvio>

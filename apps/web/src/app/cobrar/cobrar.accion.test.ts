@@ -181,7 +181,11 @@ describe('facturarPedido: el credito tambien se mira al facturar', () => {
     // El dueno autoriza al facturar: pasa y queda escrito en esa etapa.
     const ok = await facturarPedido(
       c.fd(
-        { orderId: ped, creditOverride: '1', overrideReason: 'Mercancia ya entregada, se cobra el lunes' },
+        {
+          orderId: ped,
+          creditOverride: '1',
+          overrideReason: 'Mercancia ya entregada, se cobra el lunes',
+        },
         'Dueno',
       ),
     )
@@ -214,7 +218,11 @@ describe('registrarCobro: la mora se cobra', () => {
   })
 
   it('cobrar el saldo real (capital + mora) se acepta y la deja pagada en cero', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-MORA-1', total: 11564, diasVencida: 96 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-MORA-1',
+      total: 11564,
+      diasVencida: 96,
+    })
     await mora(c.tenantId, inv, 500, 96)
     expect(await saldo(inv)).toBe(12064)
 
@@ -227,7 +235,11 @@ describe('registrarCobro: la mora se cobra', () => {
   })
 
   it('cobrar solo el capital deja la mora pendiente y la factura NO queda pagada', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-MORA-2', total: 11564, diasVencida: 96 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-MORA-2',
+      total: 11564,
+      diasVencida: 96,
+    })
     await mora(c.tenantId, inv, 500, 96)
 
     const r = await registrarCobro(
@@ -245,7 +257,11 @@ describe('registrarCobro: la mora se cobra', () => {
   })
 
   it('cobrar de mas se rechaza diciendo el saldo real, con la mora', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-MORA-3', total: 11564, diasVencida: 96 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-MORA-3',
+      total: 11564,
+      diasVencida: 96,
+    })
     await mora(c.tenantId, inv, 500, 96)
     const r = await registrarCobro(
       c.fd({ invoiceId: inv, amount: '12065', method: 'cash' }, 'Cobrador'),
@@ -268,7 +284,12 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
 
   async function cobros(invoiceId: string) {
     return db()<
-      { amount: string; reversed_at: string | null; reversal_reason: string | null; reversed_by: string | null }[]
+      {
+        amount: string
+        reversed_at: string | null
+        reversal_reason: string | null
+        reversed_by: string | null
+      }[]
     >`
       select amount::text, reversed_at::text, reversal_reason, reversed_by::text
       from public.customer_payments where invoice_id = ${invoiceId} order by received_at`
@@ -286,7 +307,11 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
   })
 
   it('5,000 en vez de 500: se reversa con motivo, el saldo vuelve y la fila se queda', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-REV-1', total: 5000, diasVencida: -10 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-REV-1',
+      total: 5000,
+      diasVencida: -10,
+    })
     await registrarCobro(c.fd({ invoiceId: inv, amount: '5000', method: 'cash' }, 'Cobrador'))
     expect(await estadoFactura(inv)).toBe('paid')
 
@@ -324,13 +349,19 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
   })
 
   it('sin motivo no se reversa; dos veces tampoco', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-REV-2', total: 1000, diasVencida: -10 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-REV-2',
+      total: 1000,
+      diasVencida: -10,
+    })
     await registrarCobro(c.fd({ invoiceId: inv, amount: '1000', method: 'cash' }, 'Cobrador'))
     const { reversarCobro } = await import('./actions')
     const pago = await ultimoCobro(inv)
 
     expect((await reversarCobro(c.fd({ paymentId: pago, reason: '' }, 'Dueno'))).ok).toBe(false)
-    expect(await reversarCobro(c.fd({ paymentId: pago, reason: 'Cheque devuelto' }, 'Dueno'))).toEqual({
+    expect(
+      await reversarCobro(c.fd({ paymentId: pago, reason: 'Cheque devuelto' }, 'Dueno')),
+    ).toEqual({
       ok: true,
     })
     const otra = await reversarCobro(c.fd({ paymentId: pago, reason: 'Otra vez' }, 'Dueno'))
@@ -339,7 +370,11 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
   })
 
   it('el cobrador registra cobros pero no los reversa', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-REV-3', total: 1000, diasVencida: -10 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-REV-3',
+      total: 1000,
+      diasVencida: -10,
+    })
     await registrarCobro(c.fd({ invoiceId: inv, amount: '1000', method: 'cash' }, 'Cobrador'))
     const { reversarCobro } = await import('./actions')
     const r = await reversarCobro(
@@ -347,12 +382,17 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
     )
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/ar\.payment\.reverse/)
+    // El aviso dice que su rol no puede, sin el nombre interno del permiso.
+    expect(r.error).toMatch(/no permite/)
     expect(await saldo(inv)).toBe(0)
   })
 
   it('una factura cuyo unico cobro se reverso ya se puede anular', async () => {
-    const inv = await factura(c.tenantId, cli, { numero: 'FA-REV-4', total: 1000, diasVencida: -10 })
+    const inv = await factura(c.tenantId, cli, {
+      numero: 'FA-REV-4',
+      total: 1000,
+      diasVencida: -10,
+    })
     await registrarCobro(c.fd({ invoiceId: inv, amount: '1000', method: 'cash' }, 'Cobrador'))
     const { reversarCobro, anularFactura } = await import('./actions')
     const conCobro = await anularFactura(
@@ -360,9 +400,13 @@ describe('reversarCobro: un cobro mal digitado se corrige sin borrar', () => {
     )
     expect(conCobro.ok).toBe(false)
 
-    await reversarCobro(c.fd({ paymentId: await ultimoCobro(inv), reason: 'Cobro duplicado' }, 'Dueno'))
+    await reversarCobro(
+      c.fd({ paymentId: await ultimoCobro(inv), reason: 'Cobro duplicado' }, 'Dueno'),
+    )
     expect(
-      await anularFactura(c.fd({ invoiceId: inv, reason: 'Factura duplicada', voidType: '4' }, 'Dueno')),
+      await anularFactura(
+        c.fd({ invoiceId: inv, reason: 'Factura duplicada', voidType: '4' }, 'Dueno'),
+      ),
     ).toEqual({ ok: true })
     expect(await estadoFactura(inv)).toBe('void')
   })
@@ -383,7 +427,9 @@ describe('La factura guarda sus lineas y factura lo ENTREGADO', () => {
     await db()`update public.sales_order_lines set qty_delivered = 4 where order_id = ${ped}`
     await db()`update public.sales_orders set status = 'partially_delivered' where id = ${ped}`
 
-    expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Cobrador'))).toEqual({ ok: true })
+    expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Cobrador'))).toEqual({
+      ok: true,
+    })
     const facturas = () =>
       db()<{ id: string; total: string; subtotal: string; tax: string }[]>`
         select id, total::text, subtotal::text, tax::text from public.customer_invoices
@@ -394,7 +440,9 @@ describe('La factura guarda sus lineas y factura lo ENTREGADO', () => {
     expect(Number(fs[0]!.tax)).toBe(720)
     expect(Number(fs[0]!.total)).toBe(4720)
 
-    const [linea] = await db()<{ qty: string; unit_price: string; description: string; line_total: string }[]>`
+    const [linea] = await db()<
+      { qty: string; unit_price: string; description: string; line_total: string }[]
+    >`
       select qty::text, unit_price::text, description, line_total::text
       from public.customer_invoice_lines where invoice_id = ${fs[0]!.id}`
     expect(Number(linea!.qty)).toBe(4)
@@ -409,7 +457,9 @@ describe('La factura guarda sus lineas y factura lo ENTREGADO', () => {
 
     // Salen las otras 6: segunda factura por 6.
     await db()`update public.sales_order_lines set qty_delivered = 10 where order_id = ${ped}`
-    expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Cobrador'))).toEqual({ ok: true })
+    expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Cobrador'))).toEqual({
+      ok: true,
+    })
     fs = await facturas()
     expect(fs.map((f) => Number(f.total))).toEqual([4720, 7080])
   })
@@ -434,7 +484,9 @@ describe('La factura guarda sus lineas y factura lo ENTREGADO', () => {
 describe('Nota de credito B04', () => {
   let cli: string
 
-  async function facturaConLineas(cantidad: number): Promise<{ invoiceId: string; lineId: string }> {
+  async function facturaConLineas(
+    cantidad: number,
+  ): Promise<{ invoiceId: string; lineId: string }> {
     const ped = await entregado(cli)
     await db()`update public.sales_order_lines set qty_delivered = ${cantidad}, qty_ordered = ${cantidad}
                where order_id = ${ped}`
@@ -462,7 +514,10 @@ describe('Nota de credito B04', () => {
     const { invoiceId, lineId } = await facturaConLineas(5)
     const { emitirNotaDeCredito } = await import('./actions')
     const r = await emitirNotaDeCredito(
-      c.fd({ invoiceId, kind: 'return', reason: 'Devolvio 2 televisores', [`qty_${lineId}`]: '2' }, 'Dueno'),
+      c.fd(
+        { invoiceId, kind: 'return', reason: 'Devolvio 2 televisores', [`qty_${lineId}`]: '2' },
+        'Dueno',
+      ),
     )
     expect(r.ok).toBe(false)
     if (!r.ok) expect(r.error).toMatch(/B04/)
@@ -489,11 +544,20 @@ describe('Nota de credito B04', () => {
     expect(r).toEqual({ ok: true })
 
     const [n] = await db()<
-      { ncf: string; ncf_type: string; modified_ncf: string; total: string; tax: string; restocked: boolean }[]
+      {
+        ncf: string
+        ncf_type: string
+        modified_ncf: string
+        total: string
+        tax: string
+        restocked: boolean
+      }[]
     >`
       select ncf, ncf_type, modified_ncf, total::text, tax::text, restocked
       from public.customer_credit_notes where invoice_id = ${invoiceId}`
-    const [inv] = await db()<{ ncf: string }[]>`select ncf from public.customer_invoices where id = ${invoiceId}`
+    const [inv] = await db()<
+      { ncf: string }[]
+    >`select ncf from public.customer_invoices where id = ${invoiceId}`
     expect(n!.ncf).toMatch(/^B04\d{8}$/)
     expect(n!.ncf_type).toBe('B04')
     expect(n!.modified_ncf).toBe(inv!.ncf)
@@ -506,7 +570,10 @@ describe('Nota de credito B04', () => {
 
     // No se devuelve mas de lo facturado: quedan 3.
     const demas = await emitirNotaDeCredito(
-      c.fd({ invoiceId, kind: 'return', reason: 'Otra devolucion', [`qty_${lineId}`]: '4' }, 'Dueno'),
+      c.fd(
+        { invoiceId, kind: 'return', reason: 'Otra devolucion', [`qty_${lineId}`]: '4' },
+        'Dueno',
+      ),
     )
     expect(demas.ok).toBe(false)
   })
@@ -516,7 +583,10 @@ describe('Nota de credito B04', () => {
     const { emitirNotaDeCredito } = await import('./actions')
     expect(
       await emitirNotaDeCredito(
-        c.fd({ invoiceId, kind: 'adjustment', reason: 'Descuento por rayon', amount: '118' }, 'Dueno'),
+        c.fd(
+          { invoiceId, kind: 'adjustment', reason: 'Descuento por rayon', amount: '118' },
+          'Dueno',
+        ),
       ),
     ).toEqual({ ok: true })
     const [n] = await db()<{ subtotal: string; tax: string }[]>`

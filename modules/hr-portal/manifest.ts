@@ -12,7 +12,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'hr-portal',
-  name: 'Portal del Empleado',
+  name: 'Portal del empleado',
   description: 'Autoservicio: volantes, vacaciones, datos personales y anuncios.',
   icon: 'badge',
   category: 'standard',

@@ -7,7 +7,7 @@ import { ALCANCE_PLAN } from '../../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Nueva inspeccion · REGB ERP' }
+export const metadata = { title: 'Nueva inspección · REGB ERP' }
 
 interface PlanOption {
   id: string
@@ -49,7 +49,7 @@ export default async function NuevaInspeccionPage({
         where ip.tenant_id = ${ctx.tenantId} and ip.active
         order by ip.name`
 
-      const elegido = sp.planId ? pl.find((p) => p.id === sp.planId) ?? null : null
+      const elegido = sp.planId ? (pl.find((p) => p.id === sp.planId) ?? null) : null
       const crit = elegido
         ? await tx<CriterioRow[]>`
             select id, criterion, is_critical from public.inspection_plan_criteria
@@ -75,7 +75,10 @@ export default async function NuevaInspeccionPage({
         <PageHeader
           icon="fact_check"
           title="Nueva inspeccion"
-          crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'Nueva inspeccion' }]}
+          crumbs={[
+            { label: 'Control de calidad', href: `/calidad${qs}` },
+            { label: 'Nueva inspeccion' },
+          ]}
         />
 
         <Card>
@@ -85,14 +88,14 @@ export default async function NuevaInspeccionPage({
           <CardBody>
             {planes.length === 0 ? (
               <p className="text-xs text-[var(--color-text-muted)]">
-                No hay ningun plan de inspeccion activo -crea uno primero en Planes de inspeccion-.
+                No hay ningún plan de inspección activo -crea uno primero en Planes de inspección-.
               </p>
             ) : (
               <form method="get" className="flex flex-wrap items-end gap-3">
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Plan de inspeccion
+                  Plan de inspección
                   <select
                     name="planId"
                     defaultValue={planElegido?.id ?? ''}
@@ -107,9 +110,7 @@ export default async function NuevaInspeccionPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                   Cargar criterios
                 </BotonEnvio>
               </form>
@@ -125,7 +126,7 @@ export default async function NuevaInspeccionPage({
             <CardBody>
               {criterios.length === 0 ? (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Este plan no tiene criterios todavia.
+                  Este plan no tiene criterios todavía.
                 </p>
               ) : (
                 <form action={registrarInspeccionForm} className="space-y-4">
@@ -195,11 +196,9 @@ export default async function NuevaInspeccionPage({
                     />
                   </label>
 
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="check_circle" size={14} />
-                    Registrar inspeccion
+                    Registrar inspección
                   </BotonEnvio>
                 </form>
               )}

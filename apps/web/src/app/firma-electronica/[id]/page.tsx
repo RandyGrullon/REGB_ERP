@@ -46,7 +46,8 @@ interface EventoRow {
   occurred_at: string
 }
 
-const fecha = (iso: string) => new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
 const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
@@ -115,12 +116,22 @@ export default async function SolicitudDetallePage({
         <PageHeader
           icon="draw"
           title={head.document_label}
-          crumbs={[{ label: 'Firma electronica', href: `/firma-electronica${qs}` }, { label: 'Detalle' }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_FIRMA[head.status] ?? head.status}</Badge>}
+          crumbs={[
+            { label: 'Firma electronica', href: `/firma-electronica${qs}` },
+            { label: 'Detalle' },
+          ]}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_FIRMA[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Tipo" value={TIPO_DOCUMENTO_FIRMA[head.document_type] ?? head.document_type} />
+          <StatCard
+            label="Tipo"
+            value={TIPO_DOCUMENTO_FIRMA[head.document_type] ?? head.document_type}
+          />
           <StatCard label="Firmante" value={head.signer_name} />
           <StatCard label="Correo" value={head.signer_email} />
         </section>
@@ -145,7 +156,8 @@ export default async function SolicitudDetallePage({
                 Huella del documento firmado: <Mono>{head.signed_hash}</Mono>
               </p>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Esto es trazabilidad real -quien, cuando, desde donde-, no una firma certificada con PKI.
+                Esto es trazabilidad real -quien, cuando, desde donde-, no una firma certificada con
+                PKI.
               </p>
             </CardBody>
           </Card>
@@ -157,7 +169,7 @@ export default async function SolicitudDetallePage({
               <form action={transicionarSolicitudForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="sent" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar a firmar
                 </BotonEnvio>
@@ -168,7 +180,7 @@ export default async function SolicitudDetallePage({
                 <form action={transicionarSolicitudForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="signed" />
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="draw" size={14} />
                     Firmar
                   </BotonEnvio>
@@ -177,16 +189,12 @@ export default async function SolicitudDetallePage({
                   {campos}
                   <input type="hidden" name="siguiente" value="declined" />
                   <input name="declinedReason" placeholder="Motivo" className={claseInput} />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Rechazar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Rechazar</BotonEnvio>
                 </form>
                 <form action={transicionarSolicitudForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="expired" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Marcar vencida
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Marcar vencida</BotonEnvio>
                 </form>
               </>
             )}
@@ -204,7 +212,9 @@ export default async function SolicitudDetallePage({
           <TBody>
             {eventos.map((e) => (
               <TR key={e.id}>
-                <TD className="text-[var(--color-text-primary)]">{ETIQUETA_EVENTO[e.event_type] ?? e.event_type}</TD>
+                <TD className="text-[var(--color-text-primary)]">
+                  {ETIQUETA_EVENTO[e.event_type] ?? e.event_type}
+                </TD>
                 <TD className="text-[var(--color-text-muted)]">
                   <Mono>{e.ip_address ?? '—'}</Mono>
                 </TD>

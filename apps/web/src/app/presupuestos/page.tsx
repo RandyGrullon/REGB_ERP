@@ -98,14 +98,17 @@ export default async function PresupuestosPage({
               <TR>
                 <TH>Presupuesto</TH>
                 <TH>Ano</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH numeric>Total planeado</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
             <TBody>
               {presupuestos.map((p) => {
-                const e = ESTADO_PRESUPUESTO[p.status] ?? { label: p.status, tone: 'neutral' as const }
+                const e = ESTADO_PRESUPUESTO[p.status] ?? {
+                  label: p.status,
+                  tone: 'neutral' as const,
+                }
                 return (
                   <TR key={p.id}>
                     <TD>
@@ -144,7 +147,12 @@ export default async function PresupuestosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required placeholder="Presupuesto anual" className={claseInput} />
+                  <input
+                    name="name"
+                    required
+                    placeholder="Presupuesto anual"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Ano fiscal
@@ -156,9 +164,7 @@ export default async function PresupuestosPage({
                     className={`tabular ${claseInput}`}
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Crear
                 </BotonEnvio>

@@ -11,7 +11,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'expenses',
   name: 'Gastos & Reembolsos',
-  description: 'Foto del recibo con OCR, aprobacion y reembolso en nomina.',
+  description: 'Foto del recibo con OCR, aprobación y reembolso en nómina.',
   icon: 'receipt_long',
   category: 'standard',
   version: '0.1.0',

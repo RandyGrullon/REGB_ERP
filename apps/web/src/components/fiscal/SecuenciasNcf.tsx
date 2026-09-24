@@ -199,7 +199,7 @@ export async function SecuenciasNcf({
             <TR>
               <TH>Tipo</TH>
               <TH>Rango autorizado</TH>
-              <TH numeric>Proximo</TH>
+              <TH numeric>Próximo</TH>
               <TH numeric>Quedan</TH>
               <TH>Vence</TH>
               <TH>Autorizacion</TH>
@@ -373,8 +373,8 @@ export async function SecuenciasNcf({
             </form>
             <p className="mt-2 text-xs text-[var(--color-text-muted)]">
               Una secuencia nueva <strong>no apaga</strong> la anterior: conviven y se usa primero
-              la vigente de rango mas bajo que tenga numeros. Un rango que se cruza con otro, o que
-              repite numeros ya emitidos, se rechaza. El vencimiento se corrige y una secuencia se
+              la vigente de rango más bajo que tenga números. Un rango que se cruza con otro, o que
+              repite números ya emitidos, se rechaza. El vencimiento se corrige y una secuencia se
               da de baja con motivo, sin tocar lo ya emitido: un NCF consumido nunca vuelve, ni
               aunque se anule la factura -la DGII espera verlo reportado como anulado en el 608-.
             </p>

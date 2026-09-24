@@ -1,7 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { calcularComision, transicionValidaComision, type EsquemaComision, type EstadoComision } from '@regb/operations'
+import {
+  calcularComision,
+  transicionValidaComision,
+  type EsquemaComision,
+  type EstadoComision,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -40,12 +45,17 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
   const rate = num(String(fd.get('rate') ?? ''))
 
   if (!name) return { ok: false, error: 'Ponle un nombre al plan.' }
-  if (!['percentage', 'fixed'].includes(basis)) return { ok: false, error: 'Elige un esquema valido.' }
+  if (!['percentage', 'fixed'].includes(basis))
+    return { ok: false, error: 'Elige un esquema valido.' }
   if (rate === null || rate <= 0) return { ok: false, error: 'La tasa debe ser mayor que cero.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.commission_plans (tenant_id, name, basis, rate)
-    values (${ctx.tenantId}, ${name}, ${basis}, ${rate})`)
+    values (${ctx.tenantId}, ${name}, ${basis}, ${rate})`,
+  )
 
   revalidatePath('/comisiones/planes')
   return { ok: true }
@@ -61,7 +71,8 @@ export async function crearEntrada(fd: FormData): Promise<ActionResult> {
   const salesOrderId = String(fd.get('salesOrderId') ?? '')
   const salespersonId = String(fd.get('salespersonId') ?? '')
 
-  if (!planId || !salesOrderId || !salespersonId) return { ok: false, error: 'Falta el plan, la orden o el vendedor.' }
+  if (!planId || !salesOrderId || !salespersonId)
+    return { ok: false, error: 'Falta el plan, la orden o el vendedor.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [plan] = await tx<{ basis: EsquemaComision; rate: string }[]>`

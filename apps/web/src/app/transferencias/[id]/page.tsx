@@ -34,6 +34,7 @@ export const dynamic = 'force-dynamic'
 interface OrdenHead {
   id: string
   status: string
+  from_warehouse_id: string
   from_name: string
   to_name: string
   notes: string | null
@@ -53,6 +54,8 @@ interface ProductoOption {
   id: string
   sku: string
   name: string
+  /** Lo que hay en el almacen de ORIGEN: despachar mas no se deja. */
+  disponible: string
 }
 
 const claseInput =
@@ -72,7 +75,7 @@ export default async function TransferenciaDetallePage({
 
   const { head, lineas, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<OrdenHead[]>`
-      select tord.id, tord.status, wf.name as from_name, wt.name as to_name, tord.notes
+      select tord.id, tord.status, tord.from_warehouse_id, wf.name as from_name, wt.name as to_name, tord.notes
       from public.transfer_orders tord
       join public.warehouses wf on wf.id = tord.from_warehouse_id
       join public.warehouses wt on wt.id = tord.to_warehouse_id
@@ -89,9 +92,17 @@ export default async function TransferenciaDetallePage({
 
     const prod =
       h.status === 'draft'
-        ? await tx<ProductoOption[]>`
-            select id, sku, name from public.products
-            where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+        ? // Solo lo que lleva existencias -un servicio no se traslada- y
+          // con lo que hay en el origen a la vista: antes se elegia a
+          // ciegas y el error llegaba al despachar.
+          await tx<ProductoOption[]>`
+            select p.id, p.sku, p.name, coalesce(sl.qty_on_hand, 0)::text as disponible
+            from public.products p
+            left join public.stock_levels sl
+              on sl.tenant_id = p.tenant_id and sl.warehouse_id = ${h.from_warehouse_id}
+             and sl.product_id = p.id
+            where p.tenant_id = ${ctx.tenantId} and p.active and p.tracks_stock
+            order by (coalesce(sl.qty_on_hand, 0) > 0) desc, p.name limit 300`
         : []
 
     return { head: h, lineas: l, productos: prod }
@@ -140,9 +151,7 @@ export default async function TransferenciaDetallePage({
               {enBorrador && puedeDespachar && lineas.length > 0 && (
                 <form action={despacharTransferenciaForm}>
                   {campos}
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="local_shipping" size={14} />
                     Despachar
                   </BotonEnvio>
@@ -151,9 +160,7 @@ export default async function TransferenciaDetallePage({
               {enBorrador && puedeCrear && (
                 <form action={cancelarTransferenciaForm}>
                   {campos}
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="cancel" size={14} />
                     Cancelar
                   </BotonEnvio>
@@ -203,11 +210,9 @@ export default async function TransferenciaDetallePage({
                   </TBody>
                 </Table>
                 <div className="border-t border-[var(--color-border)] p-3">
-                  <BotonEnvio
-                    
-                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="inventory_2" size={18} />
-                    Registrar recepcion
+                    Registrar recepción
                   </BotonEnvio>
                 </div>
               </form>
@@ -221,10 +226,12 @@ export default async function TransferenciaDetallePage({
                 <TH numeric>Pedido</TH>
                 <TH numeric>Despachado</TH>
                 <TH numeric>Recibido</TH>
-                {(head.status === 'received' || head.status === 'in_transit') && <TH>Discrepancia</TH>}
+                {(head.status === 'received' || head.status === 'in_transit') && (
+                  <TH>Discrepancia</TH>
+                )}
                 {enBorrador && puedeCrear && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -269,9 +276,9 @@ export default async function TransferenciaDetallePage({
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
                           <BotonEnvio
-                            
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
@@ -301,18 +308,21 @@ export default async function TransferenciaDetallePage({
                   >
                     {productos.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.sku} — {p.name}
+                        {p.sku} — {p.name} (hay {Number(p.disponible)} en {head.from_name})
                       </option>
                     ))}
                   </select>
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cantidad
-                  <input name="qty" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="qty"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

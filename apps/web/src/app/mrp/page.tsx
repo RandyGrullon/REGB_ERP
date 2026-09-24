@@ -51,16 +51,15 @@ const fecha = (iso: string) =>
  * distintas- y sugerencias de comprar o producir que nunca se
  * ejecutan solas.
  */
-export default async function MrpPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function MrpPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'mrp')
 
-  const { corridas, productos, pendientesTotal } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const c = await tx<CorridaRow[]>`
+  const { corridas, productos, pendientesTotal } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const c = await tx<CorridaRow[]>`
       select r.id, r.run_at::text, r.notes, p.sku, p.name as producto_terminado,
              r.target_qty::text,
              (select count(*) from public.mrp_suggestions s
@@ -71,17 +70,18 @@ export default async function MrpPage({
       where r.tenant_id = ${ctx.tenantId}
       order by r.run_at desc
       limit 50`
-    const p = await tx<ProductoOption[]>`
+      const p = await tx<ProductoOption[]>`
       select bm.product_id as id, pr.sku, pr.name
       from public.bill_of_materials bm
       join public.products pr on pr.id = bm.product_id
       where bm.tenant_id = ${ctx.tenantId} and bm.status = 'active'
       order by pr.name`
-    const [t] = await tx<{ n: string }[]>`
+      const [t] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.mrp_suggestions
       where tenant_id = ${ctx.tenantId} and status = 'pending'`
-    return { corridas: c, productos: p, pendientesTotal: Number(t?.n ?? 0) }
-  })
+      return { corridas: c, productos: p, pendientesTotal: Number(t?.n ?? 0) }
+    },
+  )
 
   const puedeCorrer = exigir(ctx, 'mrp', 'mrp.run').ok
   const qs = ctx.demoQs
@@ -108,7 +108,7 @@ export default async function MrpPage({
             <CardBody>
               {productos.length === 0 ? (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Todavia no hay ningun BOM activo -activa uno primero en Lista de materiales-.
+                  Todavía no hay ningún BOM activo -activa uno primero en Lista de materiales-.
                 </p>
               ) : (
                 <form action={correrMrpForm} className="flex flex-wrap items-end gap-3">
@@ -144,9 +144,7 @@ export default async function MrpPage({
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="bolt" size={14} />
                     Correr MRP
                   </BotonEnvio>

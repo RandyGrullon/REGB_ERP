@@ -106,6 +106,7 @@ export default async function VacacionesPage({
 
   const pendientes = solicitudes.filter((s) => s.status === 'pending')
   const puedeSolicitar = exigir(ctx, 'time-off', 'time-off.request').ok
+  const puedeAprobar = exigir(ctx, 'time-off', 'time-off.approve').ok
   const qs = ctx.demoQs
 
   const claseInput =
@@ -117,15 +118,17 @@ export default async function VacacionesPage({
         <PageHeader
           icon="beach_access"
           title="Vacaciones & Permisos"
-          description="El saldo se calcula siempre de la fecha de contratacion -Codigo de Trabajo Art. 177-, nunca se escribe a mano."
+          description="El saldo sale de la fecha de ingreso (Código de Trabajo, art. 177): 14 días laborables por año de servicio, 18 a partir del quinto. Unas vacaciones que no caben en el saldo no se pueden pedir ni aprobar."
           actions={
-            <a
-              href={`/vacaciones/aprobar${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              <Icon name="fact_check" size={18} />
-              Aprobar solicitudes
-            </a>
+            puedeAprobar && (
+              <a
+                href={`/vacaciones/aprobar${qs}`}
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                <Icon name="fact_check" size={18} />
+                Aprobar solicitudes
+              </a>
+            )
           }
         />
 
@@ -140,13 +143,17 @@ export default async function VacacionesPage({
           </CardHeader>
           <CardBody>
             {saldos.length === 0 ? (
-              <EmptyState icon="beach_access" title="Todavia no hay empleados activos" description="" />
+              <EmptyState
+                icon="beach_access"
+                title="Todavia no hay empleados activos"
+                description=""
+              />
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Empleado</TH>
-                    <TH numeric>Dias disponibles</TH>
+                    <TH numeric>Días disponibles</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -178,11 +185,11 @@ export default async function VacacionesPage({
                 <TH>Tipo</TH>
                 <TH>Desde</TH>
                 <TH>Hasta</TH>
-                <TH numeric>Dias</TH>
+                <TH numeric>Días</TH>
                 <TH>Estado</TH>
                 {puedeSolicitar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -209,9 +216,7 @@ export default async function VacacionesPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={s.id} />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="cancel" size={14} />
                             Cancelar
                           </BotonEnvio>
@@ -266,9 +271,7 @@ export default async function VacacionesPage({
                   Motivo (opcional)
                   <input name="reason" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="send" size={18} />
                   Solicitar
                 </BotonEnvio>

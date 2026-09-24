@@ -10,8 +10,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'rfq',
-  name: 'Cotizacion a proveedores',
-  description: 'RFQ multi-proveedor, comparativo automatico y adjudicacion.',
+  name: 'Cotización a proveedores',
+  description: 'RFQ multi-proveedor, comparativo automático y adjudicación.',
   icon: 'compare_arrows',
   category: 'standard',
   version: '0.1.0',

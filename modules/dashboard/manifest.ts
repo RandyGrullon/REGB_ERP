@@ -9,7 +9,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'dashboard',
   name: 'Dashboard',
-  description: 'Pantalla de inicio con indicadores y widgets de cada modulo activo.',
+  description: 'Pantalla de inicio con indicadores y widgets de cada módulo activo.',
   icon: 'space_dashboard',
   category: 'core',
   version: '0.1.0',

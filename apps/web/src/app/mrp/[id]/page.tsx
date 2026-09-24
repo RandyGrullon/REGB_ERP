@@ -127,7 +127,7 @@ export default async function MrpDetallePage({
           <THead>
             <TR>
               <TH>Componente</TH>
-              <TH>Accion</TH>
+              <TH>Acción</TH>
               <TH numeric>Cantidad</TH>
               <TH>Estado</TH>
               {puedeResolver && (
@@ -152,7 +152,9 @@ export default async function MrpDetallePage({
                   <span className="tabular">{s.qty_suggested}</span>
                 </TD>
                 <TD>
-                  <Badge tone={badgeEstado(s.status)}>{ESTADO_SUGERENCIA[s.status] ?? s.status}</Badge>
+                  <Badge tone={badgeEstado(s.status)}>
+                    {ESTADO_SUGERENCIA[s.status] ?? s.status}
+                  </Badge>
                   {s.production_order_id && (
                     <a
                       href={`/produccion/${s.production_order_id}${qs}`}
@@ -167,13 +169,16 @@ export default async function MrpDetallePage({
                     {s.status === 'pending' && (
                       <div className="flex items-center gap-2">
                         {s.action === 'produce' ? (
-                          <form action={aceptarSugerenciaForm} className="flex items-center gap-1.5">
+                          <form
+                            action={aceptarSugerenciaForm}
+                            className="flex items-center gap-1.5"
+                          >
                             {campos}
                             <input type="hidden" name="suggestionId" value={s.id} />
                             <select
                               name="warehouseId"
                               required
-                              aria-label={`Almacen para producir ${s.name}`}
+                              aria-label={`Almacén para producir ${s.name}`}
                               className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1.5 text-xs text-[var(--color-text-primary)]"
                             >
                               {almacenes.map((a) => (
@@ -182,9 +187,7 @@ export default async function MrpDetallePage({
                                 </option>
                               ))}
                             </select>
-                            <BotonEnvio
-                              
-                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
                             </BotonEnvio>
@@ -193,9 +196,7 @@ export default async function MrpDetallePage({
                           <form action={aceptarSugerenciaForm}>
                             {campos}
                             <input type="hidden" name="suggestionId" value={s.id} />
-                            <BotonEnvio
-                              
-                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="check_circle" size={13} />
                               Aceptar
                             </BotonEnvio>
@@ -205,9 +206,9 @@ export default async function MrpDetallePage({
                           {campos}
                           <input type="hidden" name="suggestionId" value={s.id} />
                           <BotonEnvio
-                            
                             aria-label={`Descartar sugerencia de ${s.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="close" size={16} />
                           </BotonEnvio>
                         </form>
@@ -227,10 +228,10 @@ export default async function MrpDetallePage({
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
               Aceptar una sugerencia de <strong>producir</strong> crea la orden de produccion en
-              borrador -manufacturing es un modulo requerido, ese acoplamiento es real-. Aceptar una
-              de <strong>comprar</strong> solo queda registrado: no crea una requisicion ni una orden
-              de compra por su cuenta, y tampoco resta lo que ya venga en camino de un proveedor -la
-              necesidad neta solo mira el stock disponible ahora mismo-.
+              borrador -manufacturing es un módulo requerido, ese acoplamiento es real-. Aceptar una
+              de <strong>comprar</strong> solo queda registrado: no crea una requisicion ni una
+              orden de compra por su cuenta, y tampoco resta lo que ya venga en camino de un
+              proveedor -la necesidad neta solo mira el stock disponible ahora mismo-.
             </p>
           </CardBody>
         </Card>

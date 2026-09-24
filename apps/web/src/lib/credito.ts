@@ -191,7 +191,9 @@ export async function exigirCredito(
   if (!permiso.ok) {
     return {
       ok: false,
-      error: `${s.mensaje} Autorizar la excepcion requiere el permiso ar.credit.override: ${permiso.error}`,
+      // Sin el nombre interno del permiso: lo lee el vendedor con el
+      // cliente delante (cliente misterioso, 23 sep 2026).
+      error: `${s.mensaje} La excepcion la autoriza el dueno o quien lleva el credito: ${permiso.error}`,
     }
   }
   const motivo = p.excepcion.motivo.trim()

@@ -148,8 +148,7 @@ async function bajarArchivo(c: ClientePrueba, id: string, rol = 'Dueno') {
   return { texto, archivo: JSON.parse(texto) as Archivo }
 }
 
-const numeros = (filas: Record<string, unknown>[] | undefined) =>
-  (filas ?? []).map((f) => f.number)
+const numeros = (filas: Record<string, unknown>[] | undefined) => (filas ?? []).map((f) => f.number)
 
 beforeAll(async () => {
   const roles = {
@@ -364,8 +363,11 @@ describe('un archivo grande sale por partes y se arma entero', () => {
     }
     // Directo a la funcion, con partes de 2 filas: la accion usa el tamano
     // por defecto y no se puede forzar a partir sin sembrar miles de filas.
-    const [r] = await asUser('00000000-0000-0000-0000-000000000001', a.tenantId, (tx) =>
-      tx<{ id: string }[]>`select public.crear_respaldo(${MODULOS.concat(['products'])}::text[],
+    const [r] = await asUser(
+      '00000000-0000-0000-0000-000000000001',
+      a.tenantId,
+      (tx) =>
+        tx<{ id: string }[]>`select public.crear_respaldo(${MODULOS.concat(['products'])}::text[],
                                                        'manual', 2) as id`,
     )
     const [partes] = await db()<{ n: number }[]>`

@@ -103,7 +103,10 @@ export default async function CosteoProyectoPage({
         <PageHeader
           icon="query_stats"
           title={head.name}
-          crumbs={[{ label: 'Costeo de proyectos', href: `/costeo-proyectos${qs}` }, { label: head.name }]}
+          crumbs={[
+            { label: 'Costeo de proyectos', href: `/costeo-proyectos${qs}` },
+            { label: head.name },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -114,7 +117,8 @@ export default async function CosteoProyectoPage({
         </section>
 
         <p className="text-xs text-[var(--color-text-muted)]">
-          Margen: {mrg === null ? 'sin presupuesto contra que comparar' : `${(mrg * 100).toFixed(1)}%`}
+          Margen:{' '}
+          {mrg === null ? 'sin presupuesto contra que comparar' : `${(mrg * 100).toFixed(1)}%`}
         </p>
 
         <Card>
@@ -124,7 +128,9 @@ export default async function CosteoProyectoPage({
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
               {presupuesto.length === 0 && (
-                <li className="py-2 text-xs text-[var(--color-text-muted)]">Todavia no hay lineas de presupuesto.</li>
+                <li className="py-2 text-xs text-[var(--color-text-muted)]">
+                  Todavía no hay líneas de presupuesto.
+                </li>
               )}
               {presupuesto.map((l) => (
                 <li key={l.id} className="flex items-center justify-between gap-3 py-2">
@@ -134,7 +140,9 @@ export default async function CosteoProyectoPage({
                       {CATEGORIA_PRESUPUESTO[l.category] ?? l.category}
                     </p>
                   </div>
-                  <span className="tabular text-sm text-[var(--color-text-primary)]">RD$ {money(Number(l.amount))}</span>
+                  <span className="tabular text-sm text-[var(--color-text-primary)]">
+                    RD$ {money(Number(l.amount))}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -158,9 +166,14 @@ export default async function CosteoProyectoPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="amount" required inputMode="decimal" className={`${inputClase} tabular`} />
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>
@@ -176,7 +189,9 @@ export default async function CosteoProyectoPage({
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
               {costos.length === 0 && (
-                <li className="py-2 text-xs text-[var(--color-text-muted)]">Todavia no hay costos registrados.</li>
+                <li className="py-2 text-xs text-[var(--color-text-muted)]">
+                  Todavía no hay costos registrados.
+                </li>
               )}
               {costos.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-3 py-2">
@@ -184,20 +199,22 @@ export default async function CosteoProyectoPage({
                     <p className="text-sm text-[var(--color-text-primary)]">{c.concept}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">
                       {new Date(c.incurred_on).toLocaleDateString('es-DO')}
-                      {c.budget_concept ? ` · contra "${c.budget_concept}"` : ' · sin linea de presupuesto'}
+                      {c.budget_concept
+                        ? ` · contra "${c.budget_concept}"`
+                        : ' · sin línea de presupuesto'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="tabular text-sm text-[var(--color-text-primary)]">RD$ {money(Number(c.amount))}</span>
+                    <span className="tabular text-sm text-[var(--color-text-primary)]">
+                      RD$ {money(Number(c.amount))}
+                    </span>
                     {c.billed ? (
                       <Badge tone="success">Facturado</Badge>
                     ) : puedeGestionar ? (
                       <form action={marcarFacturadoForm}>
                         {campos}
                         <input type="hidden" name="costId" value={c.id} />
-                        <BotonEnvio
-                          
-                          className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                        <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                           Facturar
                         </BotonEnvio>
                       </form>
@@ -219,7 +236,7 @@ export default async function CosteoProyectoPage({
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Contra presupuesto (opcional)
                   <select name="budgetId" className={inputClase}>
-                    <option value="">Sin linea</option>
+                    <option value="">Sin línea</option>
                     {presupuesto.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.concept}
@@ -229,13 +246,18 @@ export default async function CosteoProyectoPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="amount" required inputMode="decimal" className={`${inputClase} tabular`} />
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
                   <input type="date" name="incurredOn" className={inputClase} />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>
@@ -250,9 +272,9 @@ export default async function CosteoProyectoPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Un costo registrado nunca cambia de monto -es un hecho historico-. Lo unico que se puede
-              mover despues es marcarlo facturado, porque eso es informacion nueva, no una correccion
-              del pasado.
+              Un costo registrado nunca cambia de monto -es un hecho historico-. Lo único que se
+              puede mover después es marcarlo facturado, porque eso es información nueva, no una
+              correccion del pasado.
             </p>
           </CardBody>
         </Card>

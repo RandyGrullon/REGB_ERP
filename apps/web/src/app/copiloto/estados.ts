@@ -4,7 +4,10 @@ import type { PreguntaCatalogo } from '@regb/operations'
 export const CATALOGO_PREGUNTAS: PreguntaCatalogo[] = [
   { key: 'sales_by_day', palabrasClave: ['venta', 'ventas', 'vendimos', 'vendiste'] },
   { key: 'top_products', palabrasClave: ['producto', 'vendido', 'vendidos', 'popular'] },
-  { key: 'overdue_invoices', palabrasClave: ['factura', 'facturas', 'vencida', 'vencidas', 'cobrar', 'deuda'] },
+  {
+    key: 'overdue_invoices',
+    palabrasClave: ['factura', 'facturas', 'vencida', 'vencidas', 'cobrar', 'deuda'],
+  },
   { key: 'leads_by_status', palabrasClave: ['lead', 'leads', 'prospecto', 'prospectos'] },
   { key: 'tickets_by_priority', palabrasClave: ['ticket', 'tickets', 'soporte', 'prioridad'] },
 ]

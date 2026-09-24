@@ -4,7 +4,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'tour',
   name: 'Tutorial',
-  description: 'Tours interactivos por modulo y checklist de primeros pasos con progreso.',
+  description: 'Tours interactivos por módulo y checklist de primeros pasos con progreso.',
   icon: 'school',
   category: 'core',
   version: '0.1.0',

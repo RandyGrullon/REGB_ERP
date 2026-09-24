@@ -44,21 +44,27 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
   const body = String(fd.get('body') ?? '').trim()
 
   if (!name) return { ok: false, error: 'Falta el nombre de la regla.' }
-  if (!tipoEventoValido(triggerEventType)) return { ok: false, error: 'El tipo de evento debe seguir modulo.entidad.accion.' }
+  if (!tipoEventoValido(triggerEventType))
+    return { ok: false, error: 'El tipo de evento debe seguir modulo.entidad.accion.' }
   if (!accionValida(actionType)) return { ok: false, error: 'Elige una accion valida.' }
   if (!title) return { ok: false, error: 'Falta el titulo de la notificacion.' }
   if ((conditionField && !conditionOperator) || (!conditionField && conditionOperator)) {
     return { ok: false, error: 'La condicion necesita campo, operador y valor juntos.' }
   }
-  if (conditionField && !conditionValue) return { ok: false, error: 'Falta el valor de la condicion.' }
+  if (conditionField && !conditionValue)
+    return { ok: false, error: 'Falta el valor de la condicion.' }
 
   const actionParams = { title, body }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.automation_rules
       (tenant_id, name, trigger_event_type, condition_field, condition_operator, condition_value, action_type, action_params, created_by)
     values
-      (${ctx.tenantId}, ${name}, ${triggerEventType}, ${conditionField}, ${conditionOperator}, ${conditionValue}, ${actionType}, ${JSON.stringify(actionParams)}::text::jsonb, ${ctx.userId})`)
+      (${ctx.tenantId}, ${name}, ${triggerEventType}, ${conditionField}, ${conditionOperator}, ${conditionValue}, ${actionType}, ${JSON.stringify(actionParams)}::text::jsonb, ${ctx.userId})`,
+  )
 
   revalidatePath('/automatizaciones')
   return { ok: true }
@@ -74,9 +80,13 @@ export async function alternarRegla(fd: FormData): Promise<ActionResult> {
   const siguiente = String(fd.get('siguiente') ?? '')
   if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado invalido.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.automation_rules set status = ${siguiente}, updated_at = now()
-    where id = ${ruleId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${ruleId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath('/automatizaciones')
   return { ok: true }
@@ -125,7 +135,11 @@ export async function procesarEventosPendientes(fd: FormData): Promise<ActionRes
         const cumple =
           !regla.condition_field || !regla.condition_operator || !regla.condition_value
             ? true
-            : condicionCumple(String(evento.payload[regla.condition_field] ?? ''), regla.condition_operator, regla.condition_value)
+            : condicionCumple(
+                String(evento.payload[regla.condition_field] ?? ''),
+                regla.condition_operator,
+                regla.condition_value,
+              )
 
         let resultado: { notificationId: string } | null = null
         if (cumple && regla.action_type === 'create_notification') {

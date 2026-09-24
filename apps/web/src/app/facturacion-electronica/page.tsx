@@ -29,7 +29,7 @@ import {
 } from './actions'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Facturacion electronica · REGB ERP' }
+export const metadata = { title: 'Facturación electrónica · REGB ERP' }
 
 interface Config {
   ambiente: string
@@ -45,9 +45,13 @@ interface Pendiente {
 }
 
 const AMBIENTES: { id: string; label: string; detalle: string }[] = [
-  { id: 'testecf', label: 'Pre-certificacion', detalle: 'Pruebas libres. Los envios se guardan 60 dias.' },
+  {
+    id: 'testecf',
+    label: 'Pre-certificacion',
+    detalle: 'Pruebas libres. Los envios se guardan 60 días.',
+  },
   { id: 'certecf', label: 'Certificacion', detalle: 'El set de pruebas formal de la DGII.' },
-  { id: 'ecf', label: 'Produccion', detalle: 'Validez fiscal real.' },
+  { id: 'ecf', label: 'Producción', detalle: 'Validez fiscal real.' },
 ]
 
 const CONTINGENCIAS: { id: string; label: string; detalle: string }[] = [
@@ -59,7 +63,7 @@ const CONTINGENCIAS: { id: string; label: string; detalle: string }[] = [
   {
     id: 'sin-sistema',
     label: 'Sin sistema',
-    detalle: `No se puede emitir e-CF. Se vuelve al papel de la serie B, maximo ${DIAS_MAX_SIN_SISTEMA} dias, y hay que avisar a la DGII por la Oficina Virtual.`,
+    detalle: `No se puede emitir e-CF. Se vuelve al papel de la serie B, máximo ${DIAS_MAX_SIN_SISTEMA} días, y hay que avisar a la DGII por la Oficina Virtual.`,
   },
 ]
 
@@ -104,7 +108,12 @@ export default async function FacturacionElectronicaPage({
         where tenant_id = ${ctx.tenantId} and en_contingencia and remitido_en is null
         order by emitido_en limit 20`
 
-      return { config: c ?? null, emitidos: Number(e?.n ?? 0), recibidos: Number(r?.n ?? 0), pendientes: p }
+      return {
+        config: c ?? null,
+        emitidos: Number(e?.n ?? 0),
+        recibidos: Number(r?.n ?? 0),
+        pendientes: p,
+      }
     },
   )
 
@@ -137,11 +146,16 @@ export default async function FacturacionElectronicaPage({
           role="note"
           className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-dashed border-[var(--color-semantic-warning)] p-3 text-sm"
         >
-          <Icon name="draft" size={20} className="shrink-0 text-[var(--color-semantic-text-warning)]" />
+          <Icon
+            name="draft"
+            size={20}
+            className="shrink-0 text-[var(--color-semantic-text-warning)]"
+          />
           <p className="text-[var(--color-text-secondary)]">
-            Este modulo <strong className="text-[var(--color-text-primary)]">todavia no emite</strong>. Lo
-            que hay listo es la configuracion, el enrutado de lo que entra y las reglas de negocio. Falta
-            el certificado digital, la firma XAdES y la transmision, y{' '}
+            Este modulo{' '}
+            <strong className="text-[var(--color-text-primary)]">todavía no emite</strong>. Lo que
+            hay listo es la configuracion, el enrutado de lo que entra y las reglas de negocio.
+            Falta el certificado digital, la firma XAdES y la transmision, y{' '}
             <strong className="text-[var(--color-text-primary)]">
               nada se ha probado contra los servidores de la DGII
             </strong>
@@ -217,14 +231,15 @@ export default async function FacturacionElectronicaPage({
               </CardHeader>
               <CardBody>
                 <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-                  La DGII no solo recibe: tambien te llama a ti. Copia estas tres tal cual al formulario
-                  de postulacion. Llevan un token que es solo tuyo -tratalo como una contraseña-.
+                  La DGII no solo recibe: tambien te llama a ti. Copia estas tres tal cual al
+                  formulario de postulacion. Llevan un token que es solo tuyo -tratalo como una
+                  contraseña-.
                 </p>
 
                 {baseEsLocal && (
                   <p className="mb-3 rounded-[var(--radius-md)] border border-[var(--color-semantic-warning)] p-2 text-xs text-[var(--color-semantic-text-warning)]">
-                    Estas URL apuntan a <Mono>{base}</Mono>, que es esta maquina. No sirven para declarar
-                    nada: la DGII tiene que poder alcanzarlas desde internet.
+                    Estas URL apuntan a <Mono>{base}</Mono>, que es esta maquina. No sirven para
+                    declarar nada: la DGII tiene que poder alcanzarlas desde internet.
                   </p>
                 )}
 
@@ -232,13 +247,30 @@ export default async function FacturacionElectronicaPage({
                   {urls !== null &&
                     (
                       [
-                        ['Recepcion', urls.recepcion, 'Donde recibes los e-CF que otros te emiten.'],
-                        ['Aprobacion', urls.aprobacion, 'Donde recibes aprobaciones o rechazos comerciales.'],
-                        ['Autenticacion', urls.autenticacion, 'Tu propio servicio semilla → token.'],
+                        [
+                          'Recepción',
+                          urls.recepcion,
+                          'Donde recibes los e-CF que otros te emiten.',
+                        ],
+                        [
+                          'Aprobacion',
+                          urls.aprobacion,
+                          'Donde recibes aprobaciones o rechazos comerciales.',
+                        ],
+                        [
+                          'Autenticacion',
+                          urls.autenticacion,
+                          'Tu propio servicio semilla → token.',
+                        ],
                       ] as const
                     ).map(([titulo, url, detalle]) => (
-                      <div key={titulo} className="rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] p-2">
-                        <dt className="text-xs font-medium text-[var(--color-text-primary)]">{titulo}</dt>
+                      <div
+                        key={titulo}
+                        className="rounded-[var(--radius-md)] bg-[var(--color-surface-raised)] p-2"
+                      >
+                        <dt className="text-xs font-medium text-[var(--color-text-primary)]">
+                          {titulo}
+                        </dt>
                         <dd className="mt-0.5 break-all font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-secondary)]">
                           {url}
                         </dd>
@@ -255,8 +287,8 @@ export default async function FacturacionElectronicaPage({
                       Rotar el token
                     </BotonEnvio>
                     <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-                      Despues de rotar hay que volver a declarar las tres URL en la DGII. Hasta que lo
-                      hagas, le estara pegando a una ruta que ya no responde.
+                      Despues de rotar hay que volver a declarar las tres URL en la DGII. Hasta que
+                      lo hagas, le estara pegando a una ruta que ya no responde.
                     </p>
                   </form>
                 )}
@@ -305,7 +337,8 @@ export default async function FacturacionElectronicaPage({
                 <ul className="mb-3 space-y-1 text-xs text-[var(--color-text-muted)]">
                   {CONTINGENCIAS.map((c) => (
                     <li key={c.id}>
-                      <strong className="text-[var(--color-text-primary)]">{c.label}:</strong> {c.detalle}
+                      <strong className="text-[var(--color-text-primary)]">{c.label}:</strong>{' '}
+                      {c.detalle}
                     </li>
                   ))}
                 </ul>
@@ -314,7 +347,11 @@ export default async function FacturacionElectronicaPage({
                     {campos}
                     <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Estado
-                      <select name="contingencia" defaultValue={config.contingencia ?? ''} className={inputClase}>
+                      <select
+                        name="contingencia"
+                        defaultValue={config.contingencia ?? ''}
+                        className={inputClase}
+                      >
                         <option value="">Operando normal</option>
                         {CONTINGENCIAS.map((c) => (
                           <option key={c.id} value={c.id}>

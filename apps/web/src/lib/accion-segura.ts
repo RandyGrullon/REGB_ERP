@@ -47,7 +47,11 @@ export function mensajeLegible(e: unknown): string {
   const pg = (e ?? {}) as ErrorDePostgres
   const code = typeof pg.code === 'string' ? pg.code : ''
   const msg = typeof pg.message === 'string' ? pg.message : ''
-  const propio = msg !== '' && !/^(new row|duplicate key|insert or update|update or delete|null value|invalid input|value too long|permission denied|column |relation |syntax error)/i.test(msg)
+  const propio =
+    msg !== '' &&
+    !/^(new row|duplicate key|insert or update|update or delete|null value|invalid input|value too long|permission denied|column |relation |syntax error)/i.test(
+      msg,
+    )
 
   switch (code) {
     // assign_ncf (0026/0030): sin secuencia, vencida o agotada. El texto

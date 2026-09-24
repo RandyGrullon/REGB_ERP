@@ -55,11 +55,14 @@ export default async function AutomatizacionesPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'automations')
 
-  const { reglas, ejecuciones, notificacionesCreadas } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const r = await tx<ReglaFila[]>`
+  const { reglas, ejecuciones, notificacionesCreadas } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const r = await tx<ReglaFila[]>`
       select id, name, trigger_event_type, condition_field, condition_operator, condition_value, action_type, status
       from public.automation_rules where tenant_id = ${ctx.tenantId} order by created_at desc`
-    const e = await tx<EjecucionFila[]>`
+      const e = await tx<EjecucionFila[]>`
       select ar.id, r.name as rule_name, eo.type as event_type, ar.matched, ar.executed_at::text
       from public.automation_runs ar
       join public.automation_rules r on r.id = ar.rule_id
@@ -67,10 +70,11 @@ export default async function AutomatizacionesPage({
       where ar.tenant_id = ${ctx.tenantId}
       order by ar.executed_at desc
       limit 20`
-    const [n] = await tx<{ n: string }[]>`
+      const [n] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.notifications where tenant_id = ${ctx.tenantId} and module_id = 'automations'`
-    return { reglas: r, ejecuciones: e, notificacionesCreadas: Number(n?.n ?? 0) }
-  })
+      return { reglas: r, ejecuciones: e, notificacionesCreadas: Number(n?.n ?? 0) }
+    },
+  )
 
   const activas = reglas.filter((r) => r.status === 'active').length
   const puedeGestionar = exigir(ctx, 'automations', 'automations.manage').ok
@@ -88,9 +92,7 @@ export default async function AutomatizacionesPage({
               <form action={procesarEventosPendientesForm}>
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="play_arrow" size={14} />
                   Procesar eventos pendientes
                 </BotonEnvio>
@@ -111,7 +113,11 @@ export default async function AutomatizacionesPage({
           </CardHeader>
           <CardBody>
             {reglas.length === 0 ? (
-              <EmptyState icon="bolt" title="Todavia no hay ninguna regla" description="Crea la primera abajo." />
+              <EmptyState
+                icon="bolt"
+                title="Todavia no hay ninguna regla"
+                description="Crea la primera abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -119,10 +125,10 @@ export default async function AutomatizacionesPage({
                     <TH>Regla</TH>
                     <TH>Cuando</TH>
                     <TH>Condicion</TH>
-                    <TH>Accion</TH>
+                    <TH>Acción</TH>
                     <TH>Estado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -138,9 +144,13 @@ export default async function AutomatizacionesPage({
                           ? `${r.condition_field} ${OPERADOR_CONDICION[r.condition_operator ?? ''] ?? r.condition_operator} ${r.condition_value}`
                           : 'Siempre'}
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">{ACCION_LABEL[r.action_type] ?? r.action_type}</TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {ACCION_LABEL[r.action_type] ?? r.action_type}
+                      </TD>
                       <TD>
-                        <Badge tone={r.status === 'active' ? 'success' : 'neutral'}>{ESTADO_REGLA[r.status] ?? r.status}</Badge>
+                        <Badge tone={r.status === 'active' ? 'success' : 'neutral'}>
+                          {ESTADO_REGLA[r.status] ?? r.status}
+                        </Badge>
                       </TD>
                       <TD>
                         {puedeGestionar && (
@@ -148,10 +158,12 @@ export default async function AutomatizacionesPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="ruleId" value={r.id} />
-                            <input type="hidden" name="siguiente" value={r.status === 'active' ? 'paused' : 'active'} />
-                            <BotonEnvio
-                              
-                              className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <input
+                              type="hidden"
+                              name="siguiente"
+                              value={r.status === 'active' ? 'paused' : 'active'}
+                            />
+                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               {r.status === 'active' ? 'Pausar' : 'Reanudar'}
                             </BotonEnvio>
                           </form>
@@ -243,9 +255,7 @@ export default async function AutomatizacionesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>
@@ -260,7 +270,9 @@ export default async function AutomatizacionesPage({
           </CardHeader>
           <CardBody>
             {ejecuciones.length === 0 ? (
-              <p className="text-xs text-[var(--color-text-muted)]">Todavia no se ha procesado ningun evento.</p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Todavía no se ha procesado ningún evento.
+              </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
                 {ejecuciones.map((e) => (
@@ -268,10 +280,13 @@ export default async function AutomatizacionesPage({
                     <div>
                       <p className="text-sm text-[var(--color-text-primary)]">{e.rule_name}</p>
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        <Mono>{e.event_type}</Mono> · {new Date(e.executed_at).toLocaleString('es-DO')}
+                        <Mono>{e.event_type}</Mono> ·{' '}
+                        {new Date(e.executed_at).toLocaleString('es-DO')}
                       </p>
                     </div>
-                    <Badge tone={e.matched ? 'success' : 'neutral'}>{e.matched ? 'Ejecutada' : 'No cumplio la condicion'}</Badge>
+                    <Badge tone={e.matched ? 'success' : 'neutral'}>
+                      {e.matched ? 'Ejecutada' : 'No cumplio la condicion'}
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -286,8 +301,9 @@ export default async function AutomatizacionesPage({
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
               No corre en segundo plano automaticamente -hay que pedirle que procese los eventos
-              pendientes desde este boton, no hay un despachador automatico conectado-. Tampoco ejecuta
-              codigo arbitrario: la unica accion disponible hoy es crear una notificacion real.
+              pendientes desde este boton, no hay un despachador automático conectado-. Tampoco
+              ejecuta codigo arbitrario: la unica accion disponible hoy es crear una notificacion
+              real.
             </p>
           </CardBody>
         </Card>

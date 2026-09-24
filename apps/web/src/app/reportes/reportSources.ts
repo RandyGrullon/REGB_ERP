@@ -19,7 +19,11 @@ export interface ResultadoReporte {
   filas: Record<string, string | number>[]
 }
 
-async function sourceSalesByDay(tx: postgres.TransactionSql, tenantId: string, params: Record<string, unknown>): Promise<ResultadoReporte> {
+async function sourceSalesByDay(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+  params: Record<string, unknown>,
+): Promise<ResultadoReporte> {
   const dias = Number(params.days ?? 14) || 14
   const filas = await tx<{ dia: string; total: string }[]>`
     select date_trunc('day', sold_at)::date::text as dia, coalesce(sum(total), 0)::text as total
@@ -35,7 +39,11 @@ async function sourceSalesByDay(tx: postgres.TransactionSql, tenantId: string, p
   }
 }
 
-async function sourceTopProducts(tx: postgres.TransactionSql, tenantId: string, params: Record<string, unknown>): Promise<ResultadoReporte> {
+async function sourceTopProducts(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+  params: Record<string, unknown>,
+): Promise<ResultadoReporte> {
   const dias = Number(params.days ?? 30) || 30
   const limite = Number(params.limit ?? 10) || 10
   const filas = await tx<{ name: string; unidades: string; importe: string }[]>`
@@ -66,11 +74,19 @@ async function sourceTopProducts(tx: postgres.TransactionSql, tenantId: string, 
       { key: 'unidades', label: 'Unidades', numeric: true },
       { key: 'importe', label: 'Importe (RD$)', numeric: true },
     ],
-    filas: filas.map((r) => ({ name: r.name, unidades: Number(r.unidades), importe: Number(r.importe) })),
+    filas: filas.map((r) => ({
+      name: r.name,
+      unidades: Number(r.unidades),
+      importe: Number(r.importe),
+    })),
   }
 }
 
-async function sourceOverdueInvoices(tx: postgres.TransactionSql, tenantId: string, params: Record<string, unknown>): Promise<ResultadoReporte> {
+async function sourceOverdueInvoices(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+  params: Record<string, unknown>,
+): Promise<ResultadoReporte> {
   const limite = Number(params.limit ?? 20) || 20
   const filas = await tx<{ customer: string; total: string; dias: string }[]>`
     select c.name as customer, public.invoice_balance(i.id)::text as total, (current_date - i.due_date)::text as dias
@@ -85,11 +101,18 @@ async function sourceOverdueInvoices(tx: postgres.TransactionSql, tenantId: stri
       { key: 'total', label: 'Pendiente (RD$)', numeric: true },
       { key: 'dias', label: 'Dias vencida', numeric: true },
     ],
-    filas: filas.map((r) => ({ customer: r.customer, total: Number(r.total), dias: Number(r.dias) })),
+    filas: filas.map((r) => ({
+      customer: r.customer,
+      total: Number(r.total),
+      dias: Number(r.dias),
+    })),
   }
 }
 
-async function sourceLeadsByStatus(tx: postgres.TransactionSql, tenantId: string): Promise<ResultadoReporte> {
+async function sourceLeadsByStatus(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+): Promise<ResultadoReporte> {
   const filas = await tx<{ status: string; n: string }[]>`
     select status, count(*)::text as n from public.leads where tenant_id = ${tenantId} group by status order by status`
   return {
@@ -101,7 +124,10 @@ async function sourceLeadsByStatus(tx: postgres.TransactionSql, tenantId: string
   }
 }
 
-async function sourceTicketsByPriority(tx: postgres.TransactionSql, tenantId: string): Promise<ResultadoReporte> {
+async function sourceTicketsByPriority(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+): Promise<ResultadoReporte> {
   const filas = await tx<{ priority: string; n: string }[]>`
     select priority, count(*)::text as n from public.tickets where tenant_id = ${tenantId} group by priority order by priority`
   return {

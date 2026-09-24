@@ -1,4 +1,20 @@
-import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState, Icon, PageHeader, StatCard, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Icon,
+  PageHeader,
+  StatCard,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+} from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -18,20 +34,20 @@ interface CanalFila {
 }
 
 /** Chat interno (modulo 92): un mensaje enviado es un hecho historico -nunca se edita ni se borra-. */
-export default async function ChatPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function ChatPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'chat')
 
-  const canales = await asUser(ctx.userId, ctx.tenantId, (tx) => tx<CanalFila[]>`
+  const canales = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<CanalFila[]>`
     select cc.id, cc.name, cc.scope_type, cc.scope_label,
            (select count(*)::text from public.chat_messages where channel_id = cc.id) as mensajes
     from public.chat_channels cc
     where cc.tenant_id = ${ctx.tenantId}
-    order by cc.created_at`)
+    order by cc.created_at`,
+  )
 
   const puedeGestionar = exigir(ctx, 'chat', 'chat.manage').ok
   const qs = ctx.demoQs
@@ -55,7 +71,11 @@ export default async function ChatPage({
           </CardHeader>
           <CardBody>
             {canales.length === 0 ? (
-              <EmptyState icon="chat" title="Todavia no hay ningun canal" description="Crea el primero abajo." />
+              <EmptyState
+                icon="chat"
+                title="Todavia no hay ningun canal"
+                description="Crea el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -69,7 +89,10 @@ export default async function ChatPage({
                   {canales.map((c) => (
                     <TR key={c.id}>
                       <TD className="text-[var(--color-text-primary)]">
-                        <a href={`/chat/${c.id}${qs}`} className="underline-offset-2 hover:underline">
+                        <a
+                          href={`/chat/${c.id}${qs}`}
+                          className="underline-offset-2 hover:underline"
+                        >
                           {c.name}
                         </a>
                       </TD>
@@ -106,7 +129,7 @@ export default async function ChatPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
                     <option value="general">General</option>
-                    <option value="module">Modulo</option>
+                    <option value="module">Módulo</option>
                     <option value="project">Proyecto</option>
                     <option value="branch">Sucursal</option>
                   </select>
@@ -119,9 +142,7 @@ export default async function ChatPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

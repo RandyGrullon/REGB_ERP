@@ -46,9 +46,13 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Elige un alcance valido.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.inspection_plans (tenant_id, name, scope, product_id)
-    values (${ctx.tenantId}, ${name}, ${scope}, ${productId})`)
+    values (${ctx.tenantId}, ${name}, ${scope}, ${productId})`,
+  )
 
   revalidatePath('/calidad/planes')
   return { ok: true }
@@ -66,9 +70,13 @@ export async function agregarCriterio(fd: FormData): Promise<ActionResult> {
 
   if (!planId || !criterion) return { ok: false, error: 'Escribe el criterio.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.inspection_plan_criteria (plan_id, tenant_id, criterion, is_critical)
-    values (${planId}, ${ctx.tenantId}, ${criterion}, ${isCritical})`)
+    values (${planId}, ${ctx.tenantId}, ${criterion}, ${isCritical})`,
+  )
 
   revalidatePath(`/calidad/planes/${planId}`)
   return { ok: true }
@@ -83,9 +91,13 @@ export async function quitarCriterio(fd: FormData): Promise<ActionResult> {
   const planId = String(fd.get('planId') ?? '')
   const criterionId = String(fd.get('criterionId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     delete from public.inspection_plan_criteria
-    where id = ${criterionId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${criterionId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath(`/calidad/planes/${planId}`)
   return { ok: true }
@@ -100,9 +112,13 @@ export async function alternarPlanActivo(fd: FormData): Promise<ActionResult> {
   const planId = String(fd.get('planId') ?? '')
   const activo = fd.get('activo') === 'true'
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.inspection_plans set active = ${!activo}, updated_at = now()
-    where id = ${planId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${planId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath(`/calidad/planes/${planId}`)
   revalidatePath('/calidad/planes')

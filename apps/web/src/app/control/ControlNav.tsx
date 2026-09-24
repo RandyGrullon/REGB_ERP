@@ -9,7 +9,7 @@ const SECCIONES = [
   { href: '/control/salud', label: 'Salud', icon: 'monitor_heart' },
   { href: '/control/datos', label: 'Todo el dato', icon: 'database' },
   { href: '/control/actividad', label: 'Actividad', icon: 'history' },
-  { href: '/control/facturacion', label: 'Facturacion', icon: 'receipt_long' },
+  { href: '/control/facturacion', label: 'Facturación', icon: 'receipt_long' },
   { href: '/control/onboarding', label: 'Onboarding', icon: 'rocket_launch' },
 ] as const
 
@@ -34,7 +34,7 @@ export function ControlNav() {
             key={s.href}
             href={s.href}
             aria-current={activo ? 'page' : undefined}
-            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-[var(--radius-md)] px-2.5 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
+            className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
               activo
                 ? 'bg-[var(--color-surface-raised)] font-medium text-[var(--color-text-primary)]'
                 : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]'

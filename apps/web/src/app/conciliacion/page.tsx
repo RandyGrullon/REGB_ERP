@@ -22,7 +22,7 @@ import { crearImportForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Conciliacion bancaria · REGB ERP' }
+export const metadata = { title: 'Conciliación bancaria · REGB ERP' }
 
 interface ImportRow {
   id: string
@@ -99,7 +99,10 @@ export default async function ConciliacionPage({
             value={String(totalPendientes)}
             hint="sin conciliar en total"
           />
-          <StatCard label="Cuentas con estado importado" value={String(new Set(imports.map((i) => i.account_name)).size)} />
+          <StatCard
+            label="Cuentas con estado importado"
+            value={String(new Set(imports.map((i) => i.account_name)).size)}
+          />
         </section>
 
         {imports.length === 0 ? (
@@ -113,9 +116,9 @@ export default async function ConciliacionPage({
             <THead>
               <TR>
                 <TH>Cuenta</TH>
-                <TH>Periodo</TH>
+                <TH>Período</TH>
                 <TH numeric>Saldo del estado</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH numeric>Pendientes</TH>
                 <TH>Importado</TH>
               </TR>
@@ -130,7 +133,9 @@ export default async function ConciliacionPage({
                     >
                       {i.account_name}
                     </a>
-                    <span className="block text-xs text-[var(--color-text-muted)]">{i.bank_name}</span>
+                    <span className="block text-xs text-[var(--color-text-muted)]">
+                      {i.bank_name}
+                    </span>
                   </TD>
                   <TD>
                     {fecha(i.period_start)} – {fecha(i.period_end)}
@@ -145,7 +150,7 @@ export default async function ConciliacionPage({
                     {Number(i.pendientes) > 0 ? (
                       <Badge tone="warning">{i.pendientes}</Badge>
                     ) : (
-                      <Badge tone="success">al dia</Badge>
+                      <Badge tone="success">al día</Badge>
                     )}
                   </TD>
                   <TD>{fecha(i.created_at)}</TD>
@@ -195,18 +200,19 @@ export default async function ConciliacionPage({
                   </label>
                 </div>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Lineas del estado -una por renglon: fecha,descripcion,monto- (positivo entro, negativo salio)
+                  Lineas del estado -una por renglon: fecha,descripcion,monto- (positivo entro,
+                  negativo salio)
                   <textarea
                     name="lines"
                     required
                     rows={6}
-                    placeholder={'2026-09-01,Deposito de cliente,5000\n2026-09-03,Pago a suplidor,-1200'}
+                    placeholder={
+                      '2026-09-01,Deposito de cliente,5000\n2026-09-03,Pago a suplidor,-1200'
+                    }
                     className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 py-2 font-mono text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="upload" size={18} />
                   Importar
                 </BotonEnvio>

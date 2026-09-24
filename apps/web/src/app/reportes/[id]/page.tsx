@@ -1,5 +1,18 @@
 import { notFound } from 'next/navigation'
-import { Card, CardBody, CardHeader, CardTitle, EmptyState, PageHeader, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  PageHeader,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+} from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -64,7 +77,11 @@ export default async function ReporteDetallePage({
           </CardHeader>
           <CardBody>
             {resultado.filas.length === 0 ? (
-              <EmptyState icon="bar_chart" title="Sin datos todavia" description="Esta fuente no tiene filas que mostrar por ahora." />
+              <EmptyState
+                icon="bar_chart"
+                title="Sin datos todavia"
+                description="Esta fuente no tiene filas que mostrar por ahora."
+              />
             ) : (
               <Table>
                 <THead>

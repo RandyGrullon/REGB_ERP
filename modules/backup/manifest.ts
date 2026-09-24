@@ -4,7 +4,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'backup',
   name: 'Respaldos',
-  description: 'Copias de tus datos bajo demanda, descargables. Tu informacion es tuya.',
+  description: 'Copias de tus datos bajo demanda, descargables. Tu información es tuya.',
   icon: 'backup',
   category: 'core',
   version: '0.1.0',

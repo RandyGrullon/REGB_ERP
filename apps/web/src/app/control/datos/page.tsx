@@ -57,7 +57,7 @@ const GRUPOS: { titulo: string; icono: string; test: (t: string) => boolean }[] 
         'tenant_settings',
       ].includes(t),
   },
-  { titulo: 'Catalogo', icono: 'inventory_2', test: (t) => t.startsWith('product') },
+  { titulo: 'Catálogo', icono: 'inventory_2', test: (t) => t.startsWith('product') },
   {
     titulo: 'Inventario',
     icono: 'warehouse',
@@ -144,25 +144,25 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
           Todo el dato
         </h1>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Cuantas filas tiene cada cliente en cada tabla. Sirve para ver quien usa de verdad lo que
-          paga: un modulo activo con cero filas es una renovacion que se va a caer.
+          Cuántos registros tiene cada cliente en cada tabla. Sirve para ver quién usa de verdad lo
+          que paga: un módulo activo sin registros es una renovación que se va a caer.
         </p>
       </div>
 
       <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
-          label="Tablas con tenant_id"
+          label="Tablas de clientes"
           value={String(inv.tablas.length)}
-          hint="del catalogo, no de una lista"
+          hint="todas las que guardan datos de un cliente"
         />
         <StatCard
-          label="Filas de clientes"
+          label="Registros"
           value={totalFilas.toLocaleString('es-DO')}
-          hint="en todo el esquema public"
+          hint="de todos los clientes"
         />
-        <StatCard label="Archivos" value={bytes(totalBytes)} hint="suma real de files.size_bytes" />
+        <StatCard label="Archivos" value={bytes(totalBytes)} hint="lo que pesan sus archivos" />
         <StatCard
-          label="Bitacora"
+          label="Bitácora"
           value={totalAudit.toLocaleString('es-DO')}
           hint="movimientos auditados"
         />
@@ -216,7 +216,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
                   <TH numeric>Filas totales</TH>
                   <TH numeric>Tablas con datos</TH>
                   <TH numeric>Archivos</TH>
-                  <TH numeric>Bitacora</TH>
+                  <TH numeric>Bitácora</TH>
                 </TR>
               </THead>
               <TBody>
@@ -314,10 +314,8 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
       )}
 
       <p className="text-xs text-[var(--color-text-muted)]">
-        La lista de tablas se descubre en el momento consultando <Mono>information_schema</Mono>:
-        cualquier tabla nueva con <Mono>tenant_id</Mono> aparece aqui sin tocar codigo. Se consulta
-        como dueno de las tablas, sin RLS — es lo correcto en esta zona y solo aqui, porque la
-        barrera es <Mono>requireProvider()</Mono>.
+        La lista de tablas se descubre en el momento: cualquier tabla nueva con datos de clientes
+        aparece aquí sola, sin tocar código. Solo el equipo de REGB ve esta pantalla.
       </p>
     </div>
   )

@@ -50,7 +50,7 @@ describe('Un respaldo que no salio no protege de nada', () => {
   it('sin ningun respaldo lo dice sin rodeos', () => {
     const e = estadoDeRespaldos({ ultimo: null, ultimoFuera: null }, HOY)
     expect(e.nivel).toBe('sin-respaldo')
-    expect(e.detalle).toMatch(/pierdes todo/)
+    expect(e.detalle).toMatch(/no pierdes tus ventas/)
   })
 })
 

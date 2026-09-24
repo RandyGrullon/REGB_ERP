@@ -16,10 +16,14 @@ export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string })
           <p className="text-xs font-medium text-[var(--color-semantic-text-success)]">
             Copia esta llave ahora -no la volveras a ver completa-.
           </p>
-          <p className="mt-1 break-all font-mono text-xs text-[var(--color-text-primary)]">{estado.key}</p>
+          <p className="mt-1 break-all font-mono text-xs text-[var(--color-text-primary)]">
+            {estado.key}
+          </p>
         </div>
       )}
-      {estado && !estado.ok && <p className="text-xs text-[var(--color-semantic-text-danger)]">{estado.error}</p>}
+      {estado && !estado.ok && (
+        <p className="text-xs text-[var(--color-semantic-text-danger)]">{estado.error}</p>
+      )}
 
       <form action={accion} className="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tenant" value={tenant} />
@@ -54,9 +58,9 @@ export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string })
           />
         </label>
         <BotonEnvio
-          
           disabled={enviando}
-          className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60">
+          className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60"
+        >
           Crear llave
         </BotonEnvio>
       </form>

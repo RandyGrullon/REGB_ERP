@@ -46,15 +46,40 @@ export async function registrarLote(fd: FormData): Promise<ActionResult> {
   const expiryDate = String(fd.get('expiryDate') ?? '') || null
   const qty = num(String(fd.get('qty') ?? ''))
   const unitCost = num(String(fd.get('unitCost') ?? ''))
+  // `entrada`: el lote trae su existencia (ajuste de entrada, como antes).
+  // `existente`: la mercancia ya entro -por Recepciones, que no pide lote-
+  // y solo se le pone numero de lote. Sin esta opcion, registrar el lote
+  // de lo recibido lo sumaba otra vez al inventario.
+  const origen = String(fd.get('origen') ?? 'entrada') === 'existente' ? 'existente' : 'entrada'
 
   if (!productId) return { ok: false, error: 'Elige el producto.' }
   if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
   if (!lotNumber) return { ok: false, error: 'Escribe el numero de lote o de serie.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
-  if (unitCost === null || unitCost < 0) return { ok: false, error: 'El costo no es valido.' }
+  if (origen === 'entrada' && (unitCost === null || unitCost < 0)) {
+    return { ok: false, error: 'Escribe el costo unitario de lo que entra.' }
+  }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      if (origen === 'existente') {
+        // No se puede ponerle lote a mas de lo que hay: lo que ya tiene
+        // lote en ese almacen mas lo nuevo no pasa de la existencia.
+        const [c] = await tx<{ hay: string; con_lote: string; sku: string }[]>`
+          select coalesce((select sl.qty_on_hand from public.stock_levels sl
+                            where sl.tenant_id = ${ctx.tenantId} and sl.warehouse_id = ${warehouseId}
+                              and sl.product_id = ${productId}), 0)::text as hay,
+                 coalesce((select sum(ls.qty_on_hand) from public.lot_stock ls
+                            join public.product_lots pl on pl.id = ls.lot_id
+                            where ls.tenant_id = ${ctx.tenantId} and ls.warehouse_id = ${warehouseId}
+                              and pl.product_id = ${productId}), 0)::text as con_lote,
+                 (select sku from public.products where id = ${productId} and tenant_id = ${ctx.tenantId}) as sku`
+        const libre = Number(c!.hay) - Number(c!.con_lote)
+        if (qty > libre) {
+          return `De ${c!.sku ?? 'ese producto'} hay ${Number(c!.hay)} en ese almacen y ${Number(c!.con_lote)} ya tienen lote: solo le puedes poner lote a ${Math.max(0, libre)}.`
+        }
+      }
+
       const [lote] = await tx<{ id: string }[]>`
         insert into public.product_lots (tenant_id, product_id, lot_number, expiry_date)
         values (${ctx.tenantId}, ${productId}, ${lotNumber}, ${expiryDate})
@@ -68,17 +93,21 @@ export async function registrarLote(fd: FormData): Promise<ActionResult> {
         on conflict (tenant_id, warehouse_id, lot_id)
         do update set qty_on_hand = lot_stock.qty_on_hand + ${qty}, updated_at = now()`
 
-      await tx`
-        insert into public.inventory_movements
-          (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost, lot_id,
-           reference_type, notes, created_by)
-        values (${ctx.tenantId}, ${warehouseId}, ${productId}, 'adjustment_in', ${qty}, ${unitCost},
-                ${lotId}, 'product_lot', 'Registro de lote', ${ctx.userId})`
+      if (origen === 'entrada') {
+        await tx`
+          insert into public.inventory_movements
+            (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost, lot_id,
+             reference_type, notes, created_by)
+          values (${ctx.tenantId}, ${warehouseId}, ${productId}, 'adjustment_in', ${qty}, ${unitCost},
+                  ${lotId}, 'product_lot', 'Registro de lote', ${ctx.userId})`
+      }
 
       await tx`
         select public.emit_event('lots-serials.lot.registered',
-          ${JSON.stringify({ productId, lotId, qty })}::text::jsonb, 'lots-serials')`
+          ${JSON.stringify({ productId, lotId, qty, origen })}::text::jsonb, 'lots-serials')`
+      return 'ok'
     })
+    if (res !== 'ok') return { ok: false, error: res }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -193,9 +222,13 @@ export async function cerrarRecall(fd: FormData): Promise<ActionResult> {
   if (!recallId) return { ok: false, error: 'Falta el recall.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       update public.product_recalls set status = 'closed', closed_at = now()
-      where id = ${recallId} and tenant_id = ${ctx.tenantId}`)
+      where id = ${recallId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

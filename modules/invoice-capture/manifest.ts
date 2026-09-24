@@ -32,7 +32,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'invoice-capture',
   name: 'Captura de facturas',
-  description: 'Fotografia la factura del proveedor y extrae RNC, NCF, fecha, ITBIS y lineas.',
+  description: 'Fotografía la factura del proveedor y extrae RNC, NCF, fecha, ITBIS y líneas.',
   icon: 'document_scanner',
   category: 'advanced',
   version: '0.1.0',

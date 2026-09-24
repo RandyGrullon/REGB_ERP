@@ -12,7 +12,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'payments',
   name: 'Pasarelas de cobro',
-  description: 'Links de cobro y cobro recurrente, con confirmacion manual del pago.',
+  description: 'Links de cobro y cobro recurrente, con confirmación manual del pago.',
   icon: 'payments',
   category: 'standard',
   version: '0.1.0',

@@ -98,7 +98,11 @@ export default async function RequisicionesPage({
         </section>
 
         {requisiciones.length === 0 ? (
-          <EmptyState icon="assignment" title="Todavia no hay ninguna requisicion" description="Registra la primera abajo." />
+          <EmptyState
+            icon="assignment"
+            title="Todavia no hay ninguna requisicion"
+            description="Registra la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -109,7 +113,7 @@ export default async function RequisicionesPage({
                 <TH>Estado</TH>
                 {puedeAprobar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -126,9 +130,13 @@ export default async function RequisicionesPage({
                     <span className="tabular">RD$ {money(Number(r.estimated_amount))}</span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeTono(r.status)}>{ESTADO_REQUISICION[r.status] ?? r.status}</Badge>
+                    <Badge tone={badgeTono(r.status)}>
+                      {ESTADO_REQUISICION[r.status] ?? r.status}
+                    </Badge>
                     {r.po_reference ? (
-                      <span className="ml-1 text-xs text-[var(--color-text-muted)]">{r.po_reference}</span>
+                      <span className="ml-1 text-xs text-[var(--color-text-muted)]">
+                        {r.po_reference}
+                      </span>
                     ) : null}
                   </TD>
                   {puedeAprobar && (
@@ -140,9 +148,7 @@ export default async function RequisicionesPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="requisitionId" value={r.id} />
                             <input type="hidden" name="decision" value="approved" />
-                            <BotonEnvio
-                              
-                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
                               <Icon name="check" size={14} />
                               Aprobar
                             </BotonEnvio>
@@ -152,9 +158,7 @@ export default async function RequisicionesPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="requisitionId" value={r.id} />
                             <input type="hidden" name="decision" value="rejected" />
-                            <BotonEnvio
-                              
-                              className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="close" size={14} />
                               Rechazar
                             </BotonEnvio>
@@ -172,9 +176,7 @@ export default async function RequisicionesPage({
                             placeholder="OC-2026-00001"
                             className={claseInput}
                           />
-                          <BotonEnvio
-                            
-                            className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             Marcar convertida
                           </BotonEnvio>
                         </form>
@@ -216,11 +218,15 @@ export default async function RequisicionesPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto estimado
-                  <input name="estimatedAmount" required inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
+                  <input
+                    name="estimatedAmount"
+                    required
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Enviar
                 </BotonEnvio>

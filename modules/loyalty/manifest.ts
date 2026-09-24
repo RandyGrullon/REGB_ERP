@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'loyalty',
-  name: 'Fidelizacion',
+  name: 'Fidelización',
   description: 'Puntos, niveles, cupones, referidos y monedero del cliente.',
   icon: 'redeem',
   category: 'standard',

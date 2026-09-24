@@ -231,7 +231,8 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
     if (resultado.estado === 'duplicada') {
       return {
         ok: false,
-        error: 'Ese periodo ya esta cerrado. Una declaracion cerrada no se recalcula: se corrige con una rectificativa.',
+        error:
+          'Ese periodo ya esta cerrado. Una declaracion cerrada no se recalcula: se corrige con una rectificativa.',
       }
     }
     if (resultado.estado === 'escondidas') {

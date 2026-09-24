@@ -37,9 +37,13 @@ export async function crearInvitacion(fd: FormData): Promise<ActionResult> {
 
   const token = randomBytes(24).toString('base64url')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.portal_invites (tenant_id, customer_id, email, token, status, created_by)
-    values (${ctx.tenantId}, ${customerId}, ${email}, ${token}, 'active', ${ctx.userId})`)
+    values (${ctx.tenantId}, ${customerId}, ${email}, ${token}, 'active', ${ctx.userId})`,
+  )
 
   revalidatePath('/portal-clientes')
   return { ok: true }
@@ -58,7 +62,8 @@ export async function revocarInvitacion(fd: FormData): Promise<ActionResult> {
     const [inv] = await tx<{ status: EstadoInvitacion }[]>`
       select status from public.portal_invites where id = ${inviteId} and tenant_id = ${ctx.tenantId} for update`
     if (!inv) return 'no-existe'
-    if (!transicionValidaInvitacion(inv.status, 'revoked')) return 'Esa invitacion ya esta revocada.'
+    if (!transicionValidaInvitacion(inv.status, 'revoked'))
+      return 'Esa invitacion ya esta revocada.'
 
     await tx`
       update public.portal_invites set status = 'revoked', revoked_at = now()

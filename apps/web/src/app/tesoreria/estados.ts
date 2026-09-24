@@ -7,8 +7,18 @@ export const TIPO_MOVIMIENTO: Record<
 > = {
   deposit: { label: 'Deposito', tone: 'success', icono: 'south_west', entra: true },
   withdrawal: { label: 'Retiro', tone: 'warning', icono: 'north_east', entra: false },
-  transfer_in: { label: 'Entrada por transferencia', tone: 'info', icono: 'swap_horiz', entra: true },
-  transfer_out: { label: 'Salida por transferencia', tone: 'info', icono: 'swap_horiz', entra: false },
+  transfer_in: {
+    label: 'Entrada por transferencia',
+    tone: 'info',
+    icono: 'swap_horiz',
+    entra: true,
+  },
+  transfer_out: {
+    label: 'Salida por transferencia',
+    tone: 'info',
+    icono: 'swap_horiz',
+    entra: false,
+  },
 }
 
 export const TIPO_CUENTA: Record<string, string> = {

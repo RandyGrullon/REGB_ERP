@@ -55,9 +55,13 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.production_orders (tenant_id, bom_id, warehouse_id, qty_planned, created_by)
-      values (${ctx.tenantId}, ${bomId}, ${warehouseId}, ${qtyPlanned}, ${ctx.userId})`)
+      values (${ctx.tenantId}, ${bomId}, ${warehouseId}, ${qtyPlanned}, ${ctx.userId})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -78,7 +82,9 @@ export async function liberarOrden(fd: FormData): Promise<ActionResult> {
   if (!orderId) return { ok: false, error: 'Falta la orden.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [orden] = await tx<{ status: string; bom_id: string; warehouse_id: string; qty_planned: string }[]>`
+    const [orden] = await tx<
+      { status: string; bom_id: string; warehouse_id: string; qty_planned: string }[]
+    >`
       select status, bom_id, warehouse_id, qty_planned::text from public.production_orders
       where id = ${orderId} and tenant_id = ${ctx.tenantId} for update`
     if (!orden) return 'no-existe'
@@ -144,14 +150,22 @@ export async function reportarAvance(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
 
   if (!orderId) return { ok: false, error: 'Falta la orden.' }
-  if (qtyCompletedDelta < 0 || qtyScrappedDelta < 0) return { ok: false, error: 'Las cantidades no pueden ser negativas.' }
+  if (qtyCompletedDelta < 0 || qtyScrappedDelta < 0)
+    return { ok: false, error: 'Las cantidades no pueden ser negativas.' }
   if (qtyCompletedDelta === 0 && qtyScrappedDelta === 0) {
     return { ok: false, error: 'Reporta al menos algo completado o mermado.' }
   }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [orden] = await tx<
-      { status: string; warehouse_id: string; qty_planned: string; qty_completed: string; qty_scrapped: string; product_id: string }[]
+      {
+        status: string
+        warehouse_id: string
+        qty_planned: string
+        qty_completed: string
+        qty_scrapped: string
+        product_id: string
+      }[]
     >`
       select po.status, po.warehouse_id, po.qty_planned::text, po.qty_completed::text, po.qty_scrapped::text,
              bm.product_id

@@ -77,7 +77,8 @@ export async function correrMrp(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
 
   if (!productId) return { ok: false, error: 'Elige el producto.' }
-  if (targetQty === null || targetQty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
+  if (targetQty === null || targetQty <= 0)
+    return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const nodo = await resolverNodoMrp(tx, ctx.tenantId, productId, targetQty, 0)
@@ -112,7 +113,10 @@ export async function correrMrp(fd: FormData): Promise<ActionResult> {
     return runId
   })
 
-  if (resultado === 'Ese producto no tiene un BOM activo -no hay nada que explotar-.' || resultado === 'Ese BOM no tiene componentes.') {
+  if (
+    resultado === 'Ese producto no tiene un BOM activo -no hay nada que explotar-.' ||
+    resultado === 'Ese BOM no tiene componentes.'
+  ) {
     return { ok: false, error: resultado }
   }
 
@@ -132,7 +136,9 @@ export async function aceptarSugerencia(fd: FormData): Promise<ActionResult> {
   if (!suggestionId) return { ok: false, error: 'Falta la sugerencia.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [sug] = await tx<{ status: string; action: string; product_id: string; qty_suggested: string }[]>`
+    const [sug] = await tx<
+      { status: string; action: string; product_id: string; qty_suggested: string }[]
+    >`
       select status, action, product_id, qty_suggested::text from public.mrp_suggestions
       where id = ${suggestionId} and tenant_id = ${ctx.tenantId} for update`
     if (!sug) return 'no-existe'

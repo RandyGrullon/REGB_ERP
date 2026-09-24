@@ -354,27 +354,62 @@ export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
 
   // Se crea y se completa de una vez: es la version minima de F4, sin
   // estado "en transito" (eso llega con `transfers`, #50, en F8).
-  await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [transfer] = await tx<{ id: string }[]>`
+  //
+  // Antes no miraba la existencia: se trasladaba lo que no habia, el
+  // origen quedaba en negativo, y cualquier error de la base salia como
+  // excepcion sin atrapar (pantalla de error en vez de un aviso).
+  let sinExistencia: { hay: number; nombre: string } | null = null
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [p] = await tx<{ nombre: string; hay: string; lleva: boolean }[]>`
+        select p.name as nombre, p.tracks_stock as lleva,
+               coalesce((select sl.qty_on_hand - sl.qty_reserved from public.stock_levels sl
+                          where sl.tenant_id = ${ctx.tenantId} and sl.warehouse_id = ${from}
+                            and sl.product_id = p.id), 0)::text as hay
+        from public.products p
+        where p.tenant_id = ${ctx.tenantId} and p.id = ${productId}`
+      if (!p) throw new Error('Ese producto no existe.')
+      if (p.lleva && Number(p.hay) < qty) {
+        sinExistencia = { hay: Number(p.hay), nombre: p.nombre }
+        return
+      }
+
+      const [transfer] = await tx<{ id: string }[]>`
       insert into public.stock_transfers
         (tenant_id, from_warehouse_id, to_warehouse_id, status, created_by, completed_at)
       values (${ctx.tenantId}, ${from}, ${to}, 'completed', ${ctx.userId}, now())
       returning id`
 
-    await tx`
+      await tx`
       insert into public.stock_transfer_lines (transfer_id, tenant_id, product_id, qty)
       values (${transfer!.id}, ${ctx.tenantId}, ${productId}, ${qty})`
 
-    await tx`
+      await tx`
       insert into public.inventory_movements
         (tenant_id, warehouse_id, product_id, movement_type, qty, reference_type, reference_id, created_by)
       values (${ctx.tenantId}, ${from}, ${productId}, 'transfer_out', ${-qty}, 'stock_transfer', ${transfer!.id}, ${ctx.userId})`
 
-    await tx`
+      await tx`
       insert into public.inventory_movements
         (tenant_id, warehouse_id, product_id, movement_type, qty, reference_type, reference_id, created_by)
       values (${ctx.tenantId}, ${to}, ${productId}, 'transfer_in', ${qty}, 'stock_transfer', ${transfer!.id}, ${ctx.userId})`
-  })
+    })
+  } catch (e) {
+    return {
+      ok: false,
+      error: (e instanceof Error ? e.message : 'No pudimos hacer el traslado.').replace(
+        /^.*ERROR:\s*/,
+        '',
+      ),
+    }
+  }
+  const falta = sinExistencia as { hay: number; nombre: string } | null
+  if (falta) {
+    return {
+      ok: false,
+      error: `En el origen hay ${falta.hay} de ${falta.nombre}: no alcanza para trasladar ${qty}.`,
+    }
+  }
 
   revalidatePath('/inventory/transfers')
   revalidatePath('/inventory')

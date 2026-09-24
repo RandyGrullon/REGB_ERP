@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { taxRateForCountry } from '@regb/billing'
 import { db } from './db'
 
 /**
@@ -123,6 +124,8 @@ export async function cargarBitacoraGlobal(f: FiltrosBitacora): Promise<{
   filas: FilaBitacora[]
   total: number
   modulos: string[]
+  /** id -> nombre del catalogo, para no ensenar `bank-rec` en un filtro. */
+  nombresModulo: Record<string, string>
   entidades: string[]
   acciones: string[]
 }> {
@@ -158,18 +161,20 @@ export async function cargarBitacoraGlobal(f: FiltrosBitacora): Promise<{
       and (${f.accion ?? null}::text is null or l.action = ${f.accion ?? null})
       and (${f.desde ?? null}::text is null or l.at >= (${f.desde ?? null})::timestamptz)`
 
-  const [mods, ents, accs] = await Promise.all([
+  const [mods, ents, accs, cat] = await Promise.all([
     sql<
       { v: string }[]
     >`select distinct module_id as v from audit.log where module_id is not null order by 1`,
     sql<{ v: string }[]>`select distinct entity as v from audit.log order by 1`,
     sql<{ v: string }[]>`select distinct action as v from audit.log order by 1`,
+    sql<{ id: string; name: string }[]>`select id, name from regb.module_catalog`,
   ])
 
   return {
     filas,
     total: Number(tot?.n ?? 0),
     modulos: mods.map((m) => m.v),
+    nombresModulo: Object.fromEntries(cat.map((c) => [c.id, c.name])),
     entidades: ents.map((e) => e.v),
     acciones: accs.map((a) => a.v),
   }
@@ -178,7 +183,12 @@ export async function cargarBitacoraGlobal(f: FiltrosBitacora): Promise<{
 // ── Salud de la operacion ────────────────────────────────────────────────
 
 export interface Salud {
-  eventos: { pendientes: number; fallidos: number; muertos: number }
+  /**
+   * `atascados`: pendientes con mas de 15 minutos. Un evento recien
+   * emitido todavia no es un problema -el cron pasa cada pocos minutos- y
+   * contarlo como atascado ponia en rojo una operacion sana.
+   */
+  eventos: { pendientes: number; atascados: number; fallidos: number; muertos: number }
   ultimosErrores: {
     tenant: string | null
     topic: string
@@ -196,15 +206,18 @@ export interface Salud {
     motivo: 'agotada' | 'vencida' | 'por agotarse'
   }[]
   facturasProveedor: { vencidas: number; montoVencido: number; porCobrar: number }
+  /** Solo las vigentes: pasados 60 minutos `rls.impersonating()` ya no las deja operar. */
   impersonacionesAbiertas: { tenant: string; usuario: string; razon: string; desde: string }[]
 }
 
 export async function cargarSalud(): Promise<Salud> {
   const sql = db()
 
-  const [ev] = await sql<{ pend: string; fall: string; muertos: string }[]>`
+  const [ev] = await sql<{ pend: string; atascados: string; fall: string; muertos: string }[]>`
     select
       count(*) filter (where dead_lettered_at is null and processed_at is null)::text as pend,
+      count(*) filter (where dead_lettered_at is null and processed_at is null
+                         and emitted_at < now() - interval '15 minutes')::text as atascados,
       count(*) filter (where dead_lettered_at is null and processed_at is null and attempts > 0)::text as fall,
       count(*) filter (where dead_lettered_at is not null)::text as muertos
     from public.event_outbox`
@@ -284,11 +297,13 @@ export async function cargarSalud(): Promise<Salud> {
     join regb.tenants t on t.id = i.tenant_id
     left join regb.provider_users p on p.user_id = i.provider_user
     where i.ended_at is null
+      and i.started_at > now() - interval '60 minutes'
     order by i.started_at`
 
   return {
     eventos: {
       pendientes: Number(ev?.pend ?? 0),
+      atascados: Number(ev?.atascados ?? 0),
       fallidos: Number(ev?.fall ?? 0),
       muertos: Number(ev?.muertos ?? 0),
     },
@@ -312,8 +327,16 @@ export interface SolicitudActivacion {
   slug: string
   tier: string
   modulos: string[]
+  /** Los mismos modulos por su nombre del catalogo: lo que se lee en pantalla. */
+  nombres: string[]
+  /** Aumento de la mensualidad que vio el cliente, CON impuesto (el total de su factura). */
   mensual: number
+  /** Instalacion que vio el cliente, SIN impuesto: la factura le suma el ITBIS. */
   instalacion: number
+  /** Tasa del pais del cliente (0.18 en RD): para decir que numero lleva ITBIS. */
+  impuesto: number
+  /** El cliente pidio probar primero (boton "Probar 14 dias" del marketplace). */
+  pidePrueba: boolean
   nota: string | null
   desde: string
 }
@@ -332,15 +355,22 @@ export async function cargarSolicitudes(): Promise<SolicitudActivacion[]> {
       tenant: string
       slug: string
       tier: string
+      country: string
       modules: string[]
+      nombres: string[]
       quoted_monthly: string
       quoted_install: string
       note: string | null
       created_at: string
     }[]
   >`
-    select r.id, t.legal_name as tenant, t.slug, t.tier,
-           r.modules, r.quoted_monthly::text, r.quoted_install::text,
+    select r.id, t.legal_name as tenant, t.slug, t.tier, t.country,
+           r.modules,
+           array(select coalesce(mc.name, m.id)
+                 from unnest(r.modules) with ordinality as m(id, i)
+                 left join regb.module_catalog mc on mc.id = m.id
+                 order by m.i) as nombres,
+           r.quoted_monthly::text, r.quoted_install::text,
            r.note, r.created_at::text
     from regb.activation_requests r
     join regb.tenants t on t.id = r.tenant_id
@@ -353,8 +383,12 @@ export async function cargarSolicitudes(): Promise<SolicitudActivacion[]> {
     slug: f.slug,
     tier: f.tier,
     modulos: f.modules,
+    nombres: f.nombres,
     mensual: Number(f.quoted_monthly),
     instalacion: Number(f.quoted_install),
+    impuesto: taxRateForCountry(f.country),
+    // La marca la pone el servidor en `solicitarPruebaForm`, no el navegador.
+    pidePrueba: (f.note ?? '').startsWith('Prueba 14 días'),
     nota: f.note,
     desde: f.created_at,
   }))
@@ -411,4 +445,26 @@ export async function cargarExtrasPorTenant(): Promise<Map<string, ExtrasCliente
       },
     ]),
   )
+}
+
+// ── Impersonacion abierta del proveedor que mira ─────────────────────────
+
+/**
+ * La sesion vigente (menos de 60 minutos) del usuario del proveedor, si
+ * tiene una. El layout de REGB Control la ensena con su boton de cerrar:
+ * "Terminar" en el banner del cliente trae aqui, y aqui es donde se cierra.
+ */
+export async function impersonacionAbiertaDe(
+  providerUser: string,
+): Promise<{ tenant: string; slug: string; desde: string } | null> {
+  const [fila] = await db()<{ tenant: string; slug: string; desde: string }[]>`
+    select t.legal_name as tenant, t.slug, i.started_at::text as desde
+    from regb.impersonation_log i
+    join regb.tenants t on t.id = i.tenant_id
+    where i.provider_user = ${providerUser}
+      and i.ended_at is null
+      and i.started_at > now() - interval '60 minutes'
+    order by i.started_at desc
+    limit 1`
+  return fila ?? null
 }

@@ -12,8 +12,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'stock-counts',
-  name: 'Conteos ciclicos',
-  description: 'Programacion ABC, conteo ciego y ajustes con aprobacion.',
+  name: 'Conteos cíclicos',
+  description: 'Programación ABC, conteo ciego y ajustes con aprobación.',
   icon: 'checklist',
   category: 'standard',
   version: '0.1.0',

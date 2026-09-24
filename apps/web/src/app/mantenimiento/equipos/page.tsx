@@ -40,11 +40,7 @@ interface EquipoRow {
 }
 
 /** Equipos a mantener (modulo 59): uso acumulado, intervalos y vencimiento real. */
-export default async function EquiposPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function EquiposPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'maintenance', 'maintenance.manage')
 
@@ -72,7 +68,11 @@ export default async function EquiposPage({
         />
 
         {equipos.length === 0 ? (
-          <EmptyState icon="precision_manufacturing" title="Todavia no hay ningun equipo" description="Crea el primero abajo." />
+          <EmptyState
+            icon="precision_manufacturing"
+            title="Todavia no hay ningun equipo"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -88,7 +88,10 @@ export default async function EquiposPage({
               {equipos.map((e) => {
                 const fechaLimite =
                   e.maintenance_interval_days && e.last_service_at
-                    ? new Date(new Date(e.last_service_at).getTime() + e.maintenance_interval_days * 86_400_000)
+                    ? new Date(
+                        new Date(e.last_service_at).getTime() +
+                          e.maintenance_interval_days * 86_400_000,
+                      )
                     : null
                 const vencido = equipoRequiereMantenimiento(
                   Number(e.usage_hours),
@@ -100,13 +103,18 @@ export default async function EquiposPage({
                 return (
                   <TR key={e.id}>
                     <TD className="text-[var(--color-text-primary)]">
-                      <a href={`/mantenimiento/equipos/${e.id}${qs}`} className="underline-offset-2 hover:underline">
+                      <a
+                        href={`/mantenimiento/equipos/${e.id}${qs}`}
+                        className="underline-offset-2 hover:underline"
+                      >
                         <Mono>{e.code}</Mono> {e.name}
                       </a>
                     </TD>
                     <TD className="text-[var(--color-text-muted)]">{e.location ?? '—'}</TD>
                     <TD numeric>
-                      <span className="tabular">{Number(e.usage_hours).toLocaleString('es-DO')}</span>
+                      <span className="tabular">
+                        {Number(e.usage_hours).toLocaleString('es-DO')}
+                      </span>
                     </TD>
                     <TD>
                       <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
@@ -117,7 +125,7 @@ export default async function EquiposPage({
                       {vencido ? (
                         <Badge tone="danger">Vencido</Badge>
                       ) : (
-                        <Badge tone="success">Al dia</Badge>
+                        <Badge tone="success">Al día</Badge>
                       )}
                     </TD>
                   </TR>
@@ -175,9 +183,7 @@ export default async function EquiposPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'chat',
   name: 'Chat interno',
-  description: 'Canales por modulo, proyecto o sucursal, con hilos y menciones.',
+  description: 'Canales por módulo, proyecto o sucursal, con hilos y menciones.',
   icon: 'chat',
   category: 'standard',
   version: '0.1.0',

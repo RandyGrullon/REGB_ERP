@@ -44,9 +44,13 @@ export async function crearProyecto(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre del proyecto.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.projects (tenant_id, name, description, start_date, end_date, created_by)
-    values (${ctx.tenantId}, ${name}, ${description}, ${startDate}, ${endDate}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${name}, ${description}, ${startDate}, ${endDate}, ${ctx.userId})`,
+  )
 
   revalidatePath('/proyectos')
   return { ok: true }
@@ -91,9 +95,13 @@ export async function crearTarea(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre de la tarea.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.project_tasks (tenant_id, project_id, name, due_date)
-    values (${ctx.tenantId}, ${projectId}, ${name}, ${dueDate})`)
+    values (${ctx.tenantId}, ${projectId}, ${name}, ${dueDate})`,
+  )
 
   revalidatePath(`/proyectos/${projectId}`)
   return { ok: true }
@@ -120,7 +128,12 @@ export async function transicionarTarea(fd: FormData): Promise<ActionResult> {
       select pt.status from public.task_dependencies td
       join public.project_tasks pt on pt.id = td.depends_on_task_id
       where td.task_id = ${taskId}`
-    if (!puedeAvanzarPorDependencias(dependencias.map((d) => d.status), siguiente)) {
+    if (
+      !puedeAvanzarPorDependencias(
+        dependencias.map((d) => d.status),
+        siguiente,
+      )
+    ) {
       return 'Esa tarea tiene una o mas dependencias sin terminar.'
     }
 
@@ -146,12 +159,17 @@ export async function agregarDependencia(fd: FormData): Promise<ActionResult> {
   const projectId = String(fd.get('projectId') ?? '')
 
   if (!dependsOnTaskId) return { ok: false, error: 'Elige de que tarea depende.' }
-  if (taskId === dependsOnTaskId) return { ok: false, error: 'Una tarea no puede depender de si misma.' }
+  if (taskId === dependsOnTaskId)
+    return { ok: false, error: 'Una tarea no puede depender de si misma.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.task_dependencies (tenant_id, task_id, depends_on_task_id)
     values (${ctx.tenantId}, ${taskId}, ${dependsOnTaskId})
-    on conflict do nothing`)
+    on conflict do nothing`,
+  )
 
   revalidatePath(`/proyectos/${projectId}`)
   return { ok: true }
@@ -170,9 +188,13 @@ export async function crearHito(fd: FormData): Promise<ActionResult> {
   if (!name) return { ok: false, error: 'Falta el nombre del hito.' }
   if (!dueDate) return { ok: false, error: 'Falta la fecha del hito.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.project_milestones (tenant_id, project_id, name, due_date)
-    values (${ctx.tenantId}, ${projectId}, ${name}, ${dueDate})`)
+    values (${ctx.tenantId}, ${projectId}, ${name}, ${dueDate})`,
+  )
 
   revalidatePath(`/proyectos/${projectId}`)
   return { ok: true }
@@ -187,9 +209,13 @@ export async function completarHito(fd: FormData): Promise<ActionResult> {
   const milestoneId = String(fd.get('milestoneId') ?? '')
   const projectId = String(fd.get('projectId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.project_milestones set completed_at = now()
-    where id = ${milestoneId} and tenant_id = ${ctx.tenantId} and completed_at is null`)
+    where id = ${milestoneId} and tenant_id = ${ctx.tenantId} and completed_at is null`,
+  )
 
   revalidatePath(`/proyectos/${projectId}`)
   return { ok: true }

@@ -93,7 +93,10 @@ export default async function CentroCostoDetallePage({
           icon="call_split"
           title={head.name}
           description={head.code}
-          crumbs={[{ label: 'Centros de costo', href: `/centros-costo${qs}` }, { label: head.name }]}
+          crumbs={[
+            { label: 'Centros de costo', href: `/centros-costo${qs}` },
+            { label: head.name },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -108,14 +111,14 @@ export default async function CentroCostoDetallePage({
           <CardBody>
             {asignaciones.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Este centro todavia no tiene ninguna asignacion.
+                Este centro todavía no tiene ninguna asignación.
               </p>
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH>Origen</TH>
                     <TH>Registrado por</TH>
                     <TH numeric>Monto</TH>

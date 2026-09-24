@@ -9,7 +9,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'auth',
   name: 'Mi cuenta',
-  description: 'Tu perfil, tu contrasena y tus sesiones. MFA y SSO segun el plan.',
+  description: 'Tu perfil, tu contraseña y tus sesiones. MFA y SSO según el plan.',
   icon: 'shield_person',
   category: 'core',
   version: '0.1.0',

@@ -58,9 +58,9 @@ export function LoginForm({
       const msg = err instanceof Error ? err.message : String(err)
       setError(
         /invalid login credentials/i.test(msg)
-          ? 'El correo o la contrasena no coinciden. Si nunca has entrado, pide un enlace de acceso.'
+          ? 'El correo o la contraseña no coinciden. Si nunca has entrado, pide un enlace de acceso.'
           : /email not confirmed/i.test(msg)
-            ? 'Todavia no confirmaste tu correo. Revisa tu bandeja o pide un enlace de acceso.'
+            ? 'Todavía no confirmaste tu correo. Revisa tu bandeja o pide un enlace de acceso.'
             : msg,
       )
     } finally {
@@ -157,8 +157,8 @@ export function LoginForm({
         className="w-full text-center text-xs text-[var(--color-text-link)] underline-offset-4 hover:underline"
       >
         {modo === 'password'
-          ? 'No recuerdo mi contrasena — mandame un enlace'
-          : 'Prefiero usar mi contrasena'}
+          ? 'No recuerdo mi contraseña — mandame un enlace'
+          : 'Prefiero usar mi contraseña'}
       </button>
     </form>
   )

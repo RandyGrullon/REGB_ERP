@@ -16,7 +16,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'quality',
   name: 'Control de calidad',
-  description: 'Planes de inspeccion, no conformidades, CAPA y certificados.',
+  description: 'Planes de inspección, no conformidades, CAPA y certificados.',
   icon: 'verified',
   category: 'advanced',
   version: '0.1.0',
@@ -36,10 +36,10 @@ export default defineModule({
 
   routes: [
     { path: '/calidad', label: 'Control de calidad', perm: 'quality.view' },
-    { path: '/calidad/planes', label: 'Planes de inspeccion', perm: 'quality.manage' },
+    { path: '/calidad/planes', label: 'Planes de inspección', perm: 'quality.manage' },
     { path: '/calidad/planes/:id', label: 'Detalle del plan', perm: 'quality.manage', hidden: true },
-    { path: '/calidad/inspecciones/nueva', label: 'Nueva inspeccion', perm: 'quality.inspect', hidden: true },
-    { path: '/calidad/inspecciones/:id', label: 'Detalle de inspeccion', perm: 'quality.view', hidden: true },
+    { path: '/calidad/inspecciones/nueva', label: 'Nueva inspección', perm: 'quality.inspect', hidden: true },
+    { path: '/calidad/inspecciones/:id', label: 'Detalle de inspección', perm: 'quality.view', hidden: true },
     { path: '/calidad/no-conformidades', label: 'No conformidades', perm: 'quality.view' },
     { path: '/calidad/no-conformidades/:id', label: 'Detalle', perm: 'quality.view', hidden: true },
   ],

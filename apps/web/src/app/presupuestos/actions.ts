@@ -84,11 +84,15 @@ export async function ponerLineaPresupuesto(fd: FormData): Promise<ActionResult>
   if (amount === null || amount < 0) return { ok: false, error: 'El monto no puede ser negativo.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.budget_lines (tenant_id, budget_id, account_id, period_month, amount)
       values (${ctx.tenantId}, ${budgetId}, ${accountId}, ${month}, ${amount})
       on conflict (tenant_id, budget_id, account_id, period_month)
-      do update set amount = excluded.amount`)
+      do update set amount = excluded.amount`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('no se edita')) {
@@ -135,9 +139,13 @@ export async function activarPresupuesto(fd: FormData): Promise<ActionResult> {
   const budgetId = String(fd.get('budgetId') ?? '')
   if (!budgetId) return { ok: false, error: 'Falta el presupuesto.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.budgets set status = 'active'
-    where id = ${budgetId} and tenant_id = ${ctx.tenantId} and status = 'draft'`)
+    where id = ${budgetId} and tenant_id = ${ctx.tenantId} and status = 'draft'`,
+  )
 
   revalidatePath('/presupuestos')
   revalidatePath(`/presupuestos/${budgetId}`)

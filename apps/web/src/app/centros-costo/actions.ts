@@ -75,7 +75,8 @@ export async function asignarCosto(fd: FormData): Promise<ActionResult> {
   const allocationDate = String(fd.get('allocationDate') ?? '').trim()
 
   if (!costCenterId) return { ok: false, error: 'Elige el centro de costo.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (description.length < 3) return { ok: false, error: 'Describe el gasto.' }
 
   try {
@@ -118,7 +119,8 @@ export async function prorratearCosto(fd: FormData): Promise<ActionResult> {
   const pesos = fd.getAll('weight').map((v) => num(String(v)) ?? 0)
   const centros = fd.getAll('weightCenterId').map((v) => String(v))
 
-  if (total === null || total <= 0) return { ok: false, error: 'El monto total debe ser mayor que cero.' }
+  if (total === null || total <= 0)
+    return { ok: false, error: 'El monto total debe ser mayor que cero.' }
   if (description.length < 3) return { ok: false, error: 'Describe el gasto.' }
 
   const pesosValidos = centros
@@ -126,7 +128,10 @@ export async function prorratearCosto(fd: FormData): Promise<ActionResult> {
     .filter((p) => p.costCenterId && p.weight > 0)
 
   if (pesosValidos.length < 2) {
-    return { ok: false, error: 'Pon un peso mayor que cero en al menos dos centros para prorratear.' }
+    return {
+      ok: false,
+      error: 'Pon un peso mayor que cero en al menos dos centros para prorratear.',
+    }
   }
 
   const reparto = splitAmount(total, pesosValidos)

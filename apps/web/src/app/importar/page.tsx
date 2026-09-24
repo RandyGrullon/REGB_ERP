@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Icon,
   Mono,
   PageHeader,
   StatCard,
@@ -38,13 +39,37 @@ const ETIQUETA_COLUMNA: Record<string, string> = {
   unit: 'unidad',
   price: 'precio',
   cost: 'costo',
-  barcode: 'codigo de barras',
+  barcode: 'código de barras',
   taxRate: 'tasa de ITBIS',
   exempt: 'exento',
   warehouse: 'almacen',
   qty: 'cantidad',
   unitCost: 'costo unitario',
 }
+
+/**
+ * Plantillas para descargar. El dueño de un colmado no sabe que es un CSV:
+ * sabe llenar una hoja. Le damos una ya armada con los encabezados que
+ * reconocemos y dos filas de ejemplo; la abre en Excel, la llena y la sube.
+ * El BOM hace que Excel lea bien las tildes; el lector lo ignora.
+ */
+function plantilla(filas: string[]): string {
+  return `data:text/csv;charset=utf-8,${encodeURIComponent('\uFEFF' + filas.join('\r\n') + '\r\n')}`
+}
+const PLANTILLA_PRODUCTOS = plantilla([
+  'código,nombre,categoría,unidad,precio,costo,código de barras,tasa de ITBIS',
+  'ARZ-001,Arroz selecto 5 lb,Granos,funda,215.00,180.00,,exento',
+  'ACE-002,Aceite de soya 1 gal,Aceites,galon,525.00,450.00,,16%',
+  'REF-003,Refresco 2 litros,Bebidas,unidad,120.00,95.00,,18%',
+])
+const PLANTILLA_EXISTENCIAS = plantilla([
+  'código,almacén,cantidad,costo',
+  'ARZ-001,,24,180.00',
+  'ACE-002,,12,450.00',
+])
+
+const BOTON_PLANTILLA =
+  'inline-flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
 
 const CAMPO_ARCHIVO =
   'text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-surface-raised)] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-[var(--color-text-primary)]'
@@ -120,8 +145,8 @@ export default async function ImportarPage({
         <PageHeader
           icon="upload_file"
           title="Importar"
-          description="Sube tu catalogo y tus existencias iniciales desde un CSV. Reconocemos los encabezados solos, cada fila dudosa se rechaza con su motivo -un numero nunca se adivina- y toda importacion se puede deshacer."
-          crumbs={[{ label: 'Catalogo', href: `/products${ctx.demoQs}` }, { label: 'Importar' }]}
+          description="Sube tu catálogo y tus existencias desde una hoja de Excel guardada como CSV. Reconocemos los encabezados solos, cada fila dudosa se rechaza con su motivo -un número nunca se adivina- y toda importación se puede deshacer."
+          crumbs={[{ label: 'Catálogo', href: `/products${ctx.demoQs}` }, { label: 'Importar' }]}
         />
 
         {batches.length > 0 && (
@@ -177,7 +202,23 @@ export default async function ImportarPage({
                   className={CAMPO_ARCHIVO}
                 />
                 <BotonEnvio className={BOTON_PRIMARIO}>Importar productos</BotonEnvio>
+                <a
+                  href={PLANTILLA_PRODUCTOS}
+                  download="plantilla-productos.csv"
+                  className={BOTON_PLANTILLA}
+                >
+                  <Icon name="download" size={16} />
+                  Descargar plantilla
+                </a>
               </form>
+              <p className="mt-3 max-w-prose text-xs text-[var(--color-text-secondary)]">
+                <span className="font-semibold text-[var(--color-text-primary)]">
+                  ¿Lo tienes en Excel?
+                </span>{' '}
+                Descarga la plantilla, pega tus productos debajo de los encabezados y guárdala con{' '}
+                <em>Archivo → Guardar como → CSV UTF-8 (delimitado por comas)</em>. Luego súbela
+                aquí.
+              </p>
 
               <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
                 <p className="mb-1 font-semibold text-[var(--color-text-primary)]">
@@ -198,9 +239,9 @@ export default async function ImportarPage({
                 <p className="mt-3 max-w-prose">
                   <span className="font-semibold text-[var(--color-text-primary)]">Numeros:</span>{' '}
                   <Mono>1,234.56</Mono> y <Mono>1.234,56</Mono> se leen igual; <Mono>RD$</Mono>,
-                  espacios y negativos tambien. Si un numero se puede leer de dos maneras —
+                  espacios y negativos también. Si un número se puede leer de dos maneras —
                   <Mono>1.234</Mono> puede ser mil o uno con decimales— la fila se rechaza y te
-                  decimos por que. Un codigo que ya existe no se sobrescribe.
+                  decimos por qué. Un código que ya existe no se sobrescribe.
                 </p>
                 <p className="mt-2 max-w-prose">
                   <span className="font-semibold text-[var(--color-text-primary)]">ITBIS:</span>{' '}
@@ -214,7 +255,7 @@ export default async function ImportarPage({
                   </span>{' '}
                   formatea esa columna como <em>Texto</em> en Excel antes de exportar; si no, un
                   codigo largo se vuelve <Mono>7.46E+12</Mono> y pierde digitos (lo rechazamos). Un
-                  codigo que ya tiene otro producto tambien se rechaza, en su fila.
+                  código que ya tiene otro producto también se rechaza, en su fila.
                 </p>
               </div>
             </CardBody>
@@ -239,6 +280,14 @@ export default async function ImportarPage({
                   className={CAMPO_ARCHIVO}
                 />
                 <BotonEnvio className={BOTON_PRIMARIO}>Cargar existencias</BotonEnvio>
+                <a
+                  href={PLANTILLA_EXISTENCIAS}
+                  download="plantilla-existencias.csv"
+                  className={BOTON_PLANTILLA}
+                >
+                  <Icon name="download" size={16} />
+                  Descargar plantilla
+                </a>
               </form>
 
               <div className="mt-4 text-xs text-[var(--color-text-secondary)]">
@@ -256,18 +305,18 @@ export default async function ImportarPage({
                   ))}
                 </ul>
                 <p className="mt-3 max-w-prose">
-                  El codigo puede ser el SKU o el codigo de barras. Sin almacen va al
+                  El código puede ser el SKU o el código de barras. Sin almacén va al
                   predeterminado. Sin costo se usa el del catalogo, y si tampoco hay, la fila se
                   rechaza:{' '}
                   <strong className="text-[var(--color-text-primary)]">
-                    sin costo la valorizacion nace mal
+                    sin costo la valorización nace mal
                   </strong>
                   . Un producto que ya tiene existencia en ese almacen no se toca (corrigelo con un
                   ajuste). Los numeros siguen la misma regla de arriba.
                 </p>
                 <p className="mt-2 max-w-prose">
                   Cargalo antes de vender -de noche o un domingo-: deshacer vuelve cada linea a cero
-                  con su movimiento contrario, pero solo si nada la movio despues.
+                  con su movimiento contrario, pero solo si nada la movió después.
                 </p>
               </div>
             </CardBody>
@@ -360,7 +409,7 @@ export default async function ImportarPage({
                               title={
                                 esDeExistencias(b)
                                   ? `Registra el movimiento contrario de las ${b.inserted} existencias que cargo este archivo. El kardex conserva los dos.`
-                                  : `Borra los ${b.inserted} productos que creo esta importacion. No toca ningun otro.`
+                                  : `Borra los ${b.inserted} productos que creó esta importación. No toca ningún otro.`
                               }
                               className="inline-flex min-h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                             >

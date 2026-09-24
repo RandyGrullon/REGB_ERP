@@ -63,12 +63,17 @@ export async function crearDocumento(fd: FormData): Promise<ActionResult> {
   const expiresAt = String(fd.get('expiresAt') ?? '') || null
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
-  if (!TIPOS_DOCUMENTO.includes(docType)) return { ok: false, error: 'Elige un tipo de documento valido.' }
+  if (!TIPOS_DOCUMENTO.includes(docType))
+    return { ok: false, error: 'Elige un tipo de documento valido.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.supplier_documents (tenant_id, supplier_id, doc_type, doc_number, issued_at, expires_at)
-      values (${ctx.tenantId}, ${supplierId}, ${docType}, ${docNumber}, ${issuedAt}, ${expiresAt})`)
+      values (${ctx.tenantId}, ${supplierId}, ${docType}, ${docNumber}, ${issuedAt}, ${expiresAt})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -94,12 +99,17 @@ export async function crearCuentaBancaria(fd: FormData): Promise<ActionResult> {
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (!bankName) return { ok: false, error: 'Escribe el nombre del banco.' }
   if (!accountNumber) return { ok: false, error: 'Escribe el numero de cuenta.' }
-  if (!TIPOS_CUENTA.includes(accountType)) return { ok: false, error: 'Elige un tipo de cuenta valido.' }
+  if (!TIPOS_CUENTA.includes(accountType))
+    return { ok: false, error: 'Elige un tipo de cuenta valido.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.supplier_bank_accounts (tenant_id, supplier_id, bank_name, account_number, account_type, currency)
-      values (${ctx.tenantId}, ${supplierId}, ${bankName}, ${accountNumber}, ${accountType}, ${currency})`)
+      values (${ctx.tenantId}, ${supplierId}, ${bankName}, ${accountNumber}, ${accountType}, ${currency})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

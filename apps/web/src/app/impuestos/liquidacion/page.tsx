@@ -94,7 +94,9 @@ export default async function LiquidacionPage({
   // del servidor (UTC), la noche del ultimo dia ya proponia el equivocado.
   const hoy = new Date()
   const actual = periodoFiscal(hoy)
-  const mesPasado = new Date(Date.UTC(Number(actual.slice(0, 4)), Number(actual.slice(4, 6)) - 2, 15))
+  const mesPasado = new Date(
+    Date.UTC(Number(actual.slice(0, 4)), Number(actual.slice(4, 6)) - 2, 15),
+  )
   const periodoDefecto = periodoFiscal(mesPasado)
   const periodo = /^[0-9]{6}$/.test(params.periodo ?? '') ? params.periodo! : periodoDefecto
 
@@ -105,10 +107,8 @@ export default async function LiquidacionPage({
   // 404 para el colmado sin `ar`.
   const reportes = primeraPuerta(ctx, PUERTAS_VENTAS_DGII)
 
-  const [cobrado607, adelantado, retenidoAProveedores, sinNcf, saldo, cerrada, historial, ocultas] = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    async (tx) => {
+  const [cobrado607, adelantado, retenidoAProveedores, sinNcf, saldo, cerrada, historial, ocultas] =
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       // Las ventas ya no dependen de `ar` (0129): el 607 junta facturas y
       // caja bajo la RLS de cada una, y lo que un modulo apagado esconda lo
       // dice ventas_fuera_de_vista() -abajo- en vez de sumar cero callado.
@@ -185,8 +185,7 @@ export default async function LiquidacionPage({
         h,
         o,
       ] as const
-    },
-  )
+    })
   const escondidas = ocultas.reduce((s, x) => s + Number(x.documentos), 0)
   const NOMBRE_MODULO: Record<string, string> = { ar: 'Cuentas por cobrar', pos: 'Punto de venta' }
 
@@ -255,19 +254,21 @@ export default async function LiquidacionPage({
             <p className="text-[var(--color-text-secondary)]">
               {escondidas > 0 && (
                 <>
-                  No se ve <strong className="text-[var(--color-text-primary)]">todo lo que cobraste</strong>:
-                  hay {escondidas} venta{escondidas === 1 ? '' : 's'} de este periodo en un modulo
-                  apagado ({ocultas.map((x) => NOMBRE_MODULO[x.modulo] ?? x.modulo).join(', ')}), asi
-                  que el ITBIS de ventas de arriba{' '}
+                  No se ve{' '}
+                  <strong className="text-[var(--color-text-primary)]">todo lo que cobraste</strong>
+                  : hay {escondidas} venta{escondidas === 1 ? '' : 's'} de este periodo en un modulo
+                  apagado ({ocultas.map((x) => NOMBRE_MODULO[x.modulo] ?? x.modulo).join(', ')}),
+                  asi que el ITBIS de ventas de arriba{' '}
                   <strong className="text-[var(--color-text-primary)]">esta corto</strong>. Esta
                   declaracion no se puede cerrar asi: declarar de menos es una multa.{' '}
                 </>
               )}
               {!veCompras && (
                 <>
-                  No se ve <strong className="text-[var(--color-text-primary)]">lo que compraste</strong>:
+                  No se ve{' '}
+                  <strong className="text-[var(--color-text-primary)]">lo que compraste</strong>:
                   sin Cuentas por pagar falta el ITBIS adelantado, y sin restarlo esta liquidacion
-                  te hace pagar de mas.
+                  te hace pagar de más.
                 </>
               )}
             </p>
@@ -302,13 +303,16 @@ export default async function LiquidacionPage({
           </div>
         )}
 
-        <section aria-label="Liquidacion del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <section
+          aria-label="Liquidacion del periodo"
+          className="grid grid-cols-2 gap-3 lg:grid-cols-3"
+        >
           <StatCard
             label="ITBIS cobrado"
             value={`RD$ ${money(cobrado)}`}
             hint={
               escondidas > 0
-                ? 'CORTO: hay ventas en un modulo apagado'
+                ? 'CORTO: hay ventas en un módulo apagado'
                 : sinNcf > 0
                   ? `de tus ventas, con ${money(sinNcf)} sin NCF`
                   : 'de tus ventas (607)'
@@ -341,7 +345,8 @@ export default async function LiquidacionPage({
 
         {sinNcf > 0 && (
           <p className="text-xs text-[var(--color-text-muted)]">
-            De lo cobrado, <strong className="text-[var(--color-text-secondary)]">RD$ {money(sinNcf)}</strong>{' '}
+            De lo cobrado,{' '}
+            <strong className="text-[var(--color-text-secondary)]">RD$ {money(sinNcf)}</strong>{' '}
             viene de ventas <strong className="text-[var(--color-text-secondary)]">sin NCF</strong>,
             que no salen en el 607. El 607 declara comprobantes y el IT-1 declara operaciones: el
             ITBIS de un ticket sin NCF se cobro igual y se declara igual.
@@ -360,7 +365,7 @@ export default async function LiquidacionPage({
             </strong>
             {vence.vencida
               ? ' — ya paso.'
-              : ` — faltan ${vence.diasRestantes} dia${vence.diasRestantes === 1 ? '' : 's'}.`}{' '}
+              : ` — faltan ${vence.diasRestantes} día${vence.diasRestantes === 1 ? '' : 's'}.`}{' '}
             {reportes && (
               <>
                 Los formatos 606, 607 y 608 se descargan en{' '}
@@ -497,10 +502,14 @@ export default async function LiquidacionPage({
                 role="note"
                 className="flex items-start gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] p-3 text-sm"
               >
-                <Icon name="photo_camera" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
+                <Icon
+                  name="photo_camera"
+                  size={20}
+                  className="shrink-0 text-[var(--color-text-muted)]"
+                />
                 <p className="text-[var(--color-text-secondary)]">
                   Esto es una <strong className="text-[var(--color-text-primary)]">foto</strong>, no
-                  un calculo vivo. Si las dos columnas no coinciden es porque despues de cerrar se
+                  un calculo vivo. Si las dos columnas no coinciden es porque después de cerrar se
                   corrigio alguna factura del periodo:{' '}
                   <strong className="text-[var(--color-text-primary)]">
                     lo que se entrego sigue siendo lo que se entrego
@@ -515,7 +524,7 @@ export default async function LiquidacionPage({
                   <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                   <input type="hidden" name="id" value={cerrada.id} />
                   <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Numero de recibo
+                    Número de recibo
                     <input name="receiptNumber" placeholder="Opcional" className={claseInput} />
                   </label>
                   <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
@@ -549,7 +558,7 @@ export default async function LiquidacionPage({
                       />
                     </label>
                     <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                      Numero de recibo
+                      Número de recibo
                       <input name="receiptNumber" placeholder="Opcional" className={claseInput} />
                     </label>
                     <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -567,7 +576,7 @@ export default async function LiquidacionPage({
                   </BotonEnvio>
                   <p className="text-xs text-[var(--color-text-muted)]">
                     Los montos NO salen de esta pantalla: al cerrar se vuelven a sumar contra tus
-                    facturas del periodo. Una vez cerrada no se recalcula.
+                    facturas del período. Una vez cerrada no se recalcula.
                   </p>
                 </form>
               </CardBody>
@@ -583,7 +592,7 @@ export default async function LiquidacionPage({
             <Table>
               <THead>
                 <TR>
-                  <TH>Periodo</TH>
+                  <TH>Período</TH>
                   <TH>Estado</TH>
                   <TH numeric>Cobrado</TH>
                   <TH numeric>Adelantado</TH>

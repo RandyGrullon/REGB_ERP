@@ -102,9 +102,12 @@ export async function GET(
   for (const [tabla, filas] of Object.entries(indice.tablas)) {
     const suma = (porTabla.get(tabla) ?? []).reduce((s, p) => s + p.filas, 0)
     if (suma !== filas) {
-      return new Response(`El respaldo esta incompleto: ${tabla} dice ${filas} filas y trae ${suma}.`, {
-        status: 500,
-      })
+      return new Response(
+        `El respaldo esta incompleto: ${tabla} dice ${filas} filas y trae ${suma}.`,
+        {
+          status: 500,
+        },
+      )
     }
   }
 

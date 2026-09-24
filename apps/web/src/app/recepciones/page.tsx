@@ -127,7 +127,7 @@ export default async function RecepcionesPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Ordenes por recibir</CardTitle>
+            <CardTitle>Órdenes por recibir</CardTitle>
           </CardHeader>
           <CardBody className="p-0">
             {pendientes.length === 0 ? (
@@ -142,11 +142,11 @@ export default async function RecepcionesPage({
                   <TR>
                     <TH>Orden</TH>
                     <TH>Proveedor</TH>
-                    <TH>Almacen</TH>
+                    <TH>Almacén</TH>
                     <TH numeric>Pendiente</TH>
                     {puedeRecibir && (
                       <TH>
-                        <span className="sr-only">Accion</span>
+                        <span className="sr-only">Acción</span>
                       </TH>
                     )}
                   </TR>
@@ -209,10 +209,10 @@ export default async function RecepcionesPage({
                     <TH>Proveedor</TH>
                     <TH numeric>Cantidad</TH>
                     <TH>Que se devuelve</TH>
-                    <TH>Razon</TH>
+                    <TH>Razón</TH>
                     {puedeDevolver && (
                       <TH>
-                        <span className="sr-only">Accion</span>
+                        <span className="sr-only">Acción</span>
                       </TH>
                     )}
                   </TR>
@@ -241,9 +241,7 @@ export default async function RecepcionesPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="devolucionId" value={d.id} />
-                              <BotonEnvio
-                                
-                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 <Icon name="local_shipping" size={14} />
                                 Enviar
                               </BotonEnvio>
@@ -252,9 +250,7 @@ export default async function RecepcionesPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="devolucionId" value={d.id} />
-                              <BotonEnvio
-                                
-                                className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="close" size={14} />
                                 Cancelar
                               </BotonEnvio>

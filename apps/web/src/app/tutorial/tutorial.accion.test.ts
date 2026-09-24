@@ -3,7 +3,7 @@ import { TOURS } from '@regb/core'
 import { db } from '@/lib/db'
 import { COOKIE_AVISO } from '@/lib/aviso-comun'
 import { cerrarBase, sembrarCliente, tarro, type ClientePrueba } from '@/test/arnes'
-import { avanzarPaso, reiniciarTour } from './actions'
+import { avanzarPaso, pasoDesdeGuia, reiniciarTour } from './actions'
 
 /**
  * El tutorial emite `tour.tour.completed` al TERMINAR una guia, y nada
@@ -95,5 +95,57 @@ describe('el tutorial emite tour.tour.completed', () => {
 
   it('ningun paso emite tour.step.completed', async () => {
     expect(await eventos('tour.step.completed')).toHaveLength(0)
+  })
+})
+
+/**
+ * La guia flotante -la que acompaña por las pantallas- tenia enlaces en
+ * vez de botones: quien recorria las cinco pantallas y pulsaba "Terminar
+ * el tour" volvia al tutorial en "Paso 1 de 5" y el inicio no marcaba el
+ * paso. Ahora guarda y despues navega.
+ */
+describe('la guia flotante guarda el avance', () => {
+  /** A donde manda la accion: el `redirect()` de prueba lanza con la URL (test/preparar.ts). */
+  async function destinoDe(fd: FormData): Promise<string> {
+    try {
+      await pasoDesdeGuia(fd)
+    } catch (e) {
+      return e instanceof Error ? e.message : String(e)
+    }
+    return ''
+  }
+
+  async function progreso() {
+    const [p] = await db()<{ step: number; completed: boolean }[]>`
+      select step, completed from public.tour_progress
+      where tenant_id = ${c.tenantId} and tour_id = ${TOUR.id}`
+    return p!
+  }
+
+  it('"Siguiente paso" guarda el paso y "Terminar el tour" la deja terminada', async () => {
+    await reiniciarTour(c.fd({ tourId: TOUR.id, step: '0' }))
+    sinError()
+
+    const siguiente = await destinoDe(
+      c.fd({ tourId: TOUR.id, step: '0', destino: '/sucursales?tour=core.bienvenida&paso=2' }),
+    )
+    sinError()
+    expect(siguiente).toContain('/sucursales')
+    expect(await progreso()).toMatchObject({ step: 1, completed: false })
+
+    const final = await destinoDe(
+      c.fd({ tourId: TOUR.id, step: String(TOUR.steps.length - 1), destino: '/tutorial' }),
+    )
+    sinError()
+    expect(final).toContain('/tutorial')
+    expect(await progreso()).toMatchObject({ completed: true })
+  })
+
+  it('un destino que no es de la app se cambia por /tutorial', async () => {
+    for (const malo of ['https://otro.example/x', '//otro.example/x']) {
+      const d = await destinoDe(c.fd({ tourId: TOUR.id, step: '0', destino: malo }))
+      expect(d).toContain('/tutorial')
+      expect(d).not.toContain('otro.example')
+    }
   })
 })

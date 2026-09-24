@@ -68,7 +68,8 @@ export async function preguntar(fd: FormData): Promise<ActionResult> {
   const matchedKey = emparejarPregunta(question, CATALOGO_PREGUNTAS) ?? 'no_match'
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    let resumen = 'No entendi esa pregunta -prueba con algo sobre ventas, productos, facturas, leads o tickets-.'
+    let resumen =
+      'No entendi esa pregunta -prueba con algo sobre ventas, productos, facturas, leads o tickets-.'
     let datos: ResultadoReporte | null = null
 
     if (matchedKey !== 'no_match') {

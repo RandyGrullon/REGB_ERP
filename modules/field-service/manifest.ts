@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'field-service',
   name: 'Servicio en campo',
-  description: 'Ordenes de servicio, agenda de tecnicos, checklist movil y repuestos.',
+  description: 'Órdenes de servicio, agenda de técnicos, checklist móvil y repuestos.',
   icon: 'handyman',
   category: 'advanced',
   version: '0.1.0',

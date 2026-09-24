@@ -32,14 +32,23 @@ function CodigoBarras({ codigo }: { codigo: string }) {
       width={ancho}
       height={alto}
       role="img"
-      aria-label={`Codigo de barras ${codigo}`}
+      aria-label={`Código de barras ${codigo}`}
     >
       <rect x={0} y={0} width={ancho} height={alto} fill="white" />
-      {patron.split('').map((bit, i) =>
-        bit === '1' ? (
-          <rect key={i} x={i * anchoModulo} y={0} width={anchoModulo} height={alto} fill="black" />
-        ) : null,
-      )}
+      {patron
+        .split('')
+        .map((bit, i) =>
+          bit === '1' ? (
+            <rect
+              key={i}
+              x={i * anchoModulo}
+              y={0}
+              width={anchoModulo}
+              height={alto}
+              fill="black"
+            />
+          ) : null,
+        )}
     </svg>
   )
 }
@@ -72,7 +81,10 @@ export default async function EtiquetasPage({
             icon="sell"
             title="Etiquetas"
             description="Una etiqueta por producto, lista para imprimir."
-            crumbs={[{ label: 'Codigos de barra', href: `/codigos-barra${qs}` }, { label: 'Etiquetas' }]}
+            crumbs={[
+              { label: 'Codigos de barra', href: `/codigos-barra${qs}` },
+              { label: 'Etiquetas' },
+            ]}
             actions={<PrintButton label="Imprimir etiquetas" />}
           />
         </div>

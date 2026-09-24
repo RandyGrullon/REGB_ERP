@@ -97,8 +97,9 @@ export default async function EmpleadoDetallePage({
 
     // Cuentas del equipo que pueden ver ESTE expediente en el portal: las
     // que no estan ya vinculadas a otro (una cuenta, un expediente).
-    const u = puedeVincular || h.user_id
-      ? await tx<CuentaRow[]>`
+    const u =
+      puedeVincular || h.user_id
+        ? await tx<CuentaRow[]>`
           select m.user_id, coalesce(up.display_name, 'Sin nombre') as nombre, up.email
           from public.memberships m
           left join public.user_profiles up
@@ -109,7 +110,7 @@ export default async function EmpleadoDetallePage({
               select 1 from public.employees o
               where o.tenant_id = m.tenant_id and o.user_id = m.user_id and o.id <> ${id})
           order by nombre`
-      : []
+        : []
 
     return [h, c, u] as const
   })
@@ -119,8 +120,10 @@ export default async function EmpleadoDetallePage({
   const hoy = new Date()
   const anos = yearsOfService(new Date(`${head.hire_date.slice(0, 10)}T12:00:00`), hoy)
   const e = ESTADO_EMPLEADO[head.status] ?? { label: head.status, tone: 'neutral' as const }
-  const puedeContrato = exigir(ctx, 'employees', 'employees.contract.create').ok && head.status !== 'terminated'
-  const puedeDarDeBaja = exigir(ctx, 'employees', 'employees.employee.terminate').ok && head.status !== 'terminated'
+  const puedeContrato =
+    exigir(ctx, 'employees', 'employees.contract.create').ok && head.status !== 'terminated'
+  const puedeDarDeBaja =
+    exigir(ctx, 'employees', 'employees.employee.terminate').ok && head.status !== 'terminated'
   const qs = ctx.demoQs
 
   const fecha = (iso: string) =>
@@ -156,7 +159,9 @@ export default async function EmpleadoDetallePage({
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={e.tone}>{e.label}</Badge>
               {head.manager_name && (
-                <span className="text-xs text-[var(--color-text-muted)]">Reporta a {head.manager_name}</span>
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  Reporta a {head.manager_name}
+                </span>
               )}
             </div>
           }
@@ -164,8 +169,12 @@ export default async function EmpleadoDetallePage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Salario actual" value={`RD$ ${money(Number(head.salary))}`} />
-          <StatCard label="Ingreso" value={fecha(head.hire_date)} hint={`${anos} ano${anos === 1 ? '' : 's'}`} />
-          <StatCard label="Cedula" value={head.national_id ?? '—'} />
+          <StatCard
+            label="Ingreso"
+            value={fecha(head.hire_date)}
+            hint={anos === 0 ? 'Menos de un año' : `${anos} año${anos === 1 ? '' : 's'}`}
+          />
+          <StatCard label="Cédula" value={head.national_id ?? '—'} />
           <StatCard label="Contacto" value={head.email ?? head.phone ?? '—'} />
         </section>
 
@@ -183,20 +192,27 @@ export default async function EmpleadoDetallePage({
                     <strong className="font-semibold text-[var(--color-text-primary)]">
                       {vinculada?.nombre ?? 'Cuenta del equipo'}
                     </strong>
-                    {vinculada?.email ? ` · ${vinculada.email}` : ''} ve este expediente y sus volantes en
-                    su portal.
+                    {vinculada?.email ? ` · ${vinculada.email}` : ''} ve este expediente y sus
+                    volantes en su portal.
                   </span>
                 </p>
               ) : (
                 <p className="flex flex-wrap items-center gap-2 text-[var(--color-text-secondary)]">
                   <Badge tone="neutral">Sin vincular</Badge>
-                  <span>Nadie ve este expediente en el portal todavia.</span>
+                  <span>Nadie ve este expediente en el portal todavía.</span>
                 </p>
               )
             })()}
             <p className="text-xs text-[var(--color-text-muted)]">
-              Solo la cuenta vinculada ve este expediente y sus volantes. No se empareja por correo: dos
-              personas pueden compartirlo.
+              Solo la cuenta vinculada ve este expediente y sus volantes. No se empareja por correo:
+              dos personas pueden compartirlo.
+              {puedeVincular && cuentas.length === 0 && (
+                <>
+                  {' '}
+                  No hay cuentas libres: invita a la persona desde Usuarios y vuelve aquí para
+                  vincularla.
+                </>
+              )}
             </p>
             {puedeVincular && (
               <div className="flex flex-wrap items-end gap-3">
@@ -233,7 +249,7 @@ export default async function EmpleadoDetallePage({
                     <input type="hidden" name="userId" value="" />
                     <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="link_off" size={18} />
-                      Quitar vinculo
+                      Quitar vínculo
                     </BotonEnvio>
                   </form>
                 )}
@@ -246,7 +262,8 @@ export default async function EmpleadoDetallePage({
           <Card>
             <CardBody className="text-sm text-[var(--color-text-secondary)]">
               <strong className="text-[var(--color-text-primary)]">Dado de baja</strong>{' '}
-              {head.termination_date && `el ${fecha(head.termination_date)}`} — {head.termination_reason}
+              {head.termination_date && `el ${fecha(head.termination_date)}`} —{' '}
+              {head.termination_reason}
             </CardBody>
           </Card>
         )}
@@ -256,7 +273,7 @@ export default async function EmpleadoDetallePage({
             {puedeContrato && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Registrar contrato (promocion o cambio de salario)</CardTitle>
+                  <CardTitle>Registrar contrato (promoción o cambio de salario)</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <form action={crearContratoForm} className="space-y-2">
@@ -273,7 +290,12 @@ export default async function EmpleadoDetallePage({
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Nuevo cargo
-                      <input name="position" required defaultValue={head.position} className={claseInput} />
+                      <input
+                        name="position"
+                        required
+                        defaultValue={head.position}
+                        className={claseInput}
+                      />
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Nuevo salario
@@ -289,9 +311,7 @@ export default async function EmpleadoDetallePage({
                       Desde
                       <input name="startDate" type="date" className={claseInput} />
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="trending_up" size={18} />
                       Registrar contrato
                     </BotonEnvio>
@@ -314,11 +334,19 @@ export default async function EmpleadoDetallePage({
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Motivo
-                      <input name="reason" required minLength={4} placeholder="Renuncia voluntaria" className={claseInput} />
+                      <input
+                        name="reason"
+                        required
+                        minLength={4}
+                        placeholder="Renuncia voluntaria"
+                        className={claseInput}
+                      />
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      La última nómina le paga hasta la fecha de baja. Las prestaciones (preaviso,
+                      cesantía, vacaciones y regalía) no se calculan aquí.
+                    </p>
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="person_remove" size={18} />
                       Dar de baja
                     </BotonEnvio>
@@ -353,7 +381,13 @@ export default async function EmpleadoDetallePage({
                     <TD numeric>
                       <span className="tabular">{money(Number(c.salary))}</span>
                     </TD>
-                    <TD>{c.is_active ? <Badge tone="success">Vigente</Badge> : <Badge tone="neutral">Historico</Badge>}</TD>
+                    <TD>
+                      {c.is_active ? (
+                        <Badge tone="success">Vigente</Badge>
+                      ) : (
+                        <Badge tone="neutral">Historico</Badge>
+                      )}
+                    </TD>
                   </TR>
                 ))}
               </TBody>

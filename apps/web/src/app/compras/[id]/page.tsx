@@ -16,7 +16,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { costVariance, pendingReceipt } from '@regb/operations'
+import { costVariance, costoNetoUnitario, pendingReceipt } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -58,8 +58,9 @@ interface LineRow {
   unit_cost: string
   discount_pct: string
   line_total: string
-  /** Promedio ponderado de lo que de verdad se declaro al recibir. Null si
-   * todavia no ha llegado nada — no hay con que comparar. */
+  /** Promedio ponderado de lo que de verdad se declaro al recibir, venga
+   * de esta pantalla o de Recepciones. Null si todavia no ha llegado nada
+   * — no hay con que comparar. */
   received_cost: string | null
 }
 
@@ -94,10 +95,22 @@ export default async function OrdenDetallePage({
       select l.id, l.product_id, p.sku, p.name, p.unit,
              l.qty_ordered::text, l.qty_received::text,
              l.unit_cost::text, l.discount_pct::text, l.line_total::text,
-             (select (sum(m.qty * m.unit_cost) / nullif(sum(m.qty), 0))::text
-                from public.inventory_movements m
-                where m.reference_type = 'purchase_order' and m.reference_id = l.order_id
-                  and m.product_id = l.product_id) as received_cost
+             -- Los dos caminos de recibir: aqui (movimiento con referencia a
+             -- la orden) y Recepciones (linea de recepcion, con lo aceptado).
+             -- Antes solo se miraba el primero, y lo recibido por Recepciones
+             -- a otro precio nunca marcaba la diferencia.
+             (select (sum(x.qty * x.costo) / nullif(sum(x.qty), 0))::text
+                from (
+                  select m.qty, m.unit_cost as costo
+                  from public.inventory_movements m
+                  where m.tenant_id = l.tenant_id and m.reference_type = 'purchase_order'
+                    and m.reference_id = l.order_id and m.product_id = l.product_id
+                  union all
+                  select g.qty_accepted, g.unit_cost
+                  from public.goods_receipt_lines g
+                  where g.tenant_id = l.tenant_id and g.purchase_order_line_id = l.id
+                    and g.qty_accepted > 0
+                ) x) as received_cost
       from public.purchase_order_lines l
       join public.products p on p.id = l.product_id
       where l.order_id = ${id} and l.tenant_id = ${ctx.tenantId}
@@ -107,7 +120,8 @@ export default async function OrdenDetallePage({
       h.status === 'draft'
         ? await tx<{ id: string; sku: string; name: string; cost: string }[]>`
             select id, sku, name, cost::text from public.products
-            where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+            where tenant_id = ${ctx.tenantId} and active and tracks_stock
+            order by name limit 300`
         : []
     return [h, l, p] as const
   })
@@ -122,6 +136,12 @@ export default async function OrdenDetallePage({
   const puedeConfirmar = exigir(ctx, 'purchase-orders', 'purchase-orders.confirm').ok
   const puedeRecibir = exigir(ctx, 'purchase-orders', 'purchase-orders.receive').ok
   const puedeCancelar = exigir(ctx, 'purchase-orders', 'purchase-orders.cancel').ok
+  // Con Recepciones activo, recibir es inspeccionar: aceptado contra
+  // rechazado, y lo rechazado se puede devolver. Recibir desde aqui se
+  // salta todo eso y deja una entrada sin documento de recepcion, que
+  // despues no hay forma de devolver. Se manda alla.
+  const recibirEnRecepciones = exigir(ctx, 'receipts', 'receipts.receive').ok
+  const recibida = head.status === 'received'
   const qs = ctx.demoQs
 
   const campos = (
@@ -146,7 +166,7 @@ export default async function OrdenDetallePage({
               <span className="text-xs text-[var(--color-text-muted)]">
                 {head.supplier_terms === 0
                   ? 'Proveedor de contado'
-                  : `${head.supplier_terms} dias de credito del proveedor`}
+                  : `${head.supplier_terms} días de crédito del proveedor`}
               </span>
             </div>
           }
@@ -156,21 +176,21 @@ export default async function OrdenDetallePage({
                 <form action={confirmarOrdenForm}>
                   {campos}
                   <BotonEnvio
-                    
                     title="No mueve inventario: es la promesa del proveedor"
-                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  >
                     <Icon name="check_circle" size={18} />
                     Confirmar orden
                   </BotonEnvio>
                 </form>
               )}
-              {!cancelado && puedeCancelar && (
+              {!cancelado && !recibida && puedeCancelar && (
                 <form action={cancelarOrdenForm}>
                   {campos}
                   <BotonEnvio
-                    
                     title="Lo ya recibido no se revierte."
-                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  >
                     <Icon name="cancel" size={18} />
                     Cancelar
                   </BotonEnvio>
@@ -181,10 +201,18 @@ export default async function OrdenDetallePage({
         />
 
         <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Subtotal" value={`RD$ ${money(Number(head.subtotal))}`} hint="sin ITBIS" />
+          {/* El subtotal guardado ya viene NETO del descuento: se enseña el
+              bruto para que bruto - descuento + ITBIS = total se lea de
+              arriba abajo. Antes "Subtotal 23,770 · Descuento 630" parecia
+              que faltaba restar el descuento. */}
+          <StatCard
+            label="Subtotal"
+            value={`RD$ ${money(Number(head.subtotal) + Number(head.discount))}`}
+            hint="antes del descuento, sin ITBIS"
+          />
           <StatCard
             label="Descuento"
-            value={`RD$ ${money(Number(head.discount))}`}
+            value={`− RD$ ${money(Number(head.discount))}`}
             hint="del proveedor"
           />
           <StatCard label="ITBIS" value={`RD$ ${money(Number(head.tax))}`} hint="impuesto" />
@@ -194,7 +222,7 @@ export default async function OrdenDetallePage({
         {lines.length === 0 ? (
           <Card>
             <CardBody className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-              Esta orden no tiene lineas todavia. Agrega productos abajo.
+              Esta orden no tiene líneas todavía. Agrega productos abajo.
             </CardBody>
           </Card>
         ) : (
@@ -213,12 +241,16 @@ export default async function OrdenDetallePage({
             </THead>
             <TBody>
               {lines.map((l) => {
-                const estado = { qtyOrdered: Number(l.qty_ordered), qtyReceived: Number(l.qty_received) }
+                const estado = {
+                  qtyOrdered: Number(l.qty_ordered),
+                  qtyReceived: Number(l.qty_received),
+                }
                 const pendiente = pendingReceipt(estado)
+                // Contra el NETO (con el descuento de la linea): es el costo
+                // con el que entra la mercancia si nadie declara otro.
+                const neto = costoNetoUnitario(Number(l.unit_cost), Number(l.discount_pct))
                 const variacion =
-                  l.received_cost !== null
-                    ? costVariance(Number(l.unit_cost), Number(l.received_cost))
-                    : null
+                  l.received_cost !== null ? costVariance(neto, Number(l.received_cost)) : null
                 return (
                   <TR key={l.id}>
                     <TD>
@@ -270,39 +302,53 @@ export default async function OrdenDetallePage({
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
                           <BotonEnvio
-                            
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
                       )}
-                      {!enBorrador && !cancelado && pendiente > 0 && puedeRecibir && (
-                        <form action={recibirLineaForm} className="flex flex-wrap items-center gap-1">
-                          {campos}
-                          <input type="hidden" name="lineId" value={l.id} />
-                          <input
-                            name="qty"
-                            defaultValue={String(pendiente)}
-                            inputMode="decimal"
-                            aria-label={`Cantidad a recibir de ${l.name}`}
-                            className="h-8 w-16 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                          />
-                          <input
-                            name="unitCost"
-                            placeholder={l.unit_cost}
-                            title="Costo real de esta entrega. Vacio = el cotizado."
-                            inputMode="decimal"
-                            aria-label={`Costo real de ${l.name}`}
-                            className="h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                          />
-                          <BotonEnvio
-                            
-                            className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
-                            Recibir
-                          </BotonEnvio>
-                        </form>
+                      {!enBorrador && !cancelado && pendiente > 0 && recibirEnRecepciones && (
+                        <a
+                          href={`/recepciones/${head.id}${qs}`}
+                          className="inline-flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                        >
+                          <Icon name="inventory_2" size={14} />
+                          Recibir
+                        </a>
                       )}
+                      {!enBorrador &&
+                        !cancelado &&
+                        pendiente > 0 &&
+                        puedeRecibir &&
+                        !recibirEnRecepciones && (
+                          <form
+                            action={recibirLineaForm}
+                            className="flex flex-wrap items-center gap-1"
+                          >
+                            {campos}
+                            <input type="hidden" name="lineId" value={l.id} />
+                            <input
+                              name="qty"
+                              defaultValue={String(pendiente)}
+                              inputMode="decimal"
+                              aria-label={`Cantidad a recibir de ${l.name}`}
+                              className="h-8 w-16 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            />
+                            <input
+                              name="unitCost"
+                              placeholder={String(neto)}
+                              title="Costo real de esta entrega. Vacio = el cotizado menos el descuento."
+                              inputMode="decimal"
+                              aria-label={`Costo real de ${l.name}`}
+                              className="h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            />
+                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
+                              Recibir
+                            </BotonEnvio>
+                          </form>
+                        )}
                     </TD>
                   </TR>
                 )
@@ -362,16 +408,14 @@ export default async function OrdenDetallePage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 El costo lo escribes tu: es lo que este proveedor te esta cobrando ahora, no lo que
-                dice el catalogo. Al recibir puedes declarar un costo distinto si llego a otro
+                dice el catálogo. Al recibir puedes declarar un costo distinto si llego a otro
                 precio — el promedio del inventario usa el real de entrada, no el cotizado.
               </p>
             </CardBody>

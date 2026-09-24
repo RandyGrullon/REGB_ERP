@@ -107,7 +107,9 @@ export default async function EquipoDetallePage({
 
   const fechaLimite =
     head.maintenance_interval_days && head.last_service_at
-      ? new Date(new Date(head.last_service_at).getTime() + head.maintenance_interval_days * 86_400_000)
+      ? new Date(
+          new Date(head.last_service_at).getTime() + head.maintenance_interval_days * 86_400_000,
+        )
       : null
   const vencido = equipoRequiereMantenimiento(
     Number(head.usage_hours),
@@ -133,18 +135,25 @@ export default async function EquipoDetallePage({
               <Badge tone={head.status === 'active' ? 'success' : 'neutral'}>
                 {ESTADO_EQUIPO[head.status] ?? head.status}
               </Badge>
-              {vencido ? <Badge tone="danger">Mantenimiento vencido</Badge> : <Badge tone="success">Al dia</Badge>}
+              {vencido ? (
+                <Badge tone="danger">Mantenimiento vencido</Badge>
+              ) : (
+                <Badge tone="success">Al día</Badge>
+              )}
             </div>
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Uso acumulado" value={Number(head.usage_hours).toLocaleString('es-DO')} />
+          <StatCard
+            label="Uso acumulado"
+            value={Number(head.usage_hours).toLocaleString('es-DO')}
+          />
           <StatCard
             label="Ultimo servicio"
             value={head.last_service_at ? fecha(head.last_service_at) : 'Nunca'}
           />
-          <StatCard label="MTBF" value={mtbf === null ? '—' : `${mtbf.toFixed(1)} dias`} />
+          <StatCard label="MTBF" value={mtbf === null ? '—' : `${mtbf.toFixed(1)} días`} />
         </section>
 
         <Table>
@@ -160,14 +169,17 @@ export default async function EquipoDetallePage({
             {ordenes.length === 0 ? (
               <TR>
                 <TD colSpan={4} className="text-center text-[var(--color-text-muted)]">
-                  Este equipo todavia no tiene ninguna orden de trabajo.
+                  Este equipo todavía no tiene ninguna orden de trabajo.
                 </TD>
               </TR>
             ) : (
               ordenes.map((o) => (
                 <TR key={o.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/mantenimiento/ordenes/${o.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/mantenimiento/ordenes/${o.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {o.description}
                     </a>
                   </TD>
@@ -213,7 +225,7 @@ export default async function EquipoDetallePage({
                     Descripcion
                     <input name="description" required className={claseInput} />
                   </label>
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="add" size={14} />
                     Crear
                   </BotonEnvio>
@@ -230,9 +242,14 @@ export default async function EquipoDetallePage({
                   {campos}
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Lectura de uso actual
-                    <input name="usageAtService" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                    <input
+                      name="usageAtService"
+                      required
+                      inputMode="decimal"
+                      className={`tabular ${claseInput}`}
+                    />
                   </label>
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="check_circle" size={14} />
                     Registrar
                   </BotonEnvio>

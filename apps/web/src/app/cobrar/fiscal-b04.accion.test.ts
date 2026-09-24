@@ -52,7 +52,9 @@ beforeAll(async () => {
     precio: 1000,
     estado: 'delivered',
   })
-  expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Dueno'))).toEqual({ ok: true })
+  expect(await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Dueno'))).toEqual({
+    ok: true,
+  })
   const [f] = await db()<{ id: string; ncf: string; line: string }[]>`
     select i.id, i.ncf, (select id from public.customer_invoice_lines where invoice_id = i.id) as line
     from public.customer_invoices i where i.source_id = ${ped}`
@@ -62,7 +64,12 @@ beforeAll(async () => {
   expect(
     await emitirNotaDeCredito(
       c.fd(
-        { invoiceId: facturaId, kind: 'return', reason: 'Devolvio 2 neveras', [`qty_${f!.line}`]: '2' },
+        {
+          invoiceId: facturaId,
+          kind: 'return',
+          reason: 'Devolvio 2 neveras',
+          [`qty_${f!.line}`]: '2',
+        },
         'Dueno',
       ),
     ),
@@ -105,7 +112,10 @@ describe('La B04 en el 607 y en el IT-1', () => {
       where tenant_id = ${c.tenantId} and periodo = ${PERIODO}
       order by ncf`
     expect(filas).toHaveLength(2)
-    const [factura, nota] = [filas.find((f) => f.ncf === ncfFactura), filas.find((f) => f.ncf_type === 'B04')]
+    const [factura, nota] = [
+      filas.find((f) => f.ncf === ncfFactura),
+      filas.find((f) => f.ncf_type === 'B04'),
+    ]
     expect(factura).toMatchObject({ monto_facturado: '5000.00', itbis_facturado: '900.00' })
     expect(factura!.ncf_modificado).toBeNull()
     expect(nota).toMatchObject({

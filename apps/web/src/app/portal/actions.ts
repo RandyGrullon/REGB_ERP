@@ -6,6 +6,7 @@ import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 import { resolverMiEmpleado } from './mi-empleado'
+import { ErrorVacaciones, revisarVacaciones } from '../vacaciones/saldo'
 
 /**
  * Acciones del portal del empleado (modulo 70, F7/S40).
@@ -72,7 +73,8 @@ export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> 
   if (Number.isNaN(inicio.getTime()) || Number.isNaN(fin.getTime())) {
     return { ok: false, error: 'Las fechas no son validas.' }
   }
-  if (fin < inicio) return { ok: false, error: 'La fecha de fin no puede ser antes que la de inicio.' }
+  if (fin < inicio)
+    return { ok: false, error: 'La fecha de fin no puede ser antes que la de inicio.' }
 
   const businessDays = diasLaborablesEntre(inicio, fin)
   if (businessDays === 0) {
@@ -83,6 +85,19 @@ export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> 
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const yo = await resolverMiEmpleado(tx)
       if (!yo) throw new Error(SIN_VINCULO)
+
+      // El mismo criterio que RRHH y que quien aprueba (0138): sin cruzarse
+      // con otra ausencia y dentro del saldo, con lo pendiente reservado.
+      const problema = await revisarVacaciones(tx, ctx.tenantId, {
+        employeeId: yo.id,
+        tipo: 'vacation',
+        inicio: startRaw,
+        fin: endRaw,
+        dias: businessDays,
+        contarPendientes: true,
+        ingreso: yo.hire_date,
+      })
+      if (problema) throw new ErrorVacaciones(problema)
 
       await tx`
         insert into public.time_off_requests
@@ -135,7 +150,11 @@ export async function editarMiTelefonoForm(fd: FormData): Promise<void> {
   await anotarAviso(await editarMiTelefono(fd), 'editarMiTelefono')
 }
 export async function solicitarDesdePortalForm(fd: FormData): Promise<void> {
-  await anotarAviso(await solicitarDesdePortal(fd), 'solicitarDesdePortal')
+  await anotarAviso(
+    await solicitarDesdePortal(fd),
+    'solicitarDesdePortal',
+    'Listo, pediste tus vacaciones: quedan pendientes de aprobación.',
+  )
 }
 export async function publicarAnuncioForm(fd: FormData): Promise<void> {
   await anotarAviso(await publicarAnuncio(fd), 'publicarAnuncio')

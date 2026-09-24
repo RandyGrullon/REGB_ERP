@@ -107,7 +107,11 @@ export default async function ReportesPage({
           </CardHeader>
           <CardBody>
             {reportes.length === 0 ? (
-              <EmptyState icon="bar_chart" title="Todavia no hay ningun reporte" description="Crea el primero abajo." />
+              <EmptyState
+                icon="bar_chart"
+                title="Todavia no hay ningun reporte"
+                description="Crea el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -121,12 +125,19 @@ export default async function ReportesPage({
                   {reportes.map((r) => (
                     <TR key={r.id}>
                       <TD className="text-[var(--color-text-primary)]">
-                        <a href={`/reportes/${r.id}${qs}`} className="underline-offset-2 hover:underline">
+                        <a
+                          href={`/reportes/${r.id}${qs}`}
+                          className="underline-offset-2 hover:underline"
+                        >
                           {r.name}
                         </a>
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">{FUENTE_LABEL[r.source_key as keyof typeof FUENTE_LABEL] ?? r.source_key}</TD>
-                      <TD className="text-[var(--color-text-muted)]">{TIPO_GRAFICO[r.chart_type] ?? r.chart_type}</TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {FUENTE_LABEL[r.source_key as keyof typeof FUENTE_LABEL] ?? r.source_key}
+                      </TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {TIPO_GRAFICO[r.chart_type] ?? r.chart_type}
+                      </TD>
                     </TR>
                   ))}
                 </TBody>
@@ -187,9 +198,7 @@ export default async function ReportesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>
@@ -204,13 +213,19 @@ export default async function ReportesPage({
           </CardHeader>
           <CardBody>
             {dashboards.length === 0 ? (
-              <EmptyState icon="dashboard" title="Todavia no hay ningun dashboard" description="Crea el primero abajo." />
+              <EmptyState
+                icon="dashboard"
+                title="Todavia no hay ningun dashboard"
+                description="Crea el primero abajo."
+              />
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
                 {dashboards.map((d) => (
                   <li key={d.id} className="flex items-center justify-between py-2">
                     <span className="text-sm text-[var(--color-text-primary)]">{d.name}</span>
-                    <span className="text-xs text-[var(--color-text-muted)]">{d.reportes} reporte(s)</span>
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      {d.reportes} reporte(s)
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -229,16 +244,17 @@ export default async function ReportesPage({
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="add" size={14} />
                     Crear
                   </BotonEnvio>
                 </form>
 
                 {dashboards.length > 0 && reportes.length > 0 && (
-                  <form action={agregarItemDashboardForm} className="flex flex-wrap items-end gap-3">
+                  <form
+                    action={agregarItemDashboardForm}
+                    className="flex flex-wrap items-end gap-3"
+                  >
                     <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                     <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -269,9 +285,7 @@ export default async function ReportesPage({
                         ))}
                       </select>
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="add" size={14} />
                       Agregar
                     </BotonEnvio>
@@ -288,7 +302,11 @@ export default async function ReportesPage({
           </CardHeader>
           <CardBody>
             {exports.length === 0 ? (
-              <EmptyState icon="schedule_send" title="Todavia no hay ningun export programado" description="Programa el primero abajo." />
+              <EmptyState
+                icon="schedule_send"
+                title="Todavia no hay ningun export programado"
+                description="Programa el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -296,10 +314,10 @@ export default async function ReportesPage({
                     <TH>Reporte</TH>
                     <TH>Frecuencia</TH>
                     <TH>Destinatarios</TH>
-                    <TH>Proxima ejecucion</TH>
+                    <TH>Próxima ejecucion</TH>
                     <TH>Estado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -307,13 +325,19 @@ export default async function ReportesPage({
                   {exports.map((e) => (
                     <TR key={e.id}>
                       <TD className="text-[var(--color-text-primary)]">{e.report_name}</TD>
-                      <TD className="text-[var(--color-text-muted)]">{FRECUENCIA_EXPORT[e.frequency] ?? e.frequency}</TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {FRECUENCIA_EXPORT[e.frequency] ?? e.frequency}
+                      </TD>
                       <TD className="text-[var(--color-text-muted)]">
                         <Mono>{e.recipients}</Mono>
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">{new Date(e.next_run_at).toLocaleString('es-DO')}</TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {new Date(e.next_run_at).toLocaleString('es-DO')}
+                      </TD>
                       <TD>
-                        <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>{ESTADO_EXPORT[e.status] ?? e.status}</Badge>
+                        <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
+                          {ESTADO_EXPORT[e.status] ?? e.status}
+                        </Badge>
                       </TD>
                       <TD>
                         {puedeGestionar && (
@@ -322,9 +346,7 @@ export default async function ReportesPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="exportId" value={e.id} />
-                              <BotonEnvio
-                                
-                                className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 Ejecutar ahora
                               </BotonEnvio>
                             </form>
@@ -332,10 +354,12 @@ export default async function ReportesPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="exportId" value={e.id} />
-                              <input type="hidden" name="siguiente" value={e.status === 'active' ? 'paused' : 'active'} />
-                              <BotonEnvio
-                                
-                                className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <input
+                                type="hidden"
+                                name="siguiente"
+                                value={e.status === 'active' ? 'paused' : 'active'}
+                              />
+                              <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 {e.status === 'active' ? 'Pausar' : 'Reanudar'}
                               </BotonEnvio>
                             </form>
@@ -387,9 +411,7 @@ export default async function ReportesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Programar
                 </BotonEnvio>
@@ -404,9 +426,9 @@ export default async function ReportesPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              El constructor visual elige entre un catalogo fijo de fuentes ya vetadas -nunca acepta una
-              consulta libre que pudiera filtrar datos de otro cliente-. Un export programado registra su
-              calendario, pero el envio real por correo todavia no esta conectado.
+              El constructor visual elige entre un catálogo fijo de fuentes ya vetadas -nunca acepta
+              una consulta libre que pudiera filtrar datos de otro cliente-. Un export programado
+              registra su calendario, pero el envio real por correo todavía no esta conectado.
             </p>
           </CardBody>
         </Card>

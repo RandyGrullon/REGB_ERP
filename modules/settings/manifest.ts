@@ -3,7 +3,7 @@ import { defineModule } from '@regb/module-registry'
 /** Configuracion — modulo core 13 (§5.1). Lo que el cliente decide solo. */
 export default defineModule({
   id: 'settings',
-  name: 'Configuracion',
+  name: 'Configuración',
   description: 'Nombre comercial, zona horaria, moneda, formato de fecha y preferencias.',
   icon: 'settings',
   category: 'core',

@@ -36,11 +36,16 @@ export async function crearRegistro(fd: FormData): Promise<ActionResult> {
 
   if (!taskId) return { ok: false, error: 'Elige la tarea.' }
   if (!entryDate) return { ok: false, error: 'Falta la fecha.' }
-  if (!Number.isFinite(hours) || hours <= 0 || hours > 24) return { ok: false, error: 'Las horas deben estar entre 0 y 24.' }
+  if (!Number.isFinite(hours) || hours <= 0 || hours > 24)
+    return { ok: false, error: 'Las horas deben estar entre 0 y 24.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.time_entries (tenant_id, task_id, user_id, entry_date, hours, billable, hourly_rate, notes)
-    values (${ctx.tenantId}, ${taskId}, ${ctx.userId}, ${entryDate}, ${hours}, ${billable}, ${hourlyRate}, ${notes})`)
+    values (${ctx.tenantId}, ${taskId}, ${ctx.userId}, ${entryDate}, ${hours}, ${billable}, ${hourlyRate}, ${notes})`,
+  )
 
   revalidatePath('/hojas-de-tiempo')
   return { ok: true }
@@ -59,7 +64,8 @@ export async function transicionarRegistro(fd: FormData): Promise<ActionResult> 
     const [e] = await tx<{ status: EstadoRegistroTiempo }[]>`
       select status from public.time_entries where id = ${entryId} and tenant_id = ${ctx.tenantId} for update`
     if (!e) return 'no-existe'
-    if (!transicionValidaRegistroTiempo(e.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaRegistroTiempo(e.status, siguiente))
+      return 'Esa transicion no esta permitida.'
 
     const aprobando = siguiente === 'approved'
     await tx`

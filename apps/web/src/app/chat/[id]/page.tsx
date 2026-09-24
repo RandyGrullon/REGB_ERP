@@ -120,7 +120,9 @@ export default async function CanalChatPage({
           </CardHeader>
           <CardBody>
             <ul className="space-y-3">
-              {principales.length === 0 && <li className="text-xs text-[var(--color-text-muted)]">Todavia no hay mensajes.</li>}
+              {principales.length === 0 && (
+                <li className="text-xs text-[var(--color-text-muted)]">Todavía no hay mensajes.</li>
+              )}
               {principales.map((m) => (
                 <li key={m.id} className="space-y-2">
                   {burbuja(m)}
@@ -141,7 +143,7 @@ export default async function CanalChatPage({
                           required
                           className="h-9 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                         />
-                        <BotonEnvio  className={botonClase}>
+                        <BotonEnvio className={botonClase}>
                           <Icon name="send" size={14} />
                         </BotonEnvio>
                       </form>
@@ -152,7 +154,10 @@ export default async function CanalChatPage({
             </ul>
 
             {puedeGestionar && (
-              <form action={enviarMensajeForm} className="mt-5 flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] pt-4">
+              <form
+                action={enviarMensajeForm}
+                className="mt-5 flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] pt-4"
+              >
                 {campos('')}
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Mensaje
@@ -173,7 +178,7 @@ export default async function CanalChatPage({
                     ))}
                   </div>
                 </fieldset>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar
                 </BotonEnvio>

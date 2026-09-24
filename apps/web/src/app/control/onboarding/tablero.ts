@@ -10,9 +10,9 @@ import { TIERS, type Tier } from './alta'
 
 export const ETAPAS = [
   { id: 'sold', label: 'Vendido' },
-  { id: 'migration', label: 'Migracion' },
-  { id: 'config', label: 'Configuracion' },
-  { id: 'training', label: 'Capacitacion' },
+  { id: 'migration', label: 'Migración' },
+  { id: 'config', label: 'Configuración' },
+  { id: 'training', label: 'Capacitación' },
   { id: 'live', label: 'En vivo' },
 ] as const
 

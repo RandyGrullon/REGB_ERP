@@ -44,11 +44,7 @@ const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 /** Planes & Inscripciones (modulo 69): quien esta inscrito, cuanto aporta cada quien. */
-export default async function PlanesPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function PlanesPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'benefits')
 
@@ -69,7 +65,10 @@ export default async function PlanesPage({
   })
 
   const costoMensual = totalAportePatronal(
-    inscripciones.map((i) => ({ status: i.status, employer_contribution: Number(i.employer_contribution) })),
+    inscripciones.map((i) => ({
+      status: i.status,
+      employer_contribution: Number(i.employer_contribution),
+    })),
   )
   const puedeGestionar = exigir(ctx, 'benefits', 'benefits.manage-enrollments').ok
   const qs = ctx.demoQs
@@ -83,8 +82,11 @@ export default async function PlanesPage({
         <PageHeader
           icon="health_and_safety"
           title="Planes & Inscripciones"
-          description="Quien esta inscrito y cuanto aporta cada quien -no procesa reclamos ante la aseguradora-."
-          crumbs={[{ label: 'Prestamos & Adelantos', href: `/beneficios${qs}` }, { label: 'Planes' }]}
+          description="Quién está inscrito en cada plan y cuánto aportan el empleado y la empresa. Los reclamos se tramitan con la aseguradora."
+          crumbs={[
+            { label: 'Prestamos & Adelantos', href: `/beneficios${qs}` },
+            { label: 'Planes' },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -108,7 +110,7 @@ export default async function PlanesPage({
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -136,9 +138,7 @@ export default async function PlanesPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={i.id} />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="cancel" size={14} />
                             Cancelar
                           </BotonEnvio>
@@ -177,19 +177,27 @@ export default async function PlanesPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Aporte empleado
-                  <input name="employeeContribution" inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
+                  <input
+                    name="employeeContribution"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Aporte patronal
-                  <input name="employerContribution" inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
+                  <input
+                    name="employerContribution"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Vigente desde
                   <input type="date" name="effectiveDate" required className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={18} />
                   Inscribir
                 </BotonEnvio>

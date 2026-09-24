@@ -27,7 +27,7 @@ import {
 } from './actions'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Consolidacion · REGB ERP' }
+export const metadata = { title: 'Consolidación · REGB ERP' }
 
 interface GrupoRow {
   id: string
@@ -186,7 +186,7 @@ export default async function ConsolidacionPage({
                   <CardBody>
                     {suyos.length === 0 ? (
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        Este grupo todavia no tiene empresas.
+                        Este grupo todavía no tiene empresas.
                       </p>
                     ) : (
                       <ul className="flex flex-wrap gap-2">
@@ -199,7 +199,11 @@ export default async function ConsolidacionPage({
                             {m.is_parent && <Badge tone="brand">Matriz</Badge>}
                             {puedeGestionar && (
                               <form action={quitarEmpresaForm}>
-                                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                                <input
+                                  type="hidden"
+                                  name="tenant"
+                                  value={qs ? ctx.tenantSlug : ''}
+                                />
                                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                                 <input type="hidden" name="memberId" value={m.id} />
                                 <BotonEnvio
@@ -237,14 +241,18 @@ export default async function ConsolidacionPage({
                           <input type="checkbox" name="isParent" className="h-4 w-4" />
                           Es la matriz
                         </label>
-                        <BotonEnvio disabled={disponibles.length === 0} className={claseBotonSecundario}>
+                        <BotonEnvio
+                          disabled={disponibles.length === 0}
+                          className={claseBotonSecundario}
+                        >
                           <Icon name="add" size={18} />
                           Agregar
                         </BotonEnvio>
                         {disponibles.length === 0 && (
                           <p className="w-full text-xs text-[var(--color-text-muted)]">
-                            No queda ninguna empresa en {g.presentation_currency} fuera del grupo. Una
-                            empresa en otra moneda no entra: esta consolidacion no traduce moneda.
+                            No queda ninguna empresa en {g.presentation_currency} fuera del grupo.
+                            Una empresa en otra moneda no entra: esta consolidacion no traduce
+                            moneda.
                           </p>
                         )}
                       </form>
@@ -263,14 +271,14 @@ export default async function ConsolidacionPage({
           <CardBody>
             {corridas.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no se ha consolidado ningun periodo.
+                Todavía no se ha consolidado ningún período.
               </p>
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Grupo</TH>
-                    <TH>Periodo</TH>
+                    <TH>Período</TH>
                     <TH>Estado</TH>
                     <TH numeric>Eliminaciones</TH>
                   </TR>
@@ -309,7 +317,7 @@ export default async function ConsolidacionPage({
         {puedeGenerar && gruposListos.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Consolidar un periodo</CardTitle>
+              <CardTitle>Consolidar un período</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={generarCorridaForm} className="flex flex-wrap items-end gap-3">
@@ -342,7 +350,7 @@ export default async function ConsolidacionPage({
                   la fecha de <strong>Hasta</strong>: <strong>Desde</strong> etiqueta el periodo que
                   se reporta, no recorta la foto. Es a proposito -una deuda entre dos empresas del
                   grupo nacida antes seguiria viva y hay que poder eliminarla-. Un asiento con fecha
-                  atrasada que entre despues no cambia un consolidado ya generado.
+                  atrasada que entre después no cambia un consolidado ya generado.
                 </p>
               </form>
             </CardBody>
@@ -352,7 +360,7 @@ export default async function ConsolidacionPage({
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Registrar grupo de consolidacion</CardTitle>
+              <CardTitle>Registrar grupo de consolidación</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearGrupoForm} className="flex flex-wrap items-end gap-3">
@@ -383,7 +391,7 @@ export default async function ConsolidacionPage({
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
                   Todas las empresas del grupo tienen que llevar esta misma moneda: el consolidado
-                  no las convierte, y sumar pesos con dolares no seria un estado, seria un numero.
+                  no las convierte, y sumar pesos con dolares no seria un estado, seria un número.
                 </p>
               </form>
             </CardBody>

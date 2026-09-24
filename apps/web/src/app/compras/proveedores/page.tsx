@@ -50,7 +50,11 @@ export default async function ProveedoresPage({
   searchParams: Promise<DemoParams & { q?: string; inactivos?: string }>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'purchase-orders', 'purchase-orders.suppliers.manage')
+  const { ctx, shell } = await modulePage(
+    params,
+    'purchase-orders',
+    'purchase-orders.suppliers.manage',
+  )
   const q = (params.q ?? '').trim()
   const verInactivos = params.inactivos === '1'
   const hayFiltros = q !== '' || verInactivos
@@ -110,9 +114,11 @@ export default async function ProveedoresPage({
         {suppliers.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'local_shipping'}
-            title={hayFiltros ? 'Ningun proveedor coincide' : 'Todavia no hay proveedores'}
+            title={hayFiltros ? 'Ningún proveedor coincide' : 'Todavía no hay proveedores'}
             description={
-              hayFiltros ? 'Prueba con otro nombre.' : 'Registra el primero en el formulario de abajo.'
+              hayFiltros
+                ? 'Prueba con otro nombre.'
+                : 'Registra el primero en el formulario de abajo.'
             }
           />
         ) : (
@@ -121,9 +127,9 @@ export default async function ProveedoresPage({
               <TR>
                 <TH>Nombre</TH>
                 <TH>RNC</TH>
-                <TH>Telefono</TH>
-                <TH numeric>Dias credito</TH>
-                <TH numeric>Ordenes</TH>
+                <TH>Teléfono</TH>
+                <TH numeric>Dias crédito</TH>
+                <TH numeric>Órdenes</TH>
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
@@ -155,9 +161,7 @@ export default async function ProveedoresPage({
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="id" value={s.id} />
-                        <BotonEnvio
-                          
-                          className="rounded-full px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
+                        <BotonEnvio className="rounded-full px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
                           {s.is_active ? 'Desactivar' : 'Activar'}
                         </BotonEnvio>
                       </form>
@@ -202,12 +206,10 @@ export default async function ProveedoresPage({
                   <input name="email" type="email" className={inputCls} />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias credito
+                  Dias crédito
                   <input name="terms" inputMode="numeric" defaultValue="0" className={inputCls} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>

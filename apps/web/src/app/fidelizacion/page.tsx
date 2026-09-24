@@ -48,8 +48,11 @@ export default async function FidelizacionPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'loyalty')
 
-  const { clientes, cuponesActivos, referidosPendientes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const c = await tx<{ id: string; name: string; saldo: string; vida: string }[]>`
+  const { clientes, cuponesActivos, referidosPendientes } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const c = await tx<{ id: string; name: string; saldo: string; vida: string }[]>`
       select c.id, c.name,
              public.loyalty_balance(c.id)::text as saldo,
              public.loyalty_lifetime_points(c.id)::text as vida
@@ -57,16 +60,22 @@ export default async function FidelizacionPage({
       where c.tenant_id = ${ctx.tenantId}
       order by public.loyalty_lifetime_points(c.id) desc, c.name
       limit 100`
-    const [cup] = await tx<{ n: string }[]>`
+      const [cup] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.loyalty_coupons where tenant_id = ${ctx.tenantId} and status = 'active'`
-    const [ref] = await tx<{ n: string }[]>`
+      const [ref] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.loyalty_referrals where tenant_id = ${ctx.tenantId} and status = 'pending'`
-    return {
-      clientes: c.map((r) => ({ id: r.id, name: r.name, saldo: Number(r.saldo), vida: Number(r.vida) })) as ClienteFila[],
-      cuponesActivos: Number(cup?.n ?? 0),
-      referidosPendientes: Number(ref?.n ?? 0),
-    }
-  })
+      return {
+        clientes: c.map((r) => ({
+          id: r.id,
+          name: r.name,
+          saldo: Number(r.saldo),
+          vida: Number(r.vida),
+        })) as ClienteFila[],
+        cuponesActivos: Number(cup?.n ?? 0),
+        referidosPendientes: Number(ref?.n ?? 0),
+      }
+    },
+  )
 
   const puedeGestionar = exigir(ctx, 'loyalty', 'loyalty.manage').ok
   const qs = ctx.demoQs
@@ -97,7 +106,11 @@ export default async function FidelizacionPage({
         </section>
 
         {clientes.length === 0 ? (
-          <EmptyState icon="redeem" title="Todavia no hay clientes" description="Registra puntos abajo para empezar." />
+          <EmptyState
+            icon="redeem"
+            title="Todavia no hay clientes"
+            description="Registra puntos abajo para empezar."
+          />
         ) : (
           <Table>
             <THead>
@@ -114,7 +127,10 @@ export default async function FidelizacionPage({
                 return (
                   <TR key={c.id}>
                     <TD className="text-[var(--color-text-primary)]">
-                      <a href={`/fidelizacion/${c.id}${qs}`} className="underline-offset-2 hover:underline">
+                      <a
+                        href={`/fidelizacion/${c.id}${qs}`}
+                        className="underline-offset-2 hover:underline"
+                      >
                         {c.name}
                       </a>
                     </TD>
@@ -175,9 +191,7 @@ export default async function FidelizacionPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

@@ -67,17 +67,20 @@ export default async function ConteosCiclicosPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'stock-counts')
 
-  const { almacenes, programacion, conteos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const a = await tx<AlmacenOption[]>`
+  const { almacenes, programacion, conteos } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const a = await tx<AlmacenOption[]>`
       select id, name from public.warehouses
       where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
-    const p = await tx<ProgramacionRow[]>`
+      const p = await tx<ProgramacionRow[]>`
       select cs.product_id, pr.sku, pr.name, cs.abc_class, cs.frequency_days, cs.last_counted_at::text
       from public.count_schedules cs
       join public.products pr on pr.id = cs.product_id
       where cs.tenant_id = ${ctx.tenantId}
       order by cs.abc_class, pr.name`
-    const c = await tx<ConteoRow[]>`
+      const c = await tx<ConteoRow[]>`
       select cc.id, w.name as warehouse_name, cc.status, cc.started_at::text,
              (select count(*) from public.cycle_count_lines l where l.count_id = cc.id)::text as lineas
       from public.cycle_counts cc
@@ -85,20 +88,24 @@ export default async function ConteosCiclicosPage({
       where cc.tenant_id = ${ctx.tenantId}
       order by cc.started_at desc
       limit 30`
-    return { almacenes: a, programacion: p, conteos: c }
-  })
+      return { almacenes: a, programacion: p, conteos: c }
+    },
+  )
 
   const ahora = new Date()
   const vencidos = programacion.filter((p) =>
-    proximoConteoVencido(p.last_counted_at ? new Date(p.last_counted_at) : null, p.frequency_days, ahora),
+    proximoConteoVencido(
+      p.last_counted_at ? new Date(p.last_counted_at) : null,
+      p.frequency_days,
+      ahora,
+    ),
   ).length
   const pendientesAprobacion = conteos.filter((c) => c.status === 'pending_approval').length
 
   const puedeGestionar = exigir(ctx, 'stock-counts', 'stock-counts.manage').ok
   const qs = ctx.demoQs
 
-  const fecha = (iso: string | null) =>
-    iso ? new Date(iso).toLocaleDateString('es-DO') : 'Nunca'
+  const fecha = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-DO') : 'Nunca')
 
   return (
     <Shell {...shell} activePath="/conteos-ciclicos">
@@ -118,7 +125,7 @@ export default async function ConteosCiclicosPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Programacion ABC</CardTitle>
+            <CardTitle>Programación ABC</CardTitle>
           </CardHeader>
           <CardBody className="p-0">
             {programacion.length === 0 ? (
@@ -134,7 +141,7 @@ export default async function ConteosCiclicosPage({
                     <TH>Producto</TH>
                     <TH>Clase</TH>
                     <TH numeric>Frecuencia</TH>
-                    <TH>Ultimo conteo</TH>
+                    <TH>Último conteo</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -146,7 +153,9 @@ export default async function ConteosCiclicosPage({
                     )
                     return (
                       <TR key={p.product_id}>
-                        <TD className="text-[var(--color-text-primary)]">{p.sku} — {p.name}</TD>
+                        <TD className="text-[var(--color-text-primary)]">
+                          {p.sku} — {p.name}
+                        </TD>
                         <TD>
                           <Badge tone={badgeAbc(p.abc_class)}>{p.abc_class}</Badge>
                         </TD>
@@ -168,18 +177,19 @@ export default async function ConteosCiclicosPage({
               </Table>
             )}
             {puedeGestionar && (
-              <form action={recalcularAbcForm} className="border-t border-[var(--color-border)] p-3">
+              <form
+                action={recalcularAbcForm}
+                className="border-t border-[var(--color-border)] p-3"
+              >
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="refresh" size={14} />
                   Recalcular clasificacion ABC
                 </BotonEnvio>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  Usa el valor actual en inventario (costo promedio × existencia) de cada
-                  producto, no el historial de ventas -esa integracion es un paso futuro-.
+                  Usa el valor actual en inventario (costo promedio × existencia) de cada producto,
+                  no el historial de ventas -esa integracion es un paso futuro-.
                 </p>
               </form>
             )}
@@ -197,7 +207,7 @@ export default async function ConteosCiclicosPage({
               <Table>
                 <THead>
                   <TR>
-                    <TH>Almacen</TH>
+                    <TH>Almacén</TH>
                     <TH numeric>Productos</TH>
                     <TH>Estado</TH>
                     <TH>Iniciado</TH>
@@ -254,9 +264,7 @@ export default async function ConteosCiclicosPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Iniciar
                 </BotonEnvio>

@@ -4,7 +4,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'notifications',
   name: 'Notificaciones',
-  description: 'Avisos del sistema y de cada modulo: personales o para todo el equipo.',
+  description: 'Avisos del sistema y de cada módulo: personales o para todo el equipo.',
   icon: 'notifications',
   category: 'core',
   version: '0.1.0',

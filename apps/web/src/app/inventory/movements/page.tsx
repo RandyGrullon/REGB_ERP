@@ -100,7 +100,7 @@ export default async function MovementsPage({
               <TR>
                 <TH>Cuando</TH>
                 <TH>Producto</TH>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH>Tipo</TH>
                 <TH numeric>Cantidad</TH>
                 {veCosto && <TH numeric>Costo</TH>}

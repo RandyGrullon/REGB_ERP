@@ -1,4 +1,20 @@
-import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState, Icon, PageHeader, StatCard, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  EmptyState,
+  Icon,
+  PageHeader,
+  StatCard,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+  Table,
+} from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -34,12 +50,16 @@ export default async function ProyectosPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'projects')
 
-  const proyectos = await asUser(ctx.userId, ctx.tenantId, (tx) => tx<ProyectoFila[]>`
+  const proyectos = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<ProyectoFila[]>`
     select p.id, p.name, p.status, p.end_date::text,
            (select count(*)::text from public.project_tasks where project_id = p.id) as tareas
     from public.projects p
     where p.tenant_id = ${ctx.tenantId}
-    order by p.created_at desc`)
+    order by p.created_at desc`,
+  )
 
   const activos = proyectos.filter((p) => p.status === 'active').length
   const puedeGestionar = exigir(ctx, 'projects', 'projects.manage').ok
@@ -60,7 +80,11 @@ export default async function ProyectosPage({
         </section>
 
         {proyectos.length === 0 ? (
-          <EmptyState icon="view_kanban" title="Todavia no hay ningun proyecto" description="Crea el primero abajo." />
+          <EmptyState
+            icon="view_kanban"
+            title="Todavia no hay ningun proyecto"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -75,7 +99,10 @@ export default async function ProyectosPage({
               {proyectos.map((p) => (
                 <TR key={p.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/proyectos/${p.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/proyectos/${p.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {p.name}
                     </a>
                   </TD>
@@ -86,7 +113,9 @@ export default async function ProyectosPage({
                     {p.end_date ? new Date(p.end_date).toLocaleDateString('es-DO') : 'Sin fecha'}
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(p.status)}>{ESTADO_PROYECTO[p.status] ?? p.status}</Badge>
+                    <Badge tone={badgeEstado(p.status)}>
+                      {ESTADO_PROYECTO[p.status] ?? p.status}
+                    </Badge>
                   </TD>
                 </TR>
               ))}
@@ -113,15 +142,21 @@ export default async function ProyectosPage({
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Inicio
-                  <input type="date" name="startDate" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="startDate"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fin
-                  <input type="date" name="endDate" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="endDate"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

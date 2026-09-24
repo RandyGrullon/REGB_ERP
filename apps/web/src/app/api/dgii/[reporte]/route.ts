@@ -157,13 +157,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ reporte:
           where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
           order by ncf`
       : reporte === '607'
-      ? tx<Record<string, unknown>[]>`
+        ? tx<Record<string, unknown>[]>`
           select rnc_comprador, tipo_identificacion, ncf, ncf_modificado, fecha_comprobante,
                  monto_facturado::text, itbis_facturado::text, total::text, origen
           from public.dgii_607
           where tenant_id = ${ctx.tenantId} and periodo = ${periodo}
           order by ncf`
-      : tx<Record<string, unknown>[]>`
+        : tx<Record<string, unknown>[]>`
           select ncf, ncf_type, fecha_comprobante, motivo, origen
           from public.dgii_608
           where tenant_id = ${ctx.tenantId} and periodo = ${periodo}

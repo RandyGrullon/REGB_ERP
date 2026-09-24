@@ -1,4 +1,5 @@
 import { Badge, EmptyState, Icon, PageHeader } from '@regb/ui'
+import { nombreDeModulo } from '@/lib/nombre-modulo'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -72,9 +73,7 @@ export default async function NotificacionesPage({
               <form action={marcarTodasLeidas}>
                 <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="done_all" size={18} />
                   Marcar todas leidas
                 </BotonEnvio>
@@ -105,7 +104,7 @@ export default async function NotificacionesPage({
                         {n.title}
                       </span>
                       <Badge tone="neutral" dot={false}>
-                        {n.module_id}
+                        {nombreDeModulo(n.module_id)}
                       </Badge>
                       {n.user_id === null && (
                         <Badge tone="info" dot={false}>
@@ -138,7 +137,8 @@ export default async function NotificacionesPage({
                       <input type="hidden" name="id" value={n.id} />
                       <BotonEnvio
                         aria-label={`Marcar como leida: ${n.title}`}
-                        className="shrink-0 rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]">
+                        className="shrink-0 rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]"
+                      >
                         Leida
                       </BotonEnvio>
                     </form>

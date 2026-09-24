@@ -9,6 +9,7 @@ import {
   parametrosDesdeFila,
   saldoPrestamo,
   salarioDelPeriodo,
+  totalAPagarPrestamo,
   type FilaParametrosNomina,
   type PayrollTaxParams,
 } from '@regb/operations'
@@ -167,9 +168,18 @@ export async function calcularNomina(
 
   // Prestamos activos SIN pago en este periodo: se les descuenta la cuota.
   const prestamos = await tx<
-    { id: string; employee_id: string; cuota: string; principal: string; pagado: string }[]
+    {
+      id: string
+      employee_id: string
+      cuota: string
+      principal: string
+      cuotas: number
+      tasa: string
+      pagado: string
+    }[]
   >`
     select l.id, l.employee_id, l.installment_amount::text as cuota, l.principal::text,
+           l.installments as cuotas, l.monthly_rate::text as tasa,
            coalesce((select sum(p.amount) from public.benefit_loan_payments p
                       where p.loan_id = l.id), 0)::text as pagado
     from public.benefit_loans l
@@ -222,7 +232,10 @@ export async function calcularNomina(
       .map((p) => ({
         id: p.id,
         cuota: n(p.cuota),
-        saldo: saldoPrestamo(n(p.principal), [{ amount: n(p.pagado) }]),
+        // Con interes, lo que se debe son todas las cuotas (0138).
+        saldo: saldoPrestamo(totalAPagarPrestamo(n(p.principal), p.cuotas, n(p.cuota), n(p.tasa)), [
+          { amount: n(p.pagado) },
+        ]),
       }))
     const descuentos = descuentosDePrestamos(suyos, fraccionPeriodo, antes.netSalary - fijo)
     const prestamosNuevos = descuentos.map((d) => ({

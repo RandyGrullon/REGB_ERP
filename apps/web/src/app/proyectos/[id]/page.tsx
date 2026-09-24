@@ -42,7 +42,11 @@ interface Hito {
 }
 
 const COLUMNAS: EstadoTarea[] = ['todo', 'in_progress', 'blocked', 'done']
-const SIGUIENTE: Partial<Record<EstadoTarea, EstadoTarea>> = { todo: 'in_progress', in_progress: 'done', blocked: 'todo' }
+const SIGUIENTE: Partial<Record<EstadoTarea, EstadoTarea>> = {
+  todo: 'in_progress',
+  in_progress: 'done',
+  blocked: 'todo',
+}
 const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
@@ -111,7 +115,11 @@ export default async function ProyectoDetallePage({
           icon="view_kanban"
           title={head.name}
           crumbs={[{ label: 'Proyectos & Tareas', href: `/proyectos${qs}` }, { label: head.name }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_PROYECTO[head.status] ?? head.status}</Badge>}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_PROYECTO[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -125,7 +133,7 @@ export default async function ProyectoDetallePage({
               <form action={transicionarProyectoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Activar
                 </BotonEnvio>
@@ -136,14 +144,12 @@ export default async function ProyectoDetallePage({
                 <form action={transicionarProyectoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="on_hold" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Pausar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Pausar</BotonEnvio>
                 </form>
                 <form action={transicionarProyectoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="completed" />
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="check_circle" size={14} />
                     Completar
                   </BotonEnvio>
@@ -154,9 +160,7 @@ export default async function ProyectoDetallePage({
               <form action={transicionarProyectoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <BotonEnvio  className={botonClase}>
-                  Reanudar
-                </BotonEnvio>
+                <BotonEnvio className={botonClase}>Reanudar</BotonEnvio>
               </form>
             )}
           </div>
@@ -172,20 +176,29 @@ export default async function ProyectoDetallePage({
                 {tareas
                   .filter((t) => t.status === col)
                   .map((t) => (
-                    <div key={t.id} className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3">
-                      <p className="text-sm font-medium text-[var(--color-text-primary)]">{t.name}</p>
-                      {t.due_date && <p className="text-xs text-[var(--color-text-muted)]">Vence {new Date(t.due_date).toLocaleDateString('es-DO')}</p>}
+                    <div
+                      key={t.id}
+                      className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3"
+                    >
+                      <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                        {t.name}
+                      </p>
+                      {t.due_date && (
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          Vence {new Date(t.due_date).toLocaleDateString('es-DO')}
+                        </p>
+                      )}
                       {t.dependencias.length > 0 && (
-                        <p className="text-xs text-[var(--color-text-muted)]">Depende de: {t.dependencias.join(', ')}</p>
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          Depende de: {t.dependencias.join(', ')}
+                        </p>
                       )}
                       {puedeGestionar && SIGUIENTE[t.status] && (
                         <form action={transicionarTareaForm}>
                           {campos}
                           <input type="hidden" name="taskId" value={t.id} />
                           <input type="hidden" name="siguiente" value={SIGUIENTE[t.status]} />
-                          <BotonEnvio
-                            
-                            className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                          <BotonEnvio className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                             <Icon name="arrow_forward" size={12} />
                             {ESTADO_TAREA[SIGUIENTE[t.status]!]}
                           </BotonEnvio>
@@ -199,13 +212,15 @@ export default async function ProyectoDetallePage({
                             name="dependsOnTaskId"
                             className="h-7 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
                           >
-                            {tareas.filter((o) => o.id !== t.id).map((o) => (
-                              <option key={o.id} value={o.id}>
-                                {o.name}
-                              </option>
-                            ))}
+                            {tareas
+                              .filter((o) => o.id !== t.id)
+                              .map((o) => (
+                                <option key={o.id} value={o.id}>
+                                  {o.name}
+                                </option>
+                              ))}
                           </select>
-                          <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                             +Dep.
                           </BotonEnvio>
                         </form>
@@ -227,13 +242,21 @@ export default async function ProyectoDetallePage({
                 {campos}
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="name"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Vence
-                  <input type="date" name="dueDate" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="dueDate"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>
@@ -248,11 +271,18 @@ export default async function ProyectoDetallePage({
           </CardHeader>
           <CardBody>
             <ul className="space-y-2">
-              {hitos.length === 0 && <li className="text-xs text-[var(--color-text-muted)]">Todavia no hay ningun hito.</li>}
+              {hitos.length === 0 && (
+                <li className="text-xs text-[var(--color-text-muted)]">
+                  Todavía no hay ningún hito.
+                </li>
+              )}
               {hitos.map((h) => {
                 const vencido = !h.completed_at && !hitoVigente(new Date(h.due_date), new Date())
                 return (
-                  <li key={h.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5">
+                  <li
+                    key={h.id}
+                    className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5"
+                  >
                     <div>
                       <p className="text-sm text-[var(--color-text-primary)]">{h.name}</p>
                       <p className="text-xs text-[var(--color-text-muted)]">
@@ -263,12 +293,14 @@ export default async function ProyectoDetallePage({
                       <Badge tone="success">Completado</Badge>
                     ) : (
                       <div className="flex items-center gap-2">
-                        <Badge tone={vencido ? 'danger' : 'warning'}>{vencido ? 'Vencido' : 'Pendiente'}</Badge>
+                        <Badge tone={vencido ? 'danger' : 'warning'}>
+                          {vencido ? 'Vencido' : 'Pendiente'}
+                        </Badge>
                         {puedeGestionar && (
                           <form action={completarHitoForm}>
                             {campos}
                             <input type="hidden" name="milestoneId" value={h.id} />
-                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Completar
                             </BotonEnvio>
                           </form>
@@ -285,13 +317,22 @@ export default async function ProyectoDetallePage({
                 {campos}
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="name"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
-                  <input type="date" name="dueDate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="dueDate"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
-                <BotonEnvio  className={botonSecundarioClase}>
+                <BotonEnvio className={botonSecundarioClase}>
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

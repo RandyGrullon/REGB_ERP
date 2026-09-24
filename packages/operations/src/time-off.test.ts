@@ -4,6 +4,7 @@ import {
   diasVacacionesPorAnioDeServicio,
   saldoVacaciones,
   vacacionesAcumuladas,
+  validarDiasDeVacaciones,
 } from './time-off.js'
 
 describe('diasLaborablesEntre', () => {
@@ -91,5 +92,22 @@ describe('saldoVacaciones', () => {
     const contratacion = new Date(2022, 8, 7)
     const corte = new Date(2026, 8, 7)
     expect(saldoVacaciones(contratacion, corte, 999)).toBe(0)
+  })
+})
+
+describe('validarDiasDeVacaciones', () => {
+  it('lo que cabe en el saldo pasa', () => {
+    expect(validarDiasDeVacaciones(14, 10)).toBeNull()
+    expect(validarDiasDeVacaciones(14, 14)).toBeNull()
+  })
+
+  it('pedir mas de lo que queda se rechaza con los dos numeros', () => {
+    expect(validarDiasDeVacaciones(4, 10)).toBe(
+      'Se piden 10 días y solo quedan 4 días de vacaciones disponibles.',
+    )
+  })
+
+  it('sin saldo -antes del primer año- se rechaza y dice por que', () => {
+    expect(validarDiasDeVacaciones(0, 1)).toMatch(/^No quedan días de vacaciones disponibles y se piden 1 día./)
   })
 })

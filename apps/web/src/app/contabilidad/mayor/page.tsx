@@ -102,9 +102,7 @@ export default async function MayorPage({
               ))}
             </select>
           </label>
-          <BotonEnvio
-            
-            className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+          <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
             <Icon name="search" size={18} />
             Ver
           </BotonEnvio>
@@ -128,7 +126,7 @@ export default async function MayorPage({
 
             {movimientos.length === 0 ? (
               <p className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-                Esta cuenta todavia no tiene movimientos contabilizados.
+                Esta cuenta todavía no tiene movimientos contabilizados.
               </p>
             ) : (
               <Table>
@@ -136,9 +134,9 @@ export default async function MayorPage({
                   <TR>
                     <TH>Asiento</TH>
                     <TH>Fecha</TH>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH numeric>Debito</TH>
-                    <TH numeric>Credito</TH>
+                    <TH numeric>Crédito</TH>
                     <TH numeric>Saldo acumulado</TH>
                   </TR>
                 </THead>

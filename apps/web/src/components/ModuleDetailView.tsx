@@ -62,6 +62,7 @@ export function ModuleDetailView({
   demoQuery,
   hiddenFields,
   pedido,
+  puedePedir = true,
   yaPedido,
   necesita,
   combina,
@@ -73,6 +74,8 @@ export function ModuleDetailView({
   hiddenFields: Record<string, string>
   /** `null` si no se puede pedir (ya lo tiene, es del plan o no ha salido). */
   pedido: PedidoFicha | null
+  /** Sin `subscription.manage` la ficha informa, pero no pide. */
+  puedePedir?: boolean
   yaPedido: boolean
   necesita: Relacionado[]
   combina: Relacionado[]
@@ -424,6 +427,7 @@ export function ModuleDetailView({
             <Accion
               mod={mod}
               pedido={pedido}
+              puedePedir={puedePedir}
               yaPedido={yaPedido}
               hiddenFields={hiddenFields}
               backHref={backHref}
@@ -548,8 +552,8 @@ function NotaPedido({ pedido, className }: { pedido: PedidoFicha; className?: st
       Tu factura pasaría de {usd(hoy)} a{' '}
       <strong className="font-semibold text-[var(--color-text-primary)]">{usd(con)}</strong> al mes
       {aumento > 0 ? ` (+${usd(aumento)})` : ' (sin aumento: entra en lo que regala tu plan)'}
-      {instalacion > 0 ? `, más ${usd(instalacion)} de instalación una vez` : ''}. Calculado con el
-      mismo motor que emite tu factura, ITBIS incluido.{' '}
+      {instalacion > 0 ? `, más ${usd(instalacion)} + ITBIS de instalación una vez` : ''}. Calculado
+      con el mismo motor que emite tu factura; la mensualidad ya trae el ITBIS.{' '}
       {pedido.previos > 0 &&
         `Se suma a tu solicitud abierta (${plural(pedido.previos, 'módulo', 'módulos')}). `}
       Nada se enciende solo: te llamamos. La prueba no se cobra.
@@ -572,12 +576,14 @@ function NotaPedido({ pedido, className }: { pedido: PedidoFicha; className?: st
 function Accion({
   mod,
   pedido,
+  puedePedir,
   yaPedido,
   hiddenFields,
   backHref,
 }: {
   mod: ModuleDetail
   pedido: PedidoFicha | null
+  puedePedir: boolean
   yaPedido: boolean
   hiddenFields: Record<string, string>
   backHref: string
@@ -602,6 +608,14 @@ function Accion({
       <p className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
         <Icon name="construction" size={18} className="text-[var(--color-text-muted)]" />
         Todavía no está disponible. Aquí verás la fecha cuando la tengamos.
+      </p>
+    )
+  }
+  if (mod.category !== 'core' && !puedePedir) {
+    return (
+      <p className="flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)]">
+        <Icon name="person" size={18} className="text-[var(--color-text-muted)]" />
+        Solo el dueño de la cuenta puede pedirlo.
       </p>
     )
   }

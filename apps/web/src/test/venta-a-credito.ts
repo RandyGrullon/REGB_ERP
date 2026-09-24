@@ -36,9 +36,7 @@ export const TABLAS_CREDITO = [
  * Tablas que quizas todavia no existan (las crea la 0130): limpiar no debe
  * caerse por eso cuando la prueba corre en rojo contra el codigo viejo.
  */
-export async function limpiarCredito(
-  limpiar: (antes?: string[]) => Promise<void>,
-): Promise<void> {
+export async function limpiarCredito(limpiar: (antes?: string[]) => Promise<void>): Promise<void> {
   const existentes: string[] = []
   for (const t of TABLAS_CREDITO) {
     const [r] = await db()<{ ok: boolean }[]>`select to_regclass(${t}) is not null as ok`

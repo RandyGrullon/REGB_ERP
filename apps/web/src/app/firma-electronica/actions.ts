@@ -42,8 +42,10 @@ export async function crearSolicitud(fd: FormData): Promise<ActionResult> {
   const signerName = String(fd.get('signerName') ?? '').trim()
   const signerEmail = String(fd.get('signerEmail') ?? '').trim()
 
-  if (!['quote', 'other'].includes(documentType)) return { ok: false, error: 'Elige un tipo de documento valido.' }
-  if (!signerName || !signerEmail) return { ok: false, error: 'Falta el nombre o el correo de quien firma.' }
+  if (!['quote', 'other'].includes(documentType))
+    return { ok: false, error: 'Elige un tipo de documento valido.' }
+  if (!signerName || !signerEmail)
+    return { ok: false, error: 'Falta el nombre o el correo de quien firma.' }
 
   let documentId: string
   let documentLabel: string
@@ -86,7 +88,15 @@ export async function transicionarSolicitud(fd: FormData): Promise<ActionResult>
   const ip = siguiente === 'signed' ? await ipDelSolicitante() : null
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [sol] = await tx<{ status: EstadoFirma; document_type: string; document_id: string; document_label: string; signer_email: string }[]>`
+    const [sol] = await tx<
+      {
+        status: EstadoFirma
+        document_type: string
+        document_id: string
+        document_label: string
+        signer_email: string
+      }[]
+    >`
       select status, document_type, document_id, document_label, signer_email
       from public.signature_requests where id = ${requestId} and tenant_id = ${ctx.tenantId} for update`
     if (!sol) return 'no-existe'
@@ -96,7 +106,9 @@ export async function transicionarSolicitud(fd: FormData): Promise<ActionResult>
     const firmando = siguiente === 'signed'
     const hash = firmando
       ? createHash('sha256')
-          .update(`${sol.document_type}|${sol.document_id}|${sol.document_label}|${sol.signer_email}|${new Date().toISOString()}`)
+          .update(
+            `${sol.document_type}|${sol.document_id}|${sol.document_label}|${sol.signer_email}|${new Date().toISOString()}`,
+          )
           .digest('hex')
       : null
 

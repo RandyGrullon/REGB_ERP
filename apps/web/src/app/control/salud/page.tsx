@@ -17,7 +17,7 @@ import {
 } from '@regb/ui'
 import { cargarSalud } from '@/lib/control-datos'
 import { requireProvider } from '@/lib/provider-guard'
-import { despacharAhora } from '../solicitudes-actions'
+import { despacharAhora, terminarImpersonacion } from '../solicitudes-actions'
 import { TEMAS_ATENDIDOS } from '@/lib/despachador'
 import { usd } from '@/components/ControlBits'
 import { BotonEnvio } from '@/components/BotonEnvio'
@@ -55,10 +55,10 @@ export default async function SaludPage() {
       <div>
         <h1 className="flex items-center gap-2 text-lg font-bold text-[var(--color-text-primary)]">
           <Icon name="monitor_heart" size={22} className="text-[var(--color-accent-plum)]" />
-          Salud de la operacion
+          Salud de la operación
         </h1>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Lo que hay que mirar cada manana, ordenado por lo que le explota primero al cliente.
+          Lo que hay que mirar cada mañana, ordenado por lo que le explota primero al cliente.
         </p>
       </div>
 
@@ -71,12 +71,12 @@ export default async function SaludPage() {
         <StatCard
           label="Respaldos atrasados"
           value={String(respaldosViejos.length)}
-          hint="mas de 7 dias o ninguno"
+          hint="más de 7 días o ninguno"
         />
         <StatCard
           label="Eventos atascados"
-          value={String(s.eventos.pendientes + s.eventos.muertos)}
-          hint={`${s.eventos.muertos} descartados`}
+          value={String(s.eventos.atascados + s.eventos.muertos)}
+          hint={`más de 15 min sin procesar · ${s.eventos.muertos} descartados`}
         />
         <StatCard
           label="Por cobrar"
@@ -96,13 +96,13 @@ export default async function SaludPage() {
         <CardBody>
           {s.ncfEnRiesgo.length === 0 ? (
             <p className="py-2 text-sm text-[var(--color-text-muted)]">
-              Ningun cliente en riesgo. Todas las secuencias vigentes y con margen.
+              Ningún cliente en riesgo. Todas las secuencias vigentes y con margen.
             </p>
           ) : (
             <>
               <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
-                Pedirle a la DGII una autorizacion nueva toma dias. Un cliente que se queda sin NCF
-                deja de facturar ese mismo dia — llamalo antes de que pase, no despues.
+                Pedirle a la DGII una autorización nueva toma días. Un cliente que se queda sin NCF
+                deja de facturar ese mismo día: llámalo antes de que pase, no después.
               </p>
               <Table>
                 <THead>
@@ -159,7 +159,7 @@ export default async function SaludPage() {
               <THead>
                 <TR>
                   <TH>Cliente</TH>
-                  <TH>Ultimo</TH>
+                  <TH>Último</TH>
                   <TH numeric>Total</TH>
                 </TR>
               </THead>
@@ -205,7 +205,12 @@ export default async function SaludPage() {
           <CardBody>
             <dl className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <dt className="text-[var(--color-text-secondary)]">Pendientes</dt>
+                <dt className="text-[var(--color-text-secondary)]">
+                  Pendientes{' '}
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    ({s.eventos.atascados} con más de 15 min)
+                  </span>
+                </dt>
                 <dd className="tabular font-semibold">{s.eventos.pendientes}</dd>
               </div>
               <div className="flex justify-between">
@@ -225,7 +230,7 @@ export default async function SaludPage() {
             {s.ultimosErrores.length > 0 && (
               <div className="mt-3 border-t border-[var(--color-border)] pt-3">
                 <p className="mb-1 text-xs font-semibold text-[var(--color-text-primary)]">
-                  Ultimos errores
+                  Últimos errores
                 </p>
                 <ul className="space-y-1">
                   {s.ultimosErrores.map((e, i) => (
@@ -242,19 +247,17 @@ export default async function SaludPage() {
             )}
 
             <form action={despacharAhora} className="mt-3">
-              <BotonEnvio
-                
-                className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+              <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                 <Icon name="play_arrow" size={16} />
                 Despachar ahora
               </BotonEnvio>
             </form>
 
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              El bus atiende {TEMAS_ATENDIDOS.length} temas; los que nadie escucha se cierran en vez
-              de reintentarse para siempre — un outbox lleno de eventos que nadie quiere parece una
-              averia. <Mono>event_outbox</Mono> sigue siendo la unica senal de error que persiste:
-              si algo falla fuera del bus, no queda rastro.
+              El despachador atiende {TEMAS_ATENDIDOS.length} tipos de evento y pasa solo cada pocos
+              minutos: un evento recién emitido no está atascado. Los que nadie escucha se cierran
+              en vez de reintentarse para siempre. Si el número de atascados no baja después de
+              &quot;Despachar ahora&quot;, el error sale en la lista de arriba.
             </p>
           </CardBody>
         </Card>
@@ -270,13 +273,14 @@ export default async function SaludPage() {
                 filled
                 className="text-[var(--color-semantic-text-danger)]"
               />
-              Sesiones de impersonacion abiertas
+              Sesiones abiertas dentro de un cliente
             </CardTitle>
           </CardHeader>
           <CardBody>
             <p className="mb-2 text-sm text-[var(--color-text-secondary)]">
-              Alguien esta operando dentro de un cliente ahora mismo. Cerrarlas al terminar no es
-              formalidad: mientras esten abiertas, ese usuario ve datos que no son suyos.
+              Alguien está operando dentro de un cliente ahora mismo. Cerrarlas al terminar no es
+              formalidad: mientras estén abiertas, ese usuario ve datos que no son suyos. Se cierran
+              solas a los 60 minutos.
             </p>
             <Table>
               <THead>
@@ -284,7 +288,7 @@ export default async function SaludPage() {
                   <TH>Cliente</TH>
                   <TH>Quien</TH>
                   <TH>Desde</TH>
-                  <TH>Razon</TH>
+                  <TH>Razón</TH>
                 </TR>
               </THead>
               <TBody>
@@ -300,6 +304,12 @@ export default async function SaludPage() {
                 ))}
               </TBody>
             </Table>
+            <form action={terminarImpersonacion} className="mt-3">
+              <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <Icon name="logout" size={16} />
+                Cerrar la mía
+              </BotonEnvio>
+            </form>
           </CardBody>
         </Card>
       )}

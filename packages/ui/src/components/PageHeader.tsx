@@ -83,7 +83,14 @@ export function PageHeader({
           )}
         </div>
 
-        {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
+        {/* En el telefono las acciones van en su propia fila: el titulo tiene
+            `min-w-0` y, a su lado, se encogia hasta dejar la descripcion en
+            columnas de dos palabras. */}
+        {actions && (
+          <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
+            {actions}
+          </div>
+        )}
       </div>
 
       {meta}

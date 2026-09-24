@@ -27,9 +27,13 @@ export async function crearRuta(fd: FormData): Promise<ActionResult> {
   const routeDate = String(fd.get('routeDate') ?? '') || null
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.delivery_routes (tenant_id, driver_id, vehicle_plate, route_date)
-      values (${ctx.tenantId}, ${driverId}, ${vehiclePlate}, ${routeDate ?? new Date().toISOString().slice(0, 10)})`)
+      values (${ctx.tenantId}, ${driverId}, ${vehiclePlate}, ${routeDate ?? new Date().toISOString().slice(0, 10)})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -56,7 +60,8 @@ export async function agregarParada(fd: FormData): Promise<ActionResult> {
     const [ruta] = await tx<{ status: string }[]>`
       select status from public.delivery_routes where id = ${routeId} and tenant_id = ${ctx.tenantId}`
     if (!ruta) return 'no-existe'
-    if (ruta.status !== 'planned') return 'Solo se pueden agregar paradas mientras la ruta esta planificada.'
+    if (ruta.status !== 'planned')
+      return 'Solo se pueden agregar paradas mientras la ruta esta planificada.'
 
     const [n] = await tx<{ n: string }[]>`
       select coalesce(max(sequence), 0)::text as n from public.route_stops
@@ -157,7 +162,8 @@ export async function resolverParada(fd: FormData): Promise<ActionResult> {
   const deliveryNotes = String(fd.get('deliveryNotes') ?? '').trim() || null
 
   if (!stopId) return { ok: false, error: 'Falta la parada.' }
-  if (siguiente !== 'delivered' && siguiente !== 'failed') return { ok: false, error: 'Estado invalido.' }
+  if (siguiente !== 'delivered' && siguiente !== 'failed')
+    return { ok: false, error: 'Estado invalido.' }
   if (siguiente === 'delivered' && !recipientName) {
     return { ok: false, error: 'Escribe quien recibio -es la prueba de entrega-.' }
   }

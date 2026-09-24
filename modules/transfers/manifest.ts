@@ -13,7 +13,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'transfers',
   name: 'Transferencias',
-  description: 'Entre almacenes y sucursales, con transito y confirmacion.',
+  description: 'Entre almacenes y sucursales, con tránsito y confirmación.',
   icon: 'local_shipping',
   category: 'standard',
   version: '0.1.0',

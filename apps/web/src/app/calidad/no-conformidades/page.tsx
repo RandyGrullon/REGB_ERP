@@ -74,7 +74,10 @@ export default async function NoConformidadesPage({
           icon="report"
           title="No conformidades"
           description="Una no conformidad no se cierra directo: pasa por un CAPA con causa raiz, accion correctiva y verificacion."
-          crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'No conformidades' }]}
+          crumbs={[
+            { label: 'Control de calidad', href: `/calidad${qs}` },
+            { label: 'No conformidades' },
+          ]}
         />
 
         {noConformidades.length === 0 ? (
@@ -83,7 +86,7 @@ export default async function NoConformidadesPage({
           <Table>
             <THead>
               <TR>
-                <TH>Descripcion</TH>
+                <TH>Descripción</TH>
                 <TH>Severidad</TH>
                 <TH>Estado</TH>
                 <TH numeric>Dias abierta</TH>
@@ -93,18 +96,25 @@ export default async function NoConformidadesPage({
               {noConformidades.map((nc) => (
                 <TR key={nc.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/calidad/no-conformidades/${nc.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/calidad/no-conformidades/${nc.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {nc.description}
                     </a>
                   </TD>
                   <TD>
-                    <Badge tone={badgeSeveridad(nc.severity)}>{SEVERIDAD_NC[nc.severity] ?? nc.severity}</Badge>
+                    <Badge tone={badgeSeveridad(nc.severity)}>
+                      {SEVERIDAD_NC[nc.severity] ?? nc.severity}
+                    </Badge>
                   </TD>
                   <TD>
                     <Badge tone={badgeEstado(nc.status)}>{ESTADO_NC[nc.status] ?? nc.status}</Badge>
                   </TD>
                   <TD numeric>
-                    <span className="tabular">{diasAbierto(new Date(nc.detected_at), new Date())}</span>
+                    <span className="tabular">
+                      {diasAbierto(new Date(nc.detected_at), new Date())}
+                    </span>
                   </TD>
                 </TR>
               ))}
@@ -141,9 +151,7 @@ export default async function NoConformidadesPage({
                     <option value="critical">Critica</option>
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Abrir
                 </BotonEnvio>

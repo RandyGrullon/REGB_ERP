@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import {
   aceptadoPorDefecto,
+  costoNetoUnitario,
   deriveGoodsReceiptStatus,
   deriveReceiptStatus,
   devolucionMueveInventario,
@@ -18,6 +19,7 @@ import {
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
+import { puedeVerCostoDeCompra } from './costo'
 
 /**
  * Acciones de recepciones (modulo 46, F8/S45).
@@ -58,7 +60,7 @@ interface LineaEntrada {
   qtyAccepted: number
   qtyRejected: number
   rejectionReason: string | null
-  /** null = no lo escribieron: se usa el costo cotizado de la orden. */
+  /** null = no lo escribieron: se usa el costo neto (cotizado menos descuento) de la orden. */
   unitCost: number | null
 }
 
@@ -69,8 +71,9 @@ interface LineaEntrada {
  *  - "Aceptado" en blanco = recibido - rechazado (aceptadoPorDefecto).
  *    Antes la pantalla lo precargaba con lo PEDIDO, y recibir 30 de 50
  *    sin tocarlo hacia `throw` y tumbaba la pagina.
- *  - "Costo real" en blanco = el cotizado de la orden. Antes era 0 y
- *    hundia el costo promedio de todo el inventario de ese producto.
+ *  - "Costo real" en blanco = el neto de la orden (cotizado menos el
+ *    descuento del proveedor). Antes era 0 y hundia el costo promedio de
+ *    todo el inventario de ese producto.
  */
 function lineasDeFormulario(fd: FormData): LineaEntrada[] {
   const ids = fd.getAll('lineId').map(String)
@@ -114,7 +117,12 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
   if (!orderId) return { ok: false, error: 'Falta la orden de compra.' }
 
-  const lineas = lineasDeFormulario(fd)
+  // Quien no ve costos (el almacenista, sin `inventory.cost.view`) no los
+  // escribe: la pantalla no le pinta la columna, y si el formulario trae
+  // un costo igual -a mano, por la consola- se ignora y entra el neto de
+  // la orden. Si no, el rol que no puede VER el costo podria FIJARLO.
+  const veCosto = puedeVerCostoDeCompra(ctx)
+  const lineas = lineasDeFormulario(fd).map((l) => (veCosto ? l : { ...l, unitCost: null }))
   if (lineas.length === 0) {
     return { ok: false, error: 'Escribe una cantidad recibida en al menos una linea.' }
   }
@@ -150,9 +158,17 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
     // asi que salir aqui no deja nada a medias.
     for (const l of lineas) {
       const [line] = await tx<
-        { product_id: string; name: string; qty_ordered: string; qty_received: string; unit_cost: string }[]
+        {
+          product_id: string
+          name: string
+          qty_ordered: string
+          qty_received: string
+          unit_cost: string
+          discount_pct: string
+        }[]
       >`
-        select l.product_id, p.name, l.qty_ordered::text, l.qty_received::text, l.unit_cost::text
+        select l.product_id, p.name, l.qty_ordered::text, l.qty_received::text, l.unit_cost::text,
+               l.discount_pct::text
         from public.purchase_order_lines l
         join public.products p on p.id = l.product_id
         where l.id = ${l.lineId} and l.order_id = ${orderId} and l.tenant_id = ${ctx.tenantId}
@@ -184,7 +200,10 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
         qtyAccepted: l.qtyAccepted,
         qtyRejected: l.qtyRejected,
         rejectionReason: l.rejectionReason,
-        unitCost: l.unitCost ?? Number(line.unit_cost),
+        // En blanco = lo que de verdad se pacto: el cotizado MENOS el
+        // descuento del proveedor. El bruto inflaba el costo promedio.
+        unitCost:
+          l.unitCost ?? costoNetoUnitario(Number(line.unit_cost), Number(line.discount_pct)),
       })
     }
 

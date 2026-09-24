@@ -43,3 +43,32 @@ export function totalAportePatronal(
     2,
   )
 }
+
+/**
+ * Lo que el empleado debe pagar en total por un prestamo. Sin interes, el
+ * principal. Con interes (sistema frances), todas las cuotas: la cuota ya
+ * lleva el interes, y comparar los pagos contra el principal -como se
+ * hacia hasta 0138- daba el prestamo por saldado antes de cobrar el
+ * interes pactado.
+ */
+export function totalAPagarPrestamo(
+  principal: number,
+  cuotas: number,
+  cuota: number,
+  tasaMensual = 0,
+): number {
+  if (tasaMensual === 0) return roundBankers(principal, 2)
+  return roundBankers(cuota * cuotas, 2)
+}
+
+/**
+ * Si un pago cabe en lo que queda del prestamo -null si cabe; si no, el
+ * mensaje-. Un pago de mas dejaba el saldo en 0 y el excedente perdido.
+ */
+export function validarPagoPrestamo(saldo: number, monto: number): string | null {
+  if (!(monto > 0)) return 'El monto debe ser mayor que cero.'
+  if (roundBankers(monto, 2) > roundBankers(saldo, 2)) {
+    return `El pago (${monto.toFixed(2)}) es mayor que lo que queda por pagar (${saldo.toFixed(2)}).`
+  }
+  return null
+}

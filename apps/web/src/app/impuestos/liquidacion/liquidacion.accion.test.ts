@@ -108,7 +108,12 @@ describe('Ventas sin NCF entran en el ITBIS cobrado', () => {
       ncf: 'B0100000001',
     })
     // Sin NCF: el colmado que vende antes de tener rango autorizado.
-    await factura(c.tenantId, cli, { numero: 'F-0002', fecha: '2024-03-12', itbis: '360.00', ncf: null })
+    await factura(c.tenantId, cli, {
+      numero: 'F-0002',
+      fecha: '2024-03-12',
+      itbis: '360.00',
+      ncf: null,
+    })
     // Sin NCF pero anulada: no se cobro, no se declara.
     await factura(c.tenantId, cli, {
       numero: 'F-0003',
@@ -118,7 +123,12 @@ describe('Ventas sin NCF entran en el ITBIS cobrado', () => {
       anulada: true,
     })
     // Sin NCF de OTRO mes: no es de este periodo.
-    await factura(c.tenantId, cli, { numero: 'F-0004', fecha: '2024-04-01', itbis: '50.00', ncf: null })
+    await factura(c.tenantId, cli, {
+      numero: 'F-0004',
+      fecha: '2024-04-01',
+      itbis: '50.00',
+      ncf: null,
+    })
 
     // La caja: el mismo hueco, por el otro lado de la union. Una venta sin
     // NCF que cuenta, una anulada que no.
@@ -337,7 +347,10 @@ describe('Guardas de la accion', () => {
   it('la version de formulario deja el aviso en la cookie', async () => {
     tarro.delete(COOKIE_AVISO)
     await cerrarLiquidacionForm(c.fd({ period: '2024-06' }))
-    const aviso = JSON.parse(tarro.get(COOKIE_AVISO)?.value ?? '{}') as { tipo?: string; texto?: string }
+    const aviso = JSON.parse(tarro.get(COOKIE_AVISO)?.value ?? '{}') as {
+      tipo?: string
+      texto?: string
+    }
     expect(aviso).toEqual({ tipo: 'error', texto: 'El periodo va como AAAAMM.' })
   })
 })

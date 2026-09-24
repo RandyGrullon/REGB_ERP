@@ -13,7 +13,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'marketing',
-  name: 'Marketing & Campanas',
+  name: 'Marketing & Campañas',
   description: 'Segmentos, email/WhatsApp masivo, landing, UTM y atribucion.',
   icon: 'campaign',
   category: 'advanced',
@@ -33,7 +33,7 @@ export default defineModule({
   permissions: ['marketing.view', 'marketing.manage'],
 
   routes: [
-    { path: '/marketing', label: 'Marketing & Campanas', perm: 'marketing.view' },
+    { path: '/marketing', label: 'Marketing & Campañas', perm: 'marketing.view' },
     { path: '/marketing/:id', label: 'Detalle de campana', perm: 'marketing.view', hidden: true },
   ],
 

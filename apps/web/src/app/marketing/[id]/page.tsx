@@ -92,7 +92,11 @@ export default async function CampanaDetallePage({
           icon="campaign"
           title={head.name}
           crumbs={[{ label: 'Marketing', href: `/marketing${qs}` }, { label: head.name }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_CAMPANA[head.status] ?? head.status}</Badge>}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_CAMPANA[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -111,13 +115,11 @@ export default async function CampanaDetallePage({
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="scheduled" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Programar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Programar</BotonEnvio>
                 </form>
                 <form action={enviarCampanaForm}>
                   {campos}
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="send" size={14} />
                     Enviar ahora
                   </BotonEnvio>
@@ -125,9 +127,7 @@ export default async function CampanaDetallePage({
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Cancelar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Cancelar</BotonEnvio>
                 </form>
               </>
             )}
@@ -135,7 +135,7 @@ export default async function CampanaDetallePage({
               <>
                 <form action={enviarCampanaForm}>
                   {campos}
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="send" size={14} />
                     Enviar ahora
                   </BotonEnvio>
@@ -143,9 +143,7 @@ export default async function CampanaDetallePage({
                 <form action={transicionarCampanaForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Cancelar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Cancelar</BotonEnvio>
                 </form>
               </>
             )}
@@ -158,7 +156,9 @@ export default async function CampanaDetallePage({
           </CardHeader>
           <CardBody>
             {destinatarios.length === 0 ? (
-              <p className="text-xs text-[var(--color-text-muted)]">Todavia no se ha enviado a nadie.</p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Todavía no se ha enviado a nadie.
+              </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
                 {destinatarios.map((d) => (
@@ -177,9 +177,7 @@ export default async function CampanaDetallePage({
                           {campos}
                           <input type="hidden" name="recipientId" value={d.id} />
                           <input type="hidden" name="tipo" value="opened" />
-                          <BotonEnvio  className={botonChicoClase}>
-                            Marcar abierto
-                          </BotonEnvio>
+                          <BotonEnvio className={botonChicoClase}>Marcar abierto</BotonEnvio>
                         </form>
                       )}
                       {puedeGestionar && d.opened_at && !d.clicked_at && (
@@ -187,9 +185,7 @@ export default async function CampanaDetallePage({
                           {campos}
                           <input type="hidden" name="recipientId" value={d.id} />
                           <input type="hidden" name="tipo" value="clicked" />
-                          <BotonEnvio  className={botonChicoClase}>
-                            Marcar clic
-                          </BotonEnvio>
+                          <BotonEnvio className={botonChicoClase}>Marcar clic</BotonEnvio>
                         </form>
                       )}
                     </div>
@@ -206,9 +202,9 @@ export default async function CampanaDetallePage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Enviar no manda ningun correo ni WhatsApp de verdad -no hay integracion con un proveedor
-              externo todavia-: toma la foto real de los leads que hoy cumplen el segmento y crea un
-              destinatario por cada uno.
+              Enviar no manda ningún correo ni WhatsApp de verdad -no hay integracion con un
+              proveedor externo todavia-: toma la foto real de los leads que hoy cumplen el segmento
+              y crea un destinatario por cada uno.
             </p>
           </CardBody>
         </Card>

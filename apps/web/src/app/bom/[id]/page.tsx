@@ -114,15 +114,18 @@ export default async function BomDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'bom')
 
-  const { head, lineas, productos, costoUnitario } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<BomHead[]>`
+  const { head, lineas, productos, costoUnitario } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<BomHead[]>`
       select bm.id, bm.product_id, p.sku, p.name as product_name, bm.version, bm.status, bm.output_qty::text
       from public.bill_of_materials bm
       join public.products p on p.id = bm.product_id
       where bm.id = ${id} and bm.tenant_id = ${ctx.tenantId}`
-    if (!h) return { head: null, lineas: [], productos: [], costoUnitario: 0 }
+      if (!h) return { head: null, lineas: [], productos: [], costoUnitario: 0 }
 
-    const l = await tx<LineaRow[]>`
+      const l = await tx<LineaRow[]>`
       select bl.id, bl.component_product_id, p.sku, p.name, p.cost::text,
              bl.quantity_per_unit::text, bl.is_substitute_for
       from public.bom_lines bl
@@ -130,30 +133,36 @@ export default async function BomDetallePage({
       where bl.bom_id = ${id} and bl.tenant_id = ${ctx.tenantId}
       order by bl.is_substitute_for nulls first`
 
-    const prod =
-      h.status === 'draft'
-        ? await tx<ProductoOption[]>`
+      const prod =
+        h.status === 'draft'
+          ? await tx<ProductoOption[]>`
             select id, sku, name from public.products
             where tenant_id = ${ctx.tenantId} and active order by name limit 300`
-        : []
+          : []
 
-    const principales = l.filter((x) => x.is_substitute_for === null)
-    const subComponentes = await Promise.all(
-      principales.map((p) =>
-        resolverNodo(
-          tx,
-          ctx.tenantId,
-          p.component_product_id,
-          Number(p.quantity_per_unit) / Number(h.output_qty),
-          0,
+      const principales = l.filter((x) => x.is_substitute_for === null)
+      const subComponentes = await Promise.all(
+        principales.map((p) =>
+          resolverNodo(
+            tx,
+            ctx.tenantId,
+            p.component_product_id,
+            Number(p.quantity_per_unit) / Number(h.output_qty),
+            0,
+          ),
         ),
-      ),
-    )
-    const raiz: NodoBom = { productId: h.product_id, cantidadPorUnidad: 1, costoDirecto: 0, subComponentes }
-    const costo = principales.length > 0 ? costoUnitarioMultinivel(raiz) : 0
+      )
+      const raiz: NodoBom = {
+        productId: h.product_id,
+        cantidadPorUnidad: 1,
+        costoDirecto: 0,
+        subComponentes,
+      }
+      const costo = principales.length > 0 ? costoUnitarioMultinivel(raiz) : 0
 
-    return { head: h, lineas: l, productos: prod, costoUnitario: costo }
-  })
+      return { head: h, lineas: l, productos: prod, costoUnitario: costo }
+    },
+  )
 
   if (!head) notFound()
 
@@ -176,16 +185,27 @@ export default async function BomDetallePage({
         <PageHeader
           icon="account_tree"
           title={`${head.sku} · ${head.product_name} (v${head.version})`}
-          crumbs={[{ label: 'Lista de materiales', href: `/bom${qs}` }, { label: `v${head.version}` }]}
+          crumbs={[
+            { label: 'Lista de materiales', href: `/bom${qs}` },
+            { label: `v${head.version}` },
+          ]}
           actions={
             <div className="flex items-center gap-2">
-              <Badge tone={head.status === 'active' ? 'success' : head.status === 'draft' ? 'warning' : 'neutral'}>
+              <Badge
+                tone={
+                  head.status === 'active'
+                    ? 'success'
+                    : head.status === 'draft'
+                      ? 'warning'
+                      : 'neutral'
+                }
+              >
                 {ESTADO_BOM[head.status] ?? head.status}
               </Badge>
               {enBorrador && puedeGestionar && lineas.length > 0 && (
                 <form action={activarBomForm}>
                   {campos}
-                  <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="check_circle" size={14} />
                     Activar
                   </BotonEnvio>
@@ -208,7 +228,7 @@ export default async function BomDetallePage({
               <TH numeric>Costo directo</TH>
               {enBorrador && puedeGestionar && (
                 <TH>
-                  <span className="sr-only">Accion</span>
+                  <span className="sr-only">Acción</span>
                 </TH>
               )}
             </TR>
@@ -232,9 +252,9 @@ export default async function BomDetallePage({
                         {campos}
                         <input type="hidden" name="lineId" value={l.id} />
                         <BotonEnvio
-                          
                           aria-label={`Quitar ${l.name}`}
-                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                        >
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>
@@ -258,9 +278,9 @@ export default async function BomDetallePage({
                           {campos}
                           <input type="hidden" name="lineId" value={s.id} />
                           <BotonEnvio
-                            
                             aria-label={`Quitar sustituto ${s.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
@@ -293,7 +313,12 @@ export default async function BomDetallePage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cantidad
-                  <input name="quantityPerUnit" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="quantityPerUnit"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex min-w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Sustituto de
@@ -306,7 +331,7 @@ export default async function BomDetallePage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

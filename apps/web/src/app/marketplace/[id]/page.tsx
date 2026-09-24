@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
+import { accesoMarketplace } from '@/lib/module-page'
 import { checkAccess } from '@regb/sdk'
 import { bootstrap, listTenants } from '@/lib/bootstrap'
 import {
@@ -41,6 +42,7 @@ export default async function ModuleDetailPage({
   let tenantId: string
   let userId: string
   let tier: TenantTier
+  let acceso: { ver: boolean; pedir: boolean }
   let volver: string
   let demoQuery: string
   let hiddenFields: Record<string, string>
@@ -54,6 +56,7 @@ export default async function ModuleDetailPage({
     tenantId = data.tenant.id
     userId = data.user.id
     tier = data.tenant.tier as TenantTier
+    acceso = accesoMarketplace(data.user.id, data.role)
     volver = '/marketplace'
     demoQuery = ''
     hiddenFields = {}
@@ -67,10 +70,13 @@ export default async function ModuleDetailPage({
     tenantId = data.tenant.id
     userId = data.user.id
     tier = data.tenant.tier as TenantTier
+    acceso = accesoMarketplace(data.user.id, data.role)
     demoQuery = `?tenant=${encodeURIComponent(slug)}&rol=${encodeURIComponent(rol)}`
     volver = `/marketplace${demoQuery}`
     hiddenFields = { tenant: slug, rol }
   }
+
+  if (!acceso.ver) notFound()
 
   const [mod, catalog, pendiente, base] = await Promise.all([
     loadModuleDetail(id, tenantId, tier),
@@ -128,7 +134,8 @@ export default async function ModuleDetailPage({
       backHref={volver}
       demoQuery={demoQuery}
       hiddenFields={hiddenFields}
-      pedido={pedido}
+      pedido={acceso.pedir ? pedido : null}
+      puedePedir={acceso.pedir}
       yaPedido={yaPedido}
       necesita={relacion(mod.requires)}
       combina={relacion(mod.recommends)}

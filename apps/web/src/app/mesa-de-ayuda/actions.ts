@@ -39,9 +39,13 @@ export async function crearTicket(fd: FormData): Promise<ActionResult> {
   const horas = SLA_HORAS_POR_PRIORIDAD[priority]
   if (horas === undefined) return { ok: false, error: 'Elige una prioridad valida.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.tickets (tenant_id, customer_id, subject, description, priority, sla_due_at, created_by)
-    values (${ctx.tenantId}, ${customerId}, ${subject}, ${description}, ${priority}, now() + (${horas} || ' hours')::interval, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${customerId}, ${subject}, ${description}, ${priority}, now() + (${horas} || ' hours')::interval, ${ctx.userId})`,
+  )
 
   revalidatePath('/mesa-de-ayuda')
   return { ok: true }
@@ -64,7 +68,8 @@ export async function transicionarTicket(fd: FormData): Promise<ActionResult> {
       select status from public.tickets where id = ${ticketId} and tenant_id = ${ctx.tenantId} for update`
     if (!t) return 'no-existe'
     if (!transicionValidaTicket(t.status, siguiente)) return 'Esa transicion no esta permitida.'
-    if (satisfaction !== null && (satisfaction < 1 || satisfaction > 5)) return 'La satisfaccion debe ser de 1 a 5.'
+    if (satisfaction !== null && (satisfaction < 1 || satisfaction > 5))
+      return 'La satisfaccion debe ser de 1 a 5.'
 
     const resolviendo = siguiente === 'resolved'
     const cerrando = siguiente === 'closed'
@@ -107,9 +112,13 @@ export async function agregarMensaje(fd: FormData): Promise<ActionResult> {
   const body = String(fd.get('body') ?? '').trim()
   if (!body) return { ok: false, error: 'Escribe un mensaje.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.ticket_messages (tenant_id, ticket_id, author_type, body)
-    values (${ctx.tenantId}, ${ticketId}, 'agent', ${body})`)
+    values (${ctx.tenantId}, ${ticketId}, 'agent', ${body})`,
+  )
 
   revalidatePath(`/mesa-de-ayuda/${ticketId}`)
   return { ok: true }

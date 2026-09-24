@@ -49,7 +49,7 @@ export default async function NuevoClientePage() {
         <p className="max-w-prose text-sm text-[var(--color-text-secondary)]">
           En un solo paso queda listo para que su dueño entre y venda: su RNC validado, lo que
           compro con sus dependencias, la empresa que sale en cada comprobante, una sucursal, el
-          almacen de la caja, sus roles y la invitacion al dueño. Si algo falla no se guarda nada, y
+          almacén de la caja, sus roles y la invitación al dueño. Si algo falla no se guarda nada, y
           repetirlo no duplica nada.
         </p>
       </header>

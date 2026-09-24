@@ -69,7 +69,14 @@ async function recalcularEstado(
   invoiceId: string,
 ): Promise<InvoiceStatus> {
   const [t] = await tx<
-    { status: string; due_date: string; total: string; mora: string; cobrado: string; notas: string }[]
+    {
+      status: string
+      due_date: string
+      total: string
+      mora: string
+      cobrado: string
+      notas: string
+    }[]
   >`
     select i.status, i.due_date::text, i.total::text,
            coalesce((select sum(f.amount) from public.invoice_late_fees f
@@ -164,7 +171,8 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
         where o.id = ${orderId} and o.tenant_id = ${ctx.tenantId}
         for update of o`
       if (!order) return { ok: false, error: 'Ese pedido no existe.' }
-      if (order.status === 'draft') return { ok: false, error: 'Confirma el pedido antes de facturar.' }
+      if (order.status === 'draft')
+        return { ok: false, error: 'Confirma el pedido antes de facturar.' }
 
       // Una factura anterior a la 0130 no tiene lineas: cobro el pedido
       // entero y no se sabe que lineas cubrio. Se respeta como estaba.
@@ -357,14 +365,15 @@ export async function reversarCobro(fd: FormData): Promise<ActionResult> {
     const motivo = String(fd.get('reason') ?? '').trim()
     if (!paymentId) return { ok: false, error: 'Faltan datos.' }
     if (motivo.length < 4) {
-      return { ok: false, error: 'Escribe por que se reversa el cobro: queda en la ficha y en la bitacora.' }
+      return {
+        ok: false,
+        error: 'Escribe por que se reversa el cobro: queda en la ficha y en la bitacora.',
+      }
     }
 
     let invoiceId = ''
     const res = await asUser(ctx.userId, ctx.tenantId, async (tx): Promise<ActionResult> => {
-      const [p] = await tx<
-        { invoice_id: string; amount: string; reversed_at: string | null }[]
-      >`
+      const [p] = await tx<{ invoice_id: string; amount: string; reversed_at: string | null }[]>`
         select invoice_id, amount::text, reversed_at::text from public.customer_payments
         where id = ${paymentId} and tenant_id = ${ctx.tenantId} for update`
       if (!p) return { ok: false, error: 'Ese cobro no existe.' }
@@ -451,7 +460,8 @@ export async function aplicarCargoPorMora(fd: FormData): Promise<ActionResult> {
     if (res === 'no-elegible') {
       return {
         ok: false,
-        error: 'Este cliente esta exento de mora, la factura esta anulada, o no tiene dias de atraso.',
+        error:
+          'Este cliente esta exento de mora, la factura esta anulada, o no tiene dias de atraso.',
       }
     }
 
@@ -487,7 +497,8 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
     if (!esMotivoDgii(codigo)) {
       return {
         ok: false,
-        error: 'Elige el motivo que pide la DGII: sin el, la factura no se puede declarar en el 608.',
+        error:
+          'Elige el motivo que pide la DGII: sin el, la factura no se puede declarar en el 608.',
       }
     }
 
@@ -637,7 +648,8 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
         if (lineas.length === 0) {
           return {
             ok: false,
-            error: 'Esta factura no tiene lineas (es anterior a las lineas): usa una rebaja de monto.',
+            error:
+              'Esta factura no tiene lineas (es anterior a las lineas): usa una rebaja de monto.',
           }
         }
 
@@ -816,12 +828,16 @@ export async function guardarPoliticaDeCredito(fd: FormData): Promise<ActionResu
       return { ok: false, error: 'Los dias van de 1 a 365; vacio para no bloquear por vencidas.' }
     }
 
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.ar_credit_policy (tenant_id, overdue_block_days, updated_by, updated_at)
       values (${ctx.tenantId}, ${dias}, ${ctx.userId}, now())
       on conflict (tenant_id) do update
       set overdue_block_days = excluded.overdue_block_days,
-          updated_by = excluded.updated_by, updated_at = now()`)
+          updated_by = excluded.updated_by, updated_at = now()`,
+    )
 
     revalidatePath('/cobrar/cartera')
     revalidatePath('/cobrar')
@@ -876,11 +892,45 @@ export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
 export async function facturarPedidoForm(fd: FormData): Promise<void> {
   const r = await facturarPedido(fd)
   const conExcepcion = r.ok && String(fd.get('creditOverride') ?? '') === '1'
+  // Lo siguiente despues de facturar a credito es entregarle al cliente su
+  // factura con el NCF: el aviso trae el camino para imprimirla. Antes
+  // decia "factura emitida" y habia que buscarla en la lista.
+  const emitida = r.ok ? await facturaRecienEmitida(fd) : null
   await anotarAviso(
     r,
     'facturarPedido',
-    conExcepcion ? 'Facturado con excepcion de credito. Quedo escrita con tu nombre y el motivo.' : 'Listo, factura emitida.',
+    (conExcepcion
+      ? 'Facturado con excepcion de credito. Quedo escrita con tu nombre y el motivo.'
+      : 'Listo, factura emitida.') +
+      (emitida ? ` ${emitida.number}${emitida.ncf ? ` · ${emitida.ncf}` : ''}.` : ''),
+    emitida
+      ? { href: `/cobrar/${emitida.id}/imprimir${emitida.qs}`, texto: 'Imprimir factura' }
+      : undefined,
   )
+}
+
+/** La ultima factura del pedido que se acaba de facturar, para el aviso. */
+async function facturaRecienEmitida(
+  fd: FormData,
+): Promise<{ id: string; number: string; ncf: string | null; qs: string } | null> {
+  const orderId = String(fd.get('orderId') ?? '')
+  const demo = demoDe(fd)
+  const ctx = await actionCtx(demo)
+  if (!ctx || !orderId) return null
+  const [f] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<{ id: string; number: string; ncf: string | null }[]>`
+    select id, number, ncf from public.customer_invoices
+    where tenant_id = ${ctx.tenantId} and source_type = 'sales_order' and source_id = ${orderId}
+    order by created_at desc
+    limit 1`,
+  )
+  if (!f) return null
+  const qs = demo.tenant
+    ? `?tenant=${demo.tenant}&rol=${encodeURIComponent(demo.rol ?? 'Owner')}`
+    : ''
+  return { ...f, qs }
 }
 export async function registrarCobroForm(fd: FormData): Promise<void> {
   await anotarAviso(await registrarCobro(fd), 'registrarCobro')
@@ -896,10 +946,18 @@ export async function anularFacturaForm(fd: FormData): Promise<void> {
   await anotarAviso(await anularFactura(fd), 'anularFactura')
 }
 export async function emitirNotaDeCreditoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await emitirNotaDeCredito(fd), 'emitirNotaDeCredito', 'Nota de credito emitida.')
+  await anotarAviso(
+    await emitirNotaDeCredito(fd),
+    'emitirNotaDeCredito',
+    'Nota de credito emitida.',
+  )
 }
 export async function aplicarCargoPorMoraForm(fd: FormData): Promise<void> {
-  await anotarAviso(await aplicarCargoPorMora(fd), 'aplicarCargoPorMora')
+  await anotarAviso(
+    await aplicarCargoPorMora(fd),
+    'aplicarCargoPorMora',
+    'Cargo por mora aplicado: ya forma parte del saldo de la factura.',
+  )
 }
 export async function guardarPoliticaDeCreditoForm(fd: FormData): Promise<void> {
   await anotarAviso(await guardarPoliticaDeCredito(fd), 'guardarPoliticaDeCredito')

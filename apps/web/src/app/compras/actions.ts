@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import {
+  costoNetoUnitario,
   deriveReceiptStatus,
   documentTotals,
   isValidTaxId,
@@ -223,16 +224,25 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   const lineId = String(fd.get('lineId') ?? '')
   if (!orderId || !lineId) return { ok: false, error: 'Faltan datos.' }
 
-  await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [order] = await tx<{ status: string }[]>`
       select status from public.purchase_orders
       where id = ${orderId} and tenant_id = ${ctx.tenantId}`
-    if (order?.status !== 'draft') return
+    if (!order) return 'no-existe'
+    // Antes salia "Listo, lo eliminamos" aunque la orden ya estuviera
+    // confirmada y la linea siguiera ahi.
+    if (order.status !== 'draft') return 'no-borrador'
     await tx`
       delete from public.purchase_order_lines
-      where id = ${lineId} and tenant_id = ${ctx.tenantId}`
+      where id = ${lineId} and order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
     await recalcular(tx, ctx.tenantId, orderId)
+    return 'ok'
   })
+
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
+  if (resultado === 'no-borrador') {
+    return { ok: false, error: 'Solo se pueden quitar lineas de una orden en borrador.' }
+  }
 
   revalidatePath(`/compras/${orderId}`)
   return { ok: true }
@@ -314,12 +324,21 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
     if (order.status === 'draft') return 'sin-confirmar'
     if (order.status === 'cancelled') return 'cancelada'
 
+    // `order_id` tambien: sin el, una linea de OTRA orden se recibia en el
+    // almacen de esta y avanzaba el estado de la equivocada.
     const [line] = await tx<
-      { product_id: string; qty_ordered: string; qty_received: string; unit_cost: string }[]
+      {
+        product_id: string
+        qty_ordered: string
+        qty_received: string
+        unit_cost: string
+        discount_pct: string
+      }[]
     >`
-      select product_id, qty_ordered::text, qty_received::text, unit_cost::text
+      select product_id, qty_ordered::text, qty_received::text, unit_cost::text,
+             discount_pct::text
       from public.purchase_order_lines
-      where id = ${lineId} and tenant_id = ${ctx.tenantId}`
+      where id = ${lineId} and order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!line) return 'sin-linea'
 
     const estado: PurchaseLineState = {
@@ -333,7 +352,12 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
     // El proveedor puede subir o bajar el precio en la entrega real, y el
     // sistema no lo bloquea: bloquear una recepcion por eso dejaria la
     // mercancia parada en el muelle.
-    const costoRecibido = costoRecibidoRaw === '' ? Number(line.unit_cost) : Number(costoRecibidoRaw)
+    // En blanco = el cotizado MENOS el descuento de la linea: el bruto
+    // inflaba el costo promedio justo por lo que el comprador negocio.
+    const costoRecibido =
+      costoRecibidoRaw === ''
+        ? costoNetoUnitario(Number(line.unit_cost), Number(line.discount_pct))
+        : Number(costoRecibidoRaw.replace(/,/g, ''))
     if (!Number.isFinite(costoRecibido) || costoRecibido < 0) {
       return 'El costo de recepcion no es valido.'
     }
@@ -387,13 +411,17 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
   const orderId = String(fd.get('orderId') ?? '')
   if (!orderId) return { ok: false, error: 'Faltan datos.' }
 
-  await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [order] = await tx<{ status: string }[]>`
       select status from public.purchase_orders
       where id = ${orderId} and tenant_id = ${ctx.tenantId} for update`
     // Lo ya recibido no se revierte, igual que un pedido de venta ya
     // entregado: la mercancia que entro al almacen entro de verdad.
-    if (!order || order.status === 'cancelled') return
+    if (!order) return 'no-existe'
+    if (order.status === 'cancelled') return 'ok'
+    // Recibida completa ya no hay nada que cancelar: marcarla cancelada
+    // escondia de la lista una compra que si entro entera al almacen.
+    if (order.status === 'received') return 'recibida'
 
     await tx`
       update public.purchase_orders
@@ -403,7 +431,13 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
     await tx`
       select public.emit_event('purchase-orders.order.cancelled',
         ${JSON.stringify({ orderId })}::text::jsonb, 'purchase-orders')`
+    return 'ok'
   })
+
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
+  if (resultado === 'recibida') {
+    return { ok: false, error: 'Esa orden ya se recibio completa: no queda nada que cancelar.' }
+  }
 
   revalidatePath(`/compras/${orderId}`)
   revalidatePath('/compras')

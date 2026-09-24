@@ -42,9 +42,13 @@ export async function crearEquipo(fd: FormData): Promise<ActionResult> {
 
   if (!code || !name) return { ok: false, error: 'Ponle codigo y nombre al equipo.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.equipment (tenant_id, code, name, location, maintenance_interval_usage, maintenance_interval_days)
-    values (${ctx.tenantId}, ${code}, ${name}, ${location}, ${intervaloUso}, ${intervaloDias})`)
+    values (${ctx.tenantId}, ${code}, ${name}, ${location}, ${intervaloUso}, ${intervaloDias})`,
+  )
 
   revalidatePath('/mantenimiento/equipos')
   return { ok: true }
@@ -63,10 +67,14 @@ export async function registrarServicio(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'La lectura de uso debe ser un numero valido.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.equipment
     set usage_hours = ${usageAtService}, last_service_at = current_date, last_service_usage = ${usageAtService}, updated_at = now()
-    where id = ${equipmentId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${equipmentId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath(`/mantenimiento/equipos/${equipmentId}`)
   revalidatePath('/mantenimiento/equipos')
@@ -85,7 +93,8 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const description = String(fd.get('description') ?? '').trim()
 
   if (!equipmentId) return { ok: false, error: 'Elige el equipo.' }
-  if (!['preventive', 'corrective'].includes(type)) return { ok: false, error: 'Elige un tipo valido.' }
+  if (!['preventive', 'corrective'].includes(type))
+    return { ok: false, error: 'Elige un tipo valido.' }
   if (!description) return { ok: false, error: 'Describe el problema o el trabajo a hacer.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -160,9 +169,13 @@ export async function agregarParte(fd: FormData): Promise<ActionResult> {
   if (!productId) return { ok: false, error: 'Elige el repuesto.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.work_order_parts (work_order_id, tenant_id, product_id, qty_used)
-    values (${ordenId}, ${ctx.tenantId}, ${productId}, ${qty})`)
+    values (${ordenId}, ${ctx.tenantId}, ${productId}, ${qty})`,
+  )
 
   revalidatePath(`/mantenimiento/ordenes/${ordenId}`)
   return { ok: true }

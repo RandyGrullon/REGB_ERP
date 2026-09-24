@@ -36,9 +36,13 @@ export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
   const ordenId = String(fd.get('ordenId') ?? '')
   if (!ordenId) return { ok: false, error: 'Falta la orden.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.shopfloor_sessions (tenant_id, production_order_id, operator_id)
-    values (${ctx.tenantId}, ${ordenId}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${ordenId}, ${ctx.userId})`,
+  )
 
   revalidatePath(`/piso-de-planta/${ordenId}`)
   return { ok: true }
@@ -53,9 +57,13 @@ export async function marcarSalida(fd: FormData): Promise<ActionResult> {
   const ordenId = String(fd.get('ordenId') ?? '')
   const sesionId = String(fd.get('sesionId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.shopfloor_sessions set clocked_out_at = now()
-    where id = ${sesionId} and tenant_id = ${ctx.tenantId} and clocked_out_at is null`)
+    where id = ${sesionId} and tenant_id = ${ctx.tenantId} and clocked_out_at is null`,
+  )
 
   revalidatePath(`/piso-de-planta/${ordenId}`)
   return { ok: true }
@@ -71,9 +79,13 @@ export async function iniciarParo(fd: FormData): Promise<ActionResult> {
   const reason = String(fd.get('reason') ?? '').trim()
   if (!reason) return { ok: false, error: 'Explica la razon del paro.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.shopfloor_downtime (tenant_id, production_order_id, reason)
-    values (${ctx.tenantId}, ${ordenId}, ${reason})`)
+    values (${ctx.tenantId}, ${ordenId}, ${reason})`,
+  )
 
   revalidatePath(`/piso-de-planta/${ordenId}`)
   return { ok: true }
@@ -88,9 +100,13 @@ export async function terminarParo(fd: FormData): Promise<ActionResult> {
   const ordenId = String(fd.get('ordenId') ?? '')
   const paroId = String(fd.get('paroId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.shopfloor_downtime set ended_at = now()
-    where id = ${paroId} and tenant_id = ${ctx.tenantId} and ended_at is null`)
+    where id = ${paroId} and tenant_id = ${ctx.tenantId} and ended_at is null`,
+  )
 
   revalidatePath(`/piso-de-planta/${ordenId}`)
   return { ok: true }
@@ -105,11 +121,16 @@ export async function fijarCicloIdeal(fd: FormData): Promise<ActionResult> {
 
   const ordenId = String(fd.get('ordenId') ?? '')
   const horas = num(String(fd.get('idealCycleHours') ?? ''))
-  if (horas === null || horas <= 0) return { ok: false, error: 'El ciclo ideal debe ser mayor que cero.' }
+  if (horas === null || horas <= 0)
+    return { ok: false, error: 'El ciclo ideal debe ser mayor que cero.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.production_orders set ideal_cycle_hours = ${horas}, updated_at = now()
-    where id = ${ordenId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${ordenId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath(`/piso-de-planta/${ordenId}`)
   return { ok: true }

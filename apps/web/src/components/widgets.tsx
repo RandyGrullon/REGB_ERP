@@ -40,7 +40,12 @@ export interface DatosWidgets {
   /** ITBIS a pagar del ultimo IT-1 cerrado. null = no hay ninguno cerrado. */
   itbisAPagar: { period: string; monto: number } | null
   /** Ultima corrida de consolidacion y cuanto elimino. */
-  ultimaConsolidacion: { grupo: string; periodo: string; cerrada: boolean; eliminado: number } | null
+  ultimaConsolidacion: {
+    grupo: string
+    periodo: string
+    cerrada: boolean
+    eliminado: number
+  } | null
   ventasHoy: { tickets: number; total: number }
   turnosAbiertos: { warehouse: string; cajero: string; desde: string }[]
   pedidosPendientes: { number: string; customer: string; total: number; estado: string }[]
@@ -317,14 +322,11 @@ export async function cargarDatosWidgets(
       where tenant_id = ${tenantId} and form = 'IT-1' and status <> 'pending'
       order by period desc
       limit 1`
-    vacio.itbisAPagar =
-      v === undefined ? null : { period: v.period, monto: Number(v.amount_due) }
+    vacio.itbisAPagar = v === undefined ? null : { period: v.period, monto: Number(v.amount_due) }
   }
 
   if (pidieron('consolidation-ultima-corrida', 'consolidation-impacto')) {
-    const [v] = await tx<
-      { grupo: string; periodo: string; cerrada: boolean; eliminado: string }[]
-    >`
+    const [v] = await tx<{ grupo: string; periodo: string; cerrada: boolean; eliminado: string }[]>`
       select g.name as grupo,
              to_char(r.period_end, 'MM/YYYY') as periodo,
              (r.status = 'closed') as cerrada,
@@ -416,8 +418,8 @@ export async function cargarDatosWidgets(
             and s.sold_at >= now() - interval '30 days'
           union all
           -- Prorrateado por lo ENTREGADO: line_total es de lo pedido, y en
-          -- un pedido a medias contaria como vendido lo que todavia esta
-          -- en el almacen.
+          -- un pedido a medias contaria como vendido lo que todavía esta
+          -- en el almacén.
           select l.product_id, l.qty_delivered,
                  l.line_total * (l.qty_delivered / nullif(l.qty_ordered, 0))
           from public.sales_order_lines l
@@ -621,14 +623,16 @@ export async function cargarDatosWidgets(
       limit 1`
 
     if (b) {
-      const filas = await tx<{
-        account_id: string
-        month: number
-        budgeted: string
-        total_debit: string
-        total_credit: string
-        type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
-      }[]>`
+      const filas = await tx<
+        {
+          account_id: string
+          month: number
+          budgeted: string
+          total_debit: string
+          total_credit: string
+          type: 'asset' | 'liability' | 'equity' | 'revenue' | 'expense'
+        }[]
+      >`
         with lineas as (
           select account_id, period_month, amount
           from public.budget_lines where budget_id = ${b.id} and tenant_id = ${tenantId}
@@ -649,7 +653,7 @@ export async function cargarDatosWidgets(
                  coalesce(l.amount, 0) as budgeted,
                  coalesce(r.debito, 0) as total_debit,
                  coalesce(r.credito, 0) as total_credit
-          from lineas l
+          from líneas l
           full outer join real r on r.account_id = l.account_id and r.mes = l.period_month
         )
         select c.account_id, c.month, c.budgeted::text, c.total_debit::text, c.total_credit::text, a.type
@@ -704,7 +708,8 @@ export async function cargarDatosWidgets(
       rate: Number(f.rate),
       dias: daysSinceRate(new Date(`${f.rate_date.slice(0, 10)}T12:00:00`), hoy),
     }))
-    vacio.tasaMasVieja = vacio.tasasHoy.length > 0 ? Math.max(...vacio.tasasHoy.map((t) => t.dias)) : null
+    vacio.tasaMasVieja =
+      vacio.tasasHoy.length > 0 ? Math.max(...vacio.tasasHoy.map((t) => t.dias)) : null
   }
 
   if (pidieron('payment-links-pending')) {
@@ -863,7 +868,10 @@ export async function cargarDatosWidgets(
       select status, employer_contribution::text from public.benefit_enrollments
       where tenant_id = ${tenantId}`
     vacio.costoBeneficiosMensual = totalAportePatronal(
-      inscripciones.map((i) => ({ status: i.status, employer_contribution: Number(i.employer_contribution) })),
+      inscripciones.map((i) => ({
+        status: i.status,
+        employer_contribution: Number(i.employer_contribution),
+      })),
     )
   }
 
@@ -922,7 +930,9 @@ export async function cargarDatosWidgets(
   }
 
   if (pidieron('certificates-expiring')) {
-    const filas = await tx<{ employee_name: string; course_title: string; expires_at: string | null }[]>`
+    const filas = await tx<
+      { employee_name: string; course_title: string; expires_at: string | null }[]
+    >`
       select e.first_name || ' ' || e.last_name as employee_name, c.title as course_title,
              cert.expires_at::text
       from public.training_certificates cert
@@ -947,7 +957,9 @@ export async function cargarDatosWidgets(
   }
 
   if (pidieron('suppliers-expiring-docs')) {
-    const filas = await tx<{ supplier_name: string; doc_type: string; expires_at: string | null }[]>`
+    const filas = await tx<
+      { supplier_name: string; doc_type: string; expires_at: string | null }[]
+    >`
       select s.name as supplier_name, d.doc_type, d.expires_at::text
       from public.supplier_documents d
       join public.suppliers s on s.id = d.supplier_id
@@ -961,14 +973,16 @@ export async function cargarDatosWidgets(
   }
 
   if (pidieron('active-price-lists')) {
-    const filas = await tx<{
-      id: string
-      scope: string
-      channel: string | null
-      start_date: string
-      end_date: string | null
-      status: string
-    }[]>`
+    const filas = await tx<
+      {
+        id: string
+        scope: string
+        channel: string | null
+        start_date: string
+        end_date: string | null
+        status: string
+      }[]
+    >`
       select id, scope, channel, start_date::text, end_date::text, status
       from public.price_lists where tenant_id = ${tenantId}`
     const hoy = new Date()
@@ -1101,7 +1115,9 @@ export async function cargarDatosWidgets(
     vacio.equiposMantenimientoVencido = equipos.filter((e) => {
       const fechaLimite =
         e.maintenance_interval_days && e.last_service_at
-          ? new Date(new Date(e.last_service_at).getTime() + e.maintenance_interval_days * 86_400_000)
+          ? new Date(
+              new Date(e.last_service_at).getTime() + e.maintenance_interval_days * 86_400_000,
+            )
           : null
       return equipoRequiereMantenimiento(
         Number(e.usage_hours),
@@ -1305,7 +1321,7 @@ function Fila({
   tono?: 'danger' | 'warning'
 }) {
   return (
-    <li className="flex items-baseline justify-between gap-2 border-b border-[var(--color-border-subtle)] py-1.5 last:border-0">
+    <li className="flex items-baseline justify-between gap-2 border-b border-[var(--color-border)] py-1.5 last:border-0">
       <span className="min-w-0 flex-1 truncate text-xs text-[var(--color-text-primary)]">
         {izq}
         {sub && <span className="ml-1.5 text-[var(--color-text-muted)]">{sub}</span>}
@@ -1335,7 +1351,7 @@ const WIDGETS: Record<
     icono: 'inventory_2',
     render: (d) =>
       d.stockBajo.length === 0 ? (
-        <Vacio>Nada por reponer. Asi debe verse.</Vacio>
+        <Vacio>Nada por reponer. Así debe verse.</Vacio>
       ) : (
         <ul>
           {d.stockBajo.map((p) => (
@@ -1428,7 +1444,7 @@ const WIDGETS: Record<
   },
 
   'backorder-list': {
-    titulo: 'Lineas en backorder',
+    titulo: 'Líneas en backorder',
     icono: 'pending_actions',
     render: (d) => (
       <p className="py-2">
@@ -1472,7 +1488,7 @@ const WIDGETS: Record<
   },
 
   'aging-summary': {
-    titulo: 'Antiguedad de cartera',
+    titulo: 'Antigüedad de cartera',
     icono: 'monitoring',
     render: (d, qs) => (
       <div className="py-2">
@@ -1492,12 +1508,12 @@ const WIDGETS: Record<
   },
 
   'catalog-completeness': {
-    titulo: 'Catalogo por completar',
+    titulo: 'Catálogo por completar',
     icono: 'fact_check',
     render: (d) => {
       const pendiente = d.catalogoIncompleto.sinPrecio + d.catalogoIncompleto.sinCategoria
       return pendiente === 0 ? (
-        <Vacio>Catalogo completo.</Vacio>
+        <Vacio>Catálogo completo.</Vacio>
       ) : (
         <ul>
           {d.catalogoIncompleto.sinPrecio > 0 && (
@@ -1538,11 +1554,11 @@ const WIDGETS: Record<
   },
 
   'po-top-suppliers': {
-    titulo: 'Mejores proveedores (90 dias)',
+    titulo: 'Mejores proveedores (90 días)',
     icono: 'groups',
     render: (d) =>
       d.mejoresProveedores.length === 0 ? (
-        <Vacio>Sin compras confirmadas en los ultimos 90 dias.</Vacio>
+        <Vacio>Sin compras confirmadas en los últimos 90 días.</Vacio>
       ) : (
         <ul>
           {d.mejoresProveedores.map((p) => (
@@ -1604,7 +1620,7 @@ const WIDGETS: Record<
     icono: 'account_balance',
     render: (d) =>
       d.efectivoEnBancos.cuentas === 0 ? (
-        <Vacio>Todavia no hay cuentas bancarias registradas.</Vacio>
+        <Vacio>Todavía no hay cuentas bancarias registradas.</Vacio>
       ) : (
         <p className="py-2">
           <span
@@ -1650,7 +1666,7 @@ const WIDGETS: Record<
   },
 
   'pending-reconciliation': {
-    titulo: 'Conciliacion pendiente',
+    titulo: 'Conciliación pendiente',
     icono: 'compare_arrows',
     render: (d) =>
       d.conciliacionPendiente.length === 0 ? (
@@ -1658,18 +1674,24 @@ const WIDGETS: Record<
       ) : (
         <ul>
           {d.conciliacionPendiente.map((c, i) => (
-            <Fila key={i} izq={c.cuenta} sub={`${c.pendientes} linea(s)`} der={money(c.monto)} tono="warning" />
+            <Fila
+              key={i}
+              izq={c.cuenta}
+              sub={`${c.pendientes} línea(s)`}
+              der={money(c.monto)}
+              tono="warning"
+            />
           ))}
         </ul>
       ),
   },
 
   'last-import-status': {
-    titulo: 'Ultimo estado importado',
+    titulo: 'Último estado importado',
     icono: 'history',
     render: (d) =>
       d.ultimoImport === null ? (
-        <Vacio>Todavia no se ha importado ningun estado de cuenta.</Vacio>
+        <Vacio>Todavía no se ha importado ningún estado de cuenta.</Vacio>
       ) : (
         <p className="py-2">
           <span
@@ -1704,7 +1726,7 @@ const WIDGETS: Record<
   },
 
   'fixed-assets-due-this-month': {
-    titulo: 'Depreciacion pendiente este mes',
+    titulo: 'Depreciación pendiente este mes',
     icono: 'event_repeat',
     render: (d) =>
       d.activosPorDepreciarEsteMes === 0 ? (
@@ -1726,7 +1748,7 @@ const WIDGETS: Record<
     icono: 'warning',
     render: (d) =>
       d.presupuestoAlertas === 0 ? (
-        <Vacio>Nada en alerta este ano.</Vacio>
+        <Vacio>Nada en alerta este año.</Vacio>
       ) : (
         <p className="py-2">
           <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-warning)]">
@@ -1740,27 +1762,30 @@ const WIDGETS: Record<
   },
 
   'budget-ytd-variance': {
-    titulo: 'Presupuesto del ano hasta hoy',
+    titulo: 'Presupuesto del año hasta hoy',
     icono: 'savings',
     render: (d) => (
       <p className="py-2">
         <span className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
           {money(d.presupuestoYtd.real)}
         </span>
-        <span className="text-xs text-[var(--color-text-muted)]"> de {money(d.presupuestoYtd.presupuestado)}</span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">real contra presupuestado</span>
+        <span className="text-xs text-[var(--color-text-muted)]">
+          {' '}
+          de {money(d.presupuestoYtd.presupuestado)}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          real contra presupuestado
+        </span>
       </p>
     ),
   },
 
   'taxes-next-due': {
-    titulo: 'Proximo vencimiento DGII',
+    titulo: 'Próximo vencimiento DGII',
     icono: 'event_upcoming',
     render: (d) =>
       d.proximoVencimiento === null ? (
-        <p className="py-2 text-sm text-[var(--color-text-muted)]">
-          Nada pendiente de presentar.
-        </p>
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">Nada pendiente de presentar.</p>
       ) : (
         <p className="py-2">
           <span className="text-2xl font-semibold text-[var(--color-text-primary)]">
@@ -1782,10 +1807,10 @@ const WIDGETS: Record<
             }
           >
             {d.proximoVencimiento.dias < 0
-              ? `Vencio hace ${Math.abs(d.proximoVencimiento.dias)} dia(s)`
+              ? `Venció hace ${Math.abs(d.proximoVencimiento.dias)} día(s)`
               : d.proximoVencimiento.dias === 0
                 ? 'Vence hoy'
-                : `Vence en ${d.proximoVencimiento.dias} dia(s)`}
+                : `Vence en ${d.proximoVencimiento.dias} día(s)`}
           </span>
         </p>
       ),
@@ -1797,7 +1822,7 @@ const WIDGETS: Record<
     render: (d) =>
       d.itbisAPagar === null ? (
         <p className="py-2 text-sm text-[var(--color-text-muted)]">
-          Todavia no has cerrado ningun IT-1.
+          Todavía no has cerrado ningún IT-1.
         </p>
       ) : (
         <p className="py-2">
@@ -1812,12 +1837,12 @@ const WIDGETS: Record<
   },
 
   'consolidation-ultima-corrida': {
-    titulo: 'Ultima consolidacion',
+    titulo: 'Última consolidación',
     icono: 'account_tree',
     render: (d) =>
       d.ultimaConsolidacion === null ? (
         <p className="py-2 text-sm text-[var(--color-text-muted)]">
-          Todavia no has corrido ninguna consolidacion.
+          Todavía no has corrido ninguna consolidación.
         </p>
       ) : (
         <p className="py-2">
@@ -1837,7 +1862,7 @@ const WIDGETS: Record<
     icono: 'filter_alt_off',
     render: (d) =>
       d.ultimaConsolidacion === null ? (
-        <p className="py-2 text-sm text-[var(--color-text-muted)]">Sin corridas todavia.</p>
+        <p className="py-2 text-sm text-[var(--color-text-muted)]">Sin corridas todavía.</p>
       ) : (
         <p className="py-2">
           <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
@@ -1856,11 +1881,11 @@ const WIDGETS: Record<
   },
 
   'cost-center-top': {
-    titulo: 'Centros con mas gasto',
+    titulo: 'Centros con más gasto',
     icono: 'call_split',
     render: (d) =>
       d.centrosTop.length === 0 ? (
-        <Vacio>Nada asignado todavia.</Vacio>
+        <Vacio>Nada asignado todavía.</Vacio>
       ) : (
         <ul>
           {d.centrosTop.map((c, i) => (
@@ -1886,11 +1911,11 @@ const WIDGETS: Record<
   },
 
   'exchange-rate-today': {
-    titulo: 'Ultimas tasas capturadas',
+    titulo: 'Últimas tasas capturadas',
     icono: 'currency_exchange',
     render: (d) =>
       d.tasasHoy.length === 0 ? (
-        <Vacio>Ninguna tasa capturada todavia.</Vacio>
+        <Vacio>Ninguna tasa capturada todavía.</Vacio>
       ) : (
         <ul>
           {d.tasasHoy.map((t, i) => (
@@ -1901,7 +1926,7 @@ const WIDGETS: Record<
   },
 
   'rate-staleness': {
-    titulo: 'Tasa mas atrasada',
+    titulo: 'Tasa más atrasada',
     icono: 'schedule',
     render: (d) =>
       d.tasaMasVieja === null ? (
@@ -1918,7 +1943,7 @@ const WIDGETS: Record<
             {d.tasaMasVieja} dias
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            desde la captura mas atrasada
+            desde la captura más atrasada
           </span>
         </p>
       ),
@@ -1944,7 +1969,7 @@ const WIDGETS: Record<
     icono: 'event_repeat',
     render: (d) =>
       d.recurrentesVencidos === 0 ? (
-        <Vacio>Nada vencido todavia.</Vacio>
+        <Vacio>Nada vencido todavía.</Vacio>
       ) : (
         <p className="py-2">
           <span className="tabular text-2xl font-semibold text-[var(--color-semantic-text-warning)]">
@@ -1957,7 +1982,7 @@ const WIDGETS: Record<
       ),
   },
 
-  'headcount': {
+  headcount: {
     titulo: 'Empleados activos',
     icono: 'badge',
     render: (d) => (
@@ -1965,7 +1990,7 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           {d.headcount}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">en nomina hoy</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">en nómina hoy</span>
       </p>
     ),
   },
@@ -1975,7 +2000,7 @@ const WIDGETS: Record<
     icono: 'person_add',
     render: (d) =>
       d.nuevosIngresos.length === 0 ? (
-        <Vacio>Nadie nuevo en los ultimos 30 dias.</Vacio>
+        <Vacio>Nadie nuevo en los últimos 30 días.</Vacio>
       ) : (
         <ul>
           {d.nuevosIngresos.map((n, i) => (
@@ -1986,11 +2011,11 @@ const WIDGETS: Record<
   },
 
   'payroll-next-run': {
-    titulo: 'Proximo periodo de nomina',
+    titulo: 'Próximo período de nómina',
     icono: 'event',
     render: (d) =>
       d.proximaNomina === null ? (
-        <Vacio>Nada en borrador todavia.</Vacio>
+        <Vacio>Nada en borrador todavía.</Vacio>
       ) : (
         <p className="py-2">
           <span
@@ -2010,14 +2035,16 @@ const WIDGETS: Record<
   },
 
   'payroll-cost': {
-    titulo: 'Costo de nomina este mes',
+    titulo: 'Costo de nómina este mes',
     icono: 'group',
     render: (d) => (
       <p className="py-2">
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           RD$ {money(d.costoNominaMesActual)}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">neto pagado este mes</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          neto pagado este mes
+        </span>
       </p>
     ),
   },
@@ -2030,7 +2057,9 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           {d.marcajesHoy}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">entradas y salidas hoy</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          entradas y salidas hoy
+        </span>
       </p>
     ),
   },
@@ -2065,7 +2094,7 @@ const WIDGETS: Record<
           {d.solicitudesPendientes}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.solicitudesPendientes === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+          {d.solicitudesPendientes === 0 ? 'nada pendiente' : 'esperando aprobación'}
         </span>
       </p>
     ),
@@ -2101,7 +2130,7 @@ const WIDGETS: Record<
           {d.gastosPorAprobar}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.gastosPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+          {d.gastosPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobación'}
         </span>
       </p>
     ),
@@ -2116,7 +2145,7 @@ const WIDGETS: Record<
           RD$ {money(d.gastosPorReembolsar)}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          aprobado, todavia sin pagar
+          aprobado, todavía sin pagar
         </span>
       </p>
     ),
@@ -2127,7 +2156,7 @@ const WIDGETS: Record<
     icono: 'campaign',
     render: (d) =>
       d.anunciosRecientes.length === 0 ? (
-        <Vacio>Todavia no hay ningun anuncio.</Vacio>
+        <Vacio>Todavía no hay ningún anuncio.</Vacio>
       ) : (
         <ul>
           {d.anunciosRecientes.map((a, i) => (
@@ -2138,14 +2167,16 @@ const WIDGETS: Record<
   },
 
   'loans-outstanding': {
-    titulo: 'Prestamos pendientes',
+    titulo: 'Préstamos pendientes',
     icono: 'volunteer_activism',
     render: (d) => (
       <p className="py-2">
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           RD$ {money(d.prestamosPendientes)}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">saldo activo total</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          saldo activo total
+        </span>
       </p>
     ),
   },
@@ -2158,7 +2189,9 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           RD$ {money(d.costoBeneficiosMensual)}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">aporte patronal mensual</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          aporte patronal mensual
+        </span>
       </p>
     ),
   },
@@ -2198,7 +2231,7 @@ const WIDGETS: Record<
     icono: 'trending_up',
     render: (d) =>
       d.objetivosConProgreso.length === 0 ? (
-        <Vacio>Ningun objetivo activo todavia.</Vacio>
+        <Vacio>Ningún objetivo activo todavía.</Vacio>
       ) : (
         <ul>
           {d.objetivosConProgreso.map((o, i) => (
@@ -2237,7 +2270,9 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           {d.inscripcionesEnCurso}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">sin nota registrada todavia</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          sin nota registrada todavía
+        </span>
       </p>
     ),
   },
@@ -2247,7 +2282,7 @@ const WIDGETS: Record<
     icono: 'workspace_premium',
     render: (d) =>
       d.certificadosPorVencer.length === 0 ? (
-        <Vacio>Ningun certificado vence en los proximos 30 dias.</Vacio>
+        <Vacio>Ningún certificado vence en los próximos 30 días.</Vacio>
       ) : (
         <ul>
           {d.certificadosPorVencer.map((c, i) => (
@@ -2283,11 +2318,16 @@ const WIDGETS: Record<
     icono: 'description',
     render: (d) =>
       d.documentosProveedorPorVencer.length === 0 ? (
-        <Vacio>Ningun documento vence en los proximos 30 dias.</Vacio>
+        <Vacio>Ningún documento vence en los próximos 30 días.</Vacio>
       ) : (
         <ul>
           {d.documentosProveedorPorVencer.map((doc, i) => (
-            <Fila key={i} izq={doc.name} der={fechaCortaUTC(doc.vence.slice(0, 10))} tono="warning" />
+            <Fila
+              key={i}
+              izq={doc.name}
+              der={fechaCortaUTC(doc.vence.slice(0, 10))}
+              tono="warning"
+            />
           ))}
         </ul>
       ),
@@ -2321,7 +2361,7 @@ const WIDGETS: Record<
           {d.requisicionesPendientes}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.requisicionesPendientes === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+          {d.requisicionesPendientes === 0 ? 'nada pendiente' : 'esperando aprobación'}
         </span>
       </p>
     ),
@@ -2332,8 +2372,12 @@ const WIDGETS: Record<
     icono: 'compare_arrows',
     render: (d) => (
       <p className="py-2">
-        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">{d.rfqsAbiertos}</span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">esperando cotizaciones</span>
+        <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
+          {d.rfqsAbiertos}
+        </span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          esperando cotizaciones
+        </span>
       </p>
     ),
   },
@@ -2362,14 +2406,14 @@ const WIDGETS: Record<
           {d.lotesPorVencer}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.lotesPorVencer === 0 ? 'nada por vencer en 30 dias' : 'vencen en 30 dias o menos'}
+          {d.lotesPorVencer === 0 ? 'nada por vencer en 30 días' : 'vencen en 30 días o menos'}
         </span>
       </p>
     ),
   },
 
   'transfers-in-transit': {
-    titulo: 'Transferencias en transito',
+    titulo: 'Transferencias en tránsito',
     icono: 'local_shipping',
     render: (d) => (
       <p className="py-2">
@@ -2377,14 +2421,14 @@ const WIDGETS: Record<
           {d.transferenciasEnTransito}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.transferenciasEnTransito === 0 ? 'nada en camino' : 'esperando confirmar recepcion'}
+          {d.transferenciasEnTransito === 0 ? 'nada en camino' : 'esperando confirmar recepción'}
         </span>
       </p>
     ),
   },
 
   'cycle-counts-pending-approval': {
-    titulo: 'Conteos esperando aprobacion',
+    titulo: 'Conteos esperando aprobación',
     icono: 'checklist',
     render: (d) => (
       <p className="py-2">
@@ -2392,14 +2436,16 @@ const WIDGETS: Record<
           {d.conteosEsperandoAprobacion}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.conteosEsperandoAprobacion === 0 ? 'nada pendiente' : 'esperando revisar la diferencia'}
+          {d.conteosEsperandoAprobacion === 0
+            ? 'nada pendiente'
+            : 'esperando revisar la diferencia'}
         </span>
       </p>
     ),
   },
 
   'products-without-barcode': {
-    titulo: 'Productos sin codigo de barras',
+    titulo: 'Productos sin código de barras',
     icono: 'qr_code_scanner',
     render: (d) => (
       <p className="py-2">
@@ -2407,14 +2453,14 @@ const WIDGETS: Record<
           {d.productosSinCodigoBarras}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.productosSinCodigoBarras === 0 ? 'todos tienen codigo' : 'listos para generar'}
+          {d.productosSinCodigoBarras === 0 ? 'todos tienen código' : 'listos para generar'}
         </span>
       </p>
     ),
   },
 
   'fleet-maintenance-due': {
-    titulo: 'Vehiculos con mantenimiento vencido',
+    titulo: 'Vehículos con mantenimiento vencido',
     icono: 'local_shipping',
     render: (d) => (
       <p className="py-2">
@@ -2422,7 +2468,7 @@ const WIDGETS: Record<
           {d.vehiculosMantenimientoVencido}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.vehiculosMantenimientoVencido === 0 ? 'todo al dia' : 'ya alcanzaron el kilometraje'}
+          {d.vehiculosMantenimientoVencido === 0 ? 'todo al día' : 'ya alcanzaron el kilometraje'}
         </span>
       </p>
     ),
@@ -2457,7 +2503,7 @@ const WIDGETS: Record<
   },
 
   'production-orders-in-progress': {
-    titulo: 'Ordenes de produccion en progreso',
+    titulo: 'Órdenes de producción en progreso',
     icono: 'precision_manufacturing',
     render: (d) => (
       <p className="py-2">
@@ -2510,7 +2556,7 @@ const WIDGETS: Record<
           {d.equiposMantenimientoVencido}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.equiposMantenimientoVencido === 0 ? 'todo al dia' : 'por uso o por fecha'}
+          {d.equiposMantenimientoVencido === 0 ? 'todo al día' : 'por uso o por fecha'}
         </span>
       </p>
     ),
@@ -2554,13 +2600,15 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           RD$ {d.forecastPonderadoPipeline.toLocaleString('es-DO', { maximumFractionDigits: 0 })}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">monto x probabilidad</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+          monto x probabilidad
+        </span>
       </p>
     ),
   },
 
   'quotes-pending-approval': {
-    titulo: 'Cotizaciones esperando aprobacion',
+    titulo: 'Cotizaciones esperando aprobación',
     icono: 'description',
     render: (d) => (
       <p className="py-2">
@@ -2590,7 +2638,7 @@ const WIDGETS: Record<
   },
 
   'contracts-expiring-soon': {
-    titulo: 'Contratos que vencen en 30 dias',
+    titulo: 'Contratos que vencen en 30 días',
     icono: 'assignment',
     render: (d) => (
       <p className="py-2">
@@ -2613,7 +2661,7 @@ const WIDGETS: Record<
           {d.comisionesPendientesAprobar}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.comisionesPendientesAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+          {d.comisionesPendientesAprobar === 0 ? 'nada pendiente' : 'esperando aprobación'}
         </span>
       </p>
     ),
@@ -2628,7 +2676,7 @@ const WIDGETS: Record<
           {d.portalInvitesActivas}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.portalInvitesActivas === 0 ? 'ninguna todavia' : 'clientes con acceso'}
+          {d.portalInvitesActivas === 0 ? 'ninguna todavía' : 'clientes con acceso'}
         </span>
       </p>
     ),
@@ -2658,14 +2706,14 @@ const WIDGETS: Record<
           {d.cuponesActivos}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.cuponesActivos === 0 ? 'ninguno todavia' : 'listos para redimir'}
+          {d.cuponesActivos === 0 ? 'ninguno todavía' : 'listos para redimir'}
         </span>
       </p>
     ),
   },
 
   'marketing-campaigns-in-progress': {
-    titulo: 'Campanas en curso',
+    titulo: 'Campañas en curso',
     icono: 'campaign',
     render: (d) => (
       <p className="py-2">
@@ -2703,14 +2751,14 @@ const WIDGETS: Record<
           {d.exportsProgramadosVencidos}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.exportsProgramadosVencidos === 0 ? 'todos al dia' : 'listos para ejecutar'}
+          {d.exportsProgramadosVencidos === 0 ? 'todos al día' : 'listos para ejecutar'}
         </span>
       </p>
     ),
   },
 
   'automations-active-rules': {
-    titulo: 'Reglas de automatizacion activas',
+    titulo: 'Reglas de automatización activas',
     icono: 'bolt',
     render: (d) => (
       <p className="py-2">
@@ -2718,14 +2766,14 @@ const WIDGETS: Record<
           {d.reglasAutomatizacionActivas}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.reglasAutomatizacionActivas === 0 ? 'ninguna todavia' : 'escuchando eventos'}
+          {d.reglasAutomatizacionActivas === 0 ? 'ninguna todavía' : 'escuchando eventos'}
         </span>
       </p>
     ),
   },
 
   'api-webhooks-failed-deliveries': {
-    titulo: 'Entregas de webhook fallidas (7 dias)',
+    titulo: 'Entregas de webhook fallidas (7 días)',
     icono: 'webhook',
     render: (d) => (
       <p className="py-2">
@@ -2740,7 +2788,7 @@ const WIDGETS: Record<
   },
 
   'chat-mentions-pending': {
-    titulo: 'Menciones en las ultimas 24h',
+    titulo: 'Menciones en las últimas 24h',
     icono: 'chat',
     render: (d) => (
       <p className="py-2">
@@ -2763,7 +2811,7 @@ const WIDGETS: Record<
           {d.hitosProyectoVencidos}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.hitosProyectoVencidos === 0 ? 'todos al dia' : 'revisar proyectos'}
+          {d.hitosProyectoVencidos === 0 ? 'todos al día' : 'revisar proyectos'}
         </span>
       </p>
     ),
@@ -2778,7 +2826,7 @@ const WIDGETS: Record<
           {d.registrosTiempoPorAprobar}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.registrosTiempoPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobacion'}
+          {d.registrosTiempoPorAprobar === 0 ? 'nada pendiente' : 'esperando aprobación'}
         </span>
       </p>
     ),
@@ -2815,7 +2863,7 @@ const WIDGETS: Record<
   },
 
   'field-service-open': {
-    titulo: 'Ordenes de servicio abiertas',
+    titulo: 'Órdenes de servicio abiertas',
     icono: 'handyman',
     render: (d) => (
       <p className="py-2">
@@ -2861,7 +2909,7 @@ const WIDGETS: Record<
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
           {d.asientosBorrador === 0
             ? 'todo lo capturado ya se contabilizo'
-            : 'en borrador, sin afectar la balanza todavia'}
+            : 'en borrador, sin afectar la balanza todavía'}
         </span>
       </p>
     ),
@@ -2875,17 +2923,17 @@ const WIDGETS: Record<
         <span className="tabular text-2xl font-semibold text-[var(--color-text-primary)]">
           {d.asientosDelMes}
         </span>
-        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">desde el dia 1</span>
+        <span className="mt-1 block text-xs text-[var(--color-text-muted)]">desde el día 1</span>
       </p>
     ),
   },
 
   'top-products': {
-    titulo: 'Mas vendidos (30 dias)',
+    titulo: 'Más vendidos (30 días)',
     icono: 'trending_up',
     render: (d) =>
       d.masVendidos.length === 0 ? (
-        <Vacio>Todavia no hay ventas en los ultimos 30 dias.</Vacio>
+        <Vacio>Todavía no hay ventas en los últimos 30 días.</Vacio>
       ) : (
         <ul>
           {d.masVendidos.map((p) => (
@@ -2896,7 +2944,7 @@ const WIDGETS: Record<
   },
 
   'top-customers': {
-    titulo: 'Mejores clientes (90 dias)',
+    titulo: 'Mejores clientes (90 días)',
     icono: 'groups',
     render: (d) =>
       d.mejoresClientes.length === 0 ? (
@@ -2914,6 +2962,35 @@ const WIDGETS: Record<
         </ul>
       ),
   },
+}
+
+/**
+ * Lo que el dueño mira primero al abrir: el dinero de hoy y lo que vence.
+ * Sin esto el inicio salia en el orden de dependencias de los modulos, y en
+ * un colmado "Vendido hoy en caja" quedaba debajo de "Mas vendidos".
+ */
+const PRIMERO = [
+  'sales-today',
+  'overdue-receivables',
+  'cash-position',
+  'overdue-payables',
+  'due-this-week',
+  'taxes-next-due',
+  'stock-alerts',
+  'open-shifts',
+  'pending-orders',
+]
+
+/** Primero las claves de `PRIMERO`; el resto, en el orden en que llegaron. */
+export function ordenarWidgets(claves: string[]): string[] {
+  const pos = (k: string) => {
+    const i = PRIMERO.indexOf(k)
+    return i === -1 ? PRIMERO.length : i
+  }
+  return claves
+    .map((k, i) => ({ k, i }))
+    .sort((a, b) => pos(a.k) - pos(b.k) || a.i - b.i)
+    .map((x) => x.k)
 }
 
 /** Dibuja una clave de widget. Clave desconocida = aviso, nunca una caida. */

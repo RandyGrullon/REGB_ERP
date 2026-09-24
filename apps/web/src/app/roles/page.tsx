@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { checkAccess } from '@regb/sdk'
 import { can } from '@regb/permissions'
 import { bootstrap, listTenants } from '@/lib/bootstrap'
@@ -29,6 +29,7 @@ export default async function RolesPage({
   let tenantName: string
   let backHref: string
   let canEdit: boolean
+  let puedeVer: boolean
   let demo: { tenantSlug: string; roleName: string } | undefined
 
   if (authConfigured) {
@@ -46,6 +47,13 @@ export default async function RolesPage({
       { module: 'rbac' },
       { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
     ).allowed
+    puedeVer =
+      canEdit ||
+      can(
+        'rbac.role.view',
+        { module: 'rbac' },
+        { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
+      ).allowed
   } else {
     const tenants = await listTenants()
     if (tenants.length === 0) redirect('/')
@@ -63,7 +71,19 @@ export default async function RolesPage({
       { module: 'rbac' },
       { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
     ).allowed
+    puedeVer =
+      canEdit ||
+      can(
+        'rbac.role.view',
+        { module: 'rbac' },
+        { userId: data.user.id, role: data.role, activeModules: data.hydration.licensedModules },
+      ).allowed
   }
+
+  // Ver los roles es ver que puede hacer cada persona del negocio: no es
+  // para cualquiera. Antes un cajero que tecleara /roles lo veia todo; el
+  // enlace del menu ya no se le muestra, y la pantalla tampoco se le abre.
+  if (!puedeVer) notFound()
 
   const [roles, modules] = await Promise.all([
     loadRoles(userId, tenantId),

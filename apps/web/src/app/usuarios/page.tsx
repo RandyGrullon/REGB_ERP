@@ -83,8 +83,8 @@ export default async function UsuariosPage({
       join public.roles r on r.id = ms.role_id
       where p.tenant_id = ${ctx.tenantId}
       order by p.display_name`
-    const r = await tx<{ id: string; name: string }[]>`
-      select id, name from public.roles
+    const r = await tx<{ id: string; name: string; visible_modules: string[] }[]>`
+      select id, name, visible_modules from public.roles
       where tenant_id = ${ctx.tenantId} order by name`
     // Columnas nombradas: `token_hash` no tiene grant para authenticated.
     const i = await tx<InvitacionRow[]>`
@@ -102,6 +102,14 @@ export default async function UsuariosPage({
   const tenantDemo = ctx.demoQs ? ctx.tenantSlug : ''
   const rolDemo = ctx.demoQs ? ctx.roleName : ''
 
+  // Para invitar, solo los roles que verian algo en ESTE negocio. Un
+  // colmado con caja e inventario no tiene por que elegir entre "RRHH",
+  // "Tecnico de Campo" o "Cliente Externo": roles de modulos que no tiene.
+  const activos = new Set(shell.data.activeModules)
+  const rolesParaInvitar = roles
+    .filter((r) => r.visible_modules.includes('*') || r.visible_modules.some((m) => activos.has(m)))
+    .map(({ id, name }) => ({ id, name }))
+
   return (
     <Shell {...shell} activePath="/usuarios">
       <div className="space-y-6">
@@ -110,7 +118,7 @@ export default async function UsuariosPage({
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             {members.length} en el equipo · {members.filter((m) => m.is_active).length} con acceso
             activo · {invitaciones.length}{' '}
-            {invitaciones.length === 1 ? 'invitacion pendiente' : 'invitaciones pendientes'}
+            {invitaciones.length === 1 ? 'invitación pendiente' : 'invitaciones pendientes'}
           </p>
         </div>
 
@@ -248,7 +256,7 @@ export default async function UsuariosPage({
                           <input type="hidden" name="rol" value={rolDemo} />
                           <input type="hidden" name="invitationId" value={inv.id} />
                           <BotonEnvio
-                            aria-label={`Revocar la invitacion de ${inv.display_name}`}
+                            aria-label={`Revocar la invitación de ${inv.display_name}`}
                             className={BOTON_FILA}
                           >
                             Revocar
@@ -272,7 +280,7 @@ export default async function UsuariosPage({
               <InvitarForm
                 tenant={tenantDemo}
                 rol={rolDemo}
-                roles={roles}
+                roles={rolesParaInvitar}
                 modoDemo={!authConfigured}
               />
             </CardBody>

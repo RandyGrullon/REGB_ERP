@@ -81,9 +81,13 @@ export default async function PortalClientePage({
   return (
     <main className="mx-auto max-w-3xl space-y-5 p-6">
       <header className="space-y-1">
-        <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{invite.tenant_name}</p>
-        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">Hola, {invite.customer_name}</h1>
-        <p className="text-sm text-[var(--color-text-muted)]">Aqui puedes ver tus facturas.</p>
+        <p className="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+          {invite.tenant_name}
+        </p>
+        <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
+          Hola, {invite.customer_name}
+        </h1>
+        <p className="text-sm text-[var(--color-text-muted)]">Aquí puedes ver tus facturas.</p>
       </header>
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3">
@@ -100,7 +104,11 @@ export default async function PortalClientePage({
         </CardHeader>
         <CardBody>
           {facturas.length === 0 ? (
-            <EmptyState icon="receipt_long" title="Todavia no tienes facturas" description="Cuando te facturen, apareceran aqui." />
+            <EmptyState
+              icon="receipt_long"
+              title="Todavia no tienes facturas"
+              description="Cuando te facturen, apareceran aqui."
+            />
           ) : (
             <ul className="divide-y divide-[var(--color-border)]">
               {facturas.map((f) => (
@@ -115,9 +123,14 @@ export default async function PortalClientePage({
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-sm tabular-nums text-[var(--color-text-primary)]">
-                      {Number(f.total).toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
+                      {Number(f.total).toLocaleString('es-DO', {
+                        style: 'currency',
+                        currency: 'DOP',
+                      })}
                     </span>
-                    <Badge tone={badgeFactura(f.status)}>{ETIQUETA_FACTURA[f.status] ?? f.status}</Badge>
+                    <Badge tone={badgeFactura(f.status)}>
+                      {ETIQUETA_FACTURA[f.status] ?? f.status}
+                    </Badge>
                   </div>
                 </li>
               ))}

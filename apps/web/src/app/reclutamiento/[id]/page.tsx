@@ -134,7 +134,10 @@ export default async function VacanteDetallePage({
           icon="work"
           title={vacante.title}
           description={vacante.description ?? vacante.department ?? ''}
-          crumbs={[{ label: 'Reclutamiento', href: `/reclutamiento${qs}` }, { label: vacante.title }]}
+          crumbs={[
+            { label: 'Reclutamiento', href: `/reclutamiento${qs}` },
+            { label: vacante.title },
+          ]}
           actions={
             puedeVacante ? (
               <form action={cambiarEstadoVacanteForm} className="flex items-center gap-2">
@@ -148,9 +151,7 @@ export default async function VacanteDetallePage({
                     </option>
                   ))}
                 </select>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
                   Guardar
                 </BotonEnvio>
@@ -162,7 +163,11 @@ export default async function VacanteDetallePage({
         />
 
         {aplicaciones.length === 0 ? (
-          <EmptyState icon="groups" title="Todavia no hay ningun candidato aplicado" description="" />
+          <EmptyState
+            icon="groups"
+            title="Todavia no hay ningun candidato aplicado"
+            description=""
+          />
         ) : (
           <div className="space-y-3">
             {aplicaciones.map((a) => {
@@ -173,25 +178,31 @@ export default async function VacanteDetallePage({
                   <CardBody className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="font-medium text-[var(--color-text-primary)]">{a.candidate_name}</p>
+                        <p className="font-medium text-[var(--color-text-primary)]">
+                          {a.candidate_name}
+                        </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
                           {diasEnPipeline(new Date(a.applied_at), hoy)} dias en el pipeline
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge tone={badgeTono(a.stage)}>{ETAPA_APLICACION[a.stage] ?? a.stage}</Badge>
+                        <Badge tone={badgeTono(a.stage)}>
+                          {ETAPA_APLICACION[a.stage] ?? a.stage}
+                        </Badge>
                         {puedeGestionar && !esTerminal && (
                           <div className="flex gap-1.5">
                             {siguiente && (
                               <form action={cambiarEtapaForm}>
-                                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                                <input
+                                  type="hidden"
+                                  name="tenant"
+                                  value={qs ? ctx.tenantSlug : ''}
+                                />
                                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                                 <input type="hidden" name="applicationId" value={a.id} />
                                 <input type="hidden" name="positionId" value={vacante.id} />
                                 <input type="hidden" name="stage" value={siguiente} />
-                                <BotonEnvio
-                                  
-                                  className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                   Avanzar a {ETAPA_APLICACION[siguiente]}
                                 </BotonEnvio>
                               </form>
@@ -202,9 +213,7 @@ export default async function VacanteDetallePage({
                               <input type="hidden" name="applicationId" value={a.id} />
                               <input type="hidden" name="positionId" value={vacante.id} />
                               <input type="hidden" name="stage" value="rejected" />
-                              <BotonEnvio
-                                
-                                className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
                               </BotonEnvio>
                             </form>
@@ -214,9 +223,12 @@ export default async function VacanteDetallePage({
                     </div>
 
                     {(entrevistasPorAplicacion.get(a.id) ?? []).length > 0 && (
-                      <ul className="space-y-1 border-t border-[var(--color-border-subtle)] pt-2">
+                      <ul className="space-y-1 border-t border-[var(--color-border)] pt-2">
                         {(entrevistasPorAplicacion.get(a.id) ?? []).map((en) => (
-                          <li key={en.id} className="flex justify-between text-xs text-[var(--color-text-secondary)]">
+                          <li
+                            key={en.id}
+                            className="flex justify-between text-xs text-[var(--color-text-secondary)]"
+                          >
                             <span>
                               {new Date(en.scheduled_at).toLocaleString('es-DO', {
                                 day: 'numeric',
@@ -233,22 +245,28 @@ export default async function VacanteDetallePage({
                     )}
 
                     {puedeGestionar && !esTerminal && (
-                      <form action={programarEntrevistaForm} className="flex flex-wrap items-end gap-2">
+                      <form
+                        action={programarEntrevistaForm}
+                        className="flex flex-wrap items-end gap-2"
+                      >
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="applicationId" value={a.id} />
                         <input type="hidden" name="positionId" value={vacante.id} />
                         <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                           Entrevista
-                          <input type="datetime-local" name="scheduledAt" required className={claseInput} />
+                          <input
+                            type="datetime-local"
+                            name="scheduledAt"
+                            required
+                            className={claseInput}
+                          />
                         </label>
                         <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                           Con
                           <input name="interviewerName" className={claseInput} />
                         </label>
-                        <BotonEnvio
-                          
-                          className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                        <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="event" size={14} />
                           Agendar
                         </BotonEnvio>
@@ -285,9 +303,7 @@ export default async function VacanteDetallePage({
                   Nota
                   <input name="notes" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={14} />
                   Aplicar
                 </BotonEnvio>

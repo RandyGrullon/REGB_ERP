@@ -93,11 +93,7 @@ type Params = DemoParams & {
  * que VER el numero para aceptarlo -escribirlo en la factura sigue siendo
  * cosa de /pagar, que es de otro dueño-.
  */
-export default async function RetencionesPage({
-  searchParams,
-}: {
-  searchParams: Promise<Params>
-}) {
+export default async function RetencionesPage({ searchParams }: { searchParams: Promise<Params> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'taxes')
 
@@ -225,11 +221,11 @@ export default async function RetencionesPage({
         >
           <Icon name="info" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
           <p className="text-[var(--color-text-secondary)]">
-            Esto <strong className="text-[var(--color-text-primary)]">calcula</strong> la
-            retencion; no la escribe en la factura. El monto retenido y su codigo se siguen
-            guardando en <strong className="text-[var(--color-text-primary)]">Cuentas por pagar</strong>,
-            que es donde vive la factura del proveedor. Conectar las dos cosas es el paso siguiente
-            y esta declarado, no escondido.
+            Esto <strong className="text-[var(--color-text-primary)]">calcula</strong> la retencion;
+            no la escribe en la factura. El monto retenido y su codigo se siguen guardando en{' '}
+            <strong className="text-[var(--color-text-primary)]">Cuentas por pagar</strong>, que es
+            donde vive la factura del proveedor. Conectar las dos cosas es el paso siguiente y esta
+            declarado, no escondido.
           </p>
         </div>
 
@@ -245,7 +241,7 @@ export default async function RetencionesPage({
               className="shrink-0 text-[var(--color-semantic-text-warning)]"
             />
             <p className="text-[var(--color-text-secondary)]">
-              No hay ninguna regla de retencion activa, asi que la calculadora va a dar cero
+              No hay ninguna regla de retencion activa, así que la calculadora va a dar cero
               siempre. Registra la primera en{' '}
               <a
                 href={`/impuestos${qs}`}
@@ -266,7 +262,11 @@ export default async function RetencionesPage({
             <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
               <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                 Proveedor
-                <select name="proveedor" defaultValue={params.proveedor ?? ''} className={claseInput}>
+                <select
+                  name="proveedor"
+                  defaultValue={params.proveedor ?? ''}
+                  className={claseInput}
+                >
                   <option value="">— elige —</option>
                   {proveedores.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -316,9 +316,9 @@ export default async function RetencionesPage({
 
             {resultado === null ? (
               <p className="text-xs text-[var(--color-text-muted)]">
-                Elige un proveedor que ya tenga perfil fiscal y escribe el subtotal y el ITBIS de
-                la factura. Un proveedor sin perfil no se le retiene nada, porque nadie ha dicho
-                todavia si es persona fisica o juridica.
+                Elige un proveedor que ya tenga perfil fiscal y escribe el subtotal y el ITBIS de la
+                factura. Un proveedor sin perfil no se le retiene nada, porque nadie ha dicho
+                todavía si es persona fisica o juridica.
               </p>
             ) : (
               <>
@@ -357,17 +357,17 @@ export default async function RetencionesPage({
                       RD$ {money(Math.min(servicios, subtotal))}
                     </strong>{' '}
                     de servicios, no sobre el subtotal completo: a una persona fisica se le retiene
-                    por la mano de obra, no por las piezas. Es el mismo numero que despues va en
-                    el campo de servicios de la factura, para el 606.
+                    por la mano de obra, no por las piezas. Es el mismo número que después va en el
+                    campo de servicios de la factura, para el 606.
                   </p>
                 )}
                 {itbisSospechoso && itbisEsperado !== null && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
-                    Con la tasa por defecto de tu catalogo, el ITBIS de un subtotal de{' '}
-                    RD$ {money(subtotal ?? 0)} daria{' '}
-                    <strong>RD$ {money(itbisEsperado)}</strong> y escribiste RD$ {money(itbis ?? 0)}
-                    . Puede estar bien -hay lineas exentas y tasas reducidas-, pero si es un
-                    dedazo la retencion de ITBIS sale mal en la misma proporcion.
+                    Con la tasa por defecto de tu catalogo, el ITBIS de un subtotal de RD${' '}
+                    {money(subtotal ?? 0)} daria <strong>RD$ {money(itbisEsperado)}</strong> y
+                    escribiste RD$ {money(itbis ?? 0)}. Puede estar bien -hay líneas exentas y tasas
+                    reducidas-, pero si es un dedazo la retencion de ITBIS sale mal en la misma
+                    proporcion.
                   </p>
                 )}
                 {(resultado.candidatas.isr > 1 || resultado.candidatas.itbis > 1) && (
@@ -382,20 +382,20 @@ export default async function RetencionesPage({
                         ? (resultado.reglaAplicada.isr ?? '—')
                         : (resultado.reglaAplicada.itbis ?? '—')}
                     </Mono>{' '}
-                    -la de vigencia mas reciente-. Asignale su regla en el formulario de abajo para
+                    -la de vigencia más reciente-. Asignale su regla en el formulario de abajo para
                     que no lo decida un desempate.
                   </p>
                 )}
                 {elegido?.is_exempt === true && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
-                    Este proveedor esta marcado como exento, asi que no se le retiene nada. Si eso
+                    Este proveedor esta marcado como exento, así que no se le retiene nada. Si eso
                     ya no es cierto, quitale la marca abajo.
                   </p>
                 )}
                 {resultado.isrRetenido > 0 && resultado.tipoRetencionIsr === null && (
                   <p className="text-xs text-[var(--color-semantic-text-danger)]">
-                    La regla de ISR no trae codigo de la DGII. Sin el, la factura no puede llenar
-                    su tipo de retencion y el 606 del periodo rebota entero.
+                    La regla de ISR no trae código de la DGII. Sin el, la factura no puede llenar su
+                    tipo de retencion y el 606 del período rebota entero.
                   </p>
                 )}
               </>
@@ -416,7 +416,7 @@ export default async function RetencionesPage({
             />
             <p className="text-[var(--color-text-secondary)]">
               El modulo de <strong className="text-[var(--color-text-primary)]">Proveedores</strong>{' '}
-              no esta activo, asi que no hay a quien asignarle un perfil fiscal. Las tasas y las
+              no esta activo, así que no hay a quien asignarle un perfil fiscal. Las tasas y las
               reglas siguen funcionando.
             </p>
           </div>

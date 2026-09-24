@@ -23,7 +23,7 @@ import { CANAL_CAMPANA, ESTADO_CAMPANA, ESTADO_LEAD_FILTRO, FUENTE_LEAD_FILTRO }
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Marketing & Campanas · REGB ERP' }
+export const metadata = { title: 'Marketing & Campañas · REGB ERP' }
 
 interface CampanaFila {
   id: string
@@ -49,12 +49,16 @@ export default async function MarketingPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'marketing')
 
-  const campanas = await asUser(ctx.userId, ctx.tenantId, (tx) => tx<CampanaFila[]>`
+  const campanas = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<CampanaFila[]>`
     select c.id, c.name, c.channel, c.status,
            (select count(*)::text from public.campaign_recipients where campaign_id = c.id) as destinatarios
     from public.campaigns c
     where c.tenant_id = ${ctx.tenantId}
-    order by c.created_at desc`)
+    order by c.created_at desc`,
+  )
 
   const enCurso = campanas.filter((c) => c.status === 'draft' || c.status === 'scheduled').length
   const puedeGestionar = exigir(ctx, 'marketing', 'marketing.manage').ok
@@ -75,7 +79,11 @@ export default async function MarketingPage({
         </section>
 
         {campanas.length === 0 ? (
-          <EmptyState icon="campaign" title="Todavia no hay ninguna campana" description="Crea la primera abajo." />
+          <EmptyState
+            icon="campaign"
+            title="Todavia no hay ninguna campana"
+            description="Crea la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -90,16 +98,23 @@ export default async function MarketingPage({
               {campanas.map((c) => (
                 <TR key={c.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/marketing/${c.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/marketing/${c.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {c.name}
                     </a>
                   </TD>
-                  <TD className="text-[var(--color-text-muted)]">{CANAL_CAMPANA[c.channel] ?? c.channel}</TD>
+                  <TD className="text-[var(--color-text-muted)]">
+                    {CANAL_CAMPANA[c.channel] ?? c.channel}
+                  </TD>
                   <TD numeric>
                     <span className="tabular">{c.destinatarios}</span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(c.status)}>{ESTADO_CAMPANA[c.status] ?? c.status}</Badge>
+                    <Badge tone={badgeEstado(c.status)}>
+                      {ESTADO_CAMPANA[c.status] ?? c.status}
+                    </Badge>
                   </TD>
                 </TR>
               ))}
@@ -187,9 +202,7 @@ export default async function MarketingPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

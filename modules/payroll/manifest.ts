@@ -19,7 +19,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'payroll',
-  name: 'Nomina',
+  name: 'Nómina',
   description: 'Calculo con TSS, AFP, ARS e ISR; prestaciones, regalia y volantes.',
   icon: 'group',
   category: 'advanced',

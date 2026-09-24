@@ -104,8 +104,10 @@ export default async function FacturaProveedorDetallePage({
 
   if (!head) notFound()
 
-  const [saldoRow] = await asUser(ctx.userId, ctx.tenantId, (tx) =>
-    tx<{ saldo: string }[]>`select public.ap_invoice_balance(${id})::text as saldo`,
+  const [saldoRow] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<{ saldo: string }[]>`select public.ap_invoice_balance(${id})::text as saldo`,
   )
   const saldo = Number(saldoRow?.saldo ?? 0)
   const pagado = pagos.reduce((a, p) => a + Number(p.amount), 0)
@@ -127,7 +129,12 @@ export default async function FacturaProveedorDetallePage({
       year: 'numeric',
     })
   const fechaHora = (iso: string) =>
-    new Date(iso).toLocaleString('es-DO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    new Date(iso).toLocaleString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
 
   const campos = (
     <>
@@ -176,9 +183,9 @@ export default async function FacturaProveedorDetallePage({
                   className="h-9 w-40 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                 />
                 <BotonEnvio
-                  
                   title="Una factura con pagos no se anula: se corrige con un ajuste aparte"
-                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)]">
+                  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)]"
+                >
                   <Icon name="cancel" size={16} />
                   Anular
                 </BotonEnvio>
@@ -188,7 +195,11 @@ export default async function FacturaProveedorDetallePage({
         />
 
         <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-          <StatCard label="Subtotal" value={`RD$ ${money(Number(head.subtotal))}`} hint="sin ITBIS" />
+          <StatCard
+            label="Subtotal"
+            value={`RD$ ${money(Number(head.subtotal))}`}
+            hint="sin ITBIS"
+          />
           <StatCard label="ITBIS" value={`RD$ ${money(Number(head.tax))}`} />
           <StatCard
             label="Total"
@@ -246,9 +257,7 @@ export default async function FacturaProveedorDetallePage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="payments" size={18} />
                   Registrar pago
                 </BotonEnvio>
@@ -301,11 +310,13 @@ export default async function FacturaProveedorDetallePage({
                       <option value="" disabled>
                         Elige (01-11)
                       </option>
-                      {Object.entries(TIPOS_GASTO_606).map(([k, v]) => (
-                        <option key={k} value={k}>
-                          {k} — {v}
-                        </option>
-                      ))}
+                      {Object.entries(TIPOS_GASTO_606)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {k} — {v}
+                          </option>
+                        ))}
                     </select>
                   </label>
                   <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -358,9 +369,8 @@ export default async function FacturaProveedorDetallePage({
                 </form>
               )}
               <p className="text-xs text-[var(--color-text-muted)]">
-                El 606 no se genera con una sola compra sin tipo de gasto. De lo retenido, lo que
-                no sea ISR se declara como ITBIS retenido: el ITBIS entra al IT-1 y el ISR al
-                IR-17.
+                El 606 no se genera con una sola compra sin tipo de gasto. De lo retenido, lo que no
+                sea ISR se declara como ITBIS retenido: el ITBIS entra al IT-1 y el ISR al IR-17.
               </p>
             </CardBody>
           </Card>
@@ -373,7 +383,7 @@ export default async function FacturaProveedorDetallePage({
           <CardBody>
             {pagos.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no se ha registrado ningun pago.
+                Todavía no se ha registrado ningún pago.
               </p>
             ) : (
               <Table>

@@ -1,7 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { calcularEscalamiento, transicionValidaContrato, type EstadoContrato } from '@regb/operations'
+import {
+  calcularEscalamiento,
+  transicionValidaContrato,
+  type EstadoContrato,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -44,9 +48,11 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
   const autoRenew = fd.get('autoRenew') === 'on'
 
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
-  if (!['monthly', 'quarterly', 'annual'].includes(billingFrequency)) return { ok: false, error: 'Elige una frecuencia valida.' }
+  if (!['monthly', 'quarterly', 'annual'].includes(billingFrequency))
+    return { ok: false, error: 'Elige una frecuencia valida.' }
   if (!startDate || !endDate) return { ok: false, error: 'Falta la fecha de inicio o de fin.' }
-  if (baseAmount === null || baseAmount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (baseAmount === null || baseAmount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [n] = await tx<{ n: string }[]>`
@@ -112,22 +118,25 @@ export async function renovarContrato(fd: FormData): Promise<ActionResult> {
   const contractId = String(fd.get('contractId') ?? '')
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [actual] = await tx<{
-      status: EstadoContrato
-      contract_number: string
-      customer_id: string
-      billing_frequency: string
-      start_date: string
-      end_date: string
-      base_amount: string
-      escalation_pct: string
-      auto_renew: boolean
-    }[]>`
+    const [actual] = await tx<
+      {
+        status: EstadoContrato
+        contract_number: string
+        customer_id: string
+        billing_frequency: string
+        start_date: string
+        end_date: string
+        base_amount: string
+        escalation_pct: string
+        auto_renew: boolean
+      }[]
+    >`
       select status, contract_number, customer_id, billing_frequency, start_date::text, end_date::text,
              base_amount::text, escalation_pct::text, auto_renew
       from public.contracts where id = ${contractId} and tenant_id = ${ctx.tenantId} for update`
     if (!actual) return 'no-existe'
-    if (!transicionValidaContrato(actual.status, 'renewed')) return 'Ese contrato no se puede renovar en su estado actual.'
+    if (!transicionValidaContrato(actual.status, 'renewed'))
+      return 'Ese contrato no se puede renovar en su estado actual.'
 
     const duracionDias = Math.round(
       (new Date(actual.end_date).getTime() - new Date(actual.start_date).getTime()) / 86_400_000,
@@ -136,7 +145,10 @@ export async function renovarContrato(fd: FormData): Promise<ActionResult> {
     nuevoInicio.setDate(nuevoInicio.getDate() + 1)
     const nuevoFin = new Date(nuevoInicio)
     nuevoFin.setDate(nuevoFin.getDate() + duracionDias)
-    const nuevoMonto = calcularEscalamiento(Number(actual.base_amount), Number(actual.escalation_pct))
+    const nuevoMonto = calcularEscalamiento(
+      Number(actual.base_amount),
+      Number(actual.escalation_pct),
+    )
 
     const [n] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.contracts where tenant_id = ${ctx.tenantId}`

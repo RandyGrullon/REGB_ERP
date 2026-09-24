@@ -36,7 +36,7 @@ import { EnlaceNuevoDueno, EnlaceUnaVez } from './EnlaceDueno'
  * avisa antes, para que un RNC mal escrito no se descubra al enviar.
  */
 
-const PASOS = ['Cliente', 'Modulos', 'Operacion', 'Dueño', 'Revisar'] as const
+const PASOS = ['Cliente', 'Módulos', 'Operacion', 'Dueño', 'Revisar'] as const
 
 const CAMPO =
   'h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] aria-[invalid=true]:border-[var(--color-semantic-danger)]'
@@ -47,7 +47,7 @@ const ERROR = 'text-xs text-[var(--color-semantic-text-danger)]'
 const TIER_TEXTO: Record<Tier, { titulo: string; detalle: string }> = {
   pyme: { titulo: 'Pyme', detalle: 'Colmado, tienda, taller: una o dos sucursales.' },
   mediano: { titulo: 'Mediano', detalle: 'Distribuidora o cadena pequeña, varias sucursales.' },
-  grande: { titulo: 'Grande', detalle: 'Grupo con varias empresas. Unico con modulos enterprise.' },
+  grande: { titulo: 'Grande', detalle: 'Grupo con varias empresas. Unico con módulos enterprise.' },
 }
 
 const CATEGORIA: Record<string, string> = {
@@ -92,7 +92,7 @@ const VACIO: Datos = {
   tier: '',
   modulos: [],
   sucursal: 'Principal',
-  almacen: 'Almacen principal',
+  almacen: 'Almacén principal',
   duenoNombre: '',
   duenoCorreo: '',
 }
@@ -101,14 +101,14 @@ function erroresDelPaso(paso: number, d: Datos): Partial<Record<keyof Datos, str
   const e: Partial<Record<keyof Datos, string>> = {}
   if (paso === 0) {
     if (d.razonSocial.trim().length < 3)
-      e.razonSocial = 'La razon social necesita al menos 3 letras.'
+      e.razonSocial = 'La razón social necesita al menos 3 letras.'
     if (!isValidTaxId(d.rnc)) {
       e.rnc =
         'Ese RNC no pasa el digito verificador (9 digitos empresa, 11 cedula). Un RNC malo hace rebotar el 607.'
     }
     const s = d.slug.trim()
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) || s.length < 3 || s.length > 40) {
-      e.slug = 'Solo minusculas, numeros y guiones, de 3 a 40 letras.'
+      e.slug = 'Solo minusculas, números y guiones, de 3 a 40 letras.'
     } else if (RESERVADOS.has(s)) {
       e.slug = 'Ese identificador esta reservado para una pantalla de REGB.'
     }
@@ -117,7 +117,7 @@ function erroresDelPaso(paso: number, d: Datos): Partial<Record<keyof Datos, str
   if (paso === 3) {
     if (d.duenoNombre.trim().length < 3) e.duenoNombre = 'El nombre necesita al menos 3 letras.'
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.duenoCorreo.trim())) {
-      e.duenoCorreo = 'Debe verse como dueno@suempresa.do.'
+      e.duenoCorreo = 'Debe verse como dueño@suempresa.do.'
     }
   }
   return e
@@ -342,7 +342,7 @@ export function AltaClienteForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col gap-1 sm:col-span-2">
               <label htmlFor={`${idBase}-razonSocial`} className={ETIQUETA}>
-                Razon social
+                Razón social
               </label>
               <input
                 {...campo('razonSocial')}
@@ -417,7 +417,7 @@ export function AltaClienteForm({
               />
               {errorDe('slug') ?? (
                 <p className={AYUDA}>
-                  Lo que identifica al cliente en REGB Control. No se cambia despues.
+                  Lo que identifica al cliente en REGB Control. No se cambia después.
                 </p>
               )}
             </div>
@@ -461,8 +461,8 @@ export function AltaClienteForm({
         {paso === 1 && (
           <div className="space-y-4">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              Lo que compro. Lo que cada modulo necesita entra solo. Los {cores.length} modulos core
-              (catalogo, usuarios, roles, importar, respaldos...) vienen con todo cliente.
+              Lo que compró. Lo que cada módulo necesita entra solo. Los {cores.length} módulos
+              básicos (catálogo, usuarios, roles, importar, respaldos...) vienen con todo cliente.
             </p>
             {Object.keys(CATEGORIA).map((cat) => {
               const lista = ofrecidos.filter((m) => m.category === cat)
@@ -519,7 +519,7 @@ export function AltaClienteForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <p className="text-sm text-[var(--color-text-secondary)] sm:col-span-2">
               La empresa principal se crea con la razon social y el RNC del paso 1: es la que sale
-              en cada comprobante. Aqui van la primera sucursal y el almacen del que descuenta la
+              en cada comprobante. Aquí van la primera sucursal y el almacén del que descuenta la
               caja.
             </p>
             <div className="flex flex-col gap-1">
@@ -534,8 +534,8 @@ export function AltaClienteForm({
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor={`${idBase}-almacen`} className={ETIQUETA}>
-                Almacen predeterminado
+              <label htmlFor={`${idBase}-almacén`} className={ETIQUETA}>
+                Almacén predeterminado
               </label>
               <input
                 {...campo('almacen')}
@@ -543,7 +543,7 @@ export function AltaClienteForm({
                 onChange={(e) => poner('almacen', e.target.value)}
                 className={CAMPO}
               />
-              <p className={AYUDA}>Sin almacen, la caja no puede abrir turno.</p>
+              <p className={AYUDA}>Sin almacén, la caja no puede abrir turno.</p>
             </div>
           </div>
         )}
@@ -605,13 +605,19 @@ export function AltaClienteForm({
             <dd className="text-[var(--color-text-primary)]">
               {d.tier ? TIER_TEXTO[d.tier].titulo : '—'}
             </dd>
-            <dt className={ETIQUETA}>Modulos</dt>
+            <dt className={ETIQUETA}>Módulos</dt>
             <dd className="text-[var(--color-text-primary)]">
-              {cierre.length === 0 ? 'Solo los core' : cierre.map(nombre).join(', ')}
+              {/* Los basicos vienen con todo cliente: listarlos aqui parecia que se cobraban. */}
+              {cierre.filter((id) => !esCore(porId.get(id) ?? { category: '' })).length === 0
+                ? 'Solo los básicos'
+                : cierre
+                    .filter((id) => !esCore(porId.get(id) ?? { category: '' }))
+                    .map(nombre)
+                    .join(', ')}
             </dd>
-            <dt className={ETIQUETA}>Sucursal y almacen</dt>
+            <dt className={ETIQUETA}>Sucursal y almacén</dt>
             <dd className="text-[var(--color-text-primary)]">
-              {d.sucursal || 'Principal'} · {d.almacen || 'Almacen principal'}
+              {d.sucursal || 'Principal'} · {d.almacen || 'Almacén principal'}
             </dd>
             <dt className={ETIQUETA}>Dueño</dt>
             <dd className="text-[var(--color-text-primary)]">
@@ -738,8 +744,8 @@ function Resultado({
             </p>
             <p className="text-sm text-[var(--color-text-secondary)]">
               {modoDemo
-                ? 'Modo demostracion: no hay servidor de correo y nadie puede aceptar una invitacion aqui. El enlace es el mismo que recibiria el dueño.'
-                : 'Desde REGB Control no sale el correo: la funcion de correo trabaja con la sesion de alguien del cliente, y todavia no hay nadie. Compartele este enlace al dueño por el canal que uses con el.'}
+                ? 'Modo demostración: no hay servidor de correo y nadie puede aceptar una invitación aquí. El enlace es el mismo que recibiria el dueño.'
+                : 'Desde REGB Control no sale el correo: la funcion de correo trabaja con la sesión de alguien del cliente, y todavía no hay nadie. Compartele este enlace al dueño por el canal que uses con el.'}
             </p>
             <EnlaceUnaVez
               enlace={estado.dueno.enlace}

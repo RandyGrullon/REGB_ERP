@@ -19,8 +19,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'consolidation',
-  name: 'Consolidacion',
-  description: 'Estados consolidados multi-empresa con eliminaciones inter-compania.',
+  name: 'Consolidación',
+  description: 'Estados consolidados multi-empresa con eliminaciones inter-compañía.',
   icon: 'layers',
   category: 'enterprise',
   version: '0.1.0',
@@ -50,10 +50,10 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/consolidacion', label: 'Consolidacion', perm: 'consolidation.view' },
+    { path: '/consolidacion', label: 'Consolidación', perm: 'consolidation.view' },
     {
       path: '/consolidacion/:id',
-      label: 'Corrida de consolidacion',
+      label: 'Corrida de consolidación',
       perm: 'consolidation.view',
       hidden: true,
     },

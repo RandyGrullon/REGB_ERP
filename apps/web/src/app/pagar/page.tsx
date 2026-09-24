@@ -121,9 +121,9 @@ export default async function PagarPage({
               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
               <BotonEnvio
-                
                 title="Marca vencidas las que pasaron su fecha. Se puede pulsar las veces que sea."
-                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
                 <Icon name="update" size={18} />
                 Actualizar vencidas
               </BotonEnvio>
@@ -146,7 +146,11 @@ export default async function PagarPage({
         </section>
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
-          <SearchField defaultValue={q} label="Numero o proveedor" placeholder="F-001, Distribuidora…" />
+          <SearchField
+            defaultValue={q}
+            label="Numero o proveedor"
+            placeholder="F-001, Distribuidora…"
+          />
           <FilterSelect label="Estado" name="estado" defaultValue={estado}>
             <option value="">Todas</option>
             {Object.entries(ESTADO_FACTURA).map(([k, v]) => (
@@ -161,10 +165,10 @@ export default async function PagarPage({
         {facturas.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'request_page'}
-            title={hayFiltros ? 'Ninguna factura coincide' : 'Todavia no hay facturas de proveedor'}
+            title={hayFiltros ? 'Ninguna factura coincide' : 'Todavía no hay facturas de proveedor'}
             description={
               hayFiltros
-                ? 'Prueba con otro numero o proveedor.'
+                ? 'Prueba con otro número o proveedor.'
                 : 'Registra la primera abajo. Necesitas al menos un proveedor activo.'
             }
           />
@@ -258,9 +262,9 @@ export default async function PagarPage({
                               <option value="card">Tarjeta</option>
                             </select>
                             <BotonEnvio
-                              
                               aria-label={`Registrar pago de ${f.supplier_invoice_number}`}
-                              className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                              className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
+                            >
                               <Icon name="payments" size={18} />
                             </BotonEnvio>
                           </form>
@@ -335,11 +339,13 @@ export default async function PagarPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
                     <option value="">Elige, si trae NCF</option>
-                    {Object.entries(TIPOS_GASTO_606).map(([k, v]) => (
-                      <option key={k} value={k}>
-                        {k} — {v}
-                      </option>
-                    ))}
+                    {Object.entries(TIPOS_GASTO_606)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([k, v]) => (
+                        <option key={k} value={k}>
+                          {k} — {v}
+                        </option>
+                      ))}
                   </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -414,15 +420,13 @@ export default async function PagarPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                El vencimiento sale de los dias de credito que ese proveedor te da a ti, contados
+                El vencimiento sale de los días de crédito que ese proveedor te da a ti, contados
                 desde la fecha de emision. Las retenciones se escriben a mano -no hay calculo
                 automatico- y van <strong>separadas</strong>: el ITBIS retenido se paga en el IT-1 y
                 el ISR retenido en el IR-17. Con NCF, el tipo de gasto es obligatorio: sin el, el

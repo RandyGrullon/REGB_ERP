@@ -23,7 +23,14 @@ function demoDe(fd: FormData): DemoParams {
 
 const ESTADOS_VACANTE = ['open', 'closed', 'on_hold']
 const FUENTES_CANDIDATO = ['referral', 'website', 'other']
-const ETAPAS: EtapaAplicacion[] = ['applied', 'screening', 'interview', 'offer', 'hired', 'rejected']
+const ETAPAS: EtapaAplicacion[] = [
+  'applied',
+  'screening',
+  'interview',
+  'offer',
+  'hired',
+  'rejected',
+]
 
 /** Crea una vacante nueva. */
 export async function crearVacante(fd: FormData): Promise<ActionResult> {
@@ -39,9 +46,13 @@ export async function crearVacante(fd: FormData): Promise<ActionResult> {
   if (!title) return { ok: false, error: 'Escribe el titulo de la vacante.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.recruiting_positions (tenant_id, title, department, description)
-      values (${ctx.tenantId}, ${title}, ${department}, ${description})`)
+      values (${ctx.tenantId}, ${title}, ${department}, ${description})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -64,9 +75,13 @@ export async function cambiarEstadoVacante(fd: FormData): Promise<ActionResult> 
   if (!ESTADOS_VACANTE.includes(status)) return { ok: false, error: 'Estado invalido.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       update public.recruiting_positions set status = ${status}, updated_at = now()
-      where id = ${positionId} and tenant_id = ${ctx.tenantId}`)
+      where id = ${positionId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -94,9 +109,13 @@ export async function crearCandidato(fd: FormData): Promise<ActionResult> {
   if (!FUENTES_CANDIDATO.includes(source)) return { ok: false, error: 'Elige una fuente valida.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.recruiting_candidates (tenant_id, first_name, last_name, email, phone, source, notes)
-      values (${ctx.tenantId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${source}, ${notes})`)
+      values (${ctx.tenantId}, ${firstName}, ${lastName}, ${email}, ${phone}, ${source}, ${notes})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

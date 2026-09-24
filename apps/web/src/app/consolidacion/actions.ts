@@ -49,7 +49,8 @@ export async function crearGrupo(fd: FormData): Promise<ActionResult> {
     .toUpperCase()
 
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre del grupo.' }
-  if (currency.length !== 3) return { ok: false, error: 'La moneda va en tres letras: DOP, USD, EUR.' }
+  if (currency.length !== 3)
+    return { ok: false, error: 'La moneda va en tres letras: DOP, USD, EUR.' }
 
   try {
     await asUser(
@@ -61,7 +62,8 @@ export async function crearGrupo(fd: FormData): Promise<ActionResult> {
     )
   } catch (e) {
     const msg = limpiarError(e)
-    if (msg.includes('duplicate key')) return { ok: false, error: 'Ya existe un grupo con ese nombre.' }
+    if (msg.includes('duplicate key'))
+      return { ok: false, error: 'Ya existe un grupo con ese nombre.' }
     return { ok: false, error: msg }
   }
 

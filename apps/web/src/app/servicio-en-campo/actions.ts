@@ -1,11 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import {
-  motivoNoCierre,
-  transicionValidaOrden,
-  type EstadoOrdenServicio,
-} from '@regb/operations'
+import { motivoNoCierre, transicionValidaOrden, type EstadoOrdenServicio } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -107,11 +103,15 @@ export async function alternarPaso(fd: FormData): Promise<ActionResult> {
   const orderId = String(fd.get('orderId') ?? '')
   if (!itemId) return { ok: false, error: 'Falta el paso.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.service_checklist_items
     set done = not done,
         done_at = case when done then null else now() end
-    where id = ${itemId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${itemId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath(`/servicio-en-campo/${orderId}`)
   return { ok: true }
@@ -131,12 +131,17 @@ export async function registrarRepuesto(fd: FormData): Promise<ActionResult> {
 
   if (!orderId) return { ok: false, error: 'Falta la orden.' }
   if (descripcion === '') return { ok: false, error: 'Describe el repuesto.' }
-  if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad tiene que ser mayor que cero.' }
+  if (qty === null || qty <= 0)
+    return { ok: false, error: 'La cantidad tiene que ser mayor que cero.' }
   if (costo === null || costo < 0) return { ok: false, error: 'El costo no puede ser negativo.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.service_parts (tenant_id, order_id, product_id, description, qty, unit_cost, created_by)
-    values (${ctx.tenantId}, ${orderId}, ${productId || null}, ${descripcion}, ${qty}, ${costo}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${orderId}, ${productId || null}, ${descripcion}, ${qty}, ${costo}, ${ctx.userId})`,
+  )
 
   revalidatePath(`/servicio-en-campo/${orderId}`)
   return { ok: true }

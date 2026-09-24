@@ -49,3 +49,19 @@ export function totalPorCategoria(
   }
   return totales
 }
+
+/**
+ * Reglas del reembolso -null si se puede; si no, el mensaje-. Por nomina
+ * EXIGE un periodo: hasta 0138 se podia marcar "reembolsado por nomina"
+ * sin periodo, el gasto quedaba como pagado y ninguna nomina lo pagaba
+ * nunca. Por transferencia o efectivo no lleva periodo.
+ */
+export function validarReembolso(metodo: string, periodoId: string | null): string | null {
+  if (!['payroll', 'transfer', 'cash'].includes(metodo)) { // registry:allow — metodos de reembolso
+    return 'Elige un método de reembolso válido.'
+  }
+  if (metodo === 'payroll' && !periodoId) { // registry:allow — metodo de reembolso
+    return 'Para reembolsar por nómina, elige la nómina en borrador que lo va a pagar.'
+  }
+  return null
+}

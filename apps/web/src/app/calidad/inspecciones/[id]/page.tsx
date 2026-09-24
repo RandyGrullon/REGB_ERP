@@ -66,28 +66,32 @@ export default async function InspeccionDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'quality')
 
-  const { head, resultados, noConformidades } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<InspeccionHead[]>`
+  const { head, resultados, noConformidades } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<InspeccionHead[]>`
       select insp.id, ip.name as plan_name, pr.name as product_name, insp.result,
              insp.performed_at::text, insp.notes
       from public.inspections insp
       join public.inspection_plans ip on ip.id = insp.plan_id
       left join public.products pr on pr.id = insp.product_id
       where insp.id = ${id} and insp.tenant_id = ${ctx.tenantId}`
-    if (!h) return { head: null, resultados: [], noConformidades: [] }
+      if (!h) return { head: null, resultados: [], noConformidades: [] }
 
-    const r = await tx<ResultadoRow[]>`
+      const r = await tx<ResultadoRow[]>`
       select id, criterion, is_critical, passed from public.inspection_results
       where inspection_id = ${id} and tenant_id = ${ctx.tenantId}
       order by criterion`
 
-    const nc = await tx<NcRow[]>`
+      const nc = await tx<NcRow[]>`
       select id, description, status from public.non_conformances
       where inspection_id = ${id} and tenant_id = ${ctx.tenantId}
       order by detected_at desc`
 
-    return { head: h, resultados: r, noConformidades: nc }
-  })
+      return { head: h, resultados: r, noConformidades: nc }
+    },
+  )
 
   if (!head) notFound()
 
@@ -101,7 +105,11 @@ export default async function InspeccionDetallePage({
           icon="fact_check"
           title={head.plan_name}
           crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'Inspeccion' }]}
-          actions={<Badge tone={badgeResultado(head.result)}>{RESULTADO_INSPECCION[head.result] ?? head.result}</Badge>}
+          actions={
+            <Badge tone={badgeResultado(head.result)}>
+              {RESULTADO_INSPECCION[head.result] ?? head.result}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -128,10 +136,14 @@ export default async function InspeccionDetallePage({
               <TR key={r.id}>
                 <TD className="text-[var(--color-text-primary)]">{r.criterion}</TD>
                 <TD>
-                  <Badge tone={r.is_critical ? 'danger' : 'neutral'}>{r.is_critical ? 'Critico' : 'Menor'}</Badge>
+                  <Badge tone={r.is_critical ? 'danger' : 'neutral'}>
+                    {r.is_critical ? 'Critico' : 'Menor'}
+                  </Badge>
                 </TD>
                 <TD>
-                  <Badge tone={r.passed ? 'success' : 'danger'}>{r.passed ? 'Aprueba' : 'Reprueba'}</Badge>
+                  <Badge tone={r.passed ? 'success' : 'danger'}>
+                    {r.passed ? 'Aprueba' : 'Reprueba'}
+                  </Badge>
                 </TD>
               </TR>
             ))}
@@ -140,10 +152,15 @@ export default async function InspeccionDetallePage({
 
         {noConformidades.length > 0 && (
           <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">No conformidades abiertas de aqui</h2>
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              No conformidades abiertas de aquí
+            </h2>
             {noConformidades.map((nc) => (
               <p key={nc.id} className="text-xs">
-                <a href={`/calidad/no-conformidades/${nc.id}${qs}`} className="text-[var(--color-text-link)] underline-offset-2 hover:underline">
+                <a
+                  href={`/calidad/no-conformidades/${nc.id}${qs}`}
+                  className="text-[var(--color-text-link)] underline-offset-2 hover:underline"
+                >
                   {nc.description}
                 </a>
               </p>
@@ -181,9 +198,7 @@ export default async function InspeccionDetallePage({
                     <option value="critical">Critica</option>
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="report" size={14} />
                   Abrir
                 </BotonEnvio>

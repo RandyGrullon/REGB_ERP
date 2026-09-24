@@ -17,7 +17,9 @@ import { calcularNomina, ErrorNomina, type NominaCalculada } from '../calculo'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Procesar nomina · REGB ERP' }
+export const metadata = { title: 'Procesar nómina · REGB ERP' }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface PeriodoDraft {
   id: string
@@ -38,17 +40,20 @@ const money = (n: number) =>
 export default async function ProcesarNominaPage({
   searchParams,
 }: {
-  searchParams: Promise<DemoParams>
+  searchParams: Promise<DemoParams & { period?: string }>
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'payroll', 'payroll.run')
+  // «Procesar» en la fila de un borrador trae su id; sin id (o si ya no es
+  // borrador), el mas antiguo en borrador, como antes.
+  const elegido = params.period && UUID.test(params.period) ? params.period : null
 
   const { periodo, calculo, problema } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [p] = await tx<PeriodoDraft[]>`
       select id, period_start::text, period_end::text, pay_date::text
       from public.payroll_periods
       where tenant_id = ${ctx.tenantId} and status = 'draft'
-      order by period_end
+      order by (id = ${elegido ?? '00000000-0000-0000-0000-000000000000'}::uuid) desc, period_end
       limit 1`
     if (!p) return { periodo: null, calculo: null, problema: null }
     try {
@@ -78,16 +83,16 @@ export default async function ProcesarNominaPage({
       <div className="space-y-5">
         <PageHeader
           icon="calculate"
-          title="Procesar nomina"
-          description="Calcula lo que le toca a cada empleado en el periodo mas antiguo en borrador: su parte del mes, TSS, ISR, prestamos y reembolsos."
-          crumbs={[{ label: 'Nomina', href: `/payroll${qs}` }, { label: 'Procesar' }]}
+          title="Procesar nómina"
+          description="Lo que le toca a cada empleado en el periodo: su parte del mes, TSS, ISR, préstamos y reembolsos. Revísalo y confírmalo; después de procesar, el periodo queda fijo."
+          crumbs={[{ label: 'Nómina', href: `/payroll${qs}` }, { label: 'Procesar' }]}
         />
 
         {!periodo ? (
           <EmptyState
             icon="calculate"
-            title="No hay ningun periodo en borrador"
-            description="Crea uno desde la pantalla de Nomina antes de procesar."
+            title="No hay ningún periodo en borrador"
+            description="Crea uno desde la pantalla de Nómina antes de procesar."
           />
         ) : (
           <>
@@ -111,7 +116,7 @@ export default async function ProcesarNominaPage({
                   />
                   <div className="space-y-1">
                     <p className="font-semibold text-[var(--color-text-primary)]">
-                      Este periodo no se puede procesar
+                      Este período no se puede procesar
                     </p>
                     <p className="text-[var(--color-text-secondary)]">{problema}</p>
                   </div>
@@ -126,7 +131,7 @@ export default async function ProcesarNominaPage({
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle>Previsualizacion</CardTitle>
+                  <CardTitle>Vista previa</CardTitle>
                 </CardHeader>
                 <CardBody className="space-y-4">
                   {vigencia && (
@@ -146,21 +151,18 @@ export default async function ProcesarNominaPage({
                       <thead>
                         <tr className="border-b border-[var(--color-border)] text-left text-xs text-[var(--color-text-muted)]">
                           <th className="py-2 pr-3">Empleado</th>
-                          <th className="py-2 pr-3 text-right">Dias</th>
+                          <th className="py-2 pr-3 text-right">Días</th>
                           <th className="py-2 pr-3 text-right">Bruto</th>
                           <th className="py-2 pr-3 text-right">Reembolsos</th>
                           <th className="py-2 pr-3 text-right">TSS</th>
                           <th className="py-2 pr-3 text-right">ISR</th>
-                          <th className="py-2 pr-3 text-right">Prestamos</th>
+                          <th className="py-2 pr-3 text-right">Préstamos</th>
                           <th className="py-2 text-right">Neto</th>
                         </tr>
                       </thead>
                       <tbody>
                         {lineas.map((l) => (
-                          <tr
-                            key={l.employeeId}
-                            className="border-b border-[var(--color-border-subtle)]"
-                          >
+                          <tr key={l.employeeId} className="border-b border-[var(--color-border)]">
                             <td className="py-2 pr-3 text-[var(--color-text-primary)]">
                               {l.nombre}
                               {!l.completo && l.dias > 0 && (
@@ -198,7 +200,7 @@ export default async function ProcesarNominaPage({
                         className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
                         <Icon name="check" size={18} />
-                        Procesar periodo
+                        Procesar período
                       </BotonEnvio>
                     </form>
                   )}
@@ -216,5 +218,5 @@ function fraccionEnPalabras(c: NominaCalculada): string {
   const f = c.fraccionPeriodo
   if (f === 1) return 'Un mes'
   if (f === 0.5) return 'Media (quincena)'
-  return `${Math.round(f * 30)} de 30 dias`
+  return `${Math.round(f * 30)} de 30 días`
 }

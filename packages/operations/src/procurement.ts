@@ -68,6 +68,23 @@ export function validateReceipt(
   return { ok: true }
 }
 
+/**
+ * Lo que de verdad cuesta UNA unidad de la linea: el costo cotizado menos
+ * el descuento del proveedor, sin ITBIS (el ITBIS es adelantado, no costo).
+ *
+ * Es el costo con el que la mercancia entra al inventario cuando quien
+ * recibe no declara otro. Antes se usaba el cotizado BRUTO: una linea a
+ * 420 con 5% de descuento entraba a 420 y no a 399, y el costo promedio
+ * -y con el, el costo de ventas y el margen- quedaba inflado por el monto
+ * exacto del descuento que el comprador si negocio.
+ *
+ * Cuatro decimales, igual que `unit_cost` y `avg_cost` (numeric(12,4)).
+ */
+export function costoNetoUnitario(unitCost: number, discountPct = 0): number {
+  const pct = Math.min(100, Math.max(0, discountPct))
+  return Math.round(unitCost * (1 - pct / 100) * 10_000) / 10_000
+}
+
 export interface VarianzaCosto {
   /** Positivo = llego mas caro de lo cotizado. */
   diferencia: number

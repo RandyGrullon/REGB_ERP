@@ -82,11 +82,11 @@ export default async function ActivosFijosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="period" value={new Date().toISOString().slice(0, 10)} />
                 <BotonEnvio
-                  
                   title="Corre la depreciacion de este periodo para todos los activos activos. Correrla dos veces no duplica el gasto."
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                >
                   <Icon name="event_repeat" size={18} />
-                  Correr depreciacion de hoy
+                  Correr depreciación de hoy
                 </BotonEnvio>
               </form>
             )
@@ -117,8 +117,8 @@ export default async function ActivosFijosPage({
             <THead>
               <TR>
                 <TH>Activo</TH>
-                <TH>Categoria</TH>
-                <TH>Metodo</TH>
+                <TH>Categoría</TH>
+                <TH>Método</TH>
                 <TH numeric>Costo</TH>
                 <TH numeric>Valor en libros</TH>
                 <TH>Estado</TH>
@@ -171,7 +171,12 @@ export default async function ActivosFijosPage({
                 </label>
                 <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required placeholder="Camioneta de reparto" className={claseInput} />
+                  <input
+                    name="name"
+                    required
+                    placeholder="Camioneta de reparto"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Categoria
@@ -218,7 +223,11 @@ export default async function ActivosFijosPage({
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Metodo
-                  <select name="depreciationMethod" defaultValue="straight_line" className={claseInput}>
+                  <select
+                    name="depreciationMethod"
+                    defaultValue="straight_line"
+                    className={claseInput}
+                  >
                     {Object.entries(METODO_DEPRECIACION).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v}
@@ -226,9 +235,7 @@ export default async function ActivosFijosPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>

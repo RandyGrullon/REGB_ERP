@@ -49,11 +49,7 @@ const badgePuntaje = (n: number): 'success' | 'warning' | 'neutral' => {
 }
 
 /** CRM / Leads (modulo 29): puntaje explicable y asignacion automatica en round-robin. */
-export default async function CrmPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function CrmPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'crm')
 
@@ -68,7 +64,9 @@ export default async function CrmPage({
       order by l.score desc, l.created_at desc`,
   )
 
-  const pendientes = leads.filter((l) => l.assignee_name === null && l.status !== 'disqualified').length
+  const pendientes = leads.filter(
+    (l) => l.assignee_name === null && l.status !== 'disqualified',
+  ).length
   const puedeGestionar = exigir(ctx, 'crm', 'crm.manage').ok
   const qs = ctx.demoQs
 
@@ -85,9 +83,7 @@ export default async function CrmPage({
               <form action={asignarLeadsPendientesForm}>
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="shuffle" size={14} />
                   Asignar {pendientes} pendiente{pendientes === 1 ? '' : 's'}
                 </BotonEnvio>
@@ -102,7 +98,11 @@ export default async function CrmPage({
         </section>
 
         {leads.length === 0 ? (
-          <EmptyState icon="contacts" title="Todavia no hay ningun lead" description="Crea el primero abajo." />
+          <EmptyState
+            icon="contacts"
+            title="Todavia no hay ningun lead"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -121,7 +121,9 @@ export default async function CrmPage({
                     <a href={`/crm/${l.id}${qs}`} className="underline-offset-2 hover:underline">
                       {l.name}
                     </a>
-                    {l.company && <span className="ml-1.5 text-[var(--color-text-muted)]">· {l.company}</span>}
+                    {l.company && (
+                      <span className="ml-1.5 text-[var(--color-text-muted)]">· {l.company}</span>
+                    )}
                   </TD>
                   <TD>{FUENTE_LEAD[l.source] ?? l.source}</TD>
                   <TD numeric>
@@ -189,9 +191,7 @@ export default async function CrmPage({
                     <option value="cold">Frio</option>
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

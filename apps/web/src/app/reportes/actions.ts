@@ -35,15 +35,20 @@ export async function crearReporte(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre del reporte.' }
   if (!fuenteValida(sourceKey)) return { ok: false, error: 'Elige una fuente valida.' }
-  if (!['table', 'bar', 'line'].includes(chartType)) return { ok: false, error: 'Elige un tipo de grafico valido.' }
+  if (!['table', 'bar', 'line'].includes(chartType))
+    return { ok: false, error: 'Elige un tipo de grafico valido.' }
 
   const params: Record<string, number> = {}
   if (days) params.days = Number(days)
   if (limit) params.limit = Number(limit)
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.report_definitions (tenant_id, name, source_key, params, chart_type, created_by)
-    values (${ctx.tenantId}, ${name}, ${sourceKey}, ${JSON.stringify(params)}::text::jsonb, ${chartType}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${name}, ${sourceKey}, ${JSON.stringify(params)}::text::jsonb, ${chartType}, ${ctx.userId})`,
+  )
 
   revalidatePath('/reportes')
   return { ok: true }
@@ -58,8 +63,12 @@ export async function crearDashboard(fd: FormData): Promise<ActionResult> {
   const name = String(fd.get('name') ?? '').trim()
   if (!name) return { ok: false, error: 'Falta el nombre del dashboard.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-    insert into public.dashboards (tenant_id, name, created_by) values (${ctx.tenantId}, ${name}, ${ctx.userId})`)
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
+    insert into public.dashboards (tenant_id, name, created_by) values (${ctx.tenantId}, ${name}, ${ctx.userId})`,
+  )
 
   revalidatePath('/reportes')
   return { ok: true }
@@ -99,14 +108,19 @@ export async function crearExport(fd: FormData): Promise<ActionResult> {
   const recipients = String(fd.get('recipients') ?? '').trim()
 
   if (!reportId) return { ok: false, error: 'Elige el reporte.' }
-  if (!['daily', 'weekly', 'monthly'].includes(frequency)) return { ok: false, error: 'Elige una frecuencia valida.' }
+  if (!['daily', 'weekly', 'monthly'].includes(frequency))
+    return { ok: false, error: 'Elige una frecuencia valida.' }
   if (!recipients) return { ok: false, error: 'Falta al menos un destinatario.' }
 
   const proxima = proximaEjecucion(new Date(), frequency)
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.scheduled_exports (tenant_id, report_id, frequency, recipients, next_run_at)
-    values (${ctx.tenantId}, ${reportId}, ${frequency}, ${recipients}, ${proxima.toISOString()})`)
+    values (${ctx.tenantId}, ${reportId}, ${frequency}, ${recipients}, ${proxima.toISOString()})`,
+  )
 
   revalidatePath('/reportes')
   return { ok: true }
@@ -157,8 +171,12 @@ export async function alternarExport(fd: FormData): Promise<ActionResult> {
   const siguiente = String(fd.get('siguiente') ?? '')
   if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado invalido.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-    update public.scheduled_exports set status = ${siguiente} where id = ${exportId} and tenant_id = ${ctx.tenantId}`)
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
+    update public.scheduled_exports set status = ${siguiente} where id = ${exportId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath('/reportes')
   return { ok: true }

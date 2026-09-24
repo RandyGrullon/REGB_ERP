@@ -103,11 +103,23 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                   value={`RD$ ${money(Number(abierto.opening_float))}`}
                   hint="al abrir"
                 />
-                <StatCard
-                  label="Deberia haber"
-                  value={`RD$ ${money(Number(abierto.esperado_ahora))}`}
-                  hint="fondo + efectivo cobrado"
-                />
+                {/* Conteo a ciegas: lo esperado NO se enseña de entrada. La
+                    misma pantalla pedia contar antes de mirar la cifra y la
+                    ponia en grande al lado del campo. Quien quiera verla
+                    -el dueño revisando a media tarde- la abre a proposito, y
+                    al cerrar el turno la diferencia sale en la tabla. */}
+                <details className="group rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
+                  <summary className="flex cursor-pointer list-none items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    <Icon name="visibility" size={16} />
+                    Ver lo esperado
+                  </summary>
+                  <p className="tabular mt-2 text-2xl font-bold text-[var(--color-text-primary)]">
+                    RD$ {money(Number(abierto.esperado_ahora))}
+                  </p>
+                  <p className="mt-1 text-xs text-[var(--color-text-muted)]">
+                    fondo + efectivo cobrado. Si vas a contar, cuéntalo antes de abrir esto.
+                  </p>
+                </details>
               </section>
 
               {puedeCerrar ? (
@@ -133,9 +145,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                       className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <BotonEnvio
-                    
-                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="lock_clock" size={18} />
                     Cerrar turno
                   </BotonEnvio>
@@ -193,8 +203,11 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                       <span className="tabular">{s.tickets}</span>
                     </TD>
                     <TD numeric>
+                      {/* Mientras el turno siga abierto, lo esperado no se
+                          enseña aqui tampoco: seria el mismo atajo para no
+                          contar a ciegas que se quito de arriba. */}
                       <span className="tabular">
-                        {money(Number(s.expected_cash ?? s.esperado_ahora))}
+                        {s.expected_cash !== null ? money(Number(s.expected_cash)) : '—'}
                       </span>
                     </TD>
                     <TD numeric>

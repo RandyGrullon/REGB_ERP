@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/lib/db'
 import { cerrarBase, sembrarCliente, type ClientePrueba } from '@/test/arnes'
-import { ajustarInventario } from './actions'
+import { ajustarInventario, crearTransferencia } from './actions'
 
 /**
  * El "Ajuste manual" de /inventory, llamado DE VERDAD.
@@ -54,6 +54,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await c.limpiar([
+    'public.stock_transfer_lines',
+    'public.stock_transfers',
     'public.stock_levels',
     'public.inventory_movements',
     'public.products',
@@ -127,5 +129,60 @@ describe('el producto del ajuste se busca por codigo, codigo de barras o nombre'
 
   it('sin producto ni id, falta el dato', async () => {
     expect(await ajuste({})).toEqual({ ok: false, error: 'Elige el producto.' })
+  })
+})
+
+/**
+ * El traslado de /inventory/transfers no miraba la existencia: trasladaba
+ * lo que no habia y dejaba el origen en negativo.
+ */
+describe('trasladar entre almacenes', () => {
+  let destino = ''
+  beforeAll(async () => {
+    const [w] = await db()<{ id: string }[]>`
+      insert into public.warehouses (tenant_id, name, code)
+      values (${c.tenantId}, 'Santiago', 'STGO') returning id`
+    destino = w!.id
+    const [p] = await db()<{ id: string }[]>`
+      insert into public.products (tenant_id, sku, name, price, cost)
+      values (${c.tenantId}, 'TRF-1', 'Cemento gris', 400, 300) returning id`
+    ids['TRF-1'] = p!.id
+    expect(await ajuste({ producto: 'TRF-1', qty: '5', unitCost: '300' })).toEqual({ ok: true })
+  })
+
+  async function hay(almacenId: string) {
+    const [r] = await db()<{ q: string }[]>`
+      select coalesce(sum(qty_on_hand), 0)::text as q from public.stock_levels
+      where tenant_id = ${c.tenantId} and warehouse_id = ${almacenId} and product_id = ${ids['TRF-1']!}`
+    return Number(r!.q)
+  }
+
+  it('no traslada más de lo que hay, y lo dice', async () => {
+    const r = await crearTransferencia(
+      c.fd({
+        fromWarehouseId: almacen,
+        toWarehouseId: destino,
+        productId: ids['TRF-1']!,
+        qty: '8',
+      }),
+    )
+    expect(r.ok).toBe(false)
+    expect(r.ok ? '' : r.error).toMatch(/hay 5 de Cemento gris/)
+    expect(await hay(almacen)).toBe(5)
+    expect(await hay(destino)).toBe(0)
+  })
+
+  it('lo que sí alcanza sale del origen y llega al destino', async () => {
+    const r = await crearTransferencia(
+      c.fd({
+        fromWarehouseId: almacen,
+        toWarehouseId: destino,
+        productId: ids['TRF-1']!,
+        qty: '3',
+      }),
+    )
+    expect(r).toEqual({ ok: true })
+    expect(await hay(almacen)).toBe(2)
+    expect(await hay(destino)).toBe(3)
   })
 })

@@ -20,9 +20,9 @@ export interface SearchEntry {
 }
 
 const TYPE_LABEL: Record<SearchEntry['type'], string> = {
-  modulo: 'Modulo',
+  modulo: 'Módulo',
   registro: 'Registro',
-  accion: 'Accion',
+  accion: 'Acción',
   ayuda: 'Ayuda',
 }
 

@@ -15,8 +15,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'mrp',
-  name: 'Planificacion MRP',
-  description: 'Explosion de necesidades y sugerencias de compra o produccion.',
+  name: 'Planificación MRP',
+  description: 'Explosión de necesidades y sugerencias de compra o producción.',
   icon: 'insights',
   category: 'advanced',
   version: '0.1.0',

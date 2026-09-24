@@ -81,7 +81,10 @@ export default async function HojasDeTiempoPage({
   const porAprobar = registros.filter((r) => r.status === 'submitted').length
   const totalFacturable = registros
     .filter((r) => r.status === 'approved')
-    .reduce((acc, r) => acc + montoFacturable(Number(r.hours), Number(r.hourly_rate), r.billable), 0)
+    .reduce(
+      (acc, r) => acc + montoFacturable(Number(r.hours), Number(r.hourly_rate), r.billable),
+      0,
+    )
   const puedeGestionar = exigir(ctx, 'timesheets', 'timesheets.manage').ok
   const qs = ctx.demoQs
 
@@ -91,7 +94,7 @@ export default async function HojasDeTiempoPage({
         <PageHeader
           icon="timer"
           title="Hojas de tiempo"
-          description="Rechazado se corrige y se reenvia. Solo aprobado es terminal de verdad."
+          description="Las horas de cada quien. Una hoja rechazada se corrige y se vuelve a enviar; una aprobada queda fija."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -100,7 +103,11 @@ export default async function HojasDeTiempoPage({
         </section>
 
         {registros.length === 0 ? (
-          <EmptyState icon="timer" title="Todavia no hay ningun registro" description="Crea el primero abajo." />
+          <EmptyState
+            icon="timer"
+            title="Todavia no hay ningun registro"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -111,7 +118,7 @@ export default async function HojasDeTiempoPage({
                 <TH numeric>Horas</TH>
                 <TH>Estado</TH>
                 <TH>
-                  <span className="sr-only">Accion</span>
+                  <span className="sr-only">Acción</span>
                 </TH>
               </TR>
             </THead>
@@ -120,12 +127,16 @@ export default async function HojasDeTiempoPage({
                 <TR key={r.id}>
                   <TD className="text-[var(--color-text-primary)]">{r.task_name}</TD>
                   <TD className="text-[var(--color-text-muted)]">{r.project_name}</TD>
-                  <TD className="text-[var(--color-text-muted)]">{new Date(r.entry_date).toLocaleDateString('es-DO')}</TD>
+                  <TD className="text-[var(--color-text-muted)]">
+                    {new Date(r.entry_date).toLocaleDateString('es-DO')}
+                  </TD>
                   <TD numeric>
                     <span className="tabular">{r.hours}</span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(r.status)}>{ESTADO_REGISTRO[r.status] ?? r.status}</Badge>
+                    <Badge tone={badgeEstado(r.status)}>
+                      {ESTADO_REGISTRO[r.status] ?? r.status}
+                    </Badge>
                   </TD>
                   <TD>
                     {puedeGestionar && (
@@ -136,7 +147,7 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="submitted" />
-                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Enviar
                             </BotonEnvio>
                           </form>
@@ -148,7 +159,7 @@ export default async function HojasDeTiempoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="approved" />
-                              <BotonEnvio  className="flex h-7 items-center rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                              <BotonEnvio className="flex h-7 items-center rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                 Aprobar
                               </BotonEnvio>
                             </form>
@@ -157,7 +168,7 @@ export default async function HojasDeTiempoPage({
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="entryId" value={r.id} />
                               <input type="hidden" name="siguiente" value="rejected" />
-                              <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                                 Rechazar
                               </BotonEnvio>
                             </form>
@@ -169,7 +180,7 @@ export default async function HojasDeTiempoPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="entryId" value={r.id} />
                             <input type="hidden" name="siguiente" value="draft" />
-                            <BotonEnvio  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Corregir
                             </BotonEnvio>
                           </form>
@@ -208,23 +219,36 @@ export default async function HojasDeTiempoPage({
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
-                  <input type="date" name="entryDate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    type="date"
+                    name="entryDate"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Horas
-                  <input name="hours" required inputMode="decimal" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular" />
+                  <input
+                    name="hours"
+                    required
+                    inputMode="decimal"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tarifa/hora
-                  <input name="hourlyRate" inputMode="decimal" defaultValue="0" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular" />
+                  <input
+                    name="hourlyRate"
+                    inputMode="decimal"
+                    defaultValue="0"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
+                  />
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="billable" defaultChecked />
                   Facturable
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

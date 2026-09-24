@@ -63,7 +63,11 @@ export default async function PlanesComisionPage({
         />
 
         {planes.length === 0 ? (
-          <EmptyState icon="percent" title="Todavia no hay ningun plan" description="Crea el primero abajo." />
+          <EmptyState
+            icon="percent"
+            title="Todavia no hay ningun plan"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -81,11 +85,15 @@ export default async function PlanesComisionPage({
                   <TD>{ESQUEMA_COMISION[p.basis] ?? p.basis}</TD>
                   <TD numeric>
                     <span className="tabular">
-                      {p.basis === 'percentage' ? `${(Number(p.rate) * 100).toFixed(1)}%` : `RD$ ${p.rate}`}
+                      {p.basis === 'percentage'
+                        ? `${(Number(p.rate) * 100).toFixed(1)}%`
+                        : `RD$ ${p.rate}`}
                     </span>
                   </TD>
                   <TD>
-                    <Badge tone={p.active ? 'success' : 'neutral'}>{p.active ? 'Activo' : 'Inactivo'}</Badge>
+                    <Badge tone={p.active ? 'success' : 'neutral'}>
+                      {p.active ? 'Activo' : 'Inactivo'}
+                    </Badge>
                   </TD>
                 </TR>
               ))}
@@ -131,9 +139,7 @@ export default async function PlanesComisionPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

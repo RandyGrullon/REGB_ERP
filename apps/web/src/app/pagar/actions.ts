@@ -63,7 +63,10 @@ function leerDatosFiscales(fd: FormData): DatosFiscales | { error: string } {
   const services = num(String(fd.get('servicesAmount') ?? '0')) ?? 0
   const isrRetained = num(String(fd.get('isrRetention') ?? '0')) ?? 0
   const isrType = String(fd.get('isrRetentionType') ?? '').trim() || null
-  const modifiedNcf = String(fd.get('modifiedNcf') ?? '').trim().toUpperCase() || null
+  const modifiedNcf =
+    String(fd.get('modifiedNcf') ?? '')
+      .trim()
+      .toUpperCase() || null
 
   if (expenseType !== null && !esTipoGasto606(expenseType)) {
     return { error: 'El tipo de gasto va del 01 al 11 (clasificacion del 606).' }
@@ -96,15 +99,17 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
 
   const supplierId = String(fd.get('supplierId') ?? '')
   const supplierInvoiceNumber = String(fd.get('supplierInvoiceNumber') ?? '').trim()
-  const supplierNcf = String(fd.get('supplierNcf') ?? '').trim().toUpperCase() || null
+  const supplierNcf =
+    String(fd.get('supplierNcf') ?? '')
+      .trim()
+      .toUpperCase() || null
   const subtotal = num(String(fd.get('subtotal') ?? ''))
   const tax = num(String(fd.get('tax') ?? '0')) ?? 0
   // ITBIS e ISR retenidos van SEPARADOS: se declaran en columnas distintas
   // del 606 y solo el ITBIS entra al IT-1 (el ISR va al IR-17). El campo
   // viejo `retention` se sigue aceptando como ITBIS para no romper a quien
   // mande el formulario anterior -era lo que la vista suponia-.
-  const itbisRetenido =
-    num(String(fd.get('itbisRetention') ?? fd.get('retention') ?? '0')) ?? 0
+  const itbisRetenido = num(String(fd.get('itbisRetention') ?? fd.get('retention') ?? '0')) ?? 0
   // La fecha que trae la factura, no la de hoy: una factura de agosto
   // registrada el 3 de septiembre es del 606 de agosto. Sin fecha, hoy EN
   // RD -no el dia de UTC-.
@@ -131,7 +136,8 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
   if (supplierNcf !== null && fiscales.expenseType === null) {
     return {
       ok: false,
-      error: 'Elige el tipo de gasto: con NCF, la compra va al 606 y la DGII pide su clasificacion.',
+      error:
+        'Elige el tipo de gasto: con NCF, la compra va al 606 y la DGII pide su clasificacion.',
     }
   }
   if (itbisRetenido > tax) {
@@ -271,7 +277,9 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
   }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [inv] = await tx<{ total: string; retencion: string; status: string; due_date: string }[]>`
+    const [inv] = await tx<
+      { total: string; retencion: string; status: string; due_date: string }[]
+    >`
       select total::text, retention_amount::text as retencion, status, due_date::text
       from public.supplier_invoices
       where id = ${invoiceId} and tenant_id = ${ctx.tenantId} for update`
@@ -370,8 +378,10 @@ export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'ap', 'ap.view')
   if (!permiso.ok) return permiso
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) =>
-    tx`select public.mark_overdue_supplier_invoices(${ctx.tenantId})`,
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`select public.mark_overdue_supplier_invoices(${ctx.tenantId})`,
   )
 
   revalidatePath('/pagar')
@@ -383,10 +393,14 @@ export async function registrarFacturaForm(fd: FormData): Promise<void> {
   await anotarAviso(await registrarFactura(fd), 'registrarFactura')
 }
 export async function clasificarFacturaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await clasificarFactura(fd), 'clasificarFactura')
+  await anotarAviso(
+    await clasificarFactura(fd),
+    'clasificarFactura',
+    'Listo, la factura ya tiene sus datos del 606.',
+  )
 }
 export async function registrarPagoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await registrarPago(fd), 'registrarPago')
+  await anotarAviso(await registrarPago(fd), 'registrarPago', 'Listo, registramos el pago.')
 }
 export async function anularFacturaForm(fd: FormData): Promise<void> {
   await anotarAviso(await anularFactura(fd), 'anularFactura')

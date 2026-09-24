@@ -57,38 +57,42 @@ export default async function MonederoClientePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'loyalty')
 
-  const { cliente, transacciones, referidos, otrosClientes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [c] = await tx<{ id: string; name: string; saldo: string; vida: string }[]>`
+  const { cliente, transacciones, referidos, otrosClientes } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [c] = await tx<{ id: string; name: string; saldo: string; vida: string }[]>`
       select id, name,
              public.loyalty_balance(id)::text as saldo,
              public.loyalty_lifetime_points(id)::text as vida
       from public.customers where id = ${customerId} and tenant_id = ${ctx.tenantId}`
-    if (!c) return { cliente: null, transacciones: [], referidos: [], otrosClientes: [] }
+      if (!c) return { cliente: null, transacciones: [], referidos: [], otrosClientes: [] }
 
-    const t = await tx<Transaccion[]>`
+      const t = await tx<Transaccion[]>`
       select id, points, reason, source_type, created_at::text
       from public.loyalty_transactions where tenant_id = ${ctx.tenantId} and customer_id = ${customerId}
       order by created_at desc limit 50`
 
-    const r = await tx<Referido[]>`
+      const r = await tx<Referido[]>`
       select lr.id, cr.name as referred_name, lr.bonus_points, lr.status
       from public.loyalty_referrals lr
       join public.customers cr on cr.id = lr.referred_customer_id
       where lr.tenant_id = ${ctx.tenantId} and lr.referrer_customer_id = ${customerId}
       order by lr.created_at desc`
 
-    const oc = await tx<ClienteOption[]>`
+      const oc = await tx<ClienteOption[]>`
       select id, name from public.customers
       where tenant_id = ${ctx.tenantId} and id != ${customerId}
       order by name limit 300`
 
-    return {
-      cliente: { id: c.id, name: c.name, saldo: Number(c.saldo), vida: Number(c.vida) },
-      transacciones: t,
-      referidos: r,
-      otrosClientes: oc,
-    }
-  })
+      return {
+        cliente: { id: c.id, name: c.name, saldo: Number(c.saldo), vida: Number(c.vida) },
+        transacciones: t,
+        referidos: r,
+        otrosClientes: oc,
+      }
+    },
+  )
 
   if (!cliente) notFound()
 
@@ -144,7 +148,7 @@ export default async function MonederoClientePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>
@@ -159,7 +163,11 @@ export default async function MonederoClientePage({
           </CardHeader>
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
-              {transacciones.length === 0 && <li className="py-2 text-xs text-[var(--color-text-muted)]">Todavia no hay movimientos.</li>}
+              {transacciones.length === 0 && (
+                <li className="py-2 text-xs text-[var(--color-text-muted)]">
+                  Todavía no hay movimientos.
+                </li>
+              )}
               {transacciones.map((t) => (
                 <li key={t.id} className="flex items-center justify-between gap-3 py-2">
                   <div>
@@ -186,32 +194,39 @@ export default async function MonederoClientePage({
           </CardHeader>
           <CardBody>
             <ul className="space-y-2">
-              {referidos.length === 0 && <li className="text-xs text-[var(--color-text-muted)]">Todavia no ha referido a nadie.</li>}
+              {referidos.length === 0 && (
+                <li className="text-xs text-[var(--color-text-muted)]">
+                  Todavía no ha referido a nadie.
+                </li>
+              )}
               {referidos.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5">
+                <li
+                  key={r.id}
+                  className="flex items-center justify-between gap-3 rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5"
+                >
                   <div>
                     <p className="text-sm text-[var(--color-text-primary)]">{r.referred_name}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">Bono: {r.bonus_points} puntos</p>
+                    <p className="text-xs text-[var(--color-text-muted)]">
+                      Bono: {r.bonus_points} puntos
+                    </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone={badgeReferido(r.status)}>{ESTADO_REFERIDO[r.status] ?? r.status}</Badge>
+                    <Badge tone={badgeReferido(r.status)}>
+                      {ESTADO_REFERIDO[r.status] ?? r.status}
+                    </Badge>
                     {puedeGestionar && r.status === 'pending' && (
                       <>
                         <form action={transicionarReferidoForm}>
                           {campos}
                           <input type="hidden" name="referralId" value={r.id} />
                           <input type="hidden" name="siguiente" value="completed" />
-                          <BotonEnvio  className={botonSecundarioClase}>
-                            Completar
-                          </BotonEnvio>
+                          <BotonEnvio className={botonSecundarioClase}>Completar</BotonEnvio>
                         </form>
                         <form action={transicionarReferidoForm}>
                           {campos}
                           <input type="hidden" name="referralId" value={r.id} />
                           <input type="hidden" name="siguiente" value="expired" />
-                          <BotonEnvio  className={botonSecundarioClase}>
-                            Expirar
-                          </BotonEnvio>
+                          <BotonEnvio className={botonSecundarioClase}>Expirar</BotonEnvio>
                         </form>
                       </>
                     )}
@@ -247,7 +262,7 @@ export default async function MonederoClientePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="person_add" size={14} />
                   Referir
                 </BotonEnvio>

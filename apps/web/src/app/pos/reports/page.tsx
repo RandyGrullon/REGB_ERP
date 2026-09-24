@@ -52,11 +52,21 @@ const METODO_LABEL: Record<string, string> = {
 export default async function CierresPage({
   searchParams,
 }: {
-  searchParams: Promise<DemoParams & { q?: string }>
+  searchParams: Promise<DemoParams & { q?: string; desde?: string; hasta?: string }>
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'pos', 'pos.report.view')
   const q = (params.q ?? '').trim()
+
+  // Periodo. Antes las cifras eran de TODA la historia y el dueño leia
+  // "Vendido RD$ X" como lo de hoy. Ahora, por defecto, hoy en RD (la fecha
+  // fiscal, la misma del 607). Si se busca un ticket por numero sin fechas,
+  // se busca en todo el historial: el que vuelve por su ticket de la semana
+  // pasada no tiene por que saber que dia fue.
+  const fecha = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '')
+  const desde = fecha(params.desde)
+  const hasta = fecha(params.hasta)
+  const todoElHistorial = q !== '' && desde === '' && hasta === ''
 
   const [ventas, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const v = await tx<SaleRow[]>`
@@ -73,25 +83,40 @@ export default async function CierresPage({
         on up.tenant_id = s.tenant_id and up.user_id = s.cashier_id
       where s.tenant_id = ${ctx.tenantId}
         and (${q} = '' or s.number ilike ${'%' + q + '%'} or c.name ilike ${'%' + q + '%'})
+        and (${todoElHistorial} or public.fecha_fiscal(coalesce(s.sold_at, s.created_at))
+             between coalesce(nullif(${desde}, '')::date, public.hoy_fiscal())
+                 and coalesce(nullif(${hasta}, '')::date, public.hoy_fiscal()))
       order by s.created_at desc
       limit 200`
 
     const [t] = await tx<
       { tickets: string; vendido: string; anulados: string; efectivo: string }[]
     >`
+      with periodo as (
+        select * from public.pos_sales sa
+        where sa.tenant_id = ${ctx.tenantId}
+          and public.fecha_fiscal(coalesce(sa.sold_at, sa.created_at))
+              between coalesce(nullif(${desde}, '')::date, public.hoy_fiscal())
+                  and coalesce(nullif(${hasta}, '')::date, public.hoy_fiscal())
+      )
       select count(*) filter (where not voided)::text                       as tickets,
              coalesce(sum(total) filter (where not voided), 0)::text        as vendido,
              count(*) filter (where voided)::text                           as anulados,
              coalesce((select sum(p.amount) from public.pos_payments p
-                        join public.pos_sales sa on sa.id = p.sale_id
-                        where sa.tenant_id = ${ctx.tenantId} and not sa.voided
-                          and p.method = 'cash'), 0)::text                  as efectivo
-      from public.pos_sales where tenant_id = ${ctx.tenantId}`
+                        join periodo sa on sa.id = p.sale_id
+                        where not sa.voided and p.method = 'cash'), 0)::text as efectivo
+      from periodo`
     return [v, t] as const
   })
 
   const puedeAnular = exigir(ctx, 'pos', 'pos.void').ok
   const qs = ctx.demoQs
+  const esHoy = desde === '' && hasta === ''
+  const periodoTexto = esHoy
+    ? 'hoy'
+    : desde === hasta
+      ? `el ${desde.split('-').reverse().join('/')}`
+      : `del ${(desde || '…').split('-').reverse().join('/')} al ${(hasta || 'hoy').split('-').reverse().join('/')}`
 
   const hora = (iso: string) =>
     new Date(iso).toLocaleString('es-DO', {
@@ -112,11 +137,15 @@ export default async function CierresPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Tickets" value={String(totales?.tickets ?? 0)} hint="vigentes" />
           <StatCard
-            label="Vendido"
+            label="Tickets"
+            value={String(totales?.tickets ?? 0)}
+            hint={`vigentes, ${periodoTexto}`}
+          />
+          <StatCard
+            label={esHoy ? 'Vendido hoy' : 'Vendido'}
             value={`RD$ ${money(Number(totales?.vendido ?? 0))}`}
-            hint="sin anulados"
+            hint={`sin anulados, ${periodoTexto}`}
           />
           <StatCard
             label="En efectivo"
@@ -128,17 +157,37 @@ export default async function CierresPage({
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
           <SearchField defaultValue={q} label="Ticket o cliente" placeholder="TK-2026-000001…" />
-          <ToolbarActions hasFilters={q !== ''} clearHref={`/pos/reports${qs}`} />
+          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+            Desde
+            <input
+              type="date"
+              name="desde"
+              defaultValue={desde}
+              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+            Hasta
+            <input
+              type="date"
+              name="hasta"
+              defaultValue={hasta}
+              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+            />
+          </label>
+          <ToolbarActions hasFilters={q !== '' || !esHoy} clearHref={`/pos/reports${qs}`} />
         </Toolbar>
 
         {ventas.length === 0 ? (
           <EmptyState
             icon={q ? 'search_off' : 'receipt'}
-            title={q ? 'Ningun ticket coincide' : 'Todavia no se ha vendido nada'}
+            title={q ? 'Ningún ticket coincide' : `No hay ventas ${periodoTexto}`}
             description={
               q
-                ? 'Prueba con otro numero o cliente.'
-                : 'Abre un turno en la caja y haz la primera venta.'
+                ? 'Prueba con otro número o cliente.'
+                : esHoy
+                  ? 'Abre un turno en la caja y haz la primera venta del día, o elige otras fechas arriba.'
+                  : 'Prueba con otras fechas.'
             }
           />
         ) : (
@@ -241,9 +290,9 @@ export default async function CierresPage({
                             className="h-8 w-28 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                           />
                           <BotonEnvio
-                            
                             aria-label={`Anular ${v.number}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="block" size={16} />
                           </BotonEnvio>
                         </form>

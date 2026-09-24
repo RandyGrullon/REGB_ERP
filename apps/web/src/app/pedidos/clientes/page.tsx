@@ -123,7 +123,7 @@ export default async function ClientesPage({
         {customers.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'contacts'}
-            title={hayFiltros ? 'Ningun cliente coincide' : 'Todavia no hay clientes'}
+            title={hayFiltros ? 'Ningún cliente coincide' : 'Todavía no hay clientes'}
             description={
               hayFiltros
                 ? 'Prueba con otro nombre o RNC.'
@@ -137,7 +137,7 @@ export default async function ClientesPage({
                 <TH>Cliente</TH>
                 <TH>RNC / Cedula</TH>
                 <TH>Contacto</TH>
-                <TH numeric>Credito</TH>
+                <TH numeric>Crédito</TH>
                 <TH numeric>Limite</TH>
                 <TH numeric>Pedidos</TH>
                 <TH>Estado</TH>
@@ -195,9 +195,7 @@ export default async function ClientesPage({
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="id" value={c.id} />
-                        <BotonEnvio
-                          
-                          className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
+                        <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
                           {c.is_active ? 'Desactivar' : 'Reactivar'}
                         </BotonEnvio>
                       </form>
@@ -219,7 +217,7 @@ export default async function ClientesPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Nombre o razon social
+                  Nombre o razón social
                   <input
                     name="name"
                     required
@@ -237,7 +235,10 @@ export default async function ClientesPage({
                     // 9 digitos de RNC u 11 de cedula, con o sin guiones.
                     // El digito verificador lo comprueba el servidor: esto
                     // solo evita el viaje cuando falta un numero entero.
-                    pattern="[\d\s-]{9,13}"
+                    // Chrome compila `pattern` con la bandera `v`: ahi un
+                    // guion suelto en la clase es un error y el patron se
+                    // ignoraba entero. Va escapado.
+                    pattern="[0-9 \-]{9,13}"
                     title="RNC de 9 digitos o cedula de 11. Opcional."
                     className={inputCls}
                   />
@@ -259,7 +260,7 @@ export default async function ClientesPage({
                   />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias de credito
+                  Dias de crédito
                   <input
                     name="terms"
                     inputMode="numeric"
@@ -270,7 +271,7 @@ export default async function ClientesPage({
                 </label>
                 {puedeFijarLimite && (
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Limite de credito
+                    Limite de crédito
                     <input
                       name="creditLimit"
                       inputMode="decimal"
@@ -280,16 +281,14 @@ export default async function ClientesPage({
                     />
                   </label>
                 )}
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="person_add" size={18} />
                   Registrar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Los dias de credito deciden el vencimiento de la factura. 0 = contado. El limite y
-                los datos se corrigen despues en la ficha de cada cliente.
+                los datos se corrigen después en la ficha de cada cliente.
               </p>
             </CardBody>
           </Card>

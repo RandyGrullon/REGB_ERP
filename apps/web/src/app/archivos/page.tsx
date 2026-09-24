@@ -130,7 +130,7 @@ export default async function ArchivosPage({
           title={enPapelera ? 'Papelera' : 'Archivos'}
           description={
             enPapelera
-              ? 'Nada se borra de verdad. Lo que esta aqui se puede restaurar cuando quieras.'
+              ? 'Nada se borra de verdad. Lo que esta aquí se puede restaurar cuando quieras.'
               : 'Documentos del negocio: contratos, cedulas, facturas escaneadas.'
           }
           crumbs={
@@ -181,16 +181,16 @@ export default async function ArchivosPage({
             icon={hayFiltros ? 'search_off' : enPapelera ? 'delete' : 'folder_open'}
             title={
               hayFiltros
-                ? 'Ningun archivo coincide'
+                ? 'Ningún archivo coincide'
                 : enPapelera
                   ? 'La papelera esta vacia'
-                  : 'Todavia no hay archivos'
+                  : 'Todavía no hay archivos'
             }
             description={
               hayFiltros
                 ? 'Prueba con otro nombre o quita el filtro de tipo.'
                 : enPapelera
-                  ? 'Lo que envies a la papelera aparece aqui, listo para restaurar.'
+                  ? 'Lo que envies a la papelera aparece aquí, listo para restaurar.'
                   : 'Sube el primero con el formulario de abajo. Contratos, cedulas, cotizaciones: todo junto y buscable.'
             }
           />
@@ -252,12 +252,12 @@ export default async function ArchivosPage({
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={f.id} />
                       <BotonEnvio
-                        
                         title={enPapelera ? 'Restaurar' : 'Enviar a la papelera'}
                         aria-label={
                           enPapelera ? `Restaurar ${f.name}` : `Enviar ${f.name} a la papelera`
                         }
-                        className="grid h-9 w-9 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                        className="grid h-9 w-9 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
                         <Icon name={enPapelera ? 'restore_from_trash' : 'delete'} size={18} />
                       </BotonEnvio>
                     </form>
@@ -291,9 +291,7 @@ export default async function ArchivosPage({
                   aria-label="Archivo a subir"
                   className="min-w-52 flex-1 text-sm text-[var(--color-text-secondary)] file:mr-3 file:rounded-[var(--radius-md)] file:border-0 file:bg-[var(--color-surface-overlay)] file:px-3 file:py-2 file:text-sm file:text-[var(--color-text-primary)] hover:file:bg-[var(--color-surface-raised)]"
                 />
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   Subir
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">

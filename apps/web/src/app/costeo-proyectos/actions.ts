@@ -44,9 +44,13 @@ export async function agregarPresupuesto(fd: FormData): Promise<ActionResult> {
   }
   if (amount === null || amount < 0) return { ok: false, error: 'El monto no puede ser negativo.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.project_budgets (tenant_id, project_id, concept, category, amount, created_by)
-    values (${ctx.tenantId}, ${projectId}, ${concept}, ${category}, ${amount}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${projectId}, ${concept}, ${category}, ${amount}, ${ctx.userId})`,
+  )
 
   revalidatePath(`/costeo-proyectos/${projectId}`)
   return { ok: true }
@@ -65,12 +69,17 @@ export async function registrarCosto(fd: FormData): Promise<ActionResult> {
   const incurredOn = String(fd.get('incurredOn') ?? '') || null
 
   if (!concept) return { ok: false, error: 'Falta el concepto.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.project_costs (tenant_id, project_id, budget_id, concept, amount, incurred_on, created_by)
     values (${ctx.tenantId}, ${projectId}, ${budgetId}, ${concept}, ${amount},
-            coalesce(${incurredOn}::date, current_date), ${ctx.userId})`)
+            coalesce(${incurredOn}::date, current_date), ${ctx.userId})`,
+  )
 
   revalidatePath(`/costeo-proyectos/${projectId}`)
   return { ok: true }
@@ -86,9 +95,13 @@ export async function marcarFacturado(fd: FormData): Promise<ActionResult> {
   const costId = String(fd.get('costId') ?? '')
   const projectId = String(fd.get('projectId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.project_costs set billed = true
-    where id = ${costId} and tenant_id = ${ctx.tenantId} and not billed`)
+    where id = ${costId} and tenant_id = ${ctx.tenantId} and not billed`,
+  )
 
   revalidatePath(`/costeo-proyectos/${projectId}`)
   return { ok: true }

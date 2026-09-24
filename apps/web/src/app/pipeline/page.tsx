@@ -1,12 +1,4 @@
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Icon,
-  PageHeader,
-  StatCard,
-} from '@regb/ui'
+import { Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCard } from '@regb/ui'
 import { forecastPonderado } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -63,7 +55,9 @@ export default async function PipelinePage({
 
   const abiertas = oportunidades.filter((o) => o.stage !== 'won' && o.stage !== 'lost')
   const ganadas = oportunidades.filter((o) => o.stage === 'won')
-  const forecast = forecastPonderado(abiertas.map((o) => ({ amount: Number(o.amount), probability: Number(o.probability) })))
+  const forecast = forecastPonderado(
+    abiertas.map((o) => ({ amount: Number(o.amount), probability: Number(o.probability) })),
+  )
 
   const puedeGestionar = exigir(ctx, 'pipeline', 'pipeline.manage').ok
   const qs = ctx.demoQs
@@ -104,21 +98,26 @@ export default async function PipelinePage({
                       key={o.id}
                       className="space-y-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3"
                     >
-                      <a href={`/pipeline/${o.id}${qs}`} className="block text-sm font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline">
+                      <a
+                        href={`/pipeline/${o.id}${qs}`}
+                        className="block text-sm font-medium text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                      >
                         {o.name}
                       </a>
                       <p className="text-xs text-[var(--color-text-muted)]">
                         RD$ {money(Number(o.amount))} · {(Number(o.probability) * 100).toFixed(0)}%
                       </p>
-                      {o.lead_name && <p className="text-xs text-[var(--color-text-muted)]">Lead: {o.lead_name}</p>}
+                      {o.lead_name && (
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          Lead: {o.lead_name}
+                        </p>
+                      )}
                       {puedeGestionar && (
                         <div className="flex gap-1.5">
                           <form action={transicionarEtapaForm}>
                             {campos(o.id)}
                             <input type="hidden" name="siguiente" value={siguienteEtapa[o.stage]} />
-                            <BotonEnvio
-                              
-                              className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            <BotonEnvio className="flex h-7 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="arrow_forward" size={12} />
                               {ETAPA_OPORTUNIDAD[siguienteEtapa[o.stage]!]}
                             </BotonEnvio>
@@ -151,11 +150,19 @@ export default async function PipelinePage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="amount" required inputMode="decimal" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular" />
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
+                  />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Lead de origen (opcional)
-                  <select name="leadId" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]">
+                  <select
+                    name="leadId"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  >
                     <option value="">Sin lead de origen</option>
                     {leads.map((l) => (
                       <option key={l.id} value={l.id}>
@@ -164,9 +171,7 @@ export default async function PipelinePage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

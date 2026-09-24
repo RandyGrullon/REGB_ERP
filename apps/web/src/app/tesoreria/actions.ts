@@ -154,7 +154,8 @@ export async function registrarTransferencia(fd: FormData): Promise<ActionResult
     return 'ok'
   })
 
-  if (res === 'sin-cuenta') return { ok: false, error: 'Alguna de las dos cuentas no existe o esta inactiva.' }
+  if (res === 'sin-cuenta')
+    return { ok: false, error: 'Alguna de las dos cuentas no existe o esta inactiva.' }
 
   revalidatePath('/tesoreria')
   revalidatePath('/tesoreria/flujo')

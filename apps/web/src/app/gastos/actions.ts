@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { validarReembolso } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -17,6 +18,11 @@ function demoDe(fd: FormData): DemoParams {
     tenant: String(fd.get('tenant') ?? '') || undefined,
     rol: String(fd.get('rol') ?? '') || undefined,
   }
+}
+
+/** Hoy en RD (UTC-4, sin horario de verano), como yyyy-mm-dd. */
+function fechaDeHoyEnRD(): string {
+  return new Date(Date.now() - 4 * 3_600_000).toISOString().slice(0, 10)
 }
 
 const CATEGORIAS = ['travel', 'meals', 'transport', 'supplies', 'lodging', 'other']
@@ -42,13 +48,21 @@ export async function reportarGasto(fd: FormData): Promise<ActionResult> {
   const amount = num(String(fd.get('amount') ?? ''))
   const vendorName = String(fd.get('vendorName') ?? '').trim() || null
   const vendorTaxId = String(fd.get('vendorTaxId') ?? '').trim() || null
-  const ncf = String(fd.get('ncf') ?? '').trim().toUpperCase() || null
+  const ncf =
+    String(fd.get('ncf') ?? '')
+      .trim()
+      .toUpperCase() || null
   const receiptNote = String(fd.get('receiptNote') ?? '').trim() || null
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
   if (!CATEGORIAS.includes(category)) return { ok: false, error: 'Elige una categoria valida.' }
   if (!expenseDate) return { ok: false, error: 'Elige la fecha del gasto.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  // La misma regla que reportar_gasto() en la app movil (0132).
+  if (expenseDate > fechaDeHoyEnRD()) {
+    return { ok: false, error: 'La fecha del gasto no puede ser del futuro.' }
+  }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -82,7 +96,8 @@ export async function resolverGasto(fd: FormData): Promise<ActionResult> {
   const decision = String(fd.get('decision') ?? '')
   const note = String(fd.get('note') ?? '').trim() || null
   if (!recordId) return { ok: false, error: 'Falta el gasto.' }
-  if (decision !== 'approved' && decision !== 'rejected') return { ok: false, error: 'Decision invalida.' }
+  if (decision !== 'approved' && decision !== 'rejected')
+    return { ok: false, error: 'Decision invalida.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -111,7 +126,12 @@ export async function resolverGasto(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
-/** Marca un gasto aprobado como reembolsado -registra el hecho, no toca la nomina-. */
+/**
+ * Marca un gasto aprobado como reembolsado. Por transferencia o efectivo
+ * es el hecho de que ya se pago. Por nomina, lo paga la nomina en borrador
+ * elegida: calcularNomina() lo suma al neto de ese periodo (0132). Sin
+ * periodo no se acepta (0138): quedaba "reembolsado" y nadie lo pagaba.
+ */
 export async function reembolsarGasto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
@@ -119,10 +139,24 @@ export async function reembolsarGasto(fd: FormData): Promise<ActionResult> {
   if (!permiso.ok) return permiso
 
   const recordId = String(fd.get('recordId') ?? '')
-  const method = String(fd.get('method') ?? '')
-  const payrollPeriodId = String(fd.get('payrollPeriodId') ?? '') || null
+  // La pantalla manda UN campo, `destino`: "transfer", "cash" o
+  // "payroll:<id de la nomina>" -elegir "por nomina" y la nomina en dos
+  // listas separadas dejaba combinar "Transferencia" con una nomina-.
+  // Se aceptan tambien `method` + `payrollPeriodId` sueltos.
+  const destino = String(fd.get('destino') ?? '')
+  const [metodoDestino, periodoDestino] = destino ? destino.split(':') : []
+  const method = metodoDestino ?? String(fd.get('method') ?? '')
+  // El periodo solo significa algo por nomina: por transferencia o en
+  // efectivo no se apunta a ninguna nomina aunque el formulario lo mande.
+  const payrollPeriodId =
+    method === 'payroll' // registry:allow — metodo de reembolso
+      ? (destino ? periodoDestino : String(fd.get('payrollPeriodId') ?? '')) || null
+      : null
   if (!recordId) return { ok: false, error: 'Falta el gasto.' }
-  if (!METODOS_REEMBOLSO.includes(method)) return { ok: false, error: 'Elige un metodo de reembolso valido.' }
+  if (!METODOS_REEMBOLSO.includes(method))
+    return { ok: false, error: 'Elige un método de reembolso válido.' }
+  const regla = validarReembolso(method, payrollPeriodId)
+  if (regla) return { ok: false, error: regla }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -130,6 +164,16 @@ export async function reembolsarGasto(fd: FormData): Promise<ActionResult> {
         select status from public.expenses where id = ${recordId} and tenant_id = ${ctx.tenantId}`
       if (!row) throw new Error('Ese gasto no existe.')
       if (row.status !== 'approved') throw new Error('Solo un gasto aprobado se puede reembolsar.')
+
+      if (payrollPeriodId) {
+        const [p] = await tx<{ status: string }[]>`
+          select status from public.payroll_periods
+          where id = ${payrollPeriodId} and tenant_id = ${ctx.tenantId}`
+        if (!p) throw new Error('Esa nómina no existe.')
+        if (p.status !== 'draft') {
+          throw new Error('Esa nómina ya se procesó: elige una nómina en borrador.')
+        }
+      }
 
       await tx`
         update public.expenses
@@ -153,11 +197,23 @@ export async function reembolsarGasto(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function reportarGastoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await reportarGasto(fd), 'reportarGasto')
+  await anotarAviso(await reportarGasto(fd), 'reportarGasto', 'Listo, el gasto quedó reportado.')
 }
 export async function resolverGastoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await resolverGasto(fd), 'resolverGasto')
+  const aprueba = String(fd.get('decision') ?? '') === 'approved'
+  await anotarAviso(
+    await resolverGasto(fd),
+    'resolverGasto',
+    aprueba ? 'Listo, el gasto quedó aprobado.' : 'Listo, el gasto quedó rechazado.',
+  )
 }
 export async function reembolsarGastoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await reembolsarGasto(fd), 'reembolsarGasto')
+  const porNomina =
+    String(fd.get('method') ?? '') === 'payroll' || // registry:allow — metodo de reembolso
+    String(fd.get('destino') ?? '').startsWith('payroll') // registry:allow — destino del reembolso
+  await anotarAviso(
+    await reembolsarGasto(fd),
+    'reembolsarGasto',
+    porNomina ? 'Listo, se paga en la nómina que elegiste.' : 'Listo, el gasto quedó reembolsado.',
+  )
 }

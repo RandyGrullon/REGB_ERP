@@ -152,7 +152,7 @@ export function can(action: string, resource: Resource, ctx: EvaluationContext):
     return {
       allowed: false,
       reason: 'module-not-licensed',
-      detail: `El modulo "${resource.module}" no esta activo para este cliente.`,
+      detail: 'Esta parte del sistema no está activa en tu cuenta. El dueño la enciende desde el Marketplace.',
     }
   }
 
@@ -166,7 +166,7 @@ export function can(action: string, resource: Resource, ctx: EvaluationContext):
       return {
         allowed: false,
         reason: 'explicitly-denied',
-        detail: `El rol "${role.name}" tiene denegado "${p}".`,
+        detail: `Tu rol (${role.name}) tiene esto bloqueado a propósito. Si lo necesitas, pídeselo a quien administra tu cuenta.`,
       }
     }
   }
@@ -176,7 +176,7 @@ export function can(action: string, resource: Resource, ctx: EvaluationContext):
     return {
       allowed: false,
       reason: 'no-permission',
-      detail: `El rol "${role.name}" no concede "${action}".`,
+      detail: `Tu rol (${role.name}) no permite hacer esto. Si lo necesitas, pídeselo a quien administra tu cuenta.`,
     }
   }
 
@@ -188,7 +188,7 @@ export function can(action: string, resource: Resource, ctx: EvaluationContext):
     return {
       allowed: false,
       reason: 'read-only',
-      detail: `El rol "${role.name}" es de solo lectura.`,
+      detail: `Tu rol (${role.name}) solo puede consultar, no cambiar nada.`,
     }
   }
 
@@ -225,7 +225,7 @@ export function can(action: string, resource: Resource, ctx: EvaluationContext):
       return {
         allowed: false,
         reason: 'amount-exceeded',
-        detail: `El monto supera tu limite de ${scope.max_amount.toLocaleString('es-DO')}.`,
+        detail: `El monto supera tu límite de ${scope.max_amount.toLocaleString('es-DO')}.`,
       }
     }
   }

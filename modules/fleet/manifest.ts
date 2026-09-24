@@ -13,8 +13,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'fleet',
-  name: 'Flota & Vehiculos',
-  description: 'Vehiculos, combustible, mantenimiento, licencias y multas.',
+  name: 'Flota & Vehículos',
+  description: 'Vehículos, combustible, mantenimiento, licencias y multas.',
   icon: 'local_shipping',
   category: 'standard',
   version: '0.1.0',

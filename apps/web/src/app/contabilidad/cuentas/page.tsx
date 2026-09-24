@@ -27,7 +27,7 @@ import { TIPO_CUENTA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Catalogo de cuentas · REGB ERP' }
+export const metadata = { title: 'Catálogo de cuentas · REGB ERP' }
 
 interface AccountRow {
   id: string
@@ -105,10 +105,10 @@ export default async function CuentasPage({
         {cuentas.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'account_tree'}
-            title={hayFiltros ? 'Ninguna cuenta coincide' : 'Todavia no hay cuentas'}
+            title={hayFiltros ? 'Ninguna cuenta coincide' : 'Todavía no hay cuentas'}
             description={
               hayFiltros
-                ? 'Prueba con otro codigo o nombre.'
+                ? 'Prueba con otro código o nombre.'
                 : 'Registra la primera abajo. Necesitas al menos dos para armar un asiento.'
             }
           />
@@ -116,7 +116,7 @@ export default async function CuentasPage({
           <Table>
             <THead>
               <TR>
-                <TH>Codigo</TH>
+                <TH>Código</TH>
                 <TH>Nombre</TH>
                 <TH>Tipo</TH>
                 <TH numeric>Movimientos</TH>
@@ -150,9 +150,7 @@ export default async function CuentasPage({
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="id" value={c.id} />
-                        <BotonEnvio
-                          
-                          className="rounded-full px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
+                        <BotonEnvio className="rounded-full px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
                           {c.is_active ? 'Desactivar' : 'Activar'}
                         </BotonEnvio>
                       </form>
@@ -179,7 +177,13 @@ export default async function CuentasPage({
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required minLength={2} placeholder="Caja" className={inputCls} />
+                  <input
+                    name="name"
+                    required
+                    minLength={2}
+                    placeholder="Caja"
+                    className={inputCls}
+                  />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tipo
@@ -191,9 +195,7 @@ export default async function CuentasPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>

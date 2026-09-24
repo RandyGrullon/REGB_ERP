@@ -140,7 +140,7 @@ export default async function RespaldosPage({
         <PageHeader
           icon="backup"
           title="Respaldos"
-          description="Una copia completa de tus datos en JSON, para guardarla fuera de aqui. Se arma con tus permisos: no puede traer lo que tu rol no ve."
+          description="Una copia completa de tus datos en un archivo, para guardarla fuera del sistema. Se arma con tus permisos: no puede traer lo que tu rol no ve."
           actions={
             puedeCrear ? (
               <form action={crearRespaldo}>
@@ -157,7 +157,7 @@ export default async function RespaldosPage({
 
         {/*
           El aviso va ARRIBA y con color, no como una nota al pie. Es la
-          unica linea de esta pantalla que puede cambiar lo que el cliente
+          única línea de esta pantalla que puede cambiar lo que el cliente
           hace hoy; la lista de abajo solo confirma lo que ya sabe.
 
           El estado nunca se comunica solo por color: lleva icono y texto,
@@ -193,8 +193,8 @@ export default async function RespaldosPage({
             titulo={`Que trae el respaldo del ${fecha(referencia.created_at)}`}
             subtitulo={
               referencia.downloaded_at
-                ? 'Es el ultimo que salio de aqui: lo que no este en el, lo perderias.'
-                : 'Todavia no ha salido de aqui.'
+                ? 'Es el último que salió de aquí: lo que no esté en él, lo perderías.'
+                : 'Todavía no ha salido de aquí.'
             }
           />
         ) : (
@@ -213,8 +213,8 @@ export default async function RespaldosPage({
                   </p>
                   {alcance.fuera.length > 0 && (
                     <p className="text-[var(--color-semantic-text-warning)]">
-                      No traeria:{' '}
-                      {alcance.fuera.map((f) => `${f.nombre} (${f.motivo})`).join(', ')}.
+                      No traeria: {alcance.fuera.map((f) => `${f.nombre} (${f.motivo})`).join(', ')}
+                      .
                     </p>
                   )}
                   <p>
@@ -240,7 +240,7 @@ export default async function RespaldosPage({
                 <TH>Contenido</TH>
                 <TH numeric>Tamano</TH>
                 <TH>Creado por</TH>
-                <TH>Fuera de aqui</TH>
+                <TH>Fuera de aquí</TH>
                 <TH>
                   <span className="sr-only">Acciones</span>
                 </TH>
@@ -265,7 +265,7 @@ export default async function RespaldosPage({
                   <TD>{b.created_by_name ?? '—'}</TD>
                   <TD>
                     {b.downloaded_at === null ? (
-                      <Badge tone="warning">Solo aqui</Badge>
+                      <Badge tone="warning">Solo aquí</Badge>
                     ) : (
                       <Badge tone="success">Descargado</Badge>
                     )}
@@ -276,7 +276,7 @@ export default async function RespaldosPage({
                         href={`/respaldos/${b.id}/descargar${ctx.demoQs}`}
                         className="whitespace-nowrap rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-semibold text-[var(--color-brand-bright)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
-                        Descargar JSON
+                        Descargar
                       </a>
                     )}
                   </TD>
@@ -322,9 +322,14 @@ function QueTrae({
       <CardBody className="space-y-4 text-sm">
         <div>
           <p className="flex items-center gap-1.5 font-semibold text-[var(--color-text-primary)]">
-            <Icon name="check_circle" size={18} className="text-[var(--color-semantic-text-success)]" />
-            Trae {numero(nTablas)} tablas de {numero(indice.modulos.length)} modulos ·{' '}
-            {numero(indice.filas)} filas
+            <Icon
+              name="check_circle"
+              size={18}
+              className="text-[var(--color-semantic-text-success)]"
+            />
+            <span title={`${numero(nTablas)} tablas`}>
+              Trae {numero(indice.filas)} registros de {numero(indice.modulos.length)} módulos
+            </span>
           </p>
           <p className="mt-1 text-[var(--color-text-secondary)]">
             {indice.modulos.map(nombreDeModulo).join(', ')}.
@@ -347,14 +352,14 @@ function QueTrae({
           <ul className="mt-1 list-disc space-y-1 pl-5 text-[var(--color-text-secondary)]">
             {apagados.length > 0 && (
               <li className="text-[var(--color-semantic-text-warning)]">
-                {apagados.map(nombreDeModulo).join(', ')}: el modulo esta apagado. Tus datos
-                siguen en la base, pero no salen en el respaldo hasta que lo enciendas.
+                {apagados.map(nombreDeModulo).join(', ')}: el modulo esta apagado. Tus datos siguen
+                en la base, pero no salen en el respaldo hasta que lo enciendas.
               </li>
             )}
             {sinPermiso.length > 0 && (
               <li className="text-[var(--color-semantic-text-warning)]">
-                {sinPermiso.map(nombreDeModulo).join(', ')}: quien lo creo no los ve completos.
-                Para llevartelos, que lo cree alguien que si.
+                {sinPermiso.map(nombreDeModulo).join(', ')}: quien lo creo no los ve completos. Para
+                llevartelos, que lo cree alguien que si.
               </li>
             )}
             {sinModulo.length > 0 && (
@@ -363,24 +368,35 @@ function QueTrae({
               </li>
             )}
             {indice.personales.length > 0 && (
-              <li>
-                Lo personal de los demas usuarios (
-                <code className="text-xs">{indice.personales.join(', ')}</code>): cada quien ve
-                solo lo suyo, asi que trae solo lo de quien lo creo.
+              <li title={indice.personales.join(', ')}>
+                Lo personal de los demás usuarios (sus avisos y lecturas): cada quien ve solo lo
+                suyo, así que trae solo lo de quien lo creó.
               </li>
             )}
             {indice.no_incluye.map((t) => (
               <li key={t}>{t}</li>
             ))}
-            {porDiseno.map((f) => (
-              <li key={f.tabla}>
-                <code className="text-xs">{f.tabla}</code>: {f.detalle}
-              </li>
-            ))}
-            {noContratadas > 0 && (
-              <li>Las {numero(noContratadas)} tablas de los modulos que no tienes contratados.</li>
-            )}
+            {noContratadas > 0 && <li>Lo de los módulos que no tienes contratados.</li>}
           </ul>
+          {/* Las tablas internas (la cola de avisos, los propios respaldos)
+              le sirven al contador o a soporte, no al dueño: van plegadas. */}
+          {porDiseno.length > 0 && (
+            <details className="mt-2 text-[var(--color-text-secondary)]">
+              <summary className="cursor-pointer text-xs font-semibold">
+                Detalle técnico ({numero(porDiseno.length + noContratadas)} tablas fuera)
+              </summary>
+              <ul className="mt-1 list-disc space-y-1 pl-5">
+                {porDiseno.map((f) => (
+                  <li key={f.tabla}>
+                    <code className="text-xs">{f.tabla}</code>: {f.detalle}
+                  </li>
+                ))}
+                {noContratadas > 0 && (
+                  <li>{numero(noContratadas)} tablas de módulos no contratados.</li>
+                )}
+              </ul>
+            </details>
+          )}
         </div>
 
         {indice.omitido.length > 0 && (

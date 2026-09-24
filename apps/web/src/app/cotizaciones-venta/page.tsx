@@ -33,6 +33,8 @@ interface CotizacionRow {
   customer_name: string | null
   status: string
   total: string
+  sales_order_id: string | null
+  pedido: string | null
 }
 
 interface ClienteOption {
@@ -59,9 +61,11 @@ export default async function CotizacionesPage({
 
   const { cotizaciones, clientes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const c = await tx<CotizacionRow[]>`
-      select q.id, q.quote_number, q.version, c.name as customer_name, q.status, q.total::text
+      select q.id, q.quote_number, q.version, c.name as customer_name, q.status, q.total::text,
+             q.sales_order_id, so.number as pedido
       from public.quotes q
       left join public.customers c on c.id = q.customer_id
+      left join public.sales_orders so on so.id = q.sales_order_id
       where q.tenant_id = ${ctx.tenantId} and q.status != 'superseded'
       order by q.created_at desc`
     const cl = await tx<ClienteOption[]>`
@@ -70,6 +74,9 @@ export default async function CotizacionesPage({
   })
 
   const pendientesAprobacion = cotizaciones.filter((c) => c.status === 'sent').length
+  const porConvertir = cotizaciones.filter(
+    (c) => c.status === 'approved' && !c.sales_order_id,
+  ).length
   const puedeGestionar = exigir(ctx, 'quotes', 'quotes.manage').ok
   const qs = ctx.demoQs
 
@@ -79,16 +86,29 @@ export default async function CotizacionesPage({
         <PageHeader
           icon="description"
           title="Cotizaciones"
-          description="Cada version queda en el historial -revisar una cotizacion nunca sobrescribe la anterior-. Los mismos totales que usan pedidos, POS y facturas."
+          description="Cotiza con los precios de la lista de cada cliente, imprimela para enviarsela y, cuando la acepte, conviertela en pedido. Revisar una cotizacion enviada crea una version nueva: la anterior queda en el historial."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Cotizaciones" value={String(cotizaciones.length)} />
-          <StatCard label="Esperando aprobacion" value={String(pendientesAprobacion)} />
+          <StatCard
+            label="Esperando al cliente"
+            value={String(pendientesAprobacion)}
+            hint="enviadas, sin respuesta"
+          />
+          <StatCard
+            label="Aprobadas sin pedido"
+            value={String(porConvertir)}
+            hint="conviertelas en pedido"
+          />
         </section>
 
         {cotizaciones.length === 0 ? (
-          <EmptyState icon="description" title="Todavia no hay ninguna cotizacion" description="Crea la primera abajo." />
+          <EmptyState
+            icon="description"
+            title="Todavia no hay ninguna cotizacion"
+            description="Crea la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -103,7 +123,10 @@ export default async function CotizacionesPage({
               {cotizaciones.map((c) => (
                 <TR key={c.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/cotizaciones-venta/${c.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/cotizaciones-venta/${c.id}${qs}`}
+                      className="text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
                       <Mono>{c.quote_number}</Mono> v{c.version}
                     </a>
                   </TD>
@@ -112,7 +135,19 @@ export default async function CotizacionesPage({
                     <span className="tabular">RD$ {money(Number(c.total))}</span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(c.status)}>{ESTADO_COTIZACION[c.status] ?? c.status}</Badge>
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge tone={badgeEstado(c.status)}>
+                        {ESTADO_COTIZACION[c.status] ?? c.status}
+                      </Badge>
+                      {c.sales_order_id && c.pedido && (
+                        <a
+                          href={`/pedidos/${c.sales_order_id}${qs}`}
+                          className="text-xs text-[var(--color-text-link)] hover:underline"
+                        >
+                          Pedido {c.pedido}
+                        </a>
+                      )}
+                    </span>
                   </TD>
                 </TR>
               ))}
@@ -135,7 +170,7 @@ export default async function CotizacionesPage({
                     name="customerId"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
-                    <option value="">Sin cliente todavia</option>
+                    <option value="">Sin cliente todavía</option>
                     {clientes.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -158,9 +193,7 @@ export default async function CotizacionesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

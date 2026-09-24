@@ -87,15 +87,34 @@ export default async function TicketDetallePage({
         <PageHeader
           icon="support_agent"
           title={head.subject}
-          crumbs={[{ label: 'Mesa de ayuda', href: `/mesa-de-ayuda${qs}` }, { label: head.subject }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_TICKET[head.status] ?? head.status}</Badge>}
+          crumbs={[
+            { label: 'Mesa de ayuda', href: `/mesa-de-ayuda${qs}` },
+            { label: head.subject },
+          ]}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_TICKET[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Cliente" value={head.customer_name ?? 'Sin cliente'} />
           <StatCard label="Prioridad" value={PRIORIDAD_TICKET[head.priority] ?? head.priority} />
-          <StatCard label="SLA" value={vencido ? 'Vencido' : head.sla_due_at ? new Date(head.sla_due_at).toLocaleString('es-DO') : '—'} />
-          <StatCard label="Satisfaccion" value={head.satisfaction_rating ? `${head.satisfaction_rating}/5` : '—'} />
+          <StatCard
+            label="SLA"
+            value={
+              vencido
+                ? 'Vencido'
+                : head.sla_due_at
+                  ? new Date(head.sla_due_at).toLocaleString('es-DO')
+                  : '—'
+            }
+          />
+          <StatCard
+            label="Satisfaccion"
+            value={head.satisfaction_rating ? `${head.satisfaction_rating}/5` : '—'}
+          />
         </section>
 
         <p className="text-xs text-[var(--color-text-muted)]">{head.description}</p>
@@ -106,7 +125,7 @@ export default async function TicketDetallePage({
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="autorenew" size={14} />
                   {head.status === 'open' ? 'Tomar' : 'Reabrir'}
                 </BotonEnvio>
@@ -116,9 +135,7 @@ export default async function TicketDetallePage({
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="waiting_customer" />
-                <BotonEnvio  className={botonSecundarioClase}>
-                  Esperar al cliente
-                </BotonEnvio>
+                <BotonEnvio className={botonSecundarioClase}>Esperar al cliente</BotonEnvio>
               </form>
             )}
             {transicionValidaTicket(head.status, 'resolved' as EstadoTicket) && (
@@ -139,7 +156,7 @@ export default async function TicketDetallePage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Resolver
                 </BotonEnvio>
@@ -149,9 +166,7 @@ export default async function TicketDetallePage({
               <form action={transicionarTicketForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="closed" />
-                <BotonEnvio  className={botonSecundarioClase}>
-                  Cerrar
-                </BotonEnvio>
+                <BotonEnvio className={botonSecundarioClase}>Cerrar</BotonEnvio>
               </form>
             )}
           </div>
@@ -163,9 +178,14 @@ export default async function TicketDetallePage({
           </CardHeader>
           <CardBody>
             <ul className="space-y-3">
-              {mensajes.length === 0 && <li className="text-xs text-[var(--color-text-muted)]">Todavia no hay mensajes.</li>}
+              {mensajes.length === 0 && (
+                <li className="text-xs text-[var(--color-text-muted)]">Todavía no hay mensajes.</li>
+              )}
               {mensajes.map((m) => (
-                <li key={m.id} className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5">
+                <li
+                  key={m.id}
+                  className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5"
+                >
                   <p className="text-xs font-medium text-[var(--color-text-primary)]">
                     {m.author_type === 'agent' ? 'Agente' : 'Cliente'}
                     <span className="ml-2 font-normal text-[var(--color-text-muted)]">
@@ -188,7 +208,7 @@ export default async function TicketDetallePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="send" size={14} />
                   Enviar
                 </BotonEnvio>

@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'ecommerce',
   name: 'E-commerce sync',
-  description: 'Shopify/WooCommerce/Tiendanube: catalogo, stock y pedidos bidireccional.',
+  description: 'Shopify/WooCommerce/Tiendanube: catálogo, stock y pedidos bidireccional.',
   icon: 'storefront',
   category: 'advanced',
   version: '0.1.0',

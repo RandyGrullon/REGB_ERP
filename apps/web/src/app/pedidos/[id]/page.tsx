@@ -30,6 +30,7 @@ import {
   entregarLineaForm,
   quitarLineaForm,
 } from '../actions'
+import { facturarPedidoForm } from '../../cobrar/actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -61,12 +62,19 @@ interface LineRow {
   qty_delivered: string
   unit_price: string
   discount_pct: string
+  tax_rate: string
   line_total: string
   disponible: string
+  facturado: string
+  tracks_stock: boolean
 }
 
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
+/** Cantidades sin ceros de relleno: "55", no "55.000". */
+const cant = (raw: string | number) =>
+  Number(raw).toLocaleString('es-DO', { maximumFractionDigits: 3 })
 
 /** Ficha del pedido (S20): aqui se confirma (aparta) y se entrega (saca). */
 export default async function PedidoDetallePage({
@@ -80,8 +88,11 @@ export default async function PedidoDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'sales-orders')
 
-  const [head, lines, products, credito, facturas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<OrderHead[]>`
+  const [head, lines, products, credito, facturas] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<OrderHead[]>`
       select so.id, so.number, so.status, so.order_date::text,
              so.customer_id, c.name as customer_name, c.payment_terms as customer_terms,
              so.warehouse_id, w.name as warehouse_name,
@@ -90,13 +101,19 @@ export default async function PedidoDetallePage({
       join public.customers c on c.id = so.customer_id
       join public.warehouses w on w.id = so.warehouse_id
       where so.id = ${id} and so.tenant_id = ${ctx.tenantId}`
-    if (!h) return [null, [], [], null, []] as const
+      if (!h) return [null, [], [], null, []] as const
 
-    const l = await tx<LineRow[]>`
+      const l = await tx<LineRow[]>`
       select l.id, l.product_id, p.sku, p.name, p.unit,
              l.qty_ordered::text, l.qty_reserved::text, l.qty_delivered::text,
-             l.unit_price::text, l.discount_pct::text, l.line_total::text,
-             coalesce(sl.qty_on_hand - sl.qty_reserved, 0)::text as disponible
+             l.unit_price::text, l.discount_pct::text, l.tax_rate::text, l.line_total::text,
+             coalesce(sl.qty_on_hand - sl.qty_reserved, 0)::text as disponible,
+             p.tracks_stock,
+             -- Lo ya facturado de la linea (sin cuentas por cobrar, la RLS lo deja en 0).
+             coalesce((select sum(il.qty) from public.customer_invoice_lines il
+                        join public.customer_invoices i on i.id = il.invoice_id
+                        where il.order_line_id = l.id and i.status <> 'void'), 0)::text
+               as facturado
       from public.sales_order_lines l
       join public.products p on p.id = l.product_id
       left join public.stock_levels sl
@@ -105,32 +122,43 @@ export default async function PedidoDetallePage({
       where l.order_id = ${id} and l.tenant_id = ${ctx.tenantId}
       order by p.name`
 
-    const p =
-      h.status === 'draft'
-        ? await tx<{ id: string; sku: string; name: string; price: string }[]>`
+      const p =
+        h.status === 'draft'
+          ? await tx<{ id: string; sku: string; name: string; price: string }[]>`
             select id, sku, name, price::text from public.products
             where tenant_id = ${ctx.tenantId} and active order by name limit 300`
-        : []
+          : []
 
-    // El credito se mira ANTES de confirmar, con los mismos numeros que
-    // usara la accion: si aqui dice bloqueado, confirmar dice lo mismo.
-    // Sin `ar` la RLS deja la cartera vacia y no hay vencidas que mirar.
-    const s: SituacionDeCredito | null =
-      h.status === 'draft' && l.length > 0
-        ? await situacionDeCredito(tx, ctx.tenantId, h.customer_id, {
-            excluirPedido: h.id,
-            montoDocumento: Number(h.total),
-          })
-        : null
+      // El credito se mira ANTES de confirmar, con los mismos numeros que
+      // usara la accion: si aqui dice bloqueado, confirmar dice lo mismo.
+      // Sin `ar` la RLS deja la cartera vacia y no hay vencidas que mirar.
+      const s: SituacionDeCredito | null =
+        h.status === 'draft' && l.length > 0
+          ? await situacionDeCredito(tx, ctx.tenantId, h.customer_id, {
+              excluirPedido: h.id,
+              montoDocumento: Number(h.total),
+            })
+          : null
 
-    const f = await tx<
-      { id: string; number: string; total: string; status: string; ncf: string | null }[]
-    >`
-      select id, number, total::text, status, ncf from public.customer_invoices
-      where tenant_id = ${ctx.tenantId} and source_type = 'sales_order' and source_id = ${id}
-      order by created_at`
-    return [h, l, p, s, f] as const
-  })
+      const f = await tx<
+        {
+          id: string
+          number: string
+          total: string
+          status: string
+          ncf: string | null
+          sin_lineas: boolean
+        }[]
+      >`
+      select i.id, i.number, i.total::text, i.status, i.ncf,
+             not exists (select 1 from public.customer_invoice_lines il
+                         where il.invoice_id = i.id) as sin_lineas
+      from public.customer_invoices i
+      where i.tenant_id = ${ctx.tenantId} and i.source_type = 'sales_order' and i.source_id = ${id}
+      order by i.created_at`
+      return [h, l, p, s, f] as const
+    },
+  )
 
   if (!head) notFound()
 
@@ -155,6 +183,25 @@ export default async function PedidoDetallePage({
   const entregado = head.status === 'delivered'
   const aMedias = head.status === 'partially_delivered'
   const qs = ctx.demoQs
+
+  // Lo entregado que todavia no se factura. Se factura desde aqui mismo:
+  // antes, tras entregar, habia que ir a Por cobrar a buscar el pedido.
+  // Una factura vieja (sin lineas) cubrio el pedido entero.
+  const facturaVieja = facturas.some((f) => f.status !== 'void' && f.sin_lineas)
+  const porFacturar = facturaVieja
+    ? 0
+    : Math.round(
+        lines.reduce(
+          (a, l) =>
+            a +
+            Math.max(0, Number(l.qty_delivered) - Number(l.facturado)) *
+              Number(l.unit_price) *
+              (1 - Number(l.discount_pct) / 100) *
+              (1 + Number(l.tax_rate)),
+          0,
+        ) * 100,
+      ) / 100
+  const puedeFacturar = exigir(ctx, 'ar', 'ar.invoice.create').ok
 
   const campos = (
     <>
@@ -183,8 +230,14 @@ export default async function PedidoDetallePage({
               <span className="text-xs text-[var(--color-text-muted)]">
                 {head.customer_terms === 0
                   ? 'Cliente de contado'
-                  : `${head.customer_terms} dias de credito`}
+                  : `${head.customer_terms} días de crédito`}
               </span>
+              <a
+                href={`/pedidos/clientes/${head.customer_id}${qs}`}
+                className="text-xs text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              >
+                Ficha del cliente
+              </a>
             </div>
           }
           actions={
@@ -192,16 +245,26 @@ export default async function PedidoDetallePage({
               {enBorrador && puedeConfirmar && lines.length > 0 && !bloqueado && (
                 <form action={confirmarPedidoForm}>
                   {campos}
-                  <BotonEnvio
-                    
-                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                     <Icon name="check_circle" size={18} />
                     Confirmar y apartar
                   </BotonEnvio>
                 </form>
               )}
+              {porFacturar > 0 && puedeFacturar && (
+                <form action={facturarPedidoForm}>
+                  {campos}
+                  <BotonEnvio
+                    title="Emite la factura de lo entregado que falta por facturar. El comprobante (B01 o B02) sale del RNC del cliente."
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  >
+                    <Icon name="receipt_long" size={18} />
+                    Facturar lo entregado · RD$ {money(porFacturar)}
+                  </BotonEnvio>
+                </form>
+              )}
               {/* Entregado completo no se cancela: la devolucion es una nota
-                  de credito sobre la factura. A medias, se cancela lo
+                  de crédito sobre la factura. A medias, se cancela lo
                   pendiente y lo entregado sigue por facturar. */}
               {!cancelado && !entregado && puedeCancelar && (
                 <form action={cancelarPedidoForm}>
@@ -210,9 +273,10 @@ export default async function PedidoDetallePage({
                     title={
                       aMedias
                         ? 'Cancela lo que falta por entregar y devuelve lo apartado. Lo entregado queda por facturar.'
-                        : 'Devuelve lo apartado al almacen.'
+                        : 'Devuelve lo apartado al almacén.'
                     }
-                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                    className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                  >
                     <Icon name="cancel" size={18} />
                     {aMedias ? 'Cancelar lo pendiente' : 'Cancelar'}
                   </BotonEnvio>
@@ -247,8 +311,8 @@ export default async function PedidoDetallePage({
             )}
             {bloqueado && puedeConfirmar && !puedeAutorizar && (
               <p className="text-xs text-[var(--color-text-muted)]">
-                Solo quien tiene permiso para autorizar credito (ar.credit.override) puede confirmar
-                este pedido con una excepcion.
+                Para confirmarlo hace falta que el dueño, o quien autoriza crédito, lo apruebe con
+                una excepcion.
               </p>
             )}
           </EstadoDeCredito>
@@ -272,7 +336,7 @@ export default async function PedidoDetallePage({
         {lines.length === 0 ? (
           <Card>
             <CardBody className="py-8 text-center text-sm text-[var(--color-text-muted)]">
-              Este pedido no tiene lineas todavia. Agrega productos abajo.
+              Este pedido no tiene líneas todavía. Agrega productos abajo.
             </CardBody>
           </Card>
         ) : (
@@ -300,6 +364,11 @@ export default async function PedidoDetallePage({
                 }
                 const pendiente = pendingDelivery(estado)
                 const falta = estado.qtyOrdered - estado.qtyReserved - estado.qtyDelivered
+                // Se entrega lo que existe: lo apartado para esta linea mas lo
+                // libre del almacen. Un servicio no lleva existencia.
+                const entregable = l.tracks_stock
+                  ? Math.min(pendiente, estado.qtyReserved + Math.max(0, Number(l.disponible)))
+                  : pendiente
                 return (
                   <TR key={l.id}>
                     <TD>
@@ -307,27 +376,29 @@ export default async function PedidoDetallePage({
                       <span className="font-medium text-[var(--color-text-primary)]">{l.name}</span>
                       {falta > 0 && !enBorrador && (
                         <Badge tone="warning" dot={false} className="ml-2">
-                          faltan {falta}
+                          faltan {cant(falta)}
                         </Badge>
                       )}
                     </TD>
                     <TD numeric>
                       <span className="tabular">
-                        {estado.qtyOrdered} {l.unit}
+                        {cant(estado.qtyOrdered)} {l.unit}
                       </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular text-[var(--color-semantic-text-info)]">
-                        {estado.qtyReserved}
+                        {cant(estado.qtyReserved)}
                       </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular text-[var(--color-semantic-text-success)]">
-                        {estado.qtyDelivered}
+                        {cant(estado.qtyDelivered)}
                       </span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular text-[var(--color-text-muted)]">{l.disponible}</span>
+                      <span className="tabular text-[var(--color-text-muted)]">
+                        {cant(l.disponible)}
+                      </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular">{money(Number(l.unit_price))}</span>
@@ -346,29 +417,34 @@ export default async function PedidoDetallePage({
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
                           <BotonEnvio
-                            
                             aria-label={`Quitar ${l.name}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                          >
                             <Icon name="delete" size={16} />
                           </BotonEnvio>
                         </form>
                       )}
-                      {!enBorrador && !cancelado && pendiente > 0 && puedeEntregar && (
+                      {!enBorrador &&
+                        !cancelado &&
+                        pendiente > 0 &&
+                        puedeEntregar &&
+                        entregable <= 0 && (
+                          <span className="text-xs text-[var(--color-text-muted)]">
+                            Sin existencia para entregar
+                          </span>
+                        )}
+                      {!enBorrador && !cancelado && entregable > 0 && puedeEntregar && (
                         <form action={entregarLineaForm} className="flex items-center gap-1">
                           {campos}
                           <input type="hidden" name="lineId" value={l.id} />
                           <input
                             name="qty"
-                            defaultValue={String(
-                              Math.min(pendiente, estado.qtyReserved) || pendiente,
-                            )}
+                            defaultValue={String(entregable)}
                             inputMode="decimal"
                             aria-label={`Cantidad a entregar de ${l.name}`}
                             className="h-8 w-16 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                           />
-                          <BotonEnvio
-                            
-                            className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
+                          <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]">
                             Entregar
                           </BotonEnvio>
                         </form>
@@ -405,7 +481,8 @@ export default async function PedidoDetallePage({
                 ))}
               </ul>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Se factura lo entregado: si el pedido sale por partes, cada entrega se factura aparte.
+                Se factura lo entregado: si el pedido sale por partes, cada entrega se factura
+                aparte.
               </p>
             </CardBody>
           </Card>
@@ -454,16 +531,15 @@ export default async function PedidoDetallePage({
                     />
                   </label>
                 )}
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Agregar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                El precio sale del catalogo. Al confirmar se aparta lo que haya; lo que falte queda
-                en backorder y se puede entregar despues.
+                El precio sale de la lista de precios del cliente (segun la cantidad); si no tiene
+                lista, del catálogo, que es el que ves entre parentesis. Al confirmar se aparta lo
+                que haya; lo que falte queda en backorder y se entrega cuando entre mercancia.
               </p>
             </CardBody>
           </Card>

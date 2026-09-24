@@ -28,7 +28,7 @@ import { ESTADOS } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Ordenes de compra · REGB ERP' }
+export const metadata = { title: 'Órdenes de compra · REGB ERP' }
 
 interface OrderRow {
   id: string
@@ -156,22 +156,22 @@ export default async function ComprasPage({
         {orders.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'local_shipping'}
-            title={hayFiltros ? 'Ninguna orden coincide' : 'Todavia no hay ordenes de compra'}
+            title={hayFiltros ? 'Ninguna orden coincide' : 'Todavía no hay órdenes de compra'}
             description={
               hayFiltros
-                ? 'Prueba con otro numero, otro proveedor o quita el filtro de estado.'
-                : 'Crea la primera abajo. Necesitas al menos un proveedor y un almacen.'
+                ? 'Prueba con otro número, otro proveedor o quita el filtro de estado.'
+                : 'Crea la primera abajo. Necesitas al menos un proveedor y un almacén.'
             }
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Numero</TH>
+                <TH>Número</TH>
                 <TH>Proveedor</TH>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH>Fecha</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH>Estado</TH>
                 <TH numeric>Total</TH>
               </TR>
@@ -241,7 +241,7 @@ export default async function ComprasPage({
                   </select>
                 </label>
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen que recibe
+                  Almacén que recibe
                   <select
                     name="warehouseId"
                     required
@@ -254,9 +254,7 @@ export default async function ComprasPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Crear borrador
                 </BotonEnvio>

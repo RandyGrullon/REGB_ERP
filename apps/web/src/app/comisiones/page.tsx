@@ -72,8 +72,11 @@ export default async function ComisionesPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'commissions')
 
-  const { entradas, planes, ordenes, vendedores } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const e = await tx<EntradaRow[]>`
+  const { entradas, planes, ordenes, vendedores } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const e = await tx<EntradaRow[]>`
       select ce.id, so.number as order_number, up.display_name as salesperson_name,
              ce.base_amount::text, ce.commission_amount::text, ce.status
       from public.commission_entries ce
@@ -81,16 +84,17 @@ export default async function ComisionesPage({
       left join public.user_profiles up on up.user_id = ce.salesperson_id and up.tenant_id = ce.tenant_id
       where ce.tenant_id = ${ctx.tenantId}
       order by ce.created_at desc`
-    const p = await tx<PlanOption[]>`
+      const p = await tx<PlanOption[]>`
       select id, name from public.commission_plans where tenant_id = ${ctx.tenantId} and active order by name`
-    const o = await tx<OrdenOption[]>`
+      const o = await tx<OrdenOption[]>`
       select id, number, total::text from public.sales_orders
       where tenant_id = ${ctx.tenantId} order by order_date desc limit 100`
-    const v = await tx<VendedorOption[]>`
+      const v = await tx<VendedorOption[]>`
       select user_id as id, display_name as name from public.user_profiles
       where tenant_id = ${ctx.tenantId} order by display_name`
-    return { entradas: e, planes: p, ordenes: o, vendedores: v }
-  })
+      return { entradas: e, planes: p, ordenes: o, vendedores: v }
+    },
+  )
 
   const pendientes = entradas.filter((e) => e.status === 'pending').length
   const puedeGestionar = exigir(ctx, 'commissions', 'commissions.manage').ok
@@ -138,7 +142,7 @@ export default async function ComisionesPage({
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -154,10 +158,14 @@ export default async function ComisionesPage({
                     <span className="tabular">RD$ {money(Number(e.base_amount))}</span>
                   </TD>
                   <TD numeric>
-                    <span className="tabular font-semibold">RD$ {money(Number(e.commission_amount))}</span>
+                    <span className="tabular font-semibold">
+                      RD$ {money(Number(e.commission_amount))}
+                    </span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(e.status)}>{ESTADO_COMISION[e.status] ?? e.status}</Badge>
+                    <Badge tone={badgeEstado(e.status)}>
+                      {ESTADO_COMISION[e.status] ?? e.status}
+                    </Badge>
                   </TD>
                   {puedeGestionar && (
                     <TD>
@@ -166,7 +174,7 @@ export default async function ComisionesPage({
                           <form action={transicionarEntradaForm}>
                             {campos(e.id)}
                             <input type="hidden" name="siguiente" value="approved" />
-                            <BotonEnvio  className={botonClase}>
+                            <BotonEnvio className={botonClase}>
                               <Icon name="check_circle" size={13} />
                               Aprobar
                             </BotonEnvio>
@@ -175,9 +183,9 @@ export default async function ComisionesPage({
                             {campos(e.id)}
                             <input type="hidden" name="siguiente" value="rejected" />
                             <BotonEnvio
-                              
                               className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                              aria-label="Rechazar comision">
+                              aria-label="Rechazar comision"
+                            >
                               <Icon name="close" size={16} />
                             </BotonEnvio>
                           </form>
@@ -187,7 +195,7 @@ export default async function ComisionesPage({
                         <form action={transicionarEntradaForm}>
                           {campos(e.id)}
                           <input type="hidden" name="siguiente" value="paid" />
-                          <BotonEnvio  className={botonClase}>
+                          <BotonEnvio className={botonClase}>
                             <Icon name="payments" size={13} />
                             Pagar
                           </BotonEnvio>
@@ -240,7 +248,7 @@ export default async function ComisionesPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

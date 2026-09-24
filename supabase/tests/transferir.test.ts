@@ -143,6 +143,19 @@ describe('La transferencia mueve las dos puntas, o ninguna', () => {
     expect(await stock(almacen2)).toBe(antes2 + 30)
   })
 
+  it('la mercancia llega al destino con su costo, no a cero (0137)', async () => {
+    // El almacen 2 no tenia el producto: antes de 0137 el transfer_in
+    // entraba sin costo y el promedio del destino quedaba en 0.0000.
+    const [d] = await sql<{ avg: string }[]>`
+      select avg_cost::text as avg from public.stock_levels
+      where warehouse_id = ${almacen2} and product_id = ${productoA}`
+    expect(Number(d!.avg)).toBe(50)
+    const filas = await sql<{ movement_type: string; unit_cost: string | null }[]>`
+      select movement_type, unit_cost::text from public.inventory_movements
+      where tenant_id = ${tenantA} and reference_type = 'stock_transfer'`
+    expect(filas.every((f) => Number(f.unit_cost) === 50)).toBe(true)
+  })
+
   it('deja los dos movimientos de kardex, apuntando a la transferencia', async () => {
     const filas = await sql<{ movement_type: string; qty: string }[]>`
       select movement_type, qty::text from public.inventory_movements

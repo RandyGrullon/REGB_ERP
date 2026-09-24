@@ -18,7 +18,9 @@ import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Volantes de nomina · REGB ERP' }
+export const metadata = { title: 'Volantes de nómina · REGB ERP' }
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface PeriodoOption {
   id: string
@@ -53,7 +55,12 @@ export default async function ReportesPayrollPage({
   searchParams: Promise<ReportsParams>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'payroll')
+  // Los volantes de TODOS piden `payroll.export`, como declara el manifest
+  // ("TSS y reportes"). Con `payroll.view` los veia cualquiera con `*.view`
+  // -el Gerente de Sucursal, el salario de toda la empresa- (0138).
+  const { ctx, shell } = await modulePage(params, 'payroll', 'payroll.export')
+  // Un ?period= que no es un id tumbaba la pagina (500 de postgres).
+  const pedido = params.period && UUID.test(params.period) ? params.period : undefined
 
   const [periodos, volantes] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = await tx<PeriodoOption[]>`
@@ -62,7 +69,7 @@ export default async function ReportesPayrollPage({
       where tenant_id = ${ctx.tenantId} and status <> 'draft'
       order by period_end desc`
 
-    const periodId = params.period ?? p[0]?.id
+    const periodId = pedido ?? p[0]?.id
     if (!periodId) return [p, []] as const
 
     const v = await tx<VolanteRow[]>`
@@ -79,7 +86,7 @@ export default async function ReportesPayrollPage({
   })
 
   const qs = ctx.demoQs
-  const periodoActivo = params.period ?? periodos[0]?.id
+  const periodoActivo = pedido ?? periodos[0]?.id
 
   const fecha = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
@@ -98,16 +105,16 @@ export default async function ReportesPayrollPage({
       <div className="space-y-5">
         <PageHeader
           icon="receipt_long"
-          title="Volantes de nomina"
+          title="Volantes de nómina"
           description="El desglose de TSS, ISR y neto de cada empleado en un periodo ya procesado."
-          crumbs={[{ label: 'Nomina', href: `/payroll${qs}` }, { label: 'Volantes' }]}
+          crumbs={[{ label: 'Nómina', href: `/payroll${qs}` }, { label: 'Volantes' }]}
         />
 
         {periodos.length === 0 ? (
           <EmptyState
             icon="receipt_long"
-            title="Todavia no hay ningun periodo procesado"
-            description="Procesa un periodo desde /payroll/run para ver sus volantes aqui."
+            title="Todavía no hay ningún periodo procesado"
+            description="Cuando proceses una nómina, aquí verás el volante de cada empleado."
           />
         ) : (
           <>
@@ -144,12 +151,12 @@ export default async function ReportesPayrollPage({
                     <TR>
                       <TH>Empleado</TH>
                       <TH>Cargo</TH>
-                      <TH numeric>Dias</TH>
+                      <TH numeric>Días</TH>
                       <TH numeric>Bruto</TH>
                       <TH numeric>Reembolsos</TH>
                       <TH numeric>TSS</TH>
                       <TH numeric>ISR</TH>
-                      <TH numeric>Prestamos y otros</TH>
+                      <TH numeric>Préstamos y otros</TH>
                       <TH numeric>Neto</TH>
                     </TR>
                   </THead>
@@ -159,7 +166,9 @@ export default async function ReportesPayrollPage({
                         <TD className="text-[var(--color-text-primary)]">{v.employee_name}</TD>
                         <TD>{v.position}</TD>
                         <TD numeric>
-                          <span className="tabular">{v.paid_days === null ? '—' : Number(v.paid_days)}</span>
+                          <span className="tabular">
+                            {v.paid_days === null ? '—' : Number(v.paid_days)}
+                          </span>
                         </TD>
                         <TD numeric>
                           <span className="tabular">{money(Number(v.gross_salary))}</span>
@@ -181,7 +190,9 @@ export default async function ReportesPayrollPage({
                           <span className="tabular">{money(Number(v.other_deductions))}</span>
                         </TD>
                         <TD numeric>
-                          <span className="tabular font-semibold">{money(Number(v.net_salary))}</span>
+                          <span className="tabular font-semibold">
+                            {money(Number(v.net_salary))}
+                          </span>
                         </TD>
                       </TR>
                     ))}

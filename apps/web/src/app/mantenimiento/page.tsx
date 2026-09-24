@@ -62,23 +62,27 @@ export default async function MantenimientoPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'maintenance')
 
-  const { ordenesAbiertas, equipos, equiposActivos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const o = await tx<OrdenRow[]>`
+  const { ordenesAbiertas, equipos, equiposActivos } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const o = await tx<OrdenRow[]>`
       select wo.id, e.name as equipment_name, wo.type, wo.status, wo.priority, wo.description, wo.opened_at::text
       from public.work_orders wo
       join public.equipment e on e.id = wo.equipment_id
       where wo.tenant_id = ${ctx.tenantId} and wo.status in ('open', 'in_progress')
       order by wo.opened_at desc`
-    const eq = await tx<EquipoRow[]>`
+      const eq = await tx<EquipoRow[]>`
       select usage_hours::text, last_service_usage::text, maintenance_interval_usage::text,
              last_service_at::text, maintenance_interval_days, status
       from public.equipment
       where tenant_id = ${ctx.tenantId} and status = 'active'`
-    const [ea] = await tx<{ n: string }[]>`
+      const [ea] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.equipment where tenant_id = ${ctx.tenantId} and status = 'active'`
 
-    return { ordenesAbiertas: o, equipos: eq, equiposActivos: Number(ea?.n ?? 0) }
-  })
+      return { ordenesAbiertas: o, equipos: eq, equiposActivos: Number(ea?.n ?? 0) }
+    },
+  )
 
   const vencidos = equipos.filter((e) =>
     equipoRequiereMantenimiento(
@@ -125,7 +129,7 @@ export default async function MantenimientoPage({
               <TR>
                 <TH>Equipo</TH>
                 <TH>Tipo</TH>
-                <TH>Descripcion</TH>
+                <TH>Descripción</TH>
                 <TH>Prioridad</TH>
                 <TH>Estado</TH>
                 <TH>Abierta</TH>
@@ -135,14 +139,19 @@ export default async function MantenimientoPage({
               {ordenesAbiertas.map((o) => (
                 <TR key={o.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/mantenimiento/ordenes/${o.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/mantenimiento/ordenes/${o.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {o.equipment_name}
                     </a>
                   </TD>
                   <TD>{TIPO_ORDEN[o.type] ?? o.type}</TD>
                   <TD className="text-[var(--color-text-muted)]">{o.description}</TD>
                   <TD>
-                    <Badge tone={badgePrioridad(o.priority)}>{PRIORIDAD_ORDEN[o.priority] ?? o.priority}</Badge>
+                    <Badge tone={badgePrioridad(o.priority)}>
+                      {PRIORIDAD_ORDEN[o.priority] ?? o.priority}
+                    </Badge>
                   </TD>
                   <TD>
                     <Badge tone={badgeEstado(o.status)}>{ESTADO_ORDEN[o.status] ?? o.status}</Badge>

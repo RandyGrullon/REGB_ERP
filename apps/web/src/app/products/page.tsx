@@ -27,7 +27,7 @@ import { alternarProductoForm, crearProductoForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Catalogo · REGB ERP' }
+export const metadata = { title: 'Catálogo · REGB ERP' }
 
 interface ProductRow {
   id: string
@@ -170,20 +170,20 @@ export default async function ProductsPage({
         {products.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'inventory_2'}
-            title={hayFiltros ? 'Nada coincide con ese filtro' : 'Tu catalogo esta vacio'}
+            title={hayFiltros ? 'Nada coincide con ese filtro' : 'Tu catálogo está vacío'}
             description={
               hayFiltros
-                ? 'Prueba con otro texto o quita el filtro de categoria.'
-                : 'Crea el primer producto abajo, o sube tu catalogo completo desde Importar.'
+                ? 'Prueba con otro texto o quita el filtro de categoría.'
+                : 'Crea el primer producto abajo, o sube tu catálogo completo desde Importar.'
             }
           />
         ) : (
           <Table data-tour="producto-tabla">
             <THead>
               <TR>
-                <TH>Codigo</TH>
+                <TH>Código</TH>
                 <TH>Producto</TH>
-                <TH>Categoria</TH>
+                <TH>Categoría</TH>
                 <TH>Unidad</TH>
                 {vePrecio && <TH numeric>Precio</TH>}
                 <TH>ITBIS</TH>
@@ -229,8 +229,13 @@ export default async function ProductsPage({
                       `${Math.round(Number(p.tax_rate) * 100)}%`
                     )}
                     {!p.tracks_stock && (
-                      <Badge tone="info" dot={false} className="ml-2">
-                        sin existencias
+                      <Badge
+                        tone="info"
+                        dot={false}
+                        className="ml-2"
+                        title="Servicio: se cobra pero no lleva inventario"
+                      >
+                        servicio
                       </Badge>
                     )}
                   </TD>
@@ -240,9 +245,7 @@ export default async function ProductsPage({
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                         <input type="hidden" name="id" value={p.id} />
-                        <BotonEnvio
-                          
-                          className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                        <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           {p.active ? 'Archivar' : 'Reactivar'}
                         </BotonEnvio>
                       </form>
@@ -280,7 +283,7 @@ export default async function ProductsPage({
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Categoria
                   <select name="categoryId" className={inputCls} defaultValue="">
-                    <option value="">Sin categoria</option>
+                    <option value="">Sin categoría</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -311,7 +314,7 @@ export default async function ProductsPage({
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo de barras
+                  Código de barras
                   <input name="barcode" placeholder="7501234567890" className={inputCls} />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -323,20 +326,23 @@ export default async function ProductsPage({
                     className={inputCls}
                   />
                 </label>
-                <label className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]">
-                  <input type="checkbox" name="exento" />
-                  Exento de ITBIS
+                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  ITBIS
+                  <select name="tasa" defaultValue="" className={inputCls}>
+                    <option value="">La de tu negocio</option>
+                    <option value="0.18">18 % (general)</option>
+                    <option value="0.16">16 % (aceite, azúcar, café…)</option>
+                    <option value="0">Exento (arroz, habichuelas…)</option>
+                  </select>
                 </label>
                 <label
                   className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]"
                   title="Para cobrar envio, instalacion o mano de obra: se factura igual, pero no tiene existencias."
                 >
                   <input type="checkbox" name="sinStock" />
-                  Sin existencias
+                  Es un servicio (no lleva inventario)
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Crear
                 </BotonEnvio>
               </form>

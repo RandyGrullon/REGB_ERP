@@ -59,12 +59,22 @@ function recibir(campos: {
   return registrarRecepcion(f)
 }
 
-async function lineaDeRecepcion(): Promise<{ id: string; accepted: number; rejected: number; cost: number }> {
+async function lineaDeRecepcion(): Promise<{
+  id: string
+  accepted: number
+  rejected: number
+  cost: number
+}> {
   const [l] = await db()<{ id: string; accepted: string; rejected: string; cost: string }[]>`
     select id, qty_accepted::text as accepted, qty_rejected::text as rejected, unit_cost::text as cost
     from public.goods_receipt_lines where tenant_id = ${c.tenantId}
     order by created_at desc limit 1`
-  return { id: l!.id, accepted: Number(l!.accepted), rejected: Number(l!.rejected), cost: Number(l!.cost) }
+  return {
+    id: l!.id,
+    accepted: Number(l!.accepted),
+    rejected: Number(l!.rejected),
+    cost: Number(l!.cost),
+  }
 }
 
 async function devolucionPendiente(origen: string): Promise<string> {
@@ -195,7 +205,9 @@ describe('devolucion al proveedor', () => {
         c.fd({ goodsReceiptLineId: recepcionConRechazo, qty: '2', reason: 'Sacos mojados' }),
       ),
     ).toEqual({ ok: true })
-    expect(await enviarDevolucion(c.fd({ devolucionId: await devolucionPendiente('rejected') }))).toEqual({
+    expect(
+      await enviarDevolucion(c.fd({ devolucionId: await devolucionPendiente('rejected') })),
+    ).toEqual({
       ok: true,
     })
     expect(await existencia()).toEqual(antes)
@@ -238,7 +250,9 @@ describe('devolucion al proveedor', () => {
         }),
       ),
     ).toEqual({ ok: true })
-    expect(await enviarDevolucion(c.fd({ devolucionId: await devolucionPendiente('accepted') }))).toEqual({
+    expect(
+      await enviarDevolucion(c.fd({ devolucionId: await devolucionPendiente('accepted') })),
+    ).toEqual({
       ok: true,
     })
     expect((await existencia()).qty).toBe(antes.qty - 3)
@@ -247,7 +261,12 @@ describe('devolucion al proveedor', () => {
   it('una devolucion cancelada libera su cupo', async () => {
     expect(
       await registrarDevolucion(
-        c.fd({ goodsReceiptLineId: recepcionConRechazo, origin: 'accepted', qty: '25', reason: 'Lote malo' }),
+        c.fd({
+          goodsReceiptLineId: recepcionConRechazo,
+          origin: 'accepted',
+          qty: '25',
+          reason: 'Lote malo',
+        }),
       ),
     ).toEqual({ ok: true })
     expect(
@@ -255,7 +274,12 @@ describe('devolucion al proveedor', () => {
     ).toEqual({ ok: true })
     expect(
       await registrarDevolucion(
-        c.fd({ goodsReceiptLineId: recepcionConRechazo, origin: 'accepted', qty: '25', reason: 'Lote malo' }),
+        c.fd({
+          goodsReceiptLineId: recepcionConRechazo,
+          origin: 'accepted',
+          qty: '25',
+          reason: 'Lote malo',
+        }),
       ),
     ).toEqual({ ok: true })
   })

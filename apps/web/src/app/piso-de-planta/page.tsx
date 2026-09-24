@@ -11,7 +11,13 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { calcularOee, calidadOee, disponibilidad, horasInactivoTotal, rendimiento } from '@regb/operations'
+import {
+  calcularOee,
+  calidadOee,
+  disponibilidad,
+  horasInactivoTotal,
+  rendimiento,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -76,17 +82,26 @@ export default async function PisoDePlantaPage({
   const filas = ordenes.map((o) => {
     const inicio = o.released_at ? new Date(o.released_at) : null
     const fin = o.completed_at ? new Date(o.completed_at) : new Date()
-    const horasPlanificadas = inicio ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000) : 0
+    const horasPlanificadas = inicio
+      ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000)
+      : 0
 
     const paroDeOrden = paros
       .filter((p) => p.production_order_id === o.id)
-      .map((p) => ({ startedAt: new Date(p.started_at), endedAt: p.ended_at ? new Date(p.ended_at) : null }))
+      .map((p) => ({
+        startedAt: new Date(p.started_at),
+        endedAt: p.ended_at ? new Date(p.ended_at) : null,
+      }))
     const horasInactivo = horasInactivoTotal(paroDeOrden)
     const horasOperando = Math.max(0, horasPlanificadas - horasInactivo)
 
     const disp = disponibilidad(horasPlanificadas, horasInactivo)
     const rend = o.ideal_cycle_hours
-      ? rendimiento(Number(o.qty_completed) + Number(o.qty_scrapped), horasOperando, Number(o.ideal_cycle_hours))
+      ? rendimiento(
+          Number(o.qty_completed) + Number(o.qty_scrapped),
+          horasOperando,
+          Number(o.ideal_cycle_hours),
+        )
       : null
     const cal = calidadOee(Number(o.qty_scrapped), Number(o.qty_completed))
     const oee = rend !== null ? calcularOee(disp, rend, cal) : null
@@ -109,8 +124,14 @@ export default async function PisoDePlantaPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Ordenes activas" value={String(ordenes.filter((o) => o.status !== 'completed').length)} />
-          <StatCard label="OEE promedio" value={promedioOee === null ? '—' : `${(promedioOee * 100).toFixed(0)}%`} />
+          <StatCard
+            label="Ordenes activas"
+            value={String(ordenes.filter((o) => o.status !== 'completed').length)}
+          />
+          <StatCard
+            label="OEE promedio"
+            value={promedioOee === null ? '—' : `${(promedioOee * 100).toFixed(0)}%`}
+          />
         </section>
 
         {ordenes.length === 0 ? (
@@ -132,12 +153,17 @@ export default async function PisoDePlantaPage({
               {filas.map((o) => (
                 <TR key={o.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/piso-de-planta/${o.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/piso-de-planta/${o.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       <Mono>{o.sku}</Mono> {o.product_name}
                     </a>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(o.status)}>{ESTADO_ORDEN_TERMINAL[o.status] ?? o.status}</Badge>
+                    <Badge tone={badgeEstado(o.status)}>
+                      {ESTADO_ORDEN_TERMINAL[o.status] ?? o.status}
+                    </Badge>
                   </TD>
                   <TD numeric>
                     {o.oee === null ? (

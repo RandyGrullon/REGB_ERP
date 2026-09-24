@@ -32,21 +32,17 @@ export default function ErrorDePantalla({
         role="alert"
         className="w-full max-w-md rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6 text-center"
       >
-        <Icon
-          name="report"
-          size={40}
-          className="text-[var(--color-semantic-text-danger)]"
-        />
+        <Icon name="report" size={40} className="text-[var(--color-semantic-text-danger)]" />
         <h1 className="mt-3 text-lg font-semibold text-[var(--color-text-primary)]">
           Esta pantalla tuvo un problema
         </h1>
         <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
           Lo que ya guardaste sigue guardado. Puedes intentarlo de nuevo; si vuelve a pasar,
-          comparte el codigo de abajo con soporte.
+          comparte el código de abajo con soporte.
         </p>
         {error.digest && (
           <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-muted)]">
-            Codigo: {error.digest}
+            Código: {error.digest}
           </p>
         )}
         <div className="mt-5 flex flex-wrap justify-center gap-2">

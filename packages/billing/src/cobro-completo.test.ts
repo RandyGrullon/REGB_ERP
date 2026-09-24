@@ -55,7 +55,7 @@ describe('Vencimiento', () => {
 
 describe('Cargos de una sola vez en la factura del mes', () => {
   const activeModules: ActiveModuleInput[] = [{ moduleId: 'inventory', category: 'standard' }]
-  const instalacion = [{ label: 'Instalacion de modulos', amountCents: toCents(150) }]
+  const instalacion = [{ label: 'Instalación de módulos', amountCents: toCents(150) }]
 
   it('pagan ITBIS pero no llevan el descuento del ciclo', () => {
     const r = calculateMonthly({
@@ -73,9 +73,9 @@ describe('Cargos de una sola vez en la factura del mes', () => {
     expect(r.total).toBe(275.29)
     expect(r.lines.map((l) => l.label)).toEqual([
       'Base mensual',
-      'Modulos activos',
+      'Módulos activos',
       'Descuento',
-      'Instalacion de modulos',
+      'Instalación de módulos',
       'ITBIS',
     ])
   })

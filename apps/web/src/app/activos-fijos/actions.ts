@@ -94,12 +94,20 @@ export async function correrDepreciacion(fd: FormData): Promise<ActionResult> {
 
   const periodo = String(fd.get('period') ?? '').trim() || new Date().toISOString().slice(0, 10)
 
-  const [n] = await asUser(ctx.userId, ctx.tenantId, (tx) =>
-    tx<{ n: string }[]>`select public.run_fixed_asset_depreciation(${ctx.tenantId}, ${periodo})::text as n`,
+  const [n] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) =>
+      tx<
+        { n: string }[]
+      >`select public.run_fixed_asset_depreciation(${ctx.tenantId}, ${periodo})::text as n`,
   )
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) =>
-    tx`select public.emit_event('fixed-assets.depreciation.run',
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) =>
+      tx`select public.emit_event('fixed-assets.depreciation.run',
       ${JSON.stringify({ period: periodo, n: Number(n?.n ?? 0) })}::text::jsonb, 'fixed-assets')`,
   )
 
@@ -123,8 +131,10 @@ export async function revaluarActivo(fd: FormData): Promise<ActionResult> {
   if (reason.length < 4) return { ok: false, error: 'Escribe el motivo del revaluo.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.revalue_fixed_asset(${assetId}, ${newValue}, ${reason})`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.revalue_fixed_asset(${assetId}, ${newValue}, ${reason})`,
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -143,7 +153,8 @@ export async function darDeBajaActivo(fd: FormData): Promise<ActionResult> {
   if (!permiso.ok) return permiso
 
   const assetId = String(fd.get('assetId') ?? '')
-  const disposedAt = String(fd.get('disposedAt') ?? '').trim() || new Date().toISOString().slice(0, 10)
+  const disposedAt =
+    String(fd.get('disposedAt') ?? '').trim() || new Date().toISOString().slice(0, 10)
   const disposedAmount = num(String(fd.get('disposedAmount') ?? '')) ?? 0
   const reason = String(fd.get('reason') ?? '').trim()
 

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { db } from './db'
 import { loadTenantsWithModules, quoteTenant } from './control'
-import { fromCents, roundBankers } from '@regb/core'
+import { fromCents, roundBankers, type Cents } from '@regb/core'
 import { invoiceDueDate, isoDate, monthlyPeriod } from '@regb/billing'
 
 /**
@@ -35,6 +35,8 @@ export interface InvoiceRow {
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'void'
   dueAt: string
   paidAt: string | null
+  /** El desglose que se guardo al emitirla: lo que el cliente paga, linea por linea. */
+  lines: { label: string; detail: string | null; amount: number }[]
 }
 
 export interface GenerationResult {
@@ -66,7 +68,10 @@ export async function generateMonthlyInvoices(
 
   for (const tenant of tenants) {
     if (!BILLABLE_STATUSES.has(tenant.status)) {
-      skipped.push({ tenant: tenant.legal_name, reason: `estado ${tenant.status}: no factura` })
+      skipped.push({
+        tenant: tenant.legal_name,
+        reason: ESTADO_NO_FACTURA[tenant.status] ?? `estado ${tenant.status}: no factura`,
+      })
       continue
     }
 
@@ -133,7 +138,34 @@ export async function generateMonthlyInvoices(
   return { created, skipped }
 }
 
-export async function listInvoices(): Promise<InvoiceRow[]> {
+/**
+ * Lo que se le dice al proveedor despues de la corrida. Antes el aviso
+ * comprobaba `typeof n === 'number'` sobre un objeto y siempre salia el
+ * generico "generamos las facturas del mes", aunque no se hubiera emitido
+ * ninguna.
+ */
+export function resumenDeCorrida(r: {
+  created: { tenant: string }[]
+  skipped: { tenant: string; reason: string }[]
+}): string {
+  const n = r.created.length
+  const emitidas =
+    n === 0
+      ? 'No emitimos ninguna factura nueva'
+      : `Listo, emitimos ${n} factura${n === 1 ? '' : 's'}`
+  const ya = r.skipped.filter((s) => s.reason.startsWith('ya ')).length
+  const otras = r.skipped.length - ya
+  const partes = [
+    ya > 0
+      ? `${ya} cliente${ya === 1 ? '' : 's'} ya tenía${ya === 1 ? '' : 'n'} la de este mes`
+      : '',
+    otras > 0 ? `${otras} no factura${otras === 1 ? '' : 'n'} por su estado` : '',
+  ].filter(Boolean)
+  return partes.length > 0 ? `${emitidas}: ${partes.join(' y ')}.` : `${emitidas}.`
+}
+
+/** `slug` limita a un cliente: la ficha ensena solo las suyas. */
+export async function listInvoices(slug?: string): Promise<InvoiceRow[]> {
   const rows = await db()<
     {
       id: string
@@ -149,14 +181,16 @@ export async function listInvoices(): Promise<InvoiceRow[]> {
       status: InvoiceRow['status']
       due_at: string
       paid_at: string | null
+      lines: { label: string; detail: string | null; amount: number | string }[] | null
     }[]
   >`
     select i.id, i.number, t.slug, t.legal_name,
            i.period_start::text, i.period_end::text,
            i.subtotal::text, i.discount::text, i.tax::text, i.total::text,
-           i.status, i.due_at::text, i.paid_at::text
+           i.status, i.due_at::text, i.paid_at::text, i.lines
     from regb.invoices i
     join regb.tenants t on t.id = i.tenant_id
+    where (${slug ?? null}::text is null or t.slug = ${slug ?? null})
     order by i.period_start desc, i.number desc`
 
   return rows.map((r) => ({
@@ -173,7 +207,87 @@ export async function listInvoices(): Promise<InvoiceRow[]> {
     status: r.status,
     dueAt: r.due_at,
     paidAt: r.paid_at,
+    lines: (Array.isArray(r.lines) ? r.lines : []).map((l) => ({
+      label: String(l.label),
+      detail: l.detail ?? null,
+      amount: Number(l.amount),
+    })),
   }))
+}
+
+// ── Vista previa de la corrida ───────────────────────────────────────────
+
+export interface PreviewRow {
+  tenant: string
+  slug: string
+  /** Lo que se va a emitir, o por que no. */
+  total: number | null
+  tax: number
+  /** Parte del total que es instalacion (una sola vez), sin impuesto. */
+  installation: number
+  skip: string | null
+}
+
+/**
+ * Lo que emitiria `generateMonthlyInvoices()` ahora mismo, sin emitir nada.
+ *
+ * "Generar facturas del mes" emite a todos los clientes de un clic; con
+ * esto el proveedor ve cliente por cliente cuanto va a cobrar ANTES de
+ * pulsar. Es la misma cotizacion (`quoteTenant`), asi que lo que dice la
+ * vista previa es lo que sale.
+ */
+export async function previewMonthlyInvoices(anchor = new Date()): Promise<{
+  period: string
+  rows: PreviewRow[]
+}> {
+  const sql = db()
+  const { start } = monthlyPeriod(anchor)
+  const periodStart = isoDate(start)
+  const { tenants, modulesByTenant, pendingInstallByTenant } = await loadTenantsWithModules()
+
+  const existentes = new Map(
+    (
+      await sql<{ tenant_id: string; number: string }[]>`
+        select tenant_id, number from regb.invoices
+        where period_start = ${periodStart} and status <> 'void'`
+    ).map((r) => [r.tenant_id, r.number]),
+  )
+
+  const rows: PreviewRow[] = tenants.map((t) => {
+    const base = { tenant: t.legal_name, slug: t.slug }
+    if (!BILLABLE_STATUSES.has(t.status)) {
+      return {
+        ...base,
+        total: null,
+        tax: 0,
+        installation: 0,
+        skip: ESTADO_NO_FACTURA[t.status] ?? 'no factura',
+      }
+    }
+    const ya = existentes.get(t.id)
+    if (ya) return { ...base, total: null, tax: 0, installation: 0, skip: `ya tiene la ${ya}` }
+    const { invoice, installationCharges } = quoteTenant(
+      t,
+      modulesByTenant.get(t.id) ?? [],
+      pendingInstallByTenant.get(t.id) ?? [],
+    )
+    return {
+      ...base,
+      total: invoice.total,
+      tax: roundBankers(fromCents(invoice.taxCents), 2),
+      installation: roundBankers(
+        fromCents(installationCharges.reduce((a, c) => a + c.amountCents, 0) as Cents),
+        2,
+      ),
+      skip: null,
+    }
+  })
+  return { period: periodStart, rows }
+}
+
+const ESTADO_NO_FACTURA: Record<string, string> = {
+  trial: 'en prueba: no factura',
+  suspended: 'suspendido: no factura',
 }
 
 /**

@@ -78,26 +78,40 @@ export default async function ContratoDetallePage({
         <PageHeader
           icon="assignment"
           title={head.contract_number}
-          crumbs={[{ label: 'Contratos', href: `/contratos${qs}` }, { label: head.contract_number }]}
-          actions={<Badge tone={badgeEstado(head.status)}>{ESTADO_CONTRATO[head.status] ?? head.status}</Badge>}
+          crumbs={[
+            { label: 'Contratos', href: `/contratos${qs}` },
+            { label: head.contract_number },
+          ]}
+          actions={
+            <Badge tone={badgeEstado(head.status)}>
+              {ESTADO_CONTRATO[head.status] ?? head.status}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Cliente" value={head.customer_name} />
-          <StatCard label="Frecuencia" value={FRECUENCIA_FACTURACION[head.billing_frequency] ?? head.billing_frequency} />
+          <StatCard
+            label="Frecuencia"
+            value={FRECUENCIA_FACTURACION[head.billing_frequency] ?? head.billing_frequency}
+          />
           <StatCard label="Monto" value={`RD$ ${money(Number(head.base_amount))}`} />
           <StatCard label="Vence" value={fecha(head.end_date)} />
         </section>
 
         <p className="text-xs text-[var(--color-text-muted)]">
-          Vigente desde {fecha(head.start_date)} · Escalamiento {(Number(head.escalation_pct) * 100).toFixed(0)}% ·{' '}
-          {head.auto_renew ? 'Renovacion automatica' : 'Renovacion manual'}
+          Vigente desde {fecha(head.start_date)} · Escalamiento{' '}
+          {(Number(head.escalation_pct) * 100).toFixed(0)}% ·{' '}
+          {head.auto_renew ? 'Renovacion automática' : 'Renovacion manual'}
         </p>
 
         {head.renewed_from_id && (
           <p className="text-xs text-[var(--color-text-muted)]">
             Renueva a{' '}
-            <a href={`/contratos/${head.renewed_from_id}${qs}`} className="text-[var(--color-text-link)] underline-offset-2 hover:underline">
+            <a
+              href={`/contratos/${head.renewed_from_id}${qs}`}
+              className="text-[var(--color-text-link)] underline-offset-2 hover:underline"
+            >
               el contrato anterior
             </a>
           </p>
@@ -109,7 +123,7 @@ export default async function ContratoDetallePage({
               <form action={transicionarContratoForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="active" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Activar
                 </BotonEnvio>
@@ -119,7 +133,7 @@ export default async function ContratoDetallePage({
               <>
                 <form action={renovarContratoForm}>
                   {campos}
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="autorenew" size={14} />
                     Renovar
                   </BotonEnvio>
@@ -127,16 +141,12 @@ export default async function ContratoDetallePage({
                 <form action={transicionarContratoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="cancelled" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Cancelar
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Cancelar</BotonEnvio>
                 </form>
                 <form action={transicionarContratoForm}>
                   {campos}
                   <input type="hidden" name="siguiente" value="expired" />
-                  <BotonEnvio  className={botonSecundarioClase}>
-                    Marcar vencido
-                  </BotonEnvio>
+                  <BotonEnvio className={botonSecundarioClase}>Marcar vencido</BotonEnvio>
                 </form>
               </>
             )}
@@ -149,8 +159,8 @@ export default async function ContratoDetallePage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Renovar no edita este contrato: crea uno NUEVO con el escalamiento de precio aplicado, y este
-              queda marcado "renovado" -su historial completo sigue intacto-.
+              Renovar no edita este contrato: crea uno NUEVO con el escalamiento de precio aplicado,
+              y este queda marcado "renovado" -su historial completo sigue intacto-.
             </p>
           </CardBody>
         </Card>

@@ -51,19 +51,15 @@ export default async function OportunidadDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'pipeline')
 
-  const head = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    async (tx) => {
-      const [h] = await tx<OportunidadHead[]>`
+  const head = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [h] = await tx<OportunidadHead[]>`
         select op.id, op.name, op.amount::text, op.probability::text, op.stage, op.lost_reason,
                op.expected_close_date::text, l.name as lead_name
         from public.opportunities op
         left join public.leads l on l.id = op.lead_id
         where op.id = ${id} and op.tenant_id = ${ctx.tenantId}`
-      return h ?? null
-    },
-  )
+    return h ?? null
+  })
 
   if (!head) notFound()
 
@@ -85,12 +81,19 @@ export default async function OportunidadDetallePage({
           icon="trending_up"
           title={head.name}
           crumbs={[{ label: 'Oportunidades', href: `/pipeline${qs}` }, { label: head.name }]}
-          actions={<Badge tone={badgeEtapa(head.stage)}>{ETAPA_OPORTUNIDAD[head.stage] ?? head.stage}</Badge>}
+          actions={
+            <Badge tone={badgeEtapa(head.stage)}>
+              {ETAPA_OPORTUNIDAD[head.stage] ?? head.stage}
+            </Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Monto" value={`RD$ ${money(Number(head.amount))}`} />
-          <StatCard label="Probabilidad" value={`${(Number(head.probability) * 100).toFixed(0)}%`} />
+          <StatCard
+            label="Probabilidad"
+            value={`${(Number(head.probability) * 100).toFixed(0)}%`}
+          />
           <StatCard label="Lead de origen" value={head.lead_name ?? '—'} />
         </section>
 
@@ -105,7 +108,7 @@ export default async function OportunidadDetallePage({
             <form action={transicionarEtapaForm}>
               {campos}
               <input type="hidden" name="siguiente" value={SIGUIENTE[head.stage]} />
-              <BotonEnvio  className={botonClase}>
+              <BotonEnvio className={botonClase}>
                 <Icon name="arrow_forward" size={14} />
                 Avanzar a {ETAPA_OPORTUNIDAD[SIGUIENTE[head.stage]!]}
               </BotonEnvio>
@@ -120,9 +123,7 @@ export default async function OportunidadDetallePage({
                   className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                 />
               </label>
-              <BotonEnvio  className={botonSecundarioClase}>
-                Marcar perdida
-              </BotonEnvio>
+              <BotonEnvio className={botonSecundarioClase}>Marcar perdida</BotonEnvio>
             </form>
           </div>
         )}
@@ -133,9 +134,9 @@ export default async function OportunidadDetallePage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              La probabilidad se actualiza sola al valor por defecto de cada etapa al avanzar -no queda un
-              numero viejo de la etapa anterior olvidado en el forecast-. Una oportunidad no se puede marcar
-              perdida sin explicar el motivo.
+              La probabilidad se actualiza sola al valor por defecto de cada etapa al avanzar -no
+              queda un número viejo de la etapa anterior olvidado en el forecast-. Una oportunidad
+              no se puede marcar perdida sin explicar el motivo.
             </p>
           </CardBody>
         </Card>

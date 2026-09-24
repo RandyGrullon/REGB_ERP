@@ -55,23 +55,35 @@ describe('asUser pone el role_id de la membresia', () => {
   })
 
   it('con ese rol, has_perm decide en la web: caja si, expedientes no', async () => {
-    const [r] = await asUser(miembro, c.tenantId, (tx) => tx<{ caja: boolean; rrhh: boolean }[]>`
-      select rls.has_perm('pos.sell') as caja, rls.has_perm('employees.view') as rrhh`)
+    const [r] = await asUser(
+      miembro,
+      c.tenantId,
+      (tx) => tx<{ caja: boolean; rrhh: boolean }[]>`
+      select rls.has_perm('pos.sell') as caja, rls.has_perm('employees.view') as rrhh`,
+    )
     expect(r).toEqual({ caja: true, rrhh: false })
   })
 
   it('y las politicas de escritura de 0127 aplican: no se sube a Owner desde la web', async () => {
     await expect(
-      asUser(miembro, c.tenantId, (tx) => tx`
+      asUser(
+        miembro,
+        c.tenantId,
+        (tx) => tx`
         update public.memberships set role_id = ${rolOwner}
-        where tenant_id = ${c.tenantId} and user_id = ${miembro}`),
+        where tenant_id = ${c.tenantId} and user_id = ${miembro}`,
+      ),
     ).rejects.toMatchObject({ code: '42501' })
   })
 
   it('el Owner, en cambio, administra: le cambia el rol a otro', async () => {
-    const filas = await asUser(owner, c.tenantId, (tx) => tx`
+    const filas = await asUser(
+      owner,
+      c.tenantId,
+      (tx) => tx`
       update public.memberships set role_id = ${rolCaja}, updated_at = now()
-      where tenant_id = ${c.tenantId} and user_id = ${miembro} returning id`)
+      where tenant_id = ${c.tenantId} and user_id = ${miembro} returning id`,
+    )
     expect(filas).toHaveLength(1)
   })
 

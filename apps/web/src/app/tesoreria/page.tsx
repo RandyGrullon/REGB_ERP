@@ -150,7 +150,7 @@ export default async function TesoreriaPage({
               <TR>
                 <TH>Cuenta</TH>
                 <TH>Banco</TH>
-                <TH>Numero</TH>
+                <TH>Número</TH>
                 <TH>Tipo</TH>
                 <TH numeric>Saldo inicial</TH>
                 <TH numeric>Movimientos</TH>
@@ -244,9 +244,7 @@ export default async function TesoreriaPage({
                   Concepto
                   <input name="description" placeholder="Opcional" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="swap_horiz" size={18} />
                   Transferir
                 </BotonEnvio>
@@ -269,15 +267,30 @@ export default async function TesoreriaPage({
                 {campos}
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Banco
-                  <input name="bankName" required placeholder="Banco Popular" className={claseInput} />
+                  <input
+                    name="bankName"
+                    required
+                    placeholder="Banco Popular"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre de la cuenta
-                  <input name="accountName" required placeholder="Operativa" className={claseInput} />
+                  <input
+                    name="accountName"
+                    required
+                    placeholder="Operativa"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Numero
-                  <input name="accountNumber" required placeholder="123-456789-0" className={claseInput} />
+                  <input
+                    name="accountNumber"
+                    required
+                    placeholder="123-456789-0"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tipo
@@ -296,9 +309,7 @@ export default async function TesoreriaPage({
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>
@@ -310,7 +321,7 @@ export default async function TesoreriaPage({
         {ultimos.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Ultimos movimientos</CardTitle>
+              <CardTitle>Últimos movimientos</CardTitle>
             </CardHeader>
             <CardBody>
               <Table>

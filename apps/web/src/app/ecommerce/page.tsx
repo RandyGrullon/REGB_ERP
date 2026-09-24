@@ -80,27 +80,31 @@ export default async function EcommercePage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'ecommerce')
 
-  const { canales, vinculos, pedidos, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const c = await tx<CanalFila[]>`
+  const { canales, vinculos, pedidos, productos } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const c = await tx<CanalFila[]>`
       select id, name, platform, status from public.sales_channels
       where tenant_id = ${ctx.tenantId} order by created_at`
-    const v = await tx<VinculoFila[]>`
+      const v = await tx<VinculoFila[]>`
       select cpl.id, sc.name as channel_name, p.name as product_name, cpl.external_sku, cpl.synced_at::text
       from public.channel_product_links cpl
       join public.sales_channels sc on sc.id = cpl.channel_id
       join public.products p on p.id = cpl.product_id
       where cpl.tenant_id = ${ctx.tenantId}
       order by sc.name, p.name`
-    const p = await tx<PedidoFila[]>`
+      const p = await tx<PedidoFila[]>`
       select co.id, co.external_order_id, sc.name as channel_name, co.customer_name, co.total::text, co.status, co.received_at::text
       from public.channel_orders co
       join public.sales_channels sc on sc.id = co.channel_id
       where co.tenant_id = ${ctx.tenantId}
       order by co.received_at desc`
-    const pr = await tx<ProductoOption[]>`
+      const pr = await tx<ProductoOption[]>`
       select id, name from public.products where tenant_id = ${ctx.tenantId} and active order by name limit 300`
-    return { canales: c, vinculos: v, pedidos: p, productos: pr }
-  })
+      return { canales: c, vinculos: v, pedidos: p, productos: pr }
+    },
+  )
 
   const porImportar = pedidos.filter((p) => p.status === 'received').length
   const puedeGestionar = exigir(ctx, 'ecommerce', 'ecommerce.manage').ok
@@ -127,7 +131,11 @@ export default async function EcommercePage({
           </CardHeader>
           <CardBody>
             {canales.length === 0 ? (
-              <EmptyState icon="storefront" title="Todavia no hay ningun canal" description="Conecta el primero abajo." />
+              <EmptyState
+                icon="storefront"
+                title="Todavia no hay ningun canal"
+                description="Conecta el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -141,9 +149,13 @@ export default async function EcommercePage({
                   {canales.map((c) => (
                     <TR key={c.id}>
                       <TD className="text-[var(--color-text-primary)]">{c.name}</TD>
-                      <TD className="text-[var(--color-text-muted)]">{PLATAFORMA_CANAL[c.platform] ?? c.platform}</TD>
+                      <TD className="text-[var(--color-text-muted)]">
+                        {PLATAFORMA_CANAL[c.platform] ?? c.platform}
+                      </TD>
                       <TD>
-                        <Badge tone={badgeCanal(c.status)}>{c.status === 'connected' ? 'Conectado' : 'Desconectado'}</Badge>
+                        <Badge tone={badgeCanal(c.status)}>
+                          {c.status === 'connected' ? 'Conectado' : 'Desconectado'}
+                        </Badge>
                       </TD>
                     </TR>
                   ))}
@@ -182,9 +194,7 @@ export default async function EcommercePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Conectar
                 </BotonEnvio>
@@ -199,7 +209,11 @@ export default async function EcommercePage({
           </CardHeader>
           <CardBody>
             {pedidos.length === 0 ? (
-              <EmptyState icon="shopping_bag" title="Todavia no ha llegado ningun pedido" description="Simula el primero abajo." />
+              <EmptyState
+                icon="shopping_bag"
+                title="Todavia no ha llegado ningun pedido"
+                description="Simula el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -211,7 +225,7 @@ export default async function EcommercePage({
                     <TH>Dias</TH>
                     <TH>Estado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -221,7 +235,10 @@ export default async function EcommercePage({
                     return (
                       <TR key={p.id}>
                         <TD className="text-[var(--color-text-primary)]">
-                          <a href={`/ecommerce/${p.id}${qs}`} className="underline-offset-2 hover:underline">
+                          <a
+                            href={`/ecommerce/${p.id}${qs}`}
+                            className="underline-offset-2 hover:underline"
+                          >
                             <Mono>{p.external_order_id}</Mono>
                           </a>
                         </TD>
@@ -230,21 +247,27 @@ export default async function EcommercePage({
                         <TD numeric>
                           <span className="tabular">RD$ {money(Number(p.total))}</span>
                         </TD>
-                        <TD className="text-[var(--color-text-muted)]">{p.status === 'received' ? dias : '—'}</TD>
+                        <TD className="text-[var(--color-text-muted)]">
+                          {p.status === 'received' ? dias : '—'}
+                        </TD>
                         <TD>
-                          <Badge tone={badgePedido(p.status)}>{ESTADO_PEDIDO_CANAL[p.status] ?? p.status}</Badge>
+                          <Badge tone={badgePedido(p.status)}>
+                            {ESTADO_PEDIDO_CANAL[p.status] ?? p.status}
+                          </Badge>
                         </TD>
                         <TD>
                           {puedeGestionar && p.status === 'received' && (
                             <div className="flex gap-2">
                               <form action={transicionarPedidoForm}>
-                                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                                <input
+                                  type="hidden"
+                                  name="tenant"
+                                  value={qs ? ctx.tenantSlug : ''}
+                                />
                                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                                 <input type="hidden" name="orderId" value={p.id} />
                                 <input type="hidden" name="siguiente" value="imported" />
-                                <BotonEnvio
-                                  
-                                  className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                   Importar
                                 </BotonEnvio>
                               </form>
@@ -259,7 +282,10 @@ export default async function EcommercePage({
             )}
 
             {puedeGestionar && (
-              <form action={simularPedidoEntranteForm} className="mt-4 flex flex-wrap items-end gap-3">
+              <form
+                action={simularPedidoEntranteForm}
+                className="mt-4 flex flex-wrap items-end gap-3"
+              >
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -341,9 +367,7 @@ export default async function EcommercePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Simular pedido
                 </BotonEnvio>
@@ -354,11 +378,15 @@ export default async function EcommercePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Vinculos de catalogo</CardTitle>
+            <CardTitle>Vinculos de catálogo</CardTitle>
           </CardHeader>
           <CardBody>
             {vinculos.length === 0 ? (
-              <EmptyState icon="inventory_2" title="Todavia no hay ningun producto vinculado" description="Vincula el primero abajo." />
+              <EmptyState
+                icon="inventory_2"
+                title="Todavia no hay ningun producto vinculado"
+                description="Vincula el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -368,7 +396,7 @@ export default async function EcommercePage({
                     <TH>SKU externo</TH>
                     <TH>Sincronizado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -389,9 +417,7 @@ export default async function EcommercePage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="linkId" value={v.id} />
-                            <BotonEnvio
-                              
-                              className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="sync" size={12} />
                               Sincronizar
                             </BotonEnvio>
@@ -444,9 +470,7 @@ export default async function EcommercePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Vincular
                 </BotonEnvio>

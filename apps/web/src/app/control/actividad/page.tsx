@@ -58,6 +58,14 @@ const cuando = (iso: string) =>
     minute: '2-digit',
   })
 
+/** La accion del registro, en palabras: el enum de la bitacora esta en ingles. */
+const ACCION_LABEL: Record<string, string> = {
+  create: 'Creó',
+  update: 'Cambió',
+  delete: 'Borró',
+  impersonate: 'Entró REGB',
+}
+
 /** Que cambio, en palabras. Un jsonb crudo no lo lee nadie de un vistazo. */
 function resumirCambio(antes: unknown, despues: unknown): string {
   if (!despues || typeof despues !== 'object') return '—'
@@ -88,7 +96,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
       ? new Date(Date.now() - dias * 86_400_000).toISOString()
       : undefined
 
-  const { filas, total, modulos, entidades, acciones } = await cargarBitacoraGlobal({
+  const { filas, total, modulos, nombresModulo, entidades, acciones } = await cargarBitacoraGlobal({
     ...(p.tenant ? { tenant: p.tenant } : {}),
     ...(p.modulo ? { modulo: p.modulo } : {}),
     ...(p.entidad ? { entidad: p.entidad } : {}),
@@ -126,7 +134,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
           Actividad de todos los clientes
         </h1>
         <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-          Quien hizo que, en que cliente y cuando. Con el antes y el despues completos.
+          Quién hizo qué, en qué cliente y cuándo. Con el antes y el después completos.
         </p>
       </div>
 
@@ -134,7 +142,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
         <StatCard
           label="Movimientos"
           value={total.toLocaleString('es-DO')}
-          hint={desde ? `ultimos ${dias} dias` : 'todo el historial'}
+          hint={desde ? `últimos ${dias} días` : 'todo el historial'}
         />
         <StatCard
           label="Mostrados"
@@ -142,18 +150,18 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
           hint="tope de 300 por consulta"
         />
         <StatCard
-          label="Modulos con actividad"
+          label="Módulos con actividad"
           value={String(modulos.length)}
           hint="que dejan rastro"
         />
-        <StatCard label="Tipos de accion" value={String(acciones.length)} hint="registrados" />
+        <StatCard label="Tipos de acción" value={String(acciones.length)} hint="registrados" />
       </section>
 
       {porAccion.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {porAccion.map((a) => (
             <Badge key={a.accion} tone={TONO_ACCION[a.accion] ?? 'neutral'} dot={false}>
-              {a.accion}: {a.n}
+              {ACCION_LABEL[a.accion] ?? a.accion}: {a.n}
             </Badge>
           ))}
         </div>
@@ -173,11 +181,11 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
             </option>
           ))}
         </FilterSelect>
-        <FilterSelect label="Modulo" name="modulo" defaultValue={p.modulo ?? ''} className="w-40">
+        <FilterSelect label="Módulo" name="modulo" defaultValue={p.modulo ?? ''} className="w-40">
           <option value="">Todos</option>
           {modulos.map((m) => (
             <option key={m} value={m}>
-              {m}
+              {nombresModulo[m] ?? m}
             </option>
           ))}
         </FilterSelect>
@@ -189,19 +197,19 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
             </option>
           ))}
         </FilterSelect>
-        <FilterSelect label="Accion" name="accion" defaultValue={p.accion ?? ''} className="w-36">
+        <FilterSelect label="Acción" name="accion" defaultValue={p.accion ?? ''} className="w-36">
           <option value="">Todas</option>
           {acciones.map((a) => (
             <option key={a} value={a}>
-              {a}
+              {ACCION_LABEL[a] ?? a}
             </option>
           ))}
         </FilterSelect>
         <FilterSelect label="Periodo" name="dias" defaultValue={p.dias ?? '30'} className="w-36">
           <option value="1">Hoy</option>
-          <option value="7">7 dias</option>
-          <option value="30">30 dias</option>
-          <option value="90">90 dias</option>
+          <option value="7">7 días</option>
+          <option value="30">30 días</option>
+          <option value="90">90 días</option>
           <option value="0">Todo</option>
         </FilterSelect>
         <ToolbarActions hasFilters={hayFiltro} clearHref="/control/actividad" />
@@ -210,7 +218,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
       {total > filas.length && (
         <p className="text-xs text-[var(--color-semantic-text-warning)]">
           Hay {total.toLocaleString('es-DO')} movimientos que cumplen el filtro y se muestran los{' '}
-          {filas.length} mas recientes. Acota el periodo o el cliente para verlos todos.
+          {filas.length} más recientes. Acota el periodo o el cliente para verlos todos.
         </p>
       )}
 
@@ -218,19 +226,19 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
         <EmptyState
           icon="history_toggle_off"
           title="Sin movimientos con ese filtro"
-          description="Prueba a ampliar el periodo. La bitacora solo registra creaciones, ediciones y borrados de las tablas auditadas."
+          description="Prueba a ampliar el periodo. La bitácora solo registra creaciones, ediciones y borrados de las tablas auditadas."
         />
       ) : (
         <Table>
           <THead>
             <TR>
-              <TH>Cuando</TH>
+              <TH>Cuándo</TH>
               <TH>Cliente</TH>
               <TH>Usuario</TH>
-              <TH>Accion</TH>
+              <TH>Acción</TH>
               <TH>Tabla</TH>
-              <TH>Modulo</TH>
-              <TH>Que cambio</TH>
+              <TH>Módulo</TH>
+              <TH>Qué cambió</TH>
             </TR>
           </THead>
           <TBody>
@@ -245,7 +253,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
                 </TD>
                 <TD>
                   <Badge tone={TONO_ACCION[f.accion] ?? 'neutral'} dot={false}>
-                    {f.accion}
+                    {ACCION_LABEL[f.accion] ?? f.accion}
                   </Badge>
                 </TD>
                 <TD>
@@ -253,7 +261,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
                 </TD>
                 <TD>
                   <span className="text-xs text-[var(--color-text-secondary)]">
-                    {f.modulo ?? '—'}
+                    {f.modulo ? (nombresModulo[f.modulo] ?? f.modulo) : '—'}
                   </span>
                 </TD>
                 <TD>
@@ -277,7 +285,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
         no se audita porque ya es un libro inmutable, y <Mono>pos_sales</Mono> tampoco, por volumen:
         sus rastros estan en el kardex y en Cierres. Los campos <Mono>ip</Mono>,{' '}
         <Mono>user_agent</Mono> y <Mono>platform</Mono> existen en la tabla pero el trigger no los
-        rellena todavia.
+        rellena todavía.
       </p>
     </div>
   )

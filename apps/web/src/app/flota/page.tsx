@@ -49,11 +49,7 @@ const badgeEstado = (estado: string): 'success' | 'warning' | 'neutral' => {
 }
 
 /** Flota & Vehiculos (modulo 54): combustible, mantenimiento, licencias y multas. */
-export default async function FlotaPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function FlotaPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'fleet')
 
@@ -128,7 +124,9 @@ export default async function FlotaPage({
                     <span className="tabular">{Number(v.odometer_km).toLocaleString('es-DO')}</span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(v.status)}>{ESTADO_VEHICULO[v.status] ?? v.status}</Badge>
+                    <Badge tone={badgeEstado(v.status)}>
+                      {ESTADO_VEHICULO[v.status] ?? v.status}
+                    </Badge>
                   </TD>
                   <TD>
                     {Number(v.documentos_vencidos) > 0 && (
@@ -157,23 +155,42 @@ export default async function FlotaPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Placa
-                  <input name="plate" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="plate"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Marca
-                  <input name="brand" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="brand"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Modelo
-                  <input name="model" required className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="model"
+                    required
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Ano
-                  <input name="year" inputMode="numeric" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="year"
+                    inputMode="numeric"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Conductor asignado
-                  <select name="driverId" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]">
+                  <select
+                    name="driverId"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  >
                     <option value="">Sin asignar</option>
                     {empleados.map((e) => (
                       <option key={e.id} value={e.id}>
@@ -182,9 +199,7 @@ export default async function FlotaPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

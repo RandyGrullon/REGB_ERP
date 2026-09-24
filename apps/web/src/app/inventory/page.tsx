@@ -106,7 +106,7 @@ export default async function InventoryPage({
           <div>
             <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Existencias</h1>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Lo que hay ahora mismo, por almacen.
+              Lo que hay ahora mismo, por almacén.
             </p>
           </div>
           <form method="get" className="flex items-end gap-2">
@@ -150,8 +150,8 @@ export default async function InventoryPage({
             title="Sin existencias todavia"
             description={
               puedeImportarExistencias
-                ? 'Carga las existencias iniciales de todo el catalogo con un CSV (codigo, almacen, cantidad y costo), o producto por producto con el ajuste de abajo.'
-                : 'Registra la existencia inicial con el ajuste de abajo, con su costo, o transfiere desde otro almacen.'
+                ? 'Carga las existencias iniciales de todo el catálogo con un CSV (código, almacén, cantidad y costo), o producto por producto con el ajuste de abajo.'
+                : 'Registra la existencia inicial con el ajuste de abajo, con su costo, o transfiere desde otro almacén.'
             }
             action={
               puedeImportarExistencias ? (
@@ -168,9 +168,9 @@ export default async function InventoryPage({
           <Table data-tour="existencias-tabla">
             <THead>
               <TR>
-                <TH>Codigo</TH>
+                <TH>Código</TH>
                 <TH>Producto</TH>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH numeric>Disponible</TH>
                 <TH numeric>Reservado</TH>
                 {veCosto && <TH numeric>Costo</TH>}
@@ -227,7 +227,7 @@ export default async function InventoryPage({
                         {reservado > onHand && (
                           <Badge
                             tone="danger"
-                            title={`Hay ${reservado} apartadas para pedidos pero solo quedan ${onHand} en existencia. Algun pedido confirmado no se podra despachar.`}
+                            title={`Hay ${reservado} apartadas para pedidos pero solo quedan ${onHand} en existencia. Algun pedido confirmado no se podrá despachar.`}
                           >
                             sobre-apartado
                           </Badge>
@@ -267,7 +267,7 @@ export default async function InventoryPage({
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Producto
                   {/* Lista nativa: funciona sin JavaScript y busca por lo que
-                      se escribe -nombre, codigo o codigo de barras-. La accion
+                      se escribe -nombre, código o código de barras-. La acción
                       vuelve a resolverlo en el servidor. */}
                   <input
                     name="producto"
@@ -321,7 +321,7 @@ export default async function InventoryPage({
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Cantidad positiva = entra. Negativa = sale. Una entrada sin costo toma el del
                 catalogo. Un ajuste grande puede pedir aprobacion segun tu rol; queda registrado en
-                el kardex y no se puede editar despues, solo corregir con otro ajuste.
+                el kardex y no se puede editar después, solo corregir con otro ajuste.
                 {puedeImportarExistencias && (
                   <>
                     {' '}

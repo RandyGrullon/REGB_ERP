@@ -34,7 +34,10 @@ interface Head {
   cashier_name: string | null
   warehouse_name: string
   company_name: string | null
+  trade_name: string | null
   company_tax_id: string | null
+  company_address: string | null
+  company_phone: string | null
   ncf_expires_on: string | null
 }
 
@@ -45,7 +48,7 @@ interface Head {
  * completo aunque el numero sea bueno.
  */
 const NOMBRE_COMPROBANTE: Record<string, string> = {
-  B01: 'Factura de credito fiscal',
+  B01: 'Factura de crédito fiscal',
   B02: 'Factura de consumo',
   B14: 'Comprobante de regimenes especiales',
   B15: 'Comprobante gubernamental',
@@ -72,15 +75,21 @@ export default async function TicketPage({
   const [head, lineas, pagos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<Head[]>`
       select s.number, s.ncf, s.ncf_type, s.total::text, s.subtotal::text,
-             s.discount::text, s.tax::text, s.created_at::text, s.voided,
+             -- La hora REAL de la venta: en una venta hecha sin conexion,
+             -- created_at es cuando llego al servidor, no cuando se cobro.
+             s.discount::text, s.tax::text, coalesce(s.sold_at, s.created_at)::text as created_at,
+             s.voided,
              c.name as customer_name, c.tax_id as customer_tax_id,
              up.display_name as cashier_name, w.name as warehouse_name,
              co.legal_name as company_name, co.tax_id as company_tax_id,
+             co.address as company_address, co.phone as company_phone,
+             nullif(trim(ts.trade_name), '') as trade_name,
              sec.expires_on::text as ncf_expires_on
       from public.pos_sales s
       join public.pos_shifts sh on sh.id = s.shift_id
       join public.warehouses w on w.id = sh.warehouse_id
       left join public.companies co on co.tenant_id = s.tenant_id and co.is_default
+      left join public.tenant_settings ts on ts.tenant_id = s.tenant_id
       left join public.customers c on c.id = s.customer_id
       left join public.user_profiles up
         on up.tenant_id = s.tenant_id and up.user_id = s.cashier_id
@@ -135,8 +144,15 @@ export default async function TicketPage({
 
       <div className="mx-auto w-[80mm] bg-white p-3 font-[family-name:var(--font-mono)] text-[11px] leading-tight text-black">
         <header className="text-center">
-          <p className="text-[13px] font-bold uppercase">{head.company_name ?? 'REGB ERP'}</p>
+          {/* El nombre que el cliente conoce arriba; la razon social, que es
+              la que exige la DGII, debajo con su RNC. */}
+          <p className="text-[13px] font-bold uppercase">
+            {head.trade_name ?? head.company_name ?? 'REGB ERP'}
+          </p>
+          {head.trade_name && head.company_name && <p>{head.company_name}</p>}
           {head.company_tax_id && <p>RNC {formatTaxId(head.company_tax_id)}</p>}
+          {head.company_address && <p>{head.company_address}</p>}
+          {head.company_phone && <p>Tel. {head.company_phone}</p>}
           <p>{head.warehouse_name}</p>
         </header>
 
@@ -149,9 +165,7 @@ export default async function TicketPage({
         {head.ncf ? (
           <>
             {head.ncf_type && NOMBRE_COMPROBANTE[head.ncf_type] && (
-              <p className="text-center font-bold uppercase">
-                {NOMBRE_COMPROBANTE[head.ncf_type]}
-              </p>
+              <p className="text-center font-bold uppercase">{NOMBRE_COMPROBANTE[head.ncf_type]}</p>
             )}
             <p className="text-center text-[12px] font-bold">NCF: {head.ncf}</p>
             {head.ncf_expires_on && (
@@ -168,7 +182,7 @@ export default async function TicketPage({
         ) : (
           <p className="border border-black py-1 text-center text-[10px] font-bold uppercase">
             Sin comprobante fiscal
-            <span className="block font-normal normal-case">no valido para credito fiscal</span>
+            <span className="block font-normal normal-case">no valido para crédito fiscal</span>
           </p>
         )}
         <p>Ticket: {head.number}</p>
@@ -250,6 +264,14 @@ export default async function TicketPage({
 
       {/* Solo en pantalla: el boton no va al papel. */}
       <div className="no-imprimir mx-auto mt-4 flex w-[80mm] justify-center gap-2 pb-6">
+        {/* El siguiente cliente espera: de vuelta a la caja en un clic, sin
+            buscar el "atras" del navegador. */}
+        <a
+          href={`/pos${ctx.demoQs}`}
+          className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm font-medium text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
+          Volver a la caja
+        </a>
         <PrintButton />
       </div>
     </>

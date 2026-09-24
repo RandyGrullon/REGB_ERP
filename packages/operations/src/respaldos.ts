@@ -105,9 +105,9 @@ export function estadoDeRespaldos(d: DatosRespaldo, ahora: Date): EstadoRespaldo
       nivel: 'sin-respaldo',
       diasFuera: null,
       diasUltimo: null,
-      titulo: 'No tienes ningun respaldo',
+      titulo: 'Todavía no tienes una copia de tus datos',
       detalle:
-        'Si pierdes la base hoy, pierdes todo. Crea uno ahora: toma unos segundos y se descarga.',
+        'Crea una y guárdala fuera del sistema (tu computadora, tu correo): si algo le pasa, con ella no pierdes tus ventas ni tu inventario. Toma unos segundos.',
     }
   }
 
@@ -116,9 +116,9 @@ export function estadoDeRespaldos(d: DatosRespaldo, ahora: Date): EstadoRespaldo
       nivel: 'nunca-salio',
       diasFuera: null,
       diasUltimo,
-      titulo: 'Tus respaldos no han salido de aqui',
+      titulo: 'Tu copia todavía no ha salido del sistema',
       detalle:
-        'Viven en la misma base que respaldan: un incendio, un robo o un ransomware se lleva las dos cosas. Descarga el ultimo y guardalo en otro sitio.',
+        'Una copia guardada en el mismo lugar que tus datos no te protege si a ese lugar le pasa algo. Descarga la última y guárdala en tu computadora o tu correo.',
     }
   }
 

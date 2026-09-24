@@ -90,14 +90,14 @@ export default async function PlanDetallePage({
           ]}
           actions={
             <div className="flex items-center gap-2">
-              <Badge tone={head.active ? 'success' : 'neutral'}>{head.active ? 'Activo' : 'Inactivo'}</Badge>
+              <Badge tone={head.active ? 'success' : 'neutral'}>
+                {head.active ? 'Activo' : 'Inactivo'}
+              </Badge>
               {puedeGestionar && (
                 <form action={alternarPlanActivoForm}>
                   {campos}
                   <input type="hidden" name="activo" value={String(head.active)} />
-                  <BotonEnvio
-                    
-                    className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                     {head.active ? 'Desactivar' : 'Activar'}
                   </BotonEnvio>
                 </form>
@@ -107,11 +107,14 @@ export default async function PlanDetallePage({
         />
 
         <p className="text-xs text-[var(--color-text-muted)]">
-          {ALCANCE_PLAN[head.scope] ?? head.scope} · {head.product_name ?? 'General -cualquier producto-'}
+          {ALCANCE_PLAN[head.scope] ?? head.scope} ·{' '}
+          {head.product_name ?? 'General -cualquier producto-'}
         </p>
 
         {criterios.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)]">Este plan todavia no tiene criterios.</p>
+          <p className="text-sm text-[var(--color-text-muted)]">
+            Este plan todavía no tiene criterios.
+          </p>
         ) : (
           <Table>
             <THead>
@@ -120,7 +123,7 @@ export default async function PlanDetallePage({
                 <TH>Tipo</TH>
                 {puedeGestionar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -140,9 +143,9 @@ export default async function PlanDetallePage({
                         {campos}
                         <input type="hidden" name="criterionId" value={c.id} />
                         <BotonEnvio
-                          
                           aria-label={`Quitar criterio ${c.criterion}`}
-                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]">
+                          className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
+                        >
                           <Icon name="delete" size={16} />
                         </BotonEnvio>
                       </form>
@@ -172,11 +175,9 @@ export default async function PlanDetallePage({
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="isCritical" />
-                  Critico -reprueba la inspeccion entera si falla-
+                  Critico -reprueba la inspección entera si falla-
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>

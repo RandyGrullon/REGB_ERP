@@ -50,7 +50,9 @@ export default defineModule({
     {
       path: '/pedidos/clientes/:id',
       label: 'Ficha del cliente',
-      perm: 'sales-orders.customers.manage',
+      // La abre quien ve pedidos (la pagina exige `sales-orders.view`): el
+      // Contador fija ahi el limite de credito con `ar.credit.manage`.
+      perm: 'sales-orders.view',
       hidden: true,
     },
     { path: '/pedidos/:id', label: 'Detalle', perm: 'sales-orders.view', hidden: true },

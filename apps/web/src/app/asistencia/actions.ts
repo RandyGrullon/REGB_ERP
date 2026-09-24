@@ -53,7 +53,13 @@ export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
           select latitude::text, longitude::text, radius_meters from public.attendance_geofences
           where tenant_id = ${ctx.tenantId} and branch_id = ${branchId}`
         if (geo) {
-          withinGeofence = isWithinGeofence(lat, lng, Number(geo.latitude), Number(geo.longitude), geo.radius_meters)
+          withinGeofence = isWithinGeofence(
+            lat,
+            lng,
+            Number(geo.latitude),
+            Number(geo.longitude),
+            geo.radius_meters,
+          )
           method = 'geofence'
         }
       }
@@ -70,7 +76,10 @@ export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key') || msg.includes('unique constraint')) {
-      return { ok: false, error: 'Ese empleado ya tiene un marcaje abierto: primero registra su salida.' }
+      return {
+        ok: false,
+        error: 'Ese empleado ya tiene un marcaje abierto: primero registra su salida.',
+      }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -119,14 +128,19 @@ export async function guardarGeocerca(fd: FormData): Promise<ActionResult> {
 
   if (!branchId) return { ok: false, error: 'Elige la sucursal.' }
   if (lat === null || lng === null) return { ok: false, error: 'Las coordenadas no son validas.' }
-  if (!Number.isInteger(radius) || radius <= 0) return { ok: false, error: 'El radio debe ser mayor que cero.' }
+  if (!Number.isInteger(radius) || radius <= 0)
+    return { ok: false, error: 'El radio debe ser mayor que cero.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.attendance_geofences (tenant_id, branch_id, latitude, longitude, radius_meters)
       values (${ctx.tenantId}, ${branchId}, ${lat}, ${lng}, ${radius})
       on conflict (tenant_id, branch_id)
-      do update set latitude = excluded.latitude, longitude = excluded.longitude, radius_meters = excluded.radius_meters`)
+      do update set latitude = excluded.latitude, longitude = excluded.longitude, radius_meters = excluded.radius_meters`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -138,10 +152,10 @@ export async function guardarGeocerca(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function marcarEntradaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await marcarEntrada(fd), 'marcarEntrada')
+  await anotarAviso(await marcarEntrada(fd), 'marcarEntrada', 'Listo, marcamos la entrada.')
 }
 export async function marcarSalidaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await marcarSalida(fd), 'marcarSalida')
+  await anotarAviso(await marcarSalida(fd), 'marcarSalida', 'Listo, marcamos la salida.')
 }
 export async function guardarGeocercaForm(fd: FormData): Promise<void> {
   await anotarAviso(await guardarGeocerca(fd), 'guardarGeocerca')

@@ -22,7 +22,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { BotonEnvio } from '@/components/BotonEnvio'
 import { EstadoDeCredito } from '@/components/EstadoDeCredito'
-import { editarClienteForm } from '../../actions'
+import { crearPedidoForm, editarClienteForm } from '../../actions'
 import { ESTADOS } from '../../estados'
 
 export const dynamic = 'force-dynamic'
@@ -39,6 +39,7 @@ interface Cliente {
   credit_limit: string | null
   late_fee_exempt: boolean
   is_active: boolean
+  lista: string | null
 }
 
 interface Abierta {
@@ -99,13 +100,23 @@ export default async function ClienteFichaPage({
 }) {
   const { id } = await params
   const sp = await searchParams
-  const { ctx, shell } = await modulePage(sp, 'sales-orders', 'sales-orders.customers.manage')
+  // La ficha la abre quien gestiona clientes (vendedor) y quien lleva la
+  // cartera (contador: fija el limite). Antes pedia solo lo primero y el
+  // contador -el que decide cuanto se fia- recibia 404.
+  const { ctx, shell } = await modulePage(sp, 'sales-orders')
+  const puedeGestionar = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage').ok
+  const puedeFijarLimite = exigir(ctx, 'ar', 'ar.credit.manage').ok
+  if (!puedeGestionar && !puedeFijarLimite) notFound()
 
   const datos = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [c] = await tx<Cliente[]>`
-      select id, name, tax_id, phone, email, address, payment_terms, credit_limit::text,
-             late_fee_exempt, is_active
-      from public.customers where id = ${id} and tenant_id = ${ctx.tenantId}`
+      select c.id, c.name, c.tax_id, c.phone, c.email, c.address, c.payment_terms,
+             c.credit_limit::text, c.late_fee_exempt, c.is_active,
+             pl.name as lista
+      from public.customers c
+      -- Sin el módulo de listas de precio, la RLS la esconde y queda en null.
+      left join public.price_lists pl on pl.id = c.price_list_id
+      where c.id = ${id} and c.tenant_id = ${ctx.tenantId}`
     if (!c) return null
 
     const credito = await situacionDeCredito(tx, ctx.tenantId, id, { montoDocumento: 0 })
@@ -138,13 +149,17 @@ export default async function ClienteFichaPage({
       order by order_date desc, number desc
       limit 10`
 
-    return { c, credito, abiertas, excepciones, pedidos }
+    const almacenes = await tx<{ id: string; name: string }[]>`
+      select id, name from public.warehouses
+      where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
+
+    return { c, credito, abiertas, excepciones, pedidos, almacenes }
   })
 
   if (!datos) notFound()
-  const { c, credito, abiertas, excepciones, pedidos } = datos
+  const { c, credito, abiertas, excepciones, pedidos, almacenes } = datos
 
-  const puedeFijarLimite = exigir(ctx, 'ar', 'ar.credit.manage').ok
+  const puedeVender = exigir(ctx, 'sales-orders', 'sales-orders.create').ok && c.is_active
   const qs = ctx.demoQs
   const rncMalo = c.tax_id !== null && !isValidTaxId(c.tax_id)
   const hoy = new Date()
@@ -156,7 +171,7 @@ export default async function ClienteFichaPage({
           icon="contacts"
           title={c.name}
           description={
-            c.payment_terms === 0 ? 'Paga de contado' : `${c.payment_terms} dias de credito`
+            c.payment_terms === 0 ? 'Paga de contado' : `${c.payment_terms} días de crédito`
           }
           crumbs={[
             { label: 'Pedidos', href: `/pedidos${qs}` },
@@ -174,7 +189,10 @@ export default async function ClienteFichaPage({
                 </span>
               )}
               {rncMalo && (
-                <Badge tone="danger" title="El digito verificador no cuadra: no se le puede emitir B01">
+                <Badge
+                  tone="danger"
+                  title="El digito verificador no cuadra: no se le puede emitir B01"
+                >
                   RNC invalido
                 </Badge>
               )}
@@ -183,66 +201,56 @@ export default async function ClienteFichaPage({
                   Exento de mora
                 </Badge>
               )}
+              {c.lista && (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  Lista de precios: {c.lista}
+                </span>
+              )}
             </div>
+          }
+          actions={
+            puedeVender && almacenes.length > 0 ? (
+              <form action={crearPedidoForm} className="flex flex-wrap items-center gap-2">
+                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                <input type="hidden" name="customerId" value={c.id} />
+                {almacenes.length > 1 ? (
+                  <select
+                    name="warehouseId"
+                    aria-label="Almacen que despacha"
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {almacenes.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input type="hidden" name="warehouseId" value={almacenes[0]!.id} />
+                )}
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                  <Icon name="add_shopping_cart" size={18} />
+                  Nuevo pedido
+                </BotonEnvio>
+              </form>
+            ) : undefined
           }
         />
 
-        <EstadoDeCredito s={credito} titulo={credito.allowed ? 'Credito' : 'Credito bloqueado'} />
+        <EstadoDeCredito s={credito} titulo={credito.allowed ? 'Crédito' : 'Crédito bloqueado'} />
 
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Datos del cliente</CardTitle>
+              <CardTitle>{puedeGestionar ? 'Datos del cliente' : 'Limite de crédito'}</CardTitle>
             </CardHeader>
             <CardBody>
-              <form action={editarClienteForm} className="grid gap-3 sm:grid-cols-2">
-                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <input type="hidden" name="id" value={c.id} />
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)] sm:col-span-2">
-                  Nombre o razon social
-                  <input name="name" required minLength={2} defaultValue={c.name} className={inputCls} />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  RNC / Cedula
-                  <input
-                    name="taxId"
-                    defaultValue={c.tax_id ? formatTaxId(c.tax_id) : ''}
-                    inputMode="numeric"
-                    pattern="[\d\s-]{9,13}"
-                    title="RNC de 9 digitos o cedula de 11. Opcional."
-                    aria-invalid={rncMalo || undefined}
-                    className={inputCls}
-                  />
-                  <span className="text-[11px]">
-                    {rncMalo
-                      ? 'No es valido: corrigelo para poder emitirle credito fiscal (B01).'
-                      : 'Se verifica el digito. Las facturas ya emitidas no cambian.'}
-                  </span>
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias de credito
-                  <input
-                    name="terms"
-                    inputMode="numeric"
-                    defaultValue={String(c.payment_terms)}
-                    title="0 = paga de contado"
-                    className={inputCls}
-                  />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Telefono
-                  <input name="phone" defaultValue={c.phone ?? ''} className={inputCls} />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Correo
-                  <input name="email" type="email" defaultValue={c.email ?? ''} className={inputCls} />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)] sm:col-span-2">
-                  Direccion
-                  <input name="address" defaultValue={c.address ?? ''} className={inputCls} />
-                </label>
-                {puedeFijarLimite && (
+              {!puedeGestionar ? (
+                <form action={editarClienteForm} className="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                  <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                  <input type="hidden" name="id" value={c.id} />
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Limite de credito (RD$)
                     <input
@@ -256,14 +264,100 @@ export default async function ClienteFichaPage({
                       Vacio = sin limite. Saldo + pedido nuevo no lo puede pasar sin excepcion.
                     </span>
                   </label>
-                )}
-                <div className="flex items-end sm:col-span-2">
-                  <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
-                    <Icon name="save" size={18} />
-                    Guardar cambios
-                  </BotonEnvio>
-                </div>
-              </form>
+                  <div className="flex items-end">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      <Icon name="save" size={18} />
+                      Guardar limite
+                    </BotonEnvio>
+                  </div>
+                  <p className="text-xs text-[var(--color-text-muted)] sm:col-span-2">
+                    {c.phone ? `Tel. ${c.phone}` : 'Sin teléfono registrado'}
+                    {c.email ? ` · ${c.email}` : ''}. Los demas datos los corrige quien gestiona
+                    clientes.
+                  </p>
+                </form>
+              ) : (
+                <form action={editarClienteForm} className="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                  <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                  <input type="hidden" name="id" value={c.id} />
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)] sm:col-span-2">
+                    Nombre o razón social
+                    <input
+                      name="name"
+                      required
+                      minLength={2}
+                      defaultValue={c.name}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    RNC / Cedula
+                    <input
+                      name="taxId"
+                      defaultValue={c.tax_id ? formatTaxId(c.tax_id) : ''}
+                      inputMode="numeric"
+                      pattern="[0-9 \-]{9,13}"
+                      title="RNC de 9 digitos o cedula de 11. Opcional."
+                      aria-invalid={rncMalo || undefined}
+                      className={inputCls}
+                    />
+                    <span className="text-[11px]">
+                      {rncMalo
+                        ? 'No es valido: corrigelo para poder emitirle crédito fiscal (B01).'
+                        : 'Se verifica el digito. Las facturas ya emitidas no cambian.'}
+                    </span>
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Dias de crédito
+                    <input
+                      name="terms"
+                      inputMode="numeric"
+                      defaultValue={String(c.payment_terms)}
+                      title="0 = paga de contado"
+                      className={inputCls}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Telefono
+                    <input name="phone" defaultValue={c.phone ?? ''} className={inputCls} />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                    Correo
+                    <input
+                      name="email"
+                      type="email"
+                      defaultValue={c.email ?? ''}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)] sm:col-span-2">
+                    Direccion
+                    <input name="address" defaultValue={c.address ?? ''} className={inputCls} />
+                  </label>
+                  {puedeFijarLimite && (
+                    <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Limite de credito (RD$)
+                      <input
+                        name="creditLimit"
+                        inputMode="decimal"
+                        defaultValue={c.credit_limit ?? ''}
+                        placeholder="Sin limite"
+                        className={inputCls}
+                      />
+                      <span className="text-[11px]">
+                        Vacio = sin limite. Saldo + pedido nuevo no lo puede pasar sin excepcion.
+                      </span>
+                    </label>
+                  )}
+                  <div className="flex items-end sm:col-span-2">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                      <Icon name="save" size={18} />
+                      Guardar cambios
+                    </BotonEnvio>
+                  </div>
+                </form>
+              )}
             </CardBody>
           </Card>
 
@@ -321,12 +415,12 @@ export default async function ClienteFichaPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Excepciones de credito autorizadas</CardTitle>
+            <CardTitle>Excepciones de crédito autorizadas</CardTitle>
           </CardHeader>
           <CardBody>
             {excepciones.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Nunca se le ha vendido por encima de su credito.
+                Nunca se le ha vendido por encima de su crédito.
               </p>
             ) : (
               <Table>
@@ -374,7 +468,7 @@ export default async function ClienteFichaPage({
         {pedidos.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Ultimos pedidos</CardTitle>
+              <CardTitle>Últimos pedidos</CardTitle>
             </CardHeader>
             <CardBody>
               <ul className="divide-y divide-[var(--color-border)]">

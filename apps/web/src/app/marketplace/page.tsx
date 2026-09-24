@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { checkAccess } from '@regb/sdk'
 import { bootstrap, listTenants } from '@/lib/bootstrap'
 import {
@@ -17,7 +17,7 @@ import {
 import { authConfigured, currentSession } from '@/lib/supabase'
 import { MarketplaceView } from '@/components/MarketplaceView'
 import { GuiaFlotante } from '@/components/GuiaFlotante'
-import { guiaDelPaso } from '@/lib/module-page'
+import { accesoMarketplace, guiaDelPaso } from '@/lib/module-page'
 import type { TenantTier } from '@regb/core'
 
 export const dynamic = 'force-dynamic'
@@ -42,6 +42,7 @@ export default async function MarketplacePage({
   let tier: TenantTier
   let tenantName: string
   let roleName: string
+  let acceso: { ver: boolean; pedir: boolean }
   let demoQuery = ''
   let hiddenFields: Record<string, string> = {}
 
@@ -57,6 +58,7 @@ export default async function MarketplacePage({
     tier = data.tenant.tier as TenantTier
     tenantName = data.tenant.name
     roleName = data.role.name
+    acceso = accesoMarketplace(data.user.id, data.role)
   } else {
     const tenants = await listTenants()
     if (tenants.length === 0) redirect('/')
@@ -69,11 +71,14 @@ export default async function MarketplacePage({
     tier = data.tenant.tier as TenantTier
     tenantName = data.tenant.name
     roleName = data.role.name
+    acceso = accesoMarketplace(data.user.id, data.role)
     // Con el slug YA resuelto: sin `?tenant=` los enlaces a las fichas
     // llevaban `tenant=` vacio y la ficha rebotaba al inicio.
     demoQuery = `?tenant=${encodeURIComponent(slug)}&rol=${encodeURIComponent(rol)}`
     hiddenFields = { tenant: slug, rol }
   }
+
+  if (!acceso.ver) notFound()
 
   const [catalog, pendiente, base] = await Promise.all([
     loadCatalog(tenantId, tier),
@@ -122,6 +127,7 @@ export default async function MarketplacePage({
         solicitudPendiente={pendiente}
         cotizacionInicial={cotizacionInicial}
         cotizacionesPaquetes={cotizacionesPaquetes}
+        puedePedir={acceso.pedir}
       />
       {guia !== undefined && <GuiaFlotante guia={guia} />}
     </>

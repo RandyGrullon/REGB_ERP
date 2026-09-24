@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { cuotaPrestamo, estaSaldado, saldoPrestamo, totalAportePatronal } from './benefits.js'
+import {
+  cuotaPrestamo,
+  estaSaldado,
+  saldoPrestamo,
+  totalAPagarPrestamo,
+  totalAportePatronal,
+  validarPagoPrestamo,
+} from './benefits.js'
 
 describe('cuotaPrestamo', () => {
   it('sin interes, la cuota es una simple division', () => {
@@ -55,5 +62,38 @@ describe('totalAportePatronal', () => {
 
   it('sin inscripciones activas, el total es cero', () => {
     expect(totalAportePatronal([{ status: 'cancelled', employer_contribution: 500 }])).toBe(0)
+  })
+})
+
+describe('totalAPagarPrestamo', () => {
+  it('sin interes es el principal, aunque la cuota redondee', () => {
+    expect(totalAPagarPrestamo(10000, 3, cuotaPrestamo(10000, 3))).toBe(10000)
+  })
+
+  it('con interes son todas las cuotas: el interes pactado tambien se cobra', () => {
+    const cuota = cuotaPrestamo(10000, 12, 0.01)
+    expect(totalAPagarPrestamo(10000, 12, cuota, 0.01)).toBe(Math.round(cuota * 12 * 100) / 100)
+    expect(totalAPagarPrestamo(10000, 12, cuota, 0.01)).toBeGreaterThan(10000)
+  })
+
+  it('con interes, pagar solo el principal NO salda el prestamo', () => {
+    const cuota = cuotaPrestamo(10000, 12, 0.01)
+    const total = totalAPagarPrestamo(10000, 12, cuota, 0.01)
+    expect(estaSaldado(total, [{ amount: 10000 }])).toBe(false)
+  })
+})
+
+describe('validarPagoPrestamo', () => {
+  it('un pago dentro del saldo pasa, tambien el que lo deja en cero', () => {
+    expect(validarPagoPrestamo(2000, 1000)).toBeNull()
+    expect(validarPagoPrestamo(2000, 2000)).toBeNull()
+  })
+
+  it('un pago mayor que el saldo se rechaza', () => {
+    expect(validarPagoPrestamo(1500, 2000)).toMatch(/mayor que lo que queda/)
+  })
+
+  it('un pago de cero o negativo se rechaza', () => {
+    expect(validarPagoPrestamo(1500, 0)).toMatch(/mayor que cero/)
   })
 })

@@ -147,7 +147,7 @@ export function PaquetesNegocio({
                       Te faltan {p.total.length}
                       {p.anadidos.length > 0 &&
                         ` (${plural(p.anadidos.length, 'es requisito', 'son requisitos')})`}
-                      {p.costo && ` · + ${usd(p.costo.instalacion)} instalación`}
+                      {p.costo && ` · + ${usd(p.costo.instalacion)} + ITBIS de instalación`}
                     </p>
                   </div>
                 )}

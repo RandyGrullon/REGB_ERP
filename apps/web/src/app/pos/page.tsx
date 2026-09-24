@@ -162,6 +162,10 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     : (primeraPuerta(ctx, PUERTAS_NCF)?.ruta ?? null)
   const puedeAbrir = exigir(ctx, 'pos', 'pos.shift.open').ok
   const puedeDescuento = exigir(ctx, 'pos', 'pos.discount').ok
+  // El tope del rol (`pos.discount.max`) viaja a la caja para avisar AL
+  // ESCRIBIR, no despues de cobrar. El servidor lo vuelve a comprobar.
+  const tope = (ctx.role.permissions as Record<string, unknown>)['pos.discount.max']
+  const topeDescuento = typeof tope === 'number' ? tope : null
   const qs = ctx.demoQs
   const hidden: Record<string, string> = qs
     ? { tenant: ctx.tenantSlug, rol: ctx.roleName }
@@ -236,14 +240,36 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               ) : (
                 <>Avisale al dueño que cargue la autorizacion de la DGII en Caja › Comprobantes</>
               )}{' '}
-              — pedirla toma dias.
+              — pedirla toma días.
             </p>
           </div>
         )}
 
         {turno ? (
           <>
-            <section aria-label="Turno" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {/* En el telefono las cuatro tarjetas se comian la primera pantalla
+                y el cajero no veia sus productos: ahi van en una sola linea. */}
+            <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-[var(--color-text-secondary)] sm:hidden">
+              <span>
+                <strong className="tabular text-[var(--color-text-primary)]">
+                  {resumen?.tickets ?? 0}
+                </strong>{' '}
+                tickets
+              </span>
+              <span>
+                <strong className="tabular text-[var(--color-text-primary)]">
+                  RD$ {money(Number(resumen?.vendido ?? 0))}
+                </strong>{' '}
+                vendido
+              </span>
+              <span>
+                <strong className="tabular text-[var(--color-text-primary)]">
+                  RD$ {money(Number(turno.opening_float) + Number(resumen?.efectivo ?? 0))}
+                </strong>{' '}
+                en gaveta
+              </span>
+            </p>
+            <section aria-label="Turno" className="hidden grid-cols-2 gap-3 sm:grid lg:grid-cols-4">
               <StatCard
                 label="Tickets"
                 value={String(resumen?.tickets ?? 0)}
@@ -269,6 +295,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               listas={listas}
               entradas={entradas}
               puedeDescuento={puedeDescuento}
+              topeDescuento={topeDescuento}
               hiddenFields={hidden}
             />
           </>
@@ -282,7 +309,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                 <input type="hidden" name="tenant" value={hidden.tenant} />
                 <input type="hidden" name="rol" value={hidden.rol} />
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Caja / almacen
+                  Caja / almacén
                   <select
                     name="warehouseId"
                     required
@@ -305,9 +332,7 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="lock_open" size={18} />
                   Abrir caja
                 </BotonEnvio>

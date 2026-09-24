@@ -1,7 +1,7 @@
 import { Icon } from '@regb/ui'
 import { RESULTADOS_ACEPTAR, esMotivoAceptar } from '@/app/usuarios/invitacion'
 
-export const metadata = { title: 'Invitacion · REGB ERP' }
+export const metadata = { title: 'Invitación · REGB ERP' }
 
 /**
  * Por que una invitacion no se pudo aceptar, dicho en claro.

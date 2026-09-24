@@ -75,6 +75,7 @@ export function MarketplaceView({
   solicitudPendiente,
   cotizacionInicial,
   cotizacionesPaquetes,
+  puedePedir = true,
 }: {
   catalog: CatalogEntry[]
   tier: string
@@ -93,6 +94,8 @@ export function MarketplaceView({
   cotizacionInicial: CotizacionMotor | null
   /** Cuanto sube la factura con cada paquete, segun el mismo motor. */
   cotizacionesPaquetes: Record<string, { aumento: number; instalacion: number }>
+  /** Solo quien paga pide (`subscription.manage`); el resto ve y simula. */
+  puedePedir?: boolean
 }) {
   const porId = useMemo(() => new Map(catalog.map((m) => [m.id, m])), [catalog])
 
@@ -246,12 +249,14 @@ export function MarketplaceView({
               />
               <Dato icono="bolt" etiqueta="Para encender hoy" valor={String(paraHoy)} />
               <Dato icono="construction" etiqueta="En camino" valor={String(proximamente)} />
-              <Dato
-                icono="payments"
-                etiqueta="Tu mensualidad hoy"
-                valor={pagasHoy === null ? '—' : usd(pagasHoy)}
-                sufijo="/mes"
-              />
+              {puedePedir && (
+                <Dato
+                  icono="payments"
+                  etiqueta="Tu mensualidad hoy"
+                  valor={pagasHoy === null ? '—' : usd(pagasHoy)}
+                  sufijo="/mes"
+                />
+              )}
             </dl>
           </section>
 
@@ -481,6 +486,7 @@ export function MarketplaceView({
         tier={tier}
         cotizacionInicial={cotizacionInicial}
         hiddenFields={hiddenFields}
+        puedePedir={puedePedir}
         notaPendiente={solicitudPendiente?.nota ?? null}
         onQuitar={toggle}
         onLimpiar={() => setMarcados(new Set())}

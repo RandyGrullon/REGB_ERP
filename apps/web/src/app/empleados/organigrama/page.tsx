@@ -15,7 +15,15 @@ interface EmpleadoLite {
 }
 
 /** Nodo del arbol, con recursion visual -sangria por nivel, no un diagrama con lineas-. */
-function Rama({ node, posiciones, nivel }: { node: OrgNode; posiciones: Map<string, string>; nivel: number }) {
+function Rama({
+  node,
+  posiciones,
+  nivel,
+}: {
+  node: OrgNode
+  posiciones: Map<string, string>
+  nivel: number
+}) {
   return (
     <li>
       <div

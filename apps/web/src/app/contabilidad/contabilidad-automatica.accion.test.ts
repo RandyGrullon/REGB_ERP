@@ -406,7 +406,12 @@ describe('credito: factura, cobro, reverso, nota de credito, mora y anulacion (a
     // Rebaja de RD$1,180 con ITBIS sobre una factura con saldo de 6,800.
     expect(
       await emitirNotaDeCredito(
-        c.fd({ invoiceId: factura, kind: 'adjustment', amount: '1180', reason: 'Descuento por pronto pago' }),
+        c.fd({
+          invoiceId: factura,
+          kind: 'adjustment',
+          amount: '1180',
+          reason: 'Descuento por pronto pago',
+        }),
       ),
     ).toEqual({ ok: true })
     const [n] = await db()<{ id: string }[]>`
@@ -430,7 +435,9 @@ describe('credito: factura, cobro, reverso, nota de credito, mora y anulacion (a
       set issue_date = current_date - 50, due_date = current_date - 20
       where id = ${vencida}`
     expect(
-      await aplicarCargoPorMora(c.fd({ invoiceId: vencida, amount: '250', notes: '20 dias de atraso' })),
+      await aplicarCargoPorMora(
+        c.fd({ invoiceId: vencida, amount: '250', notes: '20 dias de atraso' }),
+      ),
     ).toEqual({ ok: true })
     const [m] = await db()<{ id: string }[]>`
       select id from public.invoice_late_fees where invoice_id = ${vencida}`
@@ -546,7 +553,12 @@ describe('proveedor: factura y pago (ap.*)', () => {
   it('anular una factura de proveedor sin pagos genera su reverso', async () => {
     expect(
       await registrarFactura(
-        c.fd({ supplierId: proveedor, supplierInvoiceNumber: 'F-0099', subtotal: '100', tax: '18' }),
+        c.fd({
+          supplierId: proveedor,
+          supplierInvoiceNumber: 'F-0099',
+          subtotal: '100',
+          tax: '18',
+        }),
       ),
     ).toEqual({ ok: true })
     const [f] = await db()<{ id: string }[]>`
@@ -586,9 +598,13 @@ describe('degradacion elegante: cliente sin accounting', () => {
 
 describe('confiabilidad: un mapa roto se reintenta, no se pierde', () => {
   it('el evento falla con un motivo legible, queda para reintento, y sale al corregir', async () => {
-    // Alguien desactiva la cuenta de Bancos que el mapa usa.
+    // La cuenta de Bancos que el mapa usa queda desactivada. Desde la
+    // pantalla ya no se puede (alternarCuenta lo niega mientras el mapa la
+    // use, ver cuentas-del-mapa.accion.test.ts), pero el despachador tiene
+    // que aguantar un mapa roto por cualquier otro camino: se rompe directo.
     const banco = await cuentaPorCodigo(c, '1103')
-    expect(await alternarCuenta(c.fd({ id: banco }))).toEqual({ ok: true })
+    expect((await alternarCuenta(c.fd({ id: banco }))).ok).toBe(false)
+    await db()`update public.accounts set is_active = false where id = ${banco}`
 
     const v = await vender(c, [{ method: 'card', amount: 236 }])
     await procesarEventos()
@@ -609,7 +625,9 @@ describe('confiabilidad: un mapa roto se reintenta, no se pierde', () => {
 
     // La correccion: una cuenta de banco nueva, mapeada desde la pantalla.
     expect(
-      await crearCuenta(c.fd({ code: '1110', name: 'Banco Popular cta. corriente', type: 'asset' })),
+      await crearCuenta(
+        c.fd({ code: '1110', name: 'Banco Popular cta. corriente', type: 'asset' }),
+      ),
     ).toEqual({ ok: true })
     const popular = await cuentaPorCodigo(c, '1110')
     expect(await guardarMapaCuenta(c.fd({ purpose: 'banco', accountId: popular }))).toEqual({
@@ -632,18 +650,27 @@ describe('balanza de comprobacion', () => {
   it('no suma borradores y sigue mostrando una cuenta desactivada con movimiento', async () => {
     // Un borrador con una linea descuadrada, hecho con las acciones reales.
     expect(
-      await crearAsiento(c.fd({ description: 'Borrador que no debe sumar', entryDate: '2026-09-23' })),
+      await crearAsiento(
+        c.fd({ description: 'Borrador que no debe sumar', entryDate: '2026-09-23' }),
+      ),
     ).toEqual({ ok: true })
     const [b] = await db()<{ id: string }[]>`
       select id from public.journal_entries
       where tenant_id = ${c.tenantId} and description = 'Borrador que no debe sumar'`
     expect(
       await agregarLinea(
-        c.fd({ entryId: b!.id, accountId: await cuentaPorCodigo(c, '1101'), lado: 'debit', amount: '99999' }),
+        c.fd({
+          entryId: b!.id,
+          accountId: await cuentaPorCodigo(c, '1101'),
+          lado: 'debit',
+          amount: '99999',
+        }),
       ),
     ).toEqual({ ok: true })
 
-    const filas = await asUser(crypto.randomUUID(), c.tenantId, (tx) => filasBalanza(tx, c.tenantId))
+    const filas = await asUser(crypto.randomUUID(), c.tenantId, (tx) =>
+      filasBalanza(tx, c.tenantId),
+    )
     const porCodigo = new Map(filas.map((f) => [f.accountCode, f]))
 
     const [esperado] = await db()<{ d: string; cr: string }[]>`
@@ -723,7 +750,8 @@ describe('aislamiento del mapa contable (tabla nueva de 0131)', () => {
     )
     expect(upd).toHaveLength(0)
     const del = await comoB(
-      (tx) => tx`delete from public.accounting_account_map where tenant_id = ${c.tenantId} returning purpose`,
+      (tx) =>
+        tx`delete from public.accounting_account_map where tenant_id = ${c.tenantId} returning purpose`,
     )
     expect(del).toHaveLength(0)
   })
@@ -751,8 +779,10 @@ describe('aislamiento del mapa contable (tabla nueva de 0131)', () => {
   it('con el modulo apagado, A tampoco ve su propio mapa', async () => {
     await c.modulo('accounting', false)
     try {
-      const filas = await asUser(crypto.randomUUID(), c.tenantId, (tx) =>
-        tx`select purpose from public.accounting_account_map`,
+      const filas = await asUser(
+        crypto.randomUUID(),
+        c.tenantId,
+        (tx) => tx`select purpose from public.accounting_account_map`,
       )
       expect(filas).toHaveLength(0)
     } finally {

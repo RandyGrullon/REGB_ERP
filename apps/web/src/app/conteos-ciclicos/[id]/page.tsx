@@ -104,7 +104,10 @@ export default async function ConteoDetallePage({
         <PageHeader
           icon="checklist"
           title={`Conteo en ${head.warehouse_name}`}
-          crumbs={[{ label: 'Conteos ciclicos', href: `/conteos-ciclicos${qs}` }, { label: 'Detalle' }]}
+          crumbs={[
+            { label: 'Conteos ciclicos', href: `/conteos-ciclicos${qs}` },
+            { label: 'Detalle' },
+          ]}
           actions={
             <div className="flex items-center gap-2">
               <Badge
@@ -124,12 +127,12 @@ export default async function ConteoDetallePage({
                 <form action={enviarConteoForm}>
                   {campos}
                   <BotonEnvio
-                    
                     disabled={!todoContado}
-                    title={!todoContado ? 'Todavia hay productos sin contar' : ''}
-                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50">
+                    title={!todoContado ? 'Todavía hay productos sin contar' : ''}
+                    className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-50"
+                  >
                     <Icon name="send" size={14} />
-                    Enviar a aprobacion
+                    Enviar a aprobación
                   </BotonEnvio>
                 </form>
               )}
@@ -137,18 +140,14 @@ export default async function ConteoDetallePage({
                 <>
                   <form action={aprobarConteoForm}>
                     {campos}
-                    <BotonEnvio
-                      
-                      className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
                       <Icon name="check" size={14} />
                       Aprobar y ajustar
                     </BotonEnvio>
                   </form>
                   <form action={rechazarConteoForm}>
                     {campos}
-                    <BotonEnvio
-                      
-                      className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="close" size={14} />
                       Rechazar
                     </BotonEnvio>
@@ -162,7 +161,7 @@ export default async function ConteoDetallePage({
         {contando ? (
           <Card>
             <CardHeader>
-              <CardTitle>Conteo ciego -no se muestra el numero del sistema-</CardTitle>
+              <CardTitle>Conteo ciego -no se muestra el número del sistema-</CardTitle>
             </CardHeader>
             <CardBody className="p-0">
               <Table>
@@ -180,7 +179,10 @@ export default async function ConteoDetallePage({
                       </TD>
                       <TD numeric>
                         {puedeContar ? (
-                          <form action={registrarLineaConteoForm} className="inline-flex items-center gap-1">
+                          <form
+                            action={registrarLineaConteoForm}
+                            className="inline-flex items-center gap-1"
+                          >
                             {campos}
                             <input type="hidden" name="lineId" value={l.id} />
                             <input
@@ -191,9 +193,7 @@ export default async function ConteoDetallePage({
                               aria-label={`Cantidad contada de ${l.name}`}
                               className="h-9 w-24 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
-                            <BotonEnvio
-                              
-                              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               Guardar
                             </BotonEnvio>
                           </form>
@@ -221,7 +221,9 @@ export default async function ConteoDetallePage({
             <TBody>
               {lineas.map((l) => {
                 const diff =
-                  l.counted_qty !== null ? countVariance(Number(l.counted_qty), Number(l.system_qty)) : null
+                  l.counted_qty !== null
+                    ? countVariance(Number(l.counted_qty), Number(l.system_qty))
+                    : null
                 const impacto = diff !== null ? varianceValue(diff, Number(l.unit_cost)) : null
                 return (
                   <TR key={l.id}>
@@ -236,16 +238,17 @@ export default async function ConteoDetallePage({
                     </TD>
                     <TD numeric>
                       {diff !== null && (
-                        <Badge tone={diff === 0 ? 'success' : diff < 0 ? 'danger' : 'warning'} dot={false}>
+                        <Badge
+                          tone={diff === 0 ? 'success' : diff < 0 ? 'danger' : 'warning'}
+                          dot={false}
+                        >
                           {diff > 0 ? '+' : ''}
                           {diff}
                         </Badge>
                       )}
                     </TD>
                     <TD numeric>
-                      {impacto !== null && (
-                        <span className="tabular">RD$ {money(impacto)}</span>
-                      )}
+                      {impacto !== null && <span className="tabular">RD$ {money(impacto)}</span>}
                     </TD>
                   </TR>
                 )

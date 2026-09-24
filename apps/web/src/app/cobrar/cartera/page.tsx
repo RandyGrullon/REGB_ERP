@@ -26,11 +26,11 @@ const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const TRAMOS: { key: AgingBucket; label: string; tone: string }[] = [
-  { key: 'current', label: 'Al dia', tone: 'var(--color-semantic-success)' },
-  { key: 'd1_30', label: '1 a 30 dias', tone: 'var(--color-semantic-info)' },
+  { key: 'current', label: 'Al día', tone: 'var(--color-semantic-success)' },
+  { key: 'd1_30', label: '1 a 30 días', tone: 'var(--color-semantic-info)' },
   { key: 'd31_60', label: '31 a 60', tone: 'var(--color-semantic-warning)' },
   { key: 'd61_90', label: '61 a 90', tone: 'var(--color-accent-sand)' },
-  { key: 'd90_plus', label: 'Mas de 90', tone: 'var(--color-semantic-danger)' },
+  { key: 'd90_plus', label: 'Más de 90', tone: 'var(--color-semantic-danger)' },
 ]
 
 /**
@@ -53,11 +53,12 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
         number: string
         customer_id: string
         customer_name: string
+        customer_phone: string | null
         due_date: string
         saldo: string
       }[]
     >`
-      select i.id, i.number, i.customer_id, c.name as customer_name,
+      select i.id, i.number, i.customer_id, c.name as customer_name, c.phone as customer_phone,
              i.due_date::text, public.invoice_balance(i.id)::text as saldo
       from public.customer_invoices i
       join public.customers c on c.id = i.customer_id
@@ -84,6 +85,10 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
   const puedeFijarPolitica = exigir(ctx, 'ar', 'ar.credit.manage').ok
 
   const qs = ctx.demoQs
+  // "A quien llamar" sin el telefono obligaba a salir a buscarlo.
+  const telefonos = new Map(abiertas.map((f) => [f.customer_id, f.customer_phone]))
+  const enlaceCls =
+    'text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
   const maximo = Math.max(...TRAMOS.map((t) => aging.byBucket[t.key]), 1)
 
   return (
@@ -112,12 +117,12 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
         >
           <div className="min-w-0 flex-1 space-y-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              Politica de credito
+              Politica de crédito
             </h2>
             <p className="text-xs text-[var(--color-text-muted)]">
               {politica === null
                 ? 'No se bloquea por facturas vencidas: solo por el limite de cada cliente.'
-                : `Un cliente con una factura vencida hace mas de ${politica} dias no recibe pedidos ni facturas a credito nuevas sin una excepcion autorizada.`}
+                : `Un cliente con una factura vencida hace más de ${politica} días no recibe pedidos ni facturas a crédito nuevas sin una excepcion autorizada.`}
             </p>
           </div>
           {puedeFijarPolitica && (
@@ -125,7 +130,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
               <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
-                Bloquear despues de
+                Bloquear después de
                 <input
                   name="overdueDays"
                   inputMode="numeric"
@@ -140,7 +145,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                 Guardar
               </BotonEnvio>
               <span id="politica-ayuda" className="sr-only">
-                De 1 a 365 dias. Vacio para no bloquear por vencidas.
+                De 1 a 365 días. Vacio para no bloquear por vencidas.
               </span>
             </form>
           )}
@@ -192,7 +197,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                 <THead>
                   <TR>
                     <TH>Cliente</TH>
-                    <TH numeric>Al dia</TH>
+                    <TH numeric>Al día</TH>
                     <TH numeric>1-30</TH>
                     <TH numeric>31-60</TH>
                     <TH numeric>61-90</TH>
@@ -207,7 +212,17 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                     return (
                       <TR key={c.customerId}>
                         <TD className="font-medium text-[var(--color-text-primary)]">
-                          {c.customerName}
+                          <a href={`/pedidos/clientes/${c.customerId}${qs}`} className={enlaceCls}>
+                            {c.customerName}
+                          </a>
+                          {telefonos.get(c.customerId) && (
+                            <a
+                              href={`tel:${telefonos.get(c.customerId)!.replace(/[^\d+]/g, '')}`}
+                              className="block text-[11px] font-normal text-[var(--color-text-muted)] hover:underline"
+                            >
+                              {telefonos.get(c.customerId)}
+                            </a>
+                          )}
                         </TD>
                         {TRAMOS.map((t) => (
                           <TD key={t.key} numeric>
@@ -224,7 +239,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                         </TD>
                         <TD>
                           {vencido === 0 ? (
-                            <Badge tone="success">al dia</Badge>
+                            <Badge tone="success">al día</Badge>
                           ) : c.buckets.d90_plus > 0 ? (
                             <Badge tone="danger">critico</Badge>
                           ) : (
@@ -255,7 +270,9 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                   {abiertas.map((f) => (
                     <TR key={f.id}>
                       <TD>
-                        <Mono>{f.number}</Mono>
+                        <a href={`/cobrar/${f.id}${qs}`} className={enlaceCls}>
+                          <Mono>{f.number}</Mono>
+                        </a>
                       </TD>
                       <TD>{f.customer_name}</TD>
                       <TD>

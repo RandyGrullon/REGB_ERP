@@ -8,7 +8,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'inventory',
   name: 'Inventario',
-  description: 'Existencias multi-almacen, kardex, costo promedio y valorizacion.',
+  description: 'Existencias multi-almacén, kardex, costo promedio y valorización.',
   icon: 'package_2',
   category: 'standard',
   version: '0.1.0',

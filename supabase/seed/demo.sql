@@ -219,7 +219,7 @@ begin
 
   insert into public.notifications (tenant_id, user_id, module_id, title, body, link)
   select v_pyme, null, 'marketplace', 'Tu prueba de Inventario vence pronto',
-         'Quedan pocos dias de prueba. Activalo para no perder el historial de movimientos.',
+         'Quedan pocos dias de prueba. Activalo para seguir usandolo; si vence, tus movimientos se quedan guardados.',
          '/marketplace'
   where not exists (select 1 from public.notifications where tenant_id = v_pyme);
 
@@ -1313,16 +1313,26 @@ begin
   if v_alm is null or v_duarte is null then return; end if;
 
   if not exists (select 1 from public.sales_orders where tenant_id = v_med and number = 'SO-0001') then
-    insert into public.sales_orders (tenant_id, number, customer_id, warehouse_id, status, total)
-    values (v_med, 'SO-0001', v_duarte, v_alm, 'confirmed', 25000)
+    -- Con su linea: antes era un pedido confirmado de RD$ 25,000 sin nada
+    -- dentro, y la pantalla del pedido no cuadraba con su total.
+    -- 40 sacos de cemento a 465 = 18,600 + ITBIS 3,348 = 21,948.
+    insert into public.sales_orders
+      (tenant_id, number, customer_id, warehouse_id, status, subtotal, tax, total)
+    values (v_med, 'SO-0001', v_duarte, v_alm, 'confirmed', 18600.00, 3348.00, 21948.00)
     returning id into v_orden;
+
+    insert into public.sales_order_lines
+      (order_id, tenant_id, product_id, qty_ordered, unit_price, discount_pct, tax_rate, line_total)
+    select v_orden, v_med, p.id, 40, 465.00, 0, 0.18, 21948.00
+    from public.products p where p.tenant_id = v_med and p.sku = 'CEM-100';
 
     insert into public.commission_plans (tenant_id, name, basis, rate)
     values (v_med, 'Plan estandar de ventas', 'percentage', 0.05)
     returning id into v_plan;
 
+    -- La comision es sobre lo vendido sin ITBIS: 5 % de 18,600.
     insert into public.commission_entries (tenant_id, plan_id, sales_order_id, salesperson_id, base_amount, commission_amount)
-    values (v_med, v_plan, v_orden, v_maria, 25000, 1250);
+    values (v_med, v_plan, v_orden, v_maria, 18600, 930);
   end if;
 end $$;
 
@@ -2195,7 +2205,7 @@ begin
     insert into public.employees
       (tenant_id, code, first_name, last_name, national_id, hire_date, position, department,
        manager_id, salary)
-    values (v_med, 'E-002', 'Yolanda', 'Peña', '001-7712345-9',
+    values (v_med, 'E-002', 'Yolanda', 'Peña', '001-7712345-2',
             current_date - interval '2 years', 'Encargada de Sucursal', 'Ventas', v_gerente, 32000.00)
     returning id into v_encargada;
 
@@ -3029,4 +3039,94 @@ begin
   values (v_med, 'taxes', 'active', true),
          (v_med, 'consolidation', 'active', true)
   on conflict do nothing;
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  La instalacion de los clientes demo ya entro en su contrato
+-- ═══════════════════════════════════════════════════════════════════════
+--  Este seed corre DESPUES de las migraciones, asi que el trigger de 0128
+--  (instalacion_pendiente) deja como pendiente la instalacion de cada
+--  modulo que se enciende arriba. La distribuidora opera desde abril: su
+--  primera factura de REGB Control salia por US$ 71,251, casi todo
+--  instalacion de 60 modulos que ya tenia. Se registra como hecha, igual
+--  que 0128 hizo con lo que encontro activo: monto 0, sin factura y con
+--  nota. Lo que un cliente demo active desde ahora si queda pendiente.
+update regb.module_installation_charges
+set amount = 0,
+    note = 'Cliente demo: su instalacion entro en el contrato. No se factura otra vez.'
+where amount is null
+  and invoice_id is null
+  and tenant_id in (select id from regb.tenants
+                    where slug in ('colmado-esperanza', 'distribuidora-caribe'));
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Asiento de apertura de la distribuidora
+-- ═══════════════════════════════════════════════════════════════════════
+--  La contabilidad automatica (0131) acredita Caja y Bancos con cada pago,
+--  pero la demo nunca dijo con cuanto empezaron: la balanza enseñaba Caja
+--  y Bancos en negativo -"al reves"- y un contador lo lee como un error
+--  del sistema. La apertura pone lo que las cuentas bancarias ya declaran
+--  (185,000 + 60,000) y un fondo de caja, contra el capital. Va fechada
+--  un año atras, antes de cualquier movimiento, y se contabiliza con la
+--  misma funcion que usa la app.
+do $$
+declare
+  v_med     uuid;
+  v_caja    uuid;
+  v_bancos  uuid;
+  v_capital uuid;
+  v_asiento uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+  if exists (select 1 from public.journal_entries
+             where tenant_id = v_med and number = 'AS-DEMO-0000') then
+    return;
+  end if;
+
+  insert into public.accounts (tenant_id, code, name, type) values
+    (v_med, '1103', 'Bancos', 'asset')
+  on conflict (tenant_id, code) do nothing;
+
+  select id into v_caja    from public.accounts where tenant_id = v_med and code = '1101';
+  select id into v_bancos  from public.accounts where tenant_id = v_med and code = '1103';
+  select id into v_capital from public.accounts where tenant_id = v_med and code = '3101';
+  if v_caja is null or v_bancos is null or v_capital is null then return; end if;
+
+  insert into public.journal_entries (tenant_id, number, entry_date, description)
+  values (v_med, 'AS-DEMO-0000', current_date - 365, 'Asiento de apertura')
+  returning id into v_asiento;
+
+  insert into public.journal_entry_lines (entry_id, tenant_id, account_id, debit, credit) values
+    (v_asiento, v_med, v_caja, 25000.00, 0),
+    (v_asiento, v_med, v_bancos, 245000.00, 0),
+    (v_asiento, v_med, v_capital, 0, 270000.00);
+
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', gen_random_uuid(), 'app_metadata',
+      json_build_object('tenant_id', v_med, 'is_provider', false))::text, true);
+  perform public.post_journal_entry(v_asiento);
+end $$;
+
+-- ═══════════════════════════════════════════════════════════════════════
+--  Secuencias de NCF de la distribuidora
+-- ═══════════════════════════════════════════════════════════════════════
+--  Vende a crédito a empresas (B01), a consumidor final (B02) y emite notas
+--  de crédito (B04), pero la demo no traía ninguna secuencia: la primera
+--  factura desde un pedido fallaba por falta de comprobante, igual que le
+--  pasaba al colmado antes de la ronda 2.
+do $$
+declare
+  v_med uuid;
+begin
+  select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
+  if v_med is null then return; end if;
+
+  insert into public.ncf_sequences
+    (tenant_id, ncf_type, range_from, range_to, next_number, expires_on, authorization_ref)
+  select v_med, x.tipo, 1, x.hasta, 1, (current_date + interval '1 year')::date, 'DEMO-' || x.tipo
+  from (values ('B01', 5000), ('B02', 5000), ('B04', 1000)) as x(tipo, hasta)
+  where not exists (
+    select 1 from public.ncf_sequences s where s.tenant_id = v_med and s.ncf_type = x.tipo
+  );
 end $$;

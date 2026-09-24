@@ -74,9 +74,13 @@ export async function crearResultadoClave(fd: FormData): Promise<ActionResult> {
   if (targetValue === null) return { ok: false, error: 'La meta debe ser un numero.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.performance_key_results (tenant_id, objective_id, description, target_value, unit)
-      values (${ctx.tenantId}, ${objectiveId}, ${description}, ${targetValue}, ${unit})`)
+      values (${ctx.tenantId}, ${objectiveId}, ${description}, ${targetValue}, ${unit})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -99,9 +103,13 @@ export async function actualizarProgreso(fd: FormData): Promise<ActionResult> {
   if (currentValue === null) return { ok: false, error: 'El valor debe ser un numero.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       update public.performance_key_results set current_value = ${currentValue}, updated_at = now()
-      where id = ${keyResultId} and tenant_id = ${ctx.tenantId}`)
+      where id = ${keyResultId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -124,9 +132,13 @@ export async function crearUnoAUno(fd: FormData): Promise<ActionResult> {
   if (!scheduledAt) return { ok: false, error: 'Elige la fecha y hora.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.performance_one_on_ones (tenant_id, employee_id, scheduled_at)
-      values (${ctx.tenantId}, ${employeeId}, ${scheduledAt})`)
+      values (${ctx.tenantId}, ${employeeId}, ${scheduledAt})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -149,10 +161,14 @@ export async function completarUnoAUno(fd: FormData): Promise<ActionResult> {
   if (!recordId) return { ok: false, error: 'Falta el 1:1.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       update public.performance_one_on_ones
       set status = 'completed', notes = ${notes}, action_items = ${actionItems}, updated_at = now()
-      where id = ${recordId} and tenant_id = ${ctx.tenantId}`)
+      where id = ${recordId} and tenant_id = ${ctx.tenantId}`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

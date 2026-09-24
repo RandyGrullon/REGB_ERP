@@ -86,17 +86,21 @@ export default async function PortalClientesPage({
         </section>
 
         {invitaciones.length === 0 ? (
-          <EmptyState icon="open_in_new" title="Todavia no hay ninguna invitacion" description="Crea la primera abajo." />
+          <EmptyState
+            icon="open_in_new"
+            title="Todavia no hay ninguna invitacion"
+            description="Crea la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Cliente</TH>
                 <TH>Correo</TH>
-                <TH>Ultima visita</TH>
+                <TH>Última visita</TH>
                 <TH>Estado</TH>
                 <TH>
-                  <span className="sr-only">Accion</span>
+                  <span className="sr-only">Acción</span>
                 </TH>
               </TR>
             </THead>
@@ -106,10 +110,14 @@ export default async function PortalClientesPage({
                   <TD className="text-[var(--color-text-primary)]">{i.customer_name}</TD>
                   <TD className="text-[var(--color-text-muted)]">{i.email}</TD>
                   <TD className="text-[var(--color-text-muted)]">
-                    {i.last_accessed_at ? new Date(i.last_accessed_at).toLocaleString('es-DO') : 'Nunca'}
+                    {i.last_accessed_at
+                      ? new Date(i.last_accessed_at).toLocaleString('es-DO')
+                      : 'Nunca'}
                   </TD>
                   <TD>
-                    <Badge tone={badgeEstado(i.status)}>{ESTADO_INVITACION[i.status] ?? i.status}</Badge>
+                    <Badge tone={badgeEstado(i.status)}>
+                      {ESTADO_INVITACION[i.status] ?? i.status}
+                    </Badge>
                   </TD>
                   <TD>
                     {i.status === 'active' && puedeGestionar && (
@@ -124,9 +132,7 @@ export default async function PortalClientesPage({
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="inviteId" value={i.id} />
-                          <BotonEnvio
-                            
-                            className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="block" size={12} />
                             Revocar
                           </BotonEnvio>
@@ -172,9 +178,7 @@ export default async function PortalClientesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Invitar
                 </BotonEnvio>

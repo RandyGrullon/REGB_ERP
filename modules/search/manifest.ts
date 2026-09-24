@@ -8,8 +8,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'search',
-  name: 'Busqueda global',
-  description: 'Ctrl+K: encuentra modulos, registros, acciones y ayuda desde cualquier pantalla.',
+  name: 'Búsqueda global',
+  description: 'Ctrl+K: encuentra módulos, registros, acciones y ayuda desde cualquier pantalla.',
   icon: 'search',
   category: 'core',
   version: '0.1.0',

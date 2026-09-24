@@ -31,6 +31,12 @@ export interface FilaBalanza extends TrialBalanceRow {
 export async function filasBalanza(
   tx: postgres.TransactionSql,
   tenantId: string,
+  /**
+   * Corte: solo asientos con fecha hasta este dia (AAAA-MM-DD). Sin corte,
+   * todo lo contabilizado. Es la balanza "al 31 de agosto" que pide quien
+   * cierra un mes: antes solo existia la de hoy.
+   */
+  hasta?: string | null,
 ): Promise<FilaBalanza[]> {
   const filas = await tx<
     {
@@ -51,6 +57,7 @@ export async function filasBalanza(
     join public.journal_entry_lines l on l.account_id = a.id and l.tenant_id = a.tenant_id
     join public.journal_entries e on e.id = l.entry_id and e.status = 'posted'
     where a.tenant_id = ${tenantId}
+      and (${hasta ?? null}::date is null or e.entry_date <= ${hasta ?? null}::date)
     group by a.id, a.code, a.name, a.type, a.is_active
     order by a.code`
 

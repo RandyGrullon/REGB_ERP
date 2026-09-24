@@ -3,8 +3,8 @@ import { defineModule } from '@regb/module-registry'
 /** Auditoria — modulo core 9 (§5.1). La bitacora inmutable, visible. */
 export default defineModule({
   id: 'audit',
-  name: 'Auditoria',
-  description: 'Quien hizo que y cuando: bitacora inmutable de cada cambio, con antes y despues.',
+  name: 'Auditoría',
+  description: 'Quién hizo qué y cuándo: bitácora inmutable de cada cambio, con antes y después.',
   icon: 'receipt_long',
   category: 'core',
   version: '0.1.0',

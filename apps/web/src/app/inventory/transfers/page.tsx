@@ -44,7 +44,7 @@ export default async function TransfersPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'inventory')
 
-  const [transfers, warehouses] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [transfers, warehouses, productos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const t = await tx<TransferRow[]>`
       select st.id, wf.name as from_name, wt.name as to_name,
              p.sku, p.name as product_name, l.qty::text,
@@ -60,7 +60,14 @@ export default async function TransfersPage({
     const w = await tx<{ id: string; name: string }[]>`
       select id, name from public.warehouses
       where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
-    return [t, w] as const
+    // Antes el formulario pedia el ID del producto "copiado del catalogo":
+    // nadie en un almacen sabe que es un uuid, y uno mal pegado tumbaba la
+    // pantalla. Se elige de la lista, solo lo que lleva existencias.
+    const p = await tx<{ id: string; sku: string; name: string }[]>`
+      select id, sku, name from public.products
+      where tenant_id = ${ctx.tenantId} and active and tracks_stock
+      order by name limit 300`
+    return [t, w, p] as const
   })
 
   const puedeTransferir = exigir(ctx, 'inventory', 'inventory.transfer').ok
@@ -124,7 +131,7 @@ export default async function TransfersPage({
           </Table>
         )}
 
-        {puedeTransferir && warehouses.length > 1 && (
+        {puedeTransferir && warehouses.length > 1 && productos.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle>Nueva transferencia</CardTitle>
@@ -152,6 +159,7 @@ export default async function TransfersPage({
                   <select
                     name="toWarehouseId"
                     required
+                    defaultValue={warehouses[1]?.id ?? warehouses[0]?.id}
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
                     {warehouses.map((w) => (
@@ -162,13 +170,18 @@ export default async function TransfersPage({
                   </select>
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Producto (id)
-                  <input
+                  Producto
+                  <select
                     name="productId"
                     required
-                    placeholder="Copia el id desde el catalogo"
-                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-                  />
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    {productos.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.sku} — {p.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cantidad
@@ -179,9 +192,7 @@ export default async function TransfersPage({
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Transferir
                 </BotonEnvio>
               </form>

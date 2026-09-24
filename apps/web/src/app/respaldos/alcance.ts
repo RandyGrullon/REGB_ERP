@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { MANIFESTS } from '@/lib/bootstrap'
+import { nombreDeModulo } from '@/lib/nombre-modulo'
 import { exigir, type ModulePageCtx } from '@/lib/module-page'
 
 /**
@@ -40,9 +40,7 @@ export interface AlcanceRespaldo {
   fuera: { modulo: string; nombre: string; motivo: string }[]
 }
 
-export function nombreDeModulo(id: string): string {
-  return MANIFESTS.get(id)?.name ?? id
-}
+export { nombreDeModulo }
 
 /** `inventory.cost.view` o `*.cost.view` niegan una VISTA dentro de `inventory`. */
 function esVistaDe(permiso: string, modulo: string): boolean {

@@ -12,8 +12,8 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'resources',
-  name: 'Planificacion de recursos',
-  description: 'Capacidad, asignacion, sobrecarga y calendario maestro.',
+  name: 'Planificación de recursos',
+  description: 'Capacidad, asignación, sobrecarga y calendario maestro.',
   icon: 'calendar_month',
   category: 'standard',
   version: '0.1.0',

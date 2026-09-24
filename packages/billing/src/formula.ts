@@ -26,6 +26,21 @@ import type {
 
 const sumCents = (values: Cents[]): Cents => values.reduce((a, b) => (a + b) as Cents, toCents(0))
 
+/**
+ * Como se nombra el plan en una linea de factura. La factura la lee el
+ * cliente (y la ve en el simulador del marketplace): "Tier pyme" era jerga
+ * interna. Se guarda en `invoices.lines`, asi que cambiarla solo afecta a
+ * las facturas nuevas.
+ */
+const PLAN_TEXTO: Record<TenantTier, string> = {
+  pyme: 'Plan Pyme',
+  mediano: 'Plan Mediano',
+  grande: 'Plan Grande',
+}
+
+const incluidosTexto = (cobrados: number, total: number, incluidos: number) =>
+  `${cobrados} de ${total} facturables (${incluidos} incluidos en el plan)`
+
 /** cents * factor, redondeado bancario a centavo entero — nunca float suelto. */
 function scaleCents(cents: Cents, factor: number): Cents {
   return roundBankers(cents * factor, 0) as Cents
@@ -121,13 +136,13 @@ export function calculateInstallation(input: InstallationInput): InvoiceResult {
   const { billable } = splitIncluded(paid, plan.includedModules)
 
   const lines: InvoiceLine[] = [
-    { label: 'Instalacion', detail: `Tier ${input.tier}`, amountCents: plan.installPriceCents },
+    { label: 'Instalación', detail: PLAN_TEXTO[input.tier], amountCents: plan.installPriceCents },
   ]
 
   if (paid.length > 0) {
     lines.push({
-      label: 'Instalacion de modulos',
-      detail: `${billable.length} de ${paid.length} facturables (${plan.includedModules} incluidos en el tier)`,
+      label: 'Instalación de módulos',
+      detail: incluidosTexto(billable.length, paid.length, plan.includedModules),
       amountCents: sumCents(billable.map((m) => resolveInstallPrice(m, input.tier))),
     })
   }
@@ -146,20 +161,20 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
   const { billable } = splitIncluded(paid, plan.includedModules)
 
   const lines: InvoiceLine[] = [
-    { label: 'Base mensual', detail: `Tier ${input.tier}`, amountCents: plan.monthlyBaseCents },
+    { label: 'Base mensual', detail: PLAN_TEXTO[input.tier], amountCents: plan.monthlyBaseCents },
   ]
 
   if (paid.length > 0) {
     lines.push({
-      label: 'Modulos activos',
-      detail: `${billable.length} de ${paid.length} facturables (${plan.includedModules} incluidos en el tier)`,
+      label: 'Módulos activos',
+      detail: incluidosTexto(billable.length, paid.length, plan.includedModules),
       amountCents: sumCents(billable.map((m) => resolveMonthlyPrice(m, input.tier))),
     })
   }
   if (trialCount > 0) {
     lines.push({
-      label: 'Modulos en prueba',
-      detail: `${trialCount}, US$0 mientras dure el trial`,
+      label: 'Módulos en prueba',
+      detail: `${trialCount}, sin costo mientras dure la prueba`,
       amountCents: toCents(0),
     })
   }
@@ -168,7 +183,7 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
   if (extraUsers > 0) {
     lines.push({
       label: 'Usuarios extra',
-      detail: `${input.usage.activeUsers} usuarios, ${plan.includedUsers} incluidos -> ${extraUsers} x`,
+      detail: `${input.usage.activeUsers} usuarios, ${plan.includedUsers} incluidos: ${extraUsers} de más`,
       amountCents: scaleCents(plan.extraUserCents, extraUsers),
     })
   }
@@ -177,7 +192,7 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
   if (extraBranches > 0) {
     lines.push({
       label: 'Sucursales extra',
-      detail: `${input.usage.branches}, ${plan.includedBranches} incluidas -> ${extraBranches} x`,
+      detail: `${input.usage.branches} sucursales, ${plan.includedBranches} incluidas: ${extraBranches} de más`,
       amountCents: scaleCents(plan.extraBranchCents, extraBranches),
     })
   }
@@ -186,7 +201,7 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
   if (extraCompanies > 0) {
     lines.push({
       label: 'Empresas extra',
-      detail: `${input.usage.companies}, ${plan.includedCompanies} incluidas -> ${extraCompanies} x`,
+      detail: `${input.usage.companies} empresas, ${plan.includedCompanies} incluidas: ${extraCompanies} de más`,
       amountCents: scaleCents(plan.extraCompanyCents, extraCompanies),
     })
   }
@@ -194,8 +209,8 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
   const extraStorage = Math.max(0, input.usage.storageGb - plan.includedStorageGb)
   if (extraStorage > 0) {
     lines.push({
-      label: 'Storage extra',
-      detail: `${input.usage.storageGb} GB, ${plan.includedStorageGb} GB incluido -> ${extraStorage} GB`,
+      label: 'Almacenamiento extra',
+      detail: `${input.usage.storageGb} GB en archivos, ${plan.includedStorageGb} GB incluidos: ${extraStorage} GB de más`,
       amountCents: scaleCents(plan.extraStorageGbCents, extraStorage),
     })
   }
@@ -205,7 +220,7 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
     const blocks = Math.ceil(extraTransactions / plan.extraTransactionBlockSize)
     lines.push({
       label: 'Transacciones extra',
-      detail: `${extraTransactions} sobre ${plan.includedTransactions} incluidas -> ${blocks} bloque(s) de ${plan.extraTransactionBlockSize}`,
+      detail: `${extraTransactions} sobre las ${plan.includedTransactions} incluidas: ${blocks} bloque(s) de ${plan.extraTransactionBlockSize}`,
       amountCents: scaleCents(plan.extraTransactionBlockCents, blocks),
     })
   }
@@ -214,7 +229,7 @@ export function calculateMonthly(input: MonthlyInput): InvoiceResult {
     if (metered.quantity <= 0) continue
     lines.push({
       label: `Consumo medido: ${metered.metric}`,
-      detail: `${metered.quantity} x`,
+      detail: `${metered.quantity} unidades`,
       amountCents: scaleCents(metered.unitPriceCents, metered.quantity),
     })
   }

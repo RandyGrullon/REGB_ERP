@@ -103,6 +103,7 @@ interface ModuleRow {
   status: string
   price_override: string | null
   activated_at: string
+  trial_ends_at: string | null
 }
 
 /**
@@ -154,7 +155,7 @@ export async function loadTenantsWithModules(slug?: string): Promise<{
   const ids = tenants.map((t) => t.id)
   const mods = await sql<ModuleRow[]>`
     select tm.tenant_id, tm.module_id, mc.category, mc.name, tm.status,
-           tm.price_override::text, tm.activated_at::text
+           tm.price_override::text, tm.activated_at::text, tm.trial_ends_at::text
     from regb.tenant_modules tm
     join regb.module_catalog mc on mc.id = tm.module_id
     where tm.tenant_id = any(${ids}) and tm.enabled
@@ -228,22 +229,49 @@ export function usageOf(tenant: TenantRow): UsageInput {
   }
 }
 
-const usd = (cents: Cents) => `US$${fromCents(cents).toFixed(2)}`
+const usd = (cents: Cents) =>
+  `US$ ${fromCents(cents).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-/** La linea de instalacion de la factura, o nada si no hay pendientes. */
-function lineaDeInstalacion(cargos: InstallationCharge[]): InvoiceLine[] {
+/** Hasta cuantos modulos se nombran uno por uno en la linea de instalacion. */
+const NOMBRADOS_MAX = 8
+
+/**
+ * La linea de instalacion de la factura, o nada si no hay pendientes.
+ *
+ * Se escribe con NOMBRES del catalogo: la lee el cliente en su factura y
+ * el proveedor en la ficha, y "bank-rec US$1500.00 · accounting..." no le
+ * dice nada a ninguno de los dos. Con muchos modulos se agrupa por precio:
+ * el detalle por modulo ya queda en `module_installation_charges`, con su
+ * monto y su factura, asi que la factura sigue siendo reproducible.
+ */
+function lineaDeInstalacion(
+  cargos: InstallationCharge[],
+  nombre: (id: string) => string,
+): InvoiceLine[] {
   if (cargos.length === 0) return []
   const cobrados = cargos.filter((c) => !c.included)
   const incluidos = cargos.filter((c) => c.included)
-  const partes = [
-    ...cobrados.map((c) => `${c.moduleId} ${usd(c.amountCents)}`),
-    ...(incluidos.length > 0
-      ? [`${incluidos.map((c) => c.moduleId).join(', ')} incluido(s) en el tier`]
-      : []),
-  ]
+
+  let partes: string[]
+  if (cobrados.length <= NOMBRADOS_MAX) {
+    partes = cobrados.map((c) => `${nombre(c.moduleId)} ${usd(c.amountCents)}`)
+  } else {
+    const porPrecio = new Map<number, number>()
+    for (const c of cobrados) porPrecio.set(c.amountCents, (porPrecio.get(c.amountCents) ?? 0) + 1)
+    partes = [...porPrecio.entries()]
+      .sort((a, b) => b[0] - a[0])
+      .map(([monto, n]) => `${n} módulos a ${usd(monto as Cents)}`)
+  }
+  if (incluidos.length > 0) {
+    partes.push(
+      incluidos.length <= NOMBRADOS_MAX
+        ? `${incluidos.map((c) => nombre(c.moduleId)).join(', ')} sin costo (incluidos en el plan)`
+        : `${incluidos.length} módulos sin costo (incluidos en el plan)`,
+    )
+  }
   return [
     {
-      label: 'Instalacion de modulos',
+      label: 'Instalación de módulos',
       detail: `Una sola vez: ${partes.join(' · ')}`,
       amountCents: cobrados.reduce((a, c) => a + c.amountCents, 0) as Cents,
     },
@@ -262,12 +290,17 @@ export function quoteTenant(
   const installationCharges = installationChargesFor(tenant.tier, activeModules, pendingInstall)
   const base = { tier: tenant.tier, activeModules, usage, discount, taxRate }
   const monthly = calculateMonthly(base)
+  const nombres = new Map(rows.map((r) => [r.module_id, r.name]))
+  const nombre = (id: string) => nombres.get(id) ?? id
   return {
     installation: calculateInstallation({ tier: tenant.tier, activeModules }),
     monthly,
     invoice:
       installationCharges.length > 0
-        ? calculateMonthly({ ...base, oneTimeCharges: lineaDeInstalacion(installationCharges) })
+        ? calculateMonthly({
+            ...base,
+            oneTimeCharges: lineaDeInstalacion(installationCharges, nombre),
+          })
         : monthly,
     usage,
     taxRate,
@@ -327,14 +360,22 @@ export interface ClientDetail {
   installation: InvoiceResult
   usage: UsageInput
   taxRate: number
-  /** Modulos activados cuya instalacion entra en la proxima factura. */
+  /** Modulos activados cuya instalacion entra en la proxima factura, por su nombre. */
   pendingInstall: string[]
+  /**
+   * Pruebas que vencieron en los ultimos 60 dias. Ya no se ven ni se
+   * cotizan (0128), pero son las ventas por cerrar: sin esta lista el
+   * proveedor no tenia desde donde pasarlas a pago.
+   */
+  expiredTrials: { moduleId: string; name: string; endedOn: string }[]
   modules: {
     moduleId: string
     name: string
     category: ModuleCategory
     status: string
     activatedAt: string
+    /** Fin de la prueba (solo en `trial`). */
+    trialEndsAt: string | null
     priceOverride: number | null
   }[]
 }
@@ -352,6 +393,16 @@ export async function loadClientDetail(slug: string): Promise<ClientDetail | nul
     pendingInstall,
   )
   const paid = rows.filter((r) => r.category !== 'core')
+  const nombre = new Map(rows.map((r) => [r.module_id, r.name]))
+
+  const expiredTrials = await db()<{ moduleId: string; name: string; endedOn: string }[]>`
+    select tm.module_id as "moduleId", mc.name, tm.trial_ends_at::text as "endedOn"
+    from regb.tenant_modules tm
+    join regb.module_catalog mc on mc.id = tm.module_id
+    where tm.tenant_id = ${tenant.id} and tm.status = 'trial'
+      and tm.trial_ends_at < current_date
+      and tm.trial_ends_at >= current_date - 60
+    order by tm.trial_ends_at desc`
 
   return {
     client: {
@@ -375,13 +426,15 @@ export async function loadClientDetail(slug: string): Promise<ClientDetail | nul
     installation,
     usage,
     taxRate,
-    pendingInstall,
+    pendingInstall: pendingInstall.map((id) => nombre.get(id) ?? id),
+    expiredTrials,
     modules: rows.map((r) => ({
       moduleId: r.module_id,
       name: r.name,
       category: r.category,
       status: r.status,
       activatedAt: r.activated_at,
+      trialEndsAt: r.trial_ends_at,
       priceOverride: r.price_override !== null ? Number(r.price_override) : null,
     })),
   }

@@ -82,7 +82,7 @@ export function BarraEscritorio() {
           }
         />
         <span className="text-[var(--color-text-secondary)]">
-          {enLinea ? 'En linea' : 'Sin conexion — se sigue vendiendo'}
+          {enLinea ? 'En línea' : 'Sin conexion — se sigue vendiendo'}
         </span>
       </span>
 

@@ -78,7 +78,7 @@ export default async function CategoriesPage({
           <Table>
             <THead>
               <TR>
-                <TH>Categoria</TH>
+                <TH>Categoría</TH>
                 <TH>Dentro de</TH>
                 <TH numeric>Productos</TH>
               </TR>
@@ -108,7 +108,7 @@ export default async function CategoriesPage({
         {puedeGestionar && (
           <Card data-tour="categoria-nueva">
             <CardHeader>
-              <CardTitle>Nueva categoria</CardTitle>
+              <CardTitle>Nueva categoría</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearCategoriaForm} className="flex flex-wrap items-end gap-3">
@@ -127,7 +127,7 @@ export default async function CategoriesPage({
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Dentro de
                   <select name="parentId" defaultValue="" className={inputCls}>
-                    <option value="">Categoria principal</option>
+                    <option value="">Categoría principal</option>
                     {raices.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -135,9 +135,7 @@ export default async function CategoriesPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Crear
                 </BotonEnvio>
               </form>

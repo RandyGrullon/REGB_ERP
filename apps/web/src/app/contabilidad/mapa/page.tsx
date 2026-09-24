@@ -91,11 +91,17 @@ export default async function MapaContablePage({
           icon="alt_route"
           title="Mapa de cuentas"
           description="A que cuenta de tu catalogo va cada parte de los asientos que se generan solos: ventas de caja, facturas a credito, cobros, compras y pagos."
-          crumbs={[{ label: 'Contabilidad', href: `/contabilidad${qs}` }, { label: 'Mapa de cuentas' }]}
+          crumbs={[
+            { label: 'Contabilidad', href: `/contabilidad${qs}` },
+            { label: 'Mapa de cuentas' },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Usos asignados" value={`${PROPOSITOS_CONTABLES.length - faltan} de ${PROPOSITOS_CONTABLES.length}`} />
+          <StatCard
+            label="Usos asignados"
+            value={`${PROPOSITOS_CONTABLES.length - faltan} de ${PROPOSITOS_CONTABLES.length}`}
+          />
           <StatCard label="Asientos automaticos" value={String(automaticos)} />
         </section>
 
@@ -134,7 +140,12 @@ export default async function MapaContablePage({
                       <>
                         <Mono>{a.code}</Mono> {a.name}
                         {!a.is_active && (
-                          <Badge tone="danger" dot={false} className="ml-1" title="Los asientos que la usan fallan hasta que la reactives o cambies">
+                          <Badge
+                            tone="danger"
+                            dot={false}
+                            className="ml-1"
+                            title="Los asientos que la usan fallan hasta que la reactives o cambies"
+                          >
                             desactivada
                           </Badge>
                         )}
@@ -181,14 +192,17 @@ export default async function MapaContablePage({
         {puedeGestionar && faltan > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Catalogo minimo</CardTitle>
+              <CardTitle>Catálogo mínimo</CardTitle>
             </CardHeader>
             <CardBody>
-              <form action={crearCuentasPorDefectoForm} className="flex flex-wrap items-center gap-3">
+              <form
+                action={crearCuentasPorDefectoForm}
+                className="flex flex-wrap items-center gap-3"
+              >
                 {ocultos}
                 <p className="flex-1 text-sm text-[var(--color-text-secondary)]">
                   Crea las cuentas que falten con los codigos por defecto y asigna los usos vacios.
-                  No toca ninguna asignacion que ya hayas hecho.
+                  No toca ninguna asignación que ya hayas hecho.
                 </p>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="playlist_add" size={18} />

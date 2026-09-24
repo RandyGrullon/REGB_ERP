@@ -31,6 +31,9 @@ interface CompanyRow {
   tax_id: string | null
   currency: string
   is_default: boolean
+  address: string | null
+  phone: string | null
+  email: string | null
   branch_count: string
 }
 
@@ -48,6 +51,7 @@ export default async function EmpresasPage({
     ctx.tenantId,
     (tx) => tx<CompanyRow[]>`
       select c.id, c.legal_name, c.trade_name, c.tax_id, c.currency, c.is_default,
+             c.address, c.phone, c.email,
              (select count(*) from public.branches b
                where b.company_id = c.id and b.deleted_at is null) as branch_count
       from public.companies c
@@ -74,9 +78,7 @@ export default async function EmpresasPage({
             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
             <input type="hidden" name="id" value={c.id} />
-            <BotonEnvio
-              
-              className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
               Hacer principal
             </BotonEnvio>
           </form>
@@ -119,7 +121,7 @@ export default async function EmpresasPage({
         <Table>
           <THead>
             <TR>
-              <TH>Razon social y RNC</TH>
+              <TH>Razón social y RNC</TH>
               <TH>Moneda</TH>
               <TH numeric>Sucursales</TH>
               <TH>Principal</TH>
@@ -130,7 +132,10 @@ export default async function EmpresasPage({
               puedeEditar ? (
                 <TR key={c.id}>
                   <TD>
-                    <form action={editarEmpresaForm} className="flex flex-wrap items-center gap-1.5">
+                    <form
+                      action={editarEmpresaForm}
+                      className="flex flex-wrap items-center gap-1.5"
+                    >
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={c.id} />
@@ -139,7 +144,7 @@ export default async function EmpresasPage({
                         required
                         minLength={3}
                         defaultValue={c.legal_name}
-                        aria-label={`Razon social de ${c.legal_name}`}
+                        aria-label={`Razón social de ${c.legal_name}`}
                         className="h-8 min-w-48 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                       />
                       <input
@@ -150,11 +155,38 @@ export default async function EmpresasPage({
                         className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                       />
                       <BotonEnvio
-                        
                         aria-label={`Guardar cambios de ${c.legal_name}`}
-                        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]">
+                        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
+                      >
                         <Icon name="save" size={16} />
                       </BotonEnvio>
+                      {/* Lo que sale en el ticket y en la factura. Antes no habia donde
+                          escribirlo aunque la base lo guardaba. */}
+                      <div className="flex w-full flex-wrap gap-1.5">
+                        <input
+                          name="address"
+                          defaultValue={c.address ?? ''}
+                          placeholder="Dirección (sale en tus tickets)"
+                          aria-label={`Dirección de ${c.legal_name}`}
+                          className="h-8 min-w-48 flex-[2] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                        />
+                        <input
+                          name="phone"
+                          defaultValue={c.phone ?? ''}
+                          placeholder="Teléfono"
+                          inputMode="tel"
+                          aria-label={`Teléfono de ${c.legal_name}`}
+                          className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                        />
+                        <input
+                          name="email"
+                          type="email"
+                          defaultValue={c.email ?? ''}
+                          placeholder="Correo"
+                          aria-label={`Correo de ${c.legal_name}`}
+                          className="h-8 min-w-40 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                        />
+                      </div>
                     </form>
                   </TD>
                   {colsComunes(c)}
@@ -186,7 +218,7 @@ export default async function EmpresasPage({
                 <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Razon social
+                  Razón social
                   <input
                     name="legal"
                     required
@@ -215,9 +247,7 @@ export default async function EmpresasPage({
                     <option value="EUR">EUR</option>
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Agregar
                 </BotonEnvio>
               </form>
@@ -228,7 +258,7 @@ export default async function EmpresasPage({
                   : shell.data.tenant.tier === 'mediano'
                     ? 'MEDIANO incluye 3 empresas'
                     : 'GRANDE incluye empresas ilimitadas'}
-                ; las adicionales se cotizan segun §6.2.
+                . Si necesitas más, te cotizamos las adicionales.
               </p>
             </CardBody>
           </Card>

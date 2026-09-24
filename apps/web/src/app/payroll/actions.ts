@@ -184,10 +184,76 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
   return { ok: true }
 }
 
+/**
+ * Borra un periodo en BORRADOR (0138). Sin esto, un periodo creado con las
+ * fechas equivocadas -un mes cuando se queria la quincena- no tenia
+ * vuelta: no se podia editar ni borrar, y como los periodos no se cruzan,
+ * bloqueaba para siempre crear el correcto. Uno procesado sigue fijo (la
+ * base lo impide: impedir_editar_periodo_procesado).
+ *
+ * Si ya tiene reembolsos o pagos de prestamo apuntados, no se borra: esos
+ * los tendria que pagar otra nomina y eso lo decide una persona.
+ */
+export async function eliminarPeriodo(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  const permiso = exigir(ctx, 'payroll', 'payroll.run')
+  if (!permiso.ok) return permiso
+
+  const periodId = String(fd.get('periodId') ?? '')
+  if (!periodId) return { ok: false, error: 'Falta el periodo.' }
+
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const [p] = await tx<{ status: string }[]>`
+        select status from public.payroll_periods
+        where id = ${periodId} and tenant_id = ${ctx.tenantId}
+        for update`
+      if (!p) throw new ErrorNomina('Ese periodo no existe.')
+      if (p.status !== 'draft') {
+        throw new ErrorNomina(
+          'Ese periodo ya se procesó: queda fijo y se corrige con el siguiente.',
+        )
+      }
+
+      const [uso] = await tx<{ gastos: number; pagos: number }[]>`
+        select
+          (select count(*) from public.expenses
+            where tenant_id = ${ctx.tenantId} and payroll_period_id = ${periodId})::int as gastos,
+          (select count(*) from public.benefit_loan_payments
+            where tenant_id = ${ctx.tenantId} and payroll_period_id = ${periodId})::int as pagos`
+      if (uso && (uso.gastos > 0 || uso.pagos > 0)) {
+        throw new ErrorNomina(
+          'Este borrador ya tiene reembolsos de gastos o pagos de préstamo asignados: procésalo, o crea el periodo correcto antes de borrarlo.',
+        )
+      }
+
+      await tx`
+        delete from public.payroll_periods
+        where id = ${periodId} and tenant_id = ${ctx.tenantId} and status = 'draft'`
+    })
+  } catch (e) {
+    if (e instanceof ErrorNomina) return { ok: false, error: e.message }
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
+
+  revalidatePath('/payroll')
+  revalidatePath('/payroll/run')
+  return { ok: true }
+}
+
 // ── Versiones para <form action> ────────────────────────────────────────
+export async function eliminarPeriodoForm(fd: FormData): Promise<void> {
+  await anotarAviso(await eliminarPeriodo(fd), 'eliminarPeriodo')
+}
 export async function crearPeriodoForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearPeriodo(fd), 'crearPeriodo')
 }
 export async function procesarPeriodoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await procesarPeriodo(fd), 'procesarPeriodo')
+  await anotarAviso(
+    await procesarPeriodo(fd),
+    'procesarPeriodo',
+    'Listo, la nómina quedó procesada: ya están los volantes.',
+  )
 }

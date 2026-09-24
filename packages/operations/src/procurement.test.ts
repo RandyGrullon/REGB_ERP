@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  costoNetoUnitario,
   costVariance,
   deriveReceiptStatus,
   pendingReceipt,
@@ -91,5 +92,25 @@ describe('costVariance', () => {
     const v = costVariance(0, 50)
     expect(v.diferencia).toBe(50)
     expect(v.porcentaje).toBe(0)
+  })
+})
+
+describe('costoNetoUnitario', () => {
+  it('sin descuento es el cotizado', () => {
+    expect(costoNetoUnitario(420)).toBe(420)
+    expect(costoNetoUnitario(420, 0)).toBe(420)
+  })
+
+  it('resta el descuento del proveedor: 420 al 5% entra a 399, no a 420', () => {
+    expect(costoNetoUnitario(420, 5)).toBe(399)
+  })
+
+  it('redondea a 4 decimales, como unit_cost y avg_cost', () => {
+    expect(costoNetoUnitario(33.3333, 7.5)).toBe(30.8333)
+  })
+
+  it('un descuento fuera de 0-100 no da costos negativos ni mayores', () => {
+    expect(costoNetoUnitario(100, 150)).toBe(0)
+    expect(costoNetoUnitario(100, -10)).toBe(100)
   })
 })

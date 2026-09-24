@@ -71,7 +71,10 @@ export default async function MesaDeAyudaPage({
 
   const abiertos = tickets.filter((t) => t.status !== 'closed' && t.status !== 'resolved').length
   const vencidos = tickets.filter(
-    (t) => t.status !== 'closed' && t.status !== 'resolved' && !slaVigente(t.sla_due_at ? new Date(t.sla_due_at) : null, new Date()),
+    (t) =>
+      t.status !== 'closed' &&
+      t.status !== 'resolved' &&
+      !slaVigente(t.sla_due_at ? new Date(t.sla_due_at) : null, new Date()),
   ).length
   const puedeGestionar = exigir(ctx, 'helpdesk', 'helpdesk.manage').ok
   const qs = ctx.demoQs
@@ -91,7 +94,11 @@ export default async function MesaDeAyudaPage({
         </section>
 
         {tickets.length === 0 ? (
-          <EmptyState icon="support_agent" title="Todavia no hay ningun ticket" description="Crea el primero abajo." />
+          <EmptyState
+            icon="support_agent"
+            title="Todavia no hay ningun ticket"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -112,15 +119,28 @@ export default async function MesaDeAyudaPage({
                 return (
                   <TR key={t.id}>
                     <TD className="text-[var(--color-text-primary)]">
-                      <a href={`/mesa-de-ayuda/${t.id}${qs}`} className="underline-offset-2 hover:underline">
+                      <a
+                        href={`/mesa-de-ayuda/${t.id}${qs}`}
+                        className="underline-offset-2 hover:underline"
+                      >
                         {t.subject}
                       </a>
                     </TD>
-                    <TD className="text-[var(--color-text-muted)]">{t.customer_name ?? 'Sin cliente'}</TD>
-                    <TD className="text-[var(--color-text-muted)]">{PRIORIDAD_TICKET[t.priority] ?? t.priority}</TD>
+                    <TD className="text-[var(--color-text-muted)]">
+                      {t.customer_name ?? 'Sin cliente'}
+                    </TD>
+                    <TD className="text-[var(--color-text-muted)]">
+                      {PRIORIDAD_TICKET[t.priority] ?? t.priority}
+                    </TD>
                     <TD>
                       {t.sla_due_at ? (
-                        <span className={vencido ? 'text-[var(--color-semantic-text-danger)]' : 'text-[var(--color-text-muted)]'}>
+                        <span
+                          className={
+                            vencido
+                              ? 'text-[var(--color-semantic-text-danger)]'
+                              : 'text-[var(--color-text-muted)]'
+                          }
+                        >
                           {vencido ? 'Vencido' : new Date(t.sla_due_at).toLocaleString('es-DO')}
                         </span>
                       ) : (
@@ -128,7 +148,9 @@ export default async function MesaDeAyudaPage({
                       )}
                     </TD>
                     <TD>
-                      <Badge tone={badgeEstado(t.status)}>{ESTADO_TICKET[t.status] ?? t.status}</Badge>
+                      <Badge tone={badgeEstado(t.status)}>
+                        {ESTADO_TICKET[t.status] ?? t.status}
+                      </Badge>
                     </TD>
                   </TR>
                 )
@@ -189,9 +211,7 @@ export default async function MesaDeAyudaPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

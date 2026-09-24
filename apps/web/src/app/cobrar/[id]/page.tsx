@@ -51,6 +51,7 @@ interface InvoiceHead {
   notes: string | null
   source_type: string | null
   source_id: string | null
+  pedido: string | null
 }
 
 interface LineRow {
@@ -133,9 +134,11 @@ export default async function FacturaDetallePage({
              i.issue_date::text, i.due_date::text,
              i.subtotal::text, i.discount::text, i.tax::text,
              i.total::text, i.status, i.ncf, i.ncf_type, i.void_reason, i.notes,
-             i.source_type, i.source_id
+             i.source_type, i.source_id, so.number as pedido
       from public.customer_invoices i
       join public.customers c on c.id = i.customer_id
+      left join public.sales_orders so
+        on i.source_type = 'sales_order' and so.id = i.source_id
       where i.id = ${id} and i.tenant_id = ${ctx.tenantId}`
     if (!h) return null
 
@@ -203,7 +206,14 @@ export default async function FacturaDetallePage({
   const puedeAnular = exigir(ctx, 'ar', 'ar.invoice.void').ok
   const puedeReversar = exigir(ctx, 'ar', 'ar.payment.reverse').ok
   const puedeNota = exigir(ctx, 'ar', 'ar.creditnote.create').ok
+  // La ficha la abre quien gestiona clientes o quien fija su limite.
+  const puedeVerCliente =
+    exigir(ctx, 'sales-orders', 'sales-orders.view').ok &&
+    (exigir(ctx, 'sales-orders', 'sales-orders.customers.manage').ok ||
+      exigir(ctx, 'ar', 'ar.credit.manage').ok)
   const qs = ctx.demoQs
+  const enlaceCls =
+    'text-xs text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
 
   const elegibleMora = lateFeeEligible(head.status as InvoiceStatus, head.customer_exempt, dias)
   const devolvibles = lineas.filter((l) => Number(l.qty) - Number(l.devuelto) > 0)
@@ -260,6 +270,16 @@ export default async function FacturaDetallePage({
                   Cliente exento de mora
                 </Badge>
               )}
+              {head.pedido && head.source_id && (
+                <a href={`/pedidos/${head.source_id}${qs}`} className={enlaceCls}>
+                  Pedido {head.pedido}
+                </a>
+              )}
+              {puedeVerCliente && (
+                <a href={`/pedidos/clientes/${head.customer_id}${qs}`} className={enlaceCls}>
+                  Ficha del cliente
+                </a>
+              )}
             </div>
           }
           actions={
@@ -311,13 +331,20 @@ export default async function FacturaDetallePage({
           }
         />
 
-        <section aria-label="Totales" className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6">
-          <StatCard label="Subtotal" value={`RD$ ${money(Number(head.subtotal))}`} hint="sin ITBIS" />
+        <section
+          aria-label="Totales"
+          className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-6"
+        >
+          <StatCard
+            label="Subtotal"
+            value={`RD$ ${money(Number(head.subtotal))}`}
+            hint="sin ITBIS"
+          />
           <StatCard label="ITBIS" value={`RD$ ${money(Number(head.tax))}`} />
           <StatCard
             label="Total"
             value={`RD$ ${money(Number(head.total) + totalMora)}`}
-            hint={totalMora > 0 ? `incl. RD$ ${money(totalMora)} de mora` : 'capital + mora'}
+            hint={totalMora > 0 ? `incl. RD$ ${money(totalMora)} de mora` : 'con ITBIS'}
           />
           <StatCard label="Cobrado" value={`RD$ ${money(cobrado)}`} hint="sin reversados" />
           <StatCard label="Notas de credito" value={`RD$ ${money(totalNotas)}`} />
@@ -368,7 +395,7 @@ export default async function FacturaDetallePage({
                 <form
                   action={aplicarCargoPorMoraForm}
                   className="flex flex-wrap items-center gap-1"
-                  title={`${dias} dias de atraso — el monto lo decides tu, no hay calculo automatico`}
+                  title={`${dias} días de atraso — el monto lo decides tu, no hay calculo automático`}
                 >
                   {campos}
                   <input
@@ -408,7 +435,7 @@ export default async function FacturaDetallePage({
               <Table>
                 <THead>
                   <TR>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH numeric>Cantidad</TH>
                     <TH numeric>Precio</TH>
                     <TH numeric>ITBIS</TH>
@@ -429,7 +456,8 @@ export default async function FacturaDetallePage({
                       </TD>
                       <TD numeric>
                         <span className="tabular">
-                          {Number(l.qty)} {l.unit ?? ''}
+                          {Number(l.qty).toLocaleString('es-DO', { maximumFractionDigits: 3 })}{' '}
+                          {l.unit ?? ''}
                         </span>
                       </TD>
                       <TD numeric>
@@ -461,7 +489,7 @@ export default async function FacturaDetallePage({
           <CardBody>
             {pagos.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Todavia no se ha registrado ningun cobro.
+                Todavía no se ha registrado ningún cobro.
               </p>
             ) : (
               <Table>
@@ -491,7 +519,8 @@ export default async function FacturaDetallePage({
                           {reversado && (
                             <span className="block text-[11px] text-[var(--color-text-muted)]">
                               Reversado {fechaHora(p.reversed_at!)}
-                              {p.reversed_by_name ? ` por ${p.reversed_by_name}` : ''}: {p.reversal_reason}
+                              {p.reversed_by_name ? ` por ${p.reversed_by_name}` : ''}:{' '}
+                              {p.reversal_reason}
                             </span>
                           )}
                         </TD>
@@ -515,7 +544,10 @@ export default async function FacturaDetallePage({
                               </Badge>
                             ) : (
                               !anulada && (
-                                <form action={reversarCobroForm} className="flex items-center gap-1">
+                                <form
+                                  action={reversarCobroForm}
+                                  className="flex items-center gap-1"
+                                >
                                   {ocultos}
                                   <input type="hidden" name="paymentId" value={p.id} />
                                   <input
@@ -549,7 +581,7 @@ export default async function FacturaDetallePage({
         {(notas.length > 0 || ofrecerNota) && (
           <Card>
             <CardHeader>
-              <CardTitle>Notas de credito</CardTitle>
+              <CardTitle>Notas de crédito</CardTitle>
             </CardHeader>
             <CardBody className="space-y-4">
               {notas.length > 0 && (
@@ -574,7 +606,7 @@ export default async function FacturaDetallePage({
                         </TD>
                         <TD>{fecha(n.issue_date)}</TD>
                         <TD>
-                          {n.kind === 'return' ? 'Devolucion' : 'Rebaja'}
+                          {n.kind === 'return' ? 'Devolución' : 'Rebaja'}
                           {n.restocked && (
                             <span className="block text-[11px] text-[var(--color-text-muted)]">
                               repuso inventario
@@ -608,7 +640,7 @@ export default async function FacturaDetallePage({
                       {campos}
                       <input type="hidden" name="kind" value="return" />
                       <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        Devolucion de mercancia
+                        Devolución de mercancía
                       </p>
                       {devolvibles.map((l) => {
                         const quedan = Number(l.qty) - Number(l.devuelto)
@@ -619,7 +651,9 @@ export default async function FacturaDetallePage({
                           >
                             <span className="min-w-0 flex-1 truncate">
                               {l.description}{' '}
-                              <span className="text-[var(--color-text-muted)]">(hasta {quedan})</span>
+                              <span className="text-[var(--color-text-muted)]">
+                                (hasta {quedan})
+                              </span>
                             </span>
                             <input
                               name={`qty_${l.id}`}
@@ -645,7 +679,7 @@ export default async function FacturaDetallePage({
                       />
                       <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                         <Icon name="assignment_return" size={16} />
-                        Emitir nota de credito
+                        Emitir nota de crédito
                       </BotonEnvio>
                     </form>
                   )}

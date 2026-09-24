@@ -26,7 +26,13 @@ export function Navegacion() {
 
   return (
     <div className="flex items-center gap-0.5">
-      <button type="button" onClick={() => router.back()} aria-label="Volver atras" title="Atras" className={clase}>
+      <button
+        type="button"
+        onClick={() => router.back()}
+        aria-label="Volver atras"
+        title="Atras"
+        className={clase}
+      >
         <Icon name="arrow_back" size={18} />
       </button>
       <button

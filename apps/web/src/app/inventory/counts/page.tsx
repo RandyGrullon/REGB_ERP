@@ -119,7 +119,7 @@ export default async function CountsPage({
             <CardBody className="space-y-3">
               {lineasAbiertas.length === 0 ? (
                 <p className="text-sm text-[var(--color-text-muted)]">
-                  Este almacen no tenia existencias al abrir el conteo.
+                  Este almacén no tenia existencias al abrir el conteo.
                 </p>
               ) : (
                 <Table>
@@ -157,9 +157,7 @@ export default async function CountsPage({
                                 placeholder="—"
                                 className={inputCls}
                               />{' '}
-                              <BotonEnvio
-                                
-                                className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                 Guardar
                               </BotonEnvio>
                             </form>
@@ -185,9 +183,7 @@ export default async function CountsPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="countId" value={conteoAbierto.id} />
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Cerrar conteo y ajustar diferencias
                 </BotonEnvio>
               </form>
@@ -208,7 +204,7 @@ export default async function CountsPage({
           <Table>
             <THead>
               <TR>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH>Estado</TH>
                 <TH>Abierto</TH>
                 <TH>Cerrado</TH>
@@ -267,9 +263,7 @@ export default async function CountsPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   Iniciar
                 </BotonEnvio>
               </form>

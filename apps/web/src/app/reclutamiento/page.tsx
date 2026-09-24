@@ -87,7 +87,7 @@ export default async function ReclutamientoPage({
         <PageHeader
           icon="person_add"
           title="Reclutamiento"
-          description="Vacantes, candidatos y su pipeline -sin portal publico: los candidatos se registran a mano-."
+          description="Vacantes y candidatos, de la solicitud a la contratación. Los candidatos se registran aquí."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -96,7 +96,11 @@ export default async function ReclutamientoPage({
         </section>
 
         {vacantes.length === 0 ? (
-          <EmptyState icon="work" title="Todavia no hay ninguna vacante" description="Registra la primera abajo." />
+          <EmptyState
+            icon="work"
+            title="Todavia no hay ninguna vacante"
+            description="Registra la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -152,9 +156,7 @@ export default async function ReclutamientoPage({
                   Descripcion
                   <input name="description" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={18} />
                   Publicar
                 </BotonEnvio>
@@ -223,9 +225,7 @@ export default async function ReclutamientoPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="person_add" size={18} />
                   Registrar candidato
                 </BotonEnvio>

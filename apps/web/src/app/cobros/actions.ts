@@ -40,7 +40,8 @@ export async function crearLink(fd: FormData): Promise<ActionResult> {
   const description = String(fd.get('description') ?? '').trim()
   const expiresAt = String(fd.get('expiresAt') ?? '').trim() || null
 
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (description.length < 3) return { ok: false, error: 'Describe el cobro.' }
 
   try {
@@ -71,7 +72,8 @@ export async function confirmarPago(fd: FormData): Promise<ActionResult> {
   const linkId = String(fd.get('linkId') ?? '')
   const amount = num(String(fd.get('paidAmount') ?? ''))
   if (!linkId) return { ok: false, error: 'Falta el link.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto pagado debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto pagado debe ser mayor que cero.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -99,9 +101,13 @@ export async function cancelarLink(fd: FormData): Promise<ActionResult> {
     const linkId = String(fd.get('linkId') ?? '')
     if (!linkId) return { ok: false, error: 'Falta el link.' }
 
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       update public.payment_links set status = 'canceled'
-      where id = ${linkId} and tenant_id = ${ctx.tenantId} and status = 'pending'`)
+      where id = ${linkId} and tenant_id = ${ctx.tenantId} and status = 'pending'`,
+    )
 
     revalidatePath('/cobros')
     return { ok: true }
@@ -122,7 +128,8 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
   const nextChargeDate = String(fd.get('nextChargeDate') ?? '').trim()
 
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (description.length < 3) return { ok: false, error: 'Describe el cobro.' }
   if (!['weekly', 'monthly', 'yearly'].includes(frequency)) {
     return { ok: false, error: 'Frecuencia no valida.' }
@@ -130,10 +137,14 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
   if (!nextChargeDate) return { ok: false, error: 'Falta la fecha del proximo cobro.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.recurring_charges
         (tenant_id, customer_id, amount, description, frequency, next_charge_date)
-      values (${ctx.tenantId}, ${customerId}, ${amount}, ${description}, ${frequency}, ${nextChargeDate})`)
+      values (${ctx.tenantId}, ${customerId}, ${amount}, ${description}, ${frequency}, ${nextChargeDate})`,
+    )
   } catch (e) {
     return { ok: false, error: mensajeLegible(e) }
   }
@@ -150,7 +161,11 @@ export async function correrRecurrentes(fd: FormData): Promise<ActionResult> {
     const permiso = exigir(ctx, 'payments', 'payments.recurring.create')
     if (!permiso.ok) return permiso
 
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`select public.run_recurring_charges(${ctx.tenantId})`)
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.run_recurring_charges(${ctx.tenantId})`,
+    )
 
     revalidatePath('/cobros')
     return { ok: true }

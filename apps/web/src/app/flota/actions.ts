@@ -29,7 +29,9 @@ export async function crearVehiculo(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'fleet', 'fleet.manage')
   if (!permiso.ok) return permiso
 
-  const plate = String(fd.get('plate') ?? '').trim().toUpperCase()
+  const plate = String(fd.get('plate') ?? '')
+    .trim()
+    .toUpperCase()
   const brand = String(fd.get('brand') ?? '').trim()
   const model = String(fd.get('model') ?? '').trim()
   const year = num(String(fd.get('year') ?? ''))
@@ -40,9 +42,13 @@ export async function crearVehiculo(fd: FormData): Promise<ActionResult> {
   if (!model) return { ok: false, error: 'Escribe el modelo.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.vehicles (tenant_id, plate, brand, model, year, assigned_driver_id)
-      values (${ctx.tenantId}, ${plate}, ${brand}, ${model}, ${year}, ${driverId})`)
+      values (${ctx.tenantId}, ${plate}, ${brand}, ${model}, ${year}, ${driverId})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -69,9 +75,13 @@ export async function registrarDocumento(fd: FormData): Promise<ActionResult> {
   if (!expiryDate) return { ok: false, error: 'Escribe la fecha de vencimiento.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.vehicle_documents (tenant_id, vehicle_id, doc_type, expiry_date)
-      values (${ctx.tenantId}, ${vehicleId}, ${docType}, ${expiryDate})`)
+      values (${ctx.tenantId}, ${vehicleId}, ${docType}, ${expiryDate})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -95,9 +105,11 @@ export async function registrarCombustible(fd: FormData): Promise<ActionResult> 
   const odometerKm = num(String(fd.get('odometerKm') ?? ''))
 
   if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
-  if (liters === null || liters <= 0) return { ok: false, error: 'Los litros deben ser mayor que cero.' }
+  if (liters === null || liters <= 0)
+    return { ok: false, error: 'Los litros deben ser mayor que cero.' }
   if (cost === null || cost < 0) return { ok: false, error: 'El costo no es valido.' }
-  if (odometerKm === null || odometerKm < 0) return { ok: false, error: 'El kilometraje no es valido.' }
+  if (odometerKm === null || odometerKm < 0)
+    return { ok: false, error: 'El kilometraje no es valido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -135,7 +147,8 @@ export async function registrarMantenimiento(fd: FormData): Promise<ActionResult
   if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
   if (!['preventive', 'corrective'].includes(type)) return { ok: false, error: 'Tipo invalido.' }
   if (!description) return { ok: false, error: 'Describe el mantenimiento.' }
-  if (odometerKm === null || odometerKm < 0) return { ok: false, error: 'El kilometraje no es valido.' }
+  if (odometerKm === null || odometerKm < 0)
+    return { ok: false, error: 'El kilometraje no es valido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -176,7 +189,8 @@ export async function registrarMulta(fd: FormData): Promise<ActionResult> {
   const reason = String(fd.get('reason') ?? '').trim()
 
   if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
-  if (amount === null || amount <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
+  if (amount === null || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (!reason) return { ok: false, error: 'Escribe la razon de la multa.' }
 
   try {

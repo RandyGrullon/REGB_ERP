@@ -24,7 +24,7 @@ import { ESTADO_ORDEN } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Ordenes de produccion · REGB ERP' }
+export const metadata = { title: 'Órdenes de producción · REGB ERP' }
 
 interface OrdenRow {
   id: string
@@ -86,7 +86,9 @@ export default async function ProduccionPage({
     return { ordenes: o, boms: b, almacenes: w }
   })
 
-  const enProgreso = ordenes.filter((o) => o.status === 'in_progress' || o.status === 'released').length
+  const enProgreso = ordenes.filter(
+    (o) => o.status === 'in_progress' || o.status === 'released',
+  ).length
   const puedeGestionar = exigir(ctx, 'manufacturing', 'manufacturing.manage').ok
   const qs = ctx.demoQs
 
@@ -105,13 +107,17 @@ export default async function ProduccionPage({
         </section>
 
         {ordenes.length === 0 ? (
-          <EmptyState icon="precision_manufacturing" title="Todavia no hay ninguna orden" description="Crea la primera abajo." />
+          <EmptyState
+            icon="precision_manufacturing"
+            title="Todavia no hay ninguna orden"
+            description="Crea la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Producto</TH>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH numeric>Planificado</TH>
                 <TH numeric>Completado</TH>
                 <TH numeric>Merma</TH>
@@ -122,7 +128,10 @@ export default async function ProduccionPage({
               {ordenes.map((o) => (
                 <TR key={o.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/produccion/${o.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/produccion/${o.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       <Mono>{o.sku}</Mono> {o.product_name}
                     </a>
                   </TD>
@@ -131,10 +140,14 @@ export default async function ProduccionPage({
                     <span className="tabular">{o.qty_planned}</span>
                   </TD>
                   <TD numeric>
-                    <span className="tabular text-[var(--color-semantic-text-success)]">{o.qty_completed}</span>
+                    <span className="tabular text-[var(--color-semantic-text-success)]">
+                      {o.qty_completed}
+                    </span>
                   </TD>
                   <TD numeric>
-                    <span className="tabular text-[var(--color-semantic-text-danger)]">{o.qty_scrapped}</span>
+                    <span className="tabular text-[var(--color-semantic-text-danger)]">
+                      {o.qty_scrapped}
+                    </span>
                   </TD>
                   <TD>
                     <Badge tone={badgeEstado(o.status)}>{ESTADO_ORDEN[o.status] ?? o.status}</Badge>
@@ -191,9 +204,7 @@ export default async function ProduccionPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] tabular"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

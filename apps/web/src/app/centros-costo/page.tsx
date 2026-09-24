@@ -135,7 +135,13 @@ export default async function CentrosCostoPage({
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Descripcion
-                    <input name="description" required minLength={3} placeholder="Alquiler de septiembre" className={claseInput} />
+                    <input
+                      name="description"
+                      required
+                      minLength={3}
+                      placeholder="Alquiler de septiembre"
+                      className={claseInput}
+                    />
                   </label>
                   <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Monto total
@@ -154,9 +160,14 @@ export default async function CentrosCostoPage({
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {activos.map((c) => (
-                    <label key={c.id} className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                    <label
+                      key={c.id}
+                      className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"
+                    >
                       <input type="hidden" name="weightCenterId" value={c.id} />
-                      <span className="w-32 shrink-0 truncate text-[var(--color-text-primary)]">{c.name}</span>
+                      <span className="w-32 shrink-0 truncate text-[var(--color-text-primary)]">
+                        {c.name}
+                      </span>
                       <input
                         name="weight"
                         inputMode="decimal"
@@ -167,15 +178,13 @@ export default async function CentrosCostoPage({
                     </label>
                   ))}
                 </div>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="call_split" size={18} />
                   Prorratear
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Los pesos no necesitan sumar 100 -se normalizan solos-. Deja en cero el centro que no
-                  participa de este gasto.
+                  Los pesos no necesitan sumar 100 -se normalizan solos-. Deja en cero el centro que
+                  no participa de este gasto.
                 </p>
               </form>
             </CardBody>
@@ -203,7 +212,13 @@ export default async function CentrosCostoPage({
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Descripcion
-                  <input name="description" required minLength={3} placeholder="Reparacion del aire" className={claseInput} />
+                  <input
+                    name="description"
+                    required
+                    minLength={3}
+                    placeholder="Reparacion del aire"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto
@@ -219,9 +234,7 @@ export default async function CentrosCostoPage({
                   Fecha
                   <input name="allocationDate" type="date" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
                   Asignar
                 </BotonEnvio>
@@ -245,11 +258,14 @@ export default async function CentrosCostoPage({
                 </label>
                 <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="name" required placeholder="Sucursal Villa Consuelo" className={claseInput} />
+                  <input
+                    name="name"
+                    required
+                    placeholder="Sucursal Villa Consuelo"
+                    className={claseInput}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>

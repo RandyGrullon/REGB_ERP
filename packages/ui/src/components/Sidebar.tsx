@@ -361,13 +361,10 @@ function FilaModulo({
               {mod.trialDaysLeft ?? 0}d
             </span>
           )}
-          {mod.degraded && (
-            <Icon
-              name="warning"
-              size={14}
-              className="shrink-0 text-[var(--color-semantic-text-warning)]"
-            />
-          )}
+          {/* `degraded` = le falta un modulo RECOMENDADO (Inventario sin
+              Ordenes de compra). No es una falla: pintarlo con un triangulo
+              amarillo en el menu hacia creer al dueño que algo estaba roto.
+              La sugerencia vive en el marketplace, en "Con que funciona". */}
           {badgeTotal > 0 && !abierto && (
             <span className="tabular shrink-0 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1.5 text-[10px] font-semibold leading-[18px] text-white">
               {badgeTotal > 99 ? '99+' : badgeTotal}

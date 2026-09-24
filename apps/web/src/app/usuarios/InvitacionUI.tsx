@@ -35,7 +35,7 @@ export function EnlaceCopiable({ enlace }: { enlace: string }) {
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className={ETIQUETA}>
-        Enlace de invitacion
+        Enlace de invitación
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -53,12 +53,25 @@ export function EnlaceCopiable({ enlace }: { enlace: string }) {
         >
           Copiar enlace
         </Button>
+        {/* En RD estas cosas se mandan por WhatsApp: el mensaje sale ya
+            escrito, con el enlace, y la persona lo abre desde su telefono. */}
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(
+            `Te invito a entrar a nuestro sistema. Abre este enlace (es solo para ti): ${enlace}`,
+          )}`}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex h-11 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
+          <Icon name="chat" size={16} />
+          Enviar por WhatsApp
+        </a>
       </div>
       <p role="status" className="min-h-4 text-xs text-[var(--color-text-secondary)]">
         {copia === 'ok'
-          ? 'Copiado. Compartelo solo con esa persona: el enlace es su llave de entrada.'
+          ? 'Copiado. Compártelo solo con esa persona: el enlace es su llave de entrada.'
           : copia === 'fallo'
-            ? 'No pudimos copiarlo. Selecciona el enlace y copialo a mano.'
+            ? 'No pudimos copiarlo. Selecciona el enlace y cópialo a mano.'
             : ''}
       </p>
     </div>
@@ -178,7 +191,13 @@ export function InvitarForm({
         </label>
         <label className="flex flex-col gap-1">
           <span className={ETIQUETA}>Rol</span>
-          <select name="roleId" required className={CAMPO}>
+          {/* Sin rol preseleccionado: antes salia "Admin" -el primero de la
+              lista- y un dueño apurado le daba acceso a todo al cajero sin
+              darse cuenta. El rol se elige a proposito. */}
+          <select name="roleId" required defaultValue="" className={CAMPO}>
+            <option value="" disabled>
+              Elige su rol…
+            </option>
             {roles.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
@@ -195,9 +214,9 @@ export function InvitarForm({
         <Icon name={modoDemo ? 'info' : 'mail'} size={16} />
         <span>
           {modoDemo
-            ? 'Modo demostracion: no hay servidor de correo conectado. Al invitar te damos el enlace para que lo compartas tu. No se envia ningun correo.'
-            : 'Le llega un correo con un enlace de un solo uso que vence en 7 dias. Hasta que lo abra y entre con ese correo, no ve nada.'}{' '}
-          El rol decide que modulos ve desde el primer dia.
+            ? 'Modo demostración: no hay servidor de correo conectado. Al invitar te damos el enlace para que lo compartas tú. No se envía ningún correo.'
+            : 'Le llega un correo con un enlace de un solo uso que vence en 7 días. Hasta que lo abra y entre con ese correo, no ve nada.'}{' '}
+          El rol decide qué módulos ve desde el primer día.
         </span>
       </p>
 
@@ -227,7 +246,7 @@ export function ReenviarInvitacion({
         <input type="hidden" name="rol" value={rol} />
         <input type="hidden" name="invitationId" value={invitationId} />
         <BotonEnvio
-          aria-label={`Reenviar la invitacion de ${nombre}`}
+          aria-label={`Reenviar la invitación de ${nombre}`}
           className="inline-flex h-11 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-50"
         >
           Reenviar

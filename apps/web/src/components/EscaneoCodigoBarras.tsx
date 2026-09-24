@@ -130,7 +130,7 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
       )}
       {!soportada && (
         <p className="text-xs text-[var(--color-text-muted)]">
-          Tu navegador no soporta escaneo con camara -escribe el codigo abajo, o usa un lector
+          Tu navegador no soporta escaneo con camara -escribe el código abajo, o usa un lector
           fisico: funciona identico-.
         </p>
       )}
@@ -148,9 +148,7 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
             className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
           />
         </label>
-        <BotonEnvio
-          
-          className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+        <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
           <Icon name="search" size={18} />
           Buscar
         </BotonEnvio>

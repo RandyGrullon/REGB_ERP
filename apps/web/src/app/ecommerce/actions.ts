@@ -34,11 +34,16 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
   const storeUrl = String(fd.get('storeUrl') ?? '').trim() || null
 
   if (!name) return { ok: false, error: 'Falta el nombre del canal.' }
-  if (!['shopify', 'woocommerce', 'tiendanube'].includes(platform)) return { ok: false, error: 'Elige una plataforma valida.' }
+  if (!['shopify', 'woocommerce', 'tiendanube'].includes(platform))
+    return { ok: false, error: 'Elige una plataforma valida.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.sales_channels (tenant_id, name, platform, store_url)
-    values (${ctx.tenantId}, ${name}, ${platform}, ${storeUrl})`)
+    values (${ctx.tenantId}, ${name}, ${platform}, ${storeUrl})`,
+  )
 
   revalidatePath('/ecommerce')
   return { ok: true }
@@ -58,9 +63,13 @@ export async function vincularProducto(fd: FormData): Promise<ActionResult> {
   if (!productId) return { ok: false, error: 'Elige el producto.' }
   if (!externalSku) return { ok: false, error: 'Falta el SKU externo.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.channel_product_links (tenant_id, channel_id, product_id, external_sku, synced_at)
-    values (${ctx.tenantId}, ${channelId}, ${productId}, ${externalSku}, now())`)
+    values (${ctx.tenantId}, ${channelId}, ${productId}, ${externalSku}, now())`,
+  )
 
   revalidatePath('/ecommerce')
   return { ok: true }
@@ -75,9 +84,13 @@ export async function sincronizarVinculo(fd: FormData): Promise<ActionResult> {
 
   const linkId = String(fd.get('linkId') ?? '')
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.channel_product_links set synced_at = now()
-    where id = ${linkId} and tenant_id = ${ctx.tenantId}`)
+    where id = ${linkId} and tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath('/ecommerce')
   return { ok: true }
@@ -103,8 +116,10 @@ export async function simularPedidoEntrante(fd: FormData): Promise<ActionResult>
   if (!externalOrderId) return { ok: false, error: 'Falta el numero de pedido externo.' }
   if (!customerName) return { ok: false, error: 'Falta el nombre del cliente.' }
   if (!externalSku) return { ok: false, error: 'Falta el SKU externo.' }
-  if (!Number.isFinite(quantity) || quantity <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
-  if (!Number.isFinite(unitPrice) || unitPrice < 0) return { ok: false, error: 'El precio unitario no puede ser negativo.' }
+  if (!Number.isFinite(quantity) || quantity <= 0)
+    return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
+  if (!Number.isFinite(unitPrice) || unitPrice < 0)
+    return { ok: false, error: 'El precio unitario no puede ser negativo.' }
 
   const total = Math.round(quantity * unitPrice * 100) / 100
 

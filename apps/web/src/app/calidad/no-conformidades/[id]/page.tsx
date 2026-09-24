@@ -1,14 +1,5 @@
 import { notFound } from 'next/navigation'
-import {
-  Badge,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Icon,
-  PageHeader,
-  StatCard,
-} from '@regb/ui'
+import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCard } from '@regb/ui'
 import { diasAbierto, type EstadoCapa, type EstadoNoConformidad } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -103,27 +94,27 @@ export default async function NoConformidadDetallePage({
           ]}
           actions={
             <div className="flex items-center gap-2">
-              <Badge tone={badgeSeveridad(head.severity)}>{SEVERIDAD_NC[head.severity] ?? head.severity}</Badge>
+              <Badge tone={badgeSeveridad(head.severity)}>
+                {SEVERIDAD_NC[head.severity] ?? head.severity}
+              </Badge>
               <Badge tone="neutral">{ESTADO_NC[head.status] ?? head.status}</Badge>
             </div>
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Dias abierta" value={String(diasAbierto(new Date(head.detected_at), new Date()))} />
-          {head.inspection_id && (
-            <StatCard
-              label="Origen"
-              value="Ver inspeccion"
-            />
-          )}
+          <StatCard
+            label="Dias abierta"
+            value={String(diasAbierto(new Date(head.detected_at), new Date()))}
+          />
+          {head.inspection_id && <StatCard label="Origen" value="Ver inspeccion" />}
         </section>
         {head.inspection_id && (
           <a
             href={`/calidad/inspecciones/${head.inspection_id}${qs}`}
             className="text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline"
           >
-            Ver la inspeccion que la origino
+            Ver la inspección que la origino
           </a>
         )}
 
@@ -132,7 +123,7 @@ export default async function NoConformidadDetallePage({
             <form action={transicionarNoConformidadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="investigating" />
-              <BotonEnvio  className={botonClase}>
+              <BotonEnvio className={botonClase}>
                 <Icon name="search" size={14} />
                 Empezar a investigar
               </BotonEnvio>
@@ -140,7 +131,7 @@ export default async function NoConformidadDetallePage({
             <form action={transicionarNoConformidadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="dismissed" />
-              <BotonEnvio  className={botonSecundarioClase}>
+              <BotonEnvio className={botonSecundarioClase}>
                 Descartar -no es un defecto real-
               </BotonEnvio>
             </form>
@@ -153,7 +144,7 @@ export default async function NoConformidadDetallePage({
               <form action={transicionarNoConformidadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="dismissed" />
-                <BotonEnvio  className={botonSecundarioClase}>
+                <BotonEnvio className={botonSecundarioClase}>
                   Descartar -investigado, no era un defecto real-
                 </BotonEnvio>
               </form>
@@ -175,7 +166,7 @@ export default async function NoConformidadDetallePage({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Accion correctiva
+                    Acción correctiva
                     <textarea
                       name="correctiveAction"
                       required
@@ -199,7 +190,7 @@ export default async function NoConformidadDetallePage({
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                     />
                   </label>
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="add_task" size={14} />
                     Crear CAPA
                   </BotonEnvio>
@@ -213,7 +204,10 @@ export default async function NoConformidadDetallePage({
           <Card>
             <CardHeader>
               <CardTitle>
-                CAPA <Badge tone={capa.status === 'closed' ? 'success' : 'warning'}>{ESTADO_CAPA[capa.status]}</Badge>
+                CAPA{' '}
+                <Badge tone={capa.status === 'closed' ? 'success' : 'warning'}>
+                  {ESTADO_CAPA[capa.status]}
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardBody className="space-y-3">
@@ -222,13 +216,19 @@ export default async function NoConformidadDetallePage({
                 <p className="text-sm text-[var(--color-text-primary)]">{capa.root_cause}</p>
               </div>
               <div>
-                <p className="text-xs font-semibold text-[var(--color-text-muted)]">Accion correctiva</p>
+                <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+                  Acción correctiva
+                </p>
                 <p className="text-sm text-[var(--color-text-primary)]">{capa.corrective_action}</p>
               </div>
               {capa.preventive_action && (
                 <div>
-                  <p className="text-xs font-semibold text-[var(--color-text-muted)]">Accion preventiva</p>
-                  <p className="text-sm text-[var(--color-text-primary)]">{capa.preventive_action}</p>
+                  <p className="text-xs font-semibold text-[var(--color-text-muted)]">
+                    Acción preventiva
+                  </p>
+                  <p className="text-sm text-[var(--color-text-primary)]">
+                    {capa.preventive_action}
+                  </p>
                 </div>
               )}
               {capa.due_date && (
@@ -245,10 +245,14 @@ export default async function NoConformidadDetallePage({
                     type="hidden"
                     name="siguiente"
                     value={
-                      capa.status === 'open' ? 'in_progress' : capa.status === 'in_progress' ? 'verified' : 'closed'
+                      capa.status === 'open'
+                        ? 'in_progress'
+                        : capa.status === 'in_progress'
+                          ? 'verified'
+                          : 'closed'
                     }
                   />
-                  <BotonEnvio  className={botonClase}>
+                  <BotonEnvio className={botonClase}>
                     <Icon name="arrow_forward" size={14} />
                     {capa.status === 'open' && 'Marcar en progreso'}
                     {capa.status === 'in_progress' && 'Marcar verificado'}

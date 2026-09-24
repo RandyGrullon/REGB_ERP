@@ -46,9 +46,13 @@ export async function crearCurso(fd: FormData): Promise<ActionResult> {
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.training_courses (tenant_id, title, description, duration_hours, passing_score)
-      values (${ctx.tenantId}, ${title}, ${description}, ${durationHours}, ${passingScore})`)
+      values (${ctx.tenantId}, ${title}, ${description}, ${durationHours}, ${passingScore})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -71,9 +75,13 @@ export async function inscribirEmpleado(fd: FormData): Promise<ActionResult> {
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.training_enrollments (tenant_id, course_id, employee_id)
-      values (${ctx.tenantId}, ${courseId}, ${employeeId})`)
+      values (${ctx.tenantId}, ${courseId}, ${employeeId})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -93,7 +101,8 @@ export async function registrarNota(fd: FormData): Promise<ActionResult> {
   const enrollmentId = String(fd.get('enrollmentId') ?? '')
   const score = num(String(fd.get('score') ?? ''))
   if (!enrollmentId) return { ok: false, error: 'Falta la inscripcion.' }
-  if (score === null || score < 0 || score > 100) return { ok: false, error: 'La nota debe estar entre 0 y 100.' }
+  if (score === null || score < 0 || score > 100)
+    return { ok: false, error: 'La nota debe estar entre 0 y 100.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -142,7 +151,8 @@ export async function emitirCertificado(fd: FormData): Promise<ActionResult> {
       const [row] = await tx<{ status: string }[]>`
         select status from public.training_enrollments where id = ${enrollmentId} and tenant_id = ${ctx.tenantId}`
       if (!row) throw new Error('Esa inscripcion no existe.')
-      if (row.status !== 'completed') throw new Error('Solo se emite certificado a una inscripcion completada.')
+      if (row.status !== 'completed')
+        throw new Error('Solo se emite certificado a una inscripcion completada.')
 
       await tx`
         insert into public.training_certificates (tenant_id, enrollment_id, expires_at)
@@ -173,9 +183,13 @@ export async function crearCompetencia(fd: FormData): Promise<ActionResult> {
   if (!name) return { ok: false, error: 'Escribe el nombre de la competencia.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.training_competencies (tenant_id, name, description)
-      values (${ctx.tenantId}, ${name}, ${description})`)
+      values (${ctx.tenantId}, ${name}, ${description})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -203,11 +217,15 @@ export async function asignarNivelCompetencia(fd: FormData): Promise<ActionResul
   }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
       insert into public.training_employee_competencies (tenant_id, employee_id, competency_id, level)
       values (${ctx.tenantId}, ${employeeId}, ${competencyId}, ${level})
       on conflict (tenant_id, employee_id, competency_id)
-      do update set level = excluded.level, assessed_at = now()`)
+      do update set level = excluded.level, assessed_at = now()`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }

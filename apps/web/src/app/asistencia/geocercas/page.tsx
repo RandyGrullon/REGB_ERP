@@ -130,19 +130,35 @@ export default async function GeocercasPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Latitud
-                  <input name="lat" required inputMode="decimal" placeholder="18.4861" className={`tabular ${claseInput}`} />
+                  <input
+                    name="lat"
+                    required
+                    inputMode="decimal"
+                    placeholder="18.4861"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Longitud
-                  <input name="lng" required inputMode="decimal" placeholder="-69.9312" className={`tabular ${claseInput}`} />
+                  <input
+                    name="lng"
+                    required
+                    inputMode="decimal"
+                    placeholder="-69.9312"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Radio (m)
-                  <input name="radius" required inputMode="numeric" placeholder="100" className={`tabular ${claseInput}`} />
+                  <input
+                    name="radius"
+                    required
+                    inputMode="numeric"
+                    placeholder="100"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="save" size={18} />
                   Guardar
                 </BotonEnvio>

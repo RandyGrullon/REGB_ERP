@@ -36,8 +36,7 @@ interface NcRow {
   detected_at: string
 }
 
-const fecha = (iso: string) =>
-  new Date(iso).toLocaleDateString('es-DO', { dateStyle: 'medium' })
+const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-DO', { dateStyle: 'medium' })
 
 const badgeResultado = (r: string): 'success' | 'danger' | 'warning' => {
   if (r === 'passed') return 'success'
@@ -52,18 +51,12 @@ const badgeSeveridad = (s: string): 'neutral' | 'warning' | 'danger' => {
 }
 
 /** Control de calidad (modulo 58): inspecciones, no conformidades y CAPA. */
-export default async function CalidadPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function CalidadPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'quality')
 
-  const { inspecciones, noConformidades, planesActivos, capasAbiertos, tasaAprobacion } = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    async (tx) => {
+  const { inspecciones, noConformidades, planesActivos, capasAbiertos, tasaAprobacion } =
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const i = await tx<InspeccionRow[]>`
         select insp.id, ip.name as plan_name, pr.name as product_name, insp.result, insp.performed_at::text
         from public.inspections insp
@@ -95,8 +88,7 @@ export default async function CalidadPage({
         tasaAprobacion:
           Number(ta?.total ?? 0) > 0 ? (Number(ta!.pasadas) / Number(ta!.total)) * 100 : null,
       }
-    },
-  )
+    })
 
   const qs = ctx.demoQs
 
@@ -113,13 +105,13 @@ export default async function CalidadPage({
                 href={`/calidad/planes${qs}`}
                 className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
               >
-                Planes de inspeccion
+                Planes de inspección
               </a>
               <a
                 href={`/calidad/inspecciones/nueva${qs}`}
                 className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
               >
-                Nueva inspeccion
+                Nueva inspección
               </a>
             </div>
           }
@@ -141,7 +133,11 @@ export default async function CalidadPage({
               Inspecciones recientes
             </h2>
             {inspecciones.length === 0 ? (
-              <EmptyState icon="fact_check" title="Todavia no hay ninguna inspeccion" description="" />
+              <EmptyState
+                icon="fact_check"
+                title="Todavia no hay ninguna inspeccion"
+                description=""
+              />
             ) : (
               <Table>
                 <THead>
@@ -187,12 +183,16 @@ export default async function CalidadPage({
               No conformidades abiertas
             </h2>
             {noConformidades.length === 0 ? (
-              <EmptyState icon="report" title="No hay ninguna no conformidad abierta" description="" />
+              <EmptyState
+                icon="report"
+                title="No hay ninguna no conformidad abierta"
+                description=""
+              />
             ) : (
               <Table>
                 <THead>
                   <TR>
-                    <TH>Descripcion</TH>
+                    <TH>Descripción</TH>
                     <TH>Severidad</TH>
                     <TH>Estado</TH>
                     <TH numeric>Dias</TH>

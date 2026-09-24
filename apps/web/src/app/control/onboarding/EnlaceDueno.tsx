@@ -65,9 +65,9 @@ export function EnlaceUnaVez({
       </div>
       <p role="status" className="min-h-4 text-xs text-[var(--color-text-secondary)]">
         {copia === 'ok'
-          ? 'Copiado. Compartelo solo con el dueño: el enlace es su llave de entrada.'
+          ? 'Copiado. Compártelo solo con el dueño: el enlace es su llave de entrada.'
           : copia === 'fallo'
-            ? 'No pudimos copiarlo. Selecciona el enlace y copialo a mano.'
+            ? 'No pudimos copiarlo. Selecciona el enlace y cópialo a mano.'
             : `Sirve una sola vez${venceTexto ? ` y vence el ${venceTexto}` : ''}. Si lo pierdes, genera uno nuevo: el anterior deja de servir.`}
       </p>
     </div>

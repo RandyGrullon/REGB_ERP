@@ -32,11 +32,16 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
   const scopeLabel = String(fd.get('scopeLabel') ?? '').trim() || null
 
   if (!name) return { ok: false, error: 'Falta el nombre del canal.' }
-  if (!['module', 'project', 'branch', 'general'].includes(scopeType)) return { ok: false, error: 'Elige un ambito valido.' }
+  if (!['module', 'project', 'branch', 'general'].includes(scopeType))
+    return { ok: false, error: 'Elige un ambito valido.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.chat_channels (tenant_id, name, scope_type, scope_label, created_by)
-    values (${ctx.tenantId}, ${name}, ${scopeType}, ${scopeLabel}, ${ctx.userId})`)
+    values (${ctx.tenantId}, ${name}, ${scopeType}, ${scopeLabel}, ${ctx.userId})`,
+  )
 
   revalidatePath('/chat')
   return { ok: true }

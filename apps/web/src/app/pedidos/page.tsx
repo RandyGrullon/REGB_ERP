@@ -87,8 +87,16 @@ export default async function PedidosPage({
       const [t] = await tx<{ abiertos: string; pendiente: string; backorders: string }[]>`
         select
           count(*) filter (where status in ('confirmed','partially_delivered'))    as abiertos,
-          coalesce(sum(total) filter (where status in ('confirmed','partially_delivered')), 0)::text
-                                                                                   as pendiente,
+          -- Lo que FALTA por entregar, no el total del pedido: un pedido
+          -- entregado y facturado a medias se contaba entero (cliente
+          -- misterioso, 23 sep 2026).
+          coalesce((
+            select round(sum(greatest(l.qty_ordered - l.qty_delivered, 0) * l.unit_price
+                             * (1 - l.discount_pct / 100) * (1 + l.tax_rate)), 2)
+            from public.sales_order_lines l
+            join public.sales_orders so on so.id = l.order_id
+            where so.tenant_id = ${ctx.tenantId}
+              and so.status in ('confirmed','partially_delivered')), 0)::text      as pendiente,
           count(*) filter (where exists (
             select 1 from public.sales_order_lines l
             where l.order_id = sales_orders.id
@@ -119,7 +127,7 @@ export default async function PedidosPage({
           actions={
             <a
               href={`/pedidos/clientes${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="contacts" size={18} />
               Clientes
@@ -130,9 +138,9 @@ export default async function PedidosPage({
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Abiertos" value={String(totales?.abiertos ?? 0)} hint="por entregar" />
           <StatCard
-            label="Por facturar"
+            label="Por entregar"
             value={`RD$ ${money(Number(totales?.pendiente ?? 0))}`}
-            hint="en pedidos abiertos"
+            hint="lo que falta de los pedidos abiertos"
           />
           <StatCard
             label="Con backorder"
@@ -162,22 +170,22 @@ export default async function PedidosPage({
         {orders.length === 0 ? (
           <EmptyState
             icon={hayFiltros ? 'search_off' : 'shopping_cart'}
-            title={hayFiltros ? 'Ningun pedido coincide' : 'Todavia no hay pedidos'}
+            title={hayFiltros ? 'Ningún pedido coincide' : 'Todavía no hay pedidos'}
             description={
               hayFiltros
-                ? 'Prueba con otro numero, otro cliente o quita el filtro de estado.'
-                : 'Crea el primero abajo. Necesitas al menos un cliente y un almacen.'
+                ? 'Prueba con otro número, otro cliente o quita el filtro de estado.'
+                : 'Crea el primero abajo. Necesitas al menos un cliente y un almacén.'
             }
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Numero</TH>
+                <TH>Número</TH>
                 <TH>Cliente</TH>
-                <TH>Almacen</TH>
+                <TH>Almacén</TH>
                 <TH>Fecha</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH>Estado</TH>
                 <TH numeric>Total</TH>
               </TR>
@@ -247,7 +255,7 @@ export default async function PedidosPage({
                   </select>
                 </label>
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen que despacha
+                  Almacén que despacha
                   <select
                     name="warehouseId"
                     required
@@ -260,16 +268,14 @@ export default async function PedidosPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Crear borrador
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Se crea en borrador. Le agregas lineas y despues lo confirmas: ahi es cuando se
-                aparta la mercancia.
+                aparta la mercancía.
               </p>
             </CardBody>
           </Card>

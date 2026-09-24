@@ -50,11 +50,15 @@ export async function fijarCapacidad(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'La capacidad debe estar entre 0 y 168 horas.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.resource_capacity (tenant_id, user_id, week_start, hours_capacity)
     values (${ctx.tenantId}, ${userId}, ${lunesDe(semana)}, ${capacidad})
     on conflict (tenant_id, user_id, week_start)
-      do update set hours_capacity = excluded.hours_capacity`)
+      do update set hours_capacity = excluded.hours_capacity`,
+  )
 
   revalidatePath('/recursos')
   return { ok: true }
@@ -74,13 +78,18 @@ export async function asignar(fd: FormData): Promise<ActionResult> {
   if (!taskId) return { ok: false, error: 'Elige la tarea.' }
   if (!userId) return { ok: false, error: 'Elige la persona.' }
   if (!semana) return { ok: false, error: 'Falta la semana.' }
-  if (h === null || h <= 0 || h > 168) return { ok: false, error: 'Las horas deben estar entre 0 y 168.' }
+  if (h === null || h <= 0 || h > 168)
+    return { ok: false, error: 'Las horas deben estar entre 0 y 168.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.resource_allocations (tenant_id, task_id, user_id, week_start, hours, created_by)
     values (${ctx.tenantId}, ${taskId}, ${userId}, ${lunesDe(semana)}, ${h}, ${ctx.userId})
     on conflict (tenant_id, task_id, user_id, week_start)
-      do update set hours = excluded.hours, updated_at = now()`)
+      do update set hours = excluded.hours, updated_at = now()`,
+  )
 
   revalidatePath('/recursos')
   return { ok: true }

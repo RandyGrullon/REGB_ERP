@@ -20,11 +20,7 @@ import { progresoResultadoClave, tasaMerma } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import {
-  cancelarOrdenForm,
-  liberarOrdenForm,
-  reportarAvanceForm,
-} from '../actions'
+import { cancelarOrdenForm, liberarOrdenForm, reportarAvanceForm } from '../actions'
 import { ESTADO_ORDEN } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
@@ -123,25 +119,36 @@ export default async function OrdenDetallePage({
         <PageHeader
           icon="precision_manufacturing"
           title={`${head.sku} · ${head.product_name}`}
-          description={`Almacen: ${head.warehouse_name}`}
-          crumbs={[{ label: 'Ordenes de produccion', href: `/produccion${qs}` }, { label: head.sku }]}
+          description={`Almacén: ${head.warehouse_name}`}
+          crumbs={[
+            { label: 'Ordenes de produccion', href: `/produccion${qs}` },
+            { label: head.sku },
+          ]}
           actions={
             <div className="flex items-center gap-2">
-              <Badge tone={head.status === 'completed' ? 'success' : head.status === 'cancelled' ? 'danger' : 'warning'}>
+              <Badge
+                tone={
+                  head.status === 'completed'
+                    ? 'success'
+                    : head.status === 'cancelled'
+                      ? 'danger'
+                      : 'warning'
+                }
+              >
                 {ESTADO_ORDEN[head.status] ?? head.status}
               </Badge>
               {enBorrador && puedeGestionar && (
                 <>
                   <form action={liberarOrdenForm}>
                     {campos}
-                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="rocket_launch" size={14} />
                       Liberar
                     </BotonEnvio>
                   </form>
                   <form action={cancelarOrdenForm}>
                     {campos}
-                    <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="cancel" size={14} />
                       Cancelar
                     </BotonEnvio>
@@ -156,7 +163,11 @@ export default async function OrdenDetallePage({
           <StatCard label="Planificado" value={head.qty_planned} />
           <StatCard label="Completado" value={head.qty_completed} />
           <StatCard label="Merma" value={head.qty_scrapped} />
-          <StatCard label="Avance" value={`${progreso}%`} hint={`${Math.round(merma * 100)}% en merma`} />
+          <StatCard
+            label="Avance"
+            value={`${progreso}%`}
+            hint={`${Math.round(merma * 100)}% en merma`}
+          />
         </section>
 
         {lineas.length > 0 && (
@@ -199,7 +210,9 @@ export default async function OrdenDetallePage({
           </CardHeader>
           <CardBody className="p-0">
             {reportes.length === 0 ? (
-              <p className="p-4 text-sm text-[var(--color-text-muted)]">Todavia no hay ningun reporte.</p>
+              <p className="p-4 text-sm text-[var(--color-text-muted)]">
+                Todavía no hay ningún reporte.
+              </p>
             ) : (
               <Table>
                 <THead>
@@ -231,21 +244,37 @@ export default async function OrdenDetallePage({
               </Table>
             )}
             {puedeReportarAhora && puedeReportar && (
-              <form action={reportarAvanceForm} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3">
+              <form
+                action={reportarAvanceForm}
+                className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3"
+              >
                 {campos}
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Completado
-                  <input name="qtyCompletedDelta" inputMode="decimal" defaultValue="0" className="tabular h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="qtyCompletedDelta"
+                    inputMode="decimal"
+                    defaultValue="0"
+                    className="tabular h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Merma
-                  <input name="qtyScrappedDelta" inputMode="decimal" defaultValue="0" className="tabular h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="qtyScrappedDelta"
+                    inputMode="decimal"
+                    defaultValue="0"
+                    className="tabular h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Notas
-                  <input name="notes" className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]" />
+                  <input
+                    name="notes"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                  />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="fact_check" size={14} />
                   Reportar
                 </BotonEnvio>

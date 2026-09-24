@@ -44,7 +44,8 @@ interface ActividadRow {
   occurred_at: string
 }
 
-const fecha = (iso: string) => new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
 const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
@@ -113,7 +114,7 @@ export default async function LeadDetallePage({
         </section>
 
         <p className="text-xs text-[var(--color-text-muted)]">
-          {head.email ?? 'Sin correo'} · {head.phone ?? 'Sin telefono'}
+          {head.email ?? 'Sin correo'} · {head.phone ?? 'Sin teléfono'}
         </p>
 
         {puedeGestionar && head.status !== 'converted' && head.status !== 'disqualified' && (
@@ -122,7 +123,7 @@ export default async function LeadDetallePage({
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="contacted" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="call" size={14} />
                   Marcar contactado
                 </BotonEnvio>
@@ -132,7 +133,7 @@ export default async function LeadDetallePage({
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="qualified" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="verified" size={14} />
                   Calificar
                 </BotonEnvio>
@@ -142,7 +143,7 @@ export default async function LeadDetallePage({
               <form action={transicionarLeadForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="converted" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Convertir
                 </BotonEnvio>
@@ -151,9 +152,7 @@ export default async function LeadDetallePage({
             <form action={transicionarLeadForm}>
               {campos}
               <input type="hidden" name="siguiente" value="disqualified" />
-              <BotonEnvio  className={botonSecundarioClase}>
-                Descalificar
-              </BotonEnvio>
+              <BotonEnvio className={botonSecundarioClase}>Descalificar</BotonEnvio>
             </form>
           </div>
         )}
@@ -170,7 +169,7 @@ export default async function LeadDetallePage({
             {actividades.length === 0 ? (
               <TR>
                 <TD colSpan={3} className="text-center text-[var(--color-text-muted)]">
-                  Todavia no hay ninguna actividad registrada.
+                  Todavía no hay ninguna actividad registrada.
                 </TD>
               </TR>
             ) : (
@@ -216,7 +215,7 @@ export default async function LeadDetallePage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

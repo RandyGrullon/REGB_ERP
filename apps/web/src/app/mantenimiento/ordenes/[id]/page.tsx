@@ -56,7 +56,8 @@ const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
-const fecha = (iso: string) => new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
 const badgeEstado = (s: string): 'success' | 'warning' | 'neutral' => {
   if (s === 'completed') return 'success'
   if (s === 'open' || s === 'in_progress') return 'warning'
@@ -123,16 +124,15 @@ export default async function OrdenDetallePage({
           actions={
             <div className="flex items-center gap-2">
               <Badge tone="neutral">{PRIORIDAD_ORDEN[head.priority] ?? head.priority}</Badge>
-              <Badge tone={badgeEstado(head.status)}>{ESTADO_ORDEN[head.status] ?? head.status}</Badge>
+              <Badge tone={badgeEstado(head.status)}>
+                {ESTADO_ORDEN[head.status] ?? head.status}
+              </Badge>
             </div>
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard
-            label="Equipo"
-            value={`${head.equipment_code} · ${head.equipment_name}`}
-          />
+          <StatCard label="Equipo" value={`${head.equipment_code} · ${head.equipment_name}`} />
           <StatCard label="Tipo" value={TIPO_ORDEN[head.type] ?? head.type} />
           <StatCard label="Abierta" value={fecha(head.opened_at)} />
         </section>
@@ -149,7 +149,7 @@ export default async function OrdenDetallePage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Empezar a trabajar
                 </BotonEnvio>
@@ -159,7 +159,7 @@ export default async function OrdenDetallePage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="completed" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="check_circle" size={14} />
                   Completar
                 </BotonEnvio>
@@ -168,9 +168,7 @@ export default async function OrdenDetallePage({
             <form action={transicionarOrdenForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <BotonEnvio  className={botonSecundarioClase}>
-                Cancelar
-              </BotonEnvio>
+              <BotonEnvio className={botonSecundarioClase}>Cancelar</BotonEnvio>
             </form>
           </div>
         )}
@@ -186,7 +184,7 @@ export default async function OrdenDetallePage({
             {partes.length === 0 ? (
               <TR>
                 <TD colSpan={2} className="text-center text-[var(--color-text-muted)]">
-                  Todavia no se ha registrado ningun repuesto.
+                  Todavía no se ha registrado ningún repuesto.
                 </TD>
               </TR>
             ) : (
@@ -227,9 +225,14 @@ export default async function OrdenDetallePage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cantidad
-                  <input name="qtyUsed" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="qtyUsed"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>

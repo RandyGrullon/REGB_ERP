@@ -17,6 +17,25 @@ function demoDe(formData: FormData) {
 const limpiarError = (e: unknown): string =>
   (e instanceof Error ? e.message : 'Error inesperado').replace(/^.*ERROR:\s*/, '')
 
+/**
+ * El RNC de la empresa sale en CADA ticket y factura. Uno mal escrito no
+ * se nota hasta que un cliente con credito fiscal lo devuelve, o el
+ * contador lo ve en el 607. Se valida con la misma funcion de la base que
+ * usa el alta de clientes (0133): digito verificador de la DGII, RNC de 9
+ * o cedula de 11.
+ */
+async function rncInvalido(
+  tx: Parameters<Parameters<typeof asUser>[2]>[0],
+  rnc: string | null,
+): Promise<boolean> {
+  if (!rnc) return false
+  const [r] = await tx<{ ok: boolean }[]>`select regb.documento_fiscal_valido(${rnc}) as ok`
+  return !r?.ok
+}
+
+const MENSAJE_RNC =
+  'Ese RNC no es valido: revisa los numeros (el ultimo digito es de control). Si es una cedula, van 11 digitos.'
+
 export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
@@ -29,7 +48,8 @@ export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
   if (legal.length < 3) return { ok: false, error: 'La razon social necesita al menos 3 letras.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      if (await rncInvalido(tx, rnc)) return 'rnc'
       const [empresa] = await tx<{ id: string }[]>`
         insert into public.companies (tenant_id, legal_name, tax_id, currency)
         values (${ctx.tenantId}, ${legal}, ${rnc}, ${currency})
@@ -41,7 +61,9 @@ export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
       await tx`
         select public.emit_event('orgs.company.created',
           ${JSON.stringify({ companyId: empresa!.id, currency })}::text::jsonb, 'orgs')`
+      return 'ok'
     })
+    if (res === 'rnc') return { ok: false, error: MENSAJE_RNC }
   } catch (e) {
     return { ok: false, error: limpiarError(e) }
   }
@@ -61,12 +83,40 @@ export async function editarEmpresa(formData: FormData): Promise<ActionResult> {
   const rnc = String(formData.get('rnc') ?? '').trim() || null
   if (!id || legal.length < 3) return { ok: false, error: 'Datos incompletos.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => {
-    return tx`
-      update public.companies
-      set legal_name = ${legal}, tax_id = ${rnc}, updated_at = now()
-      where id = ${id} and tenant_id = ${ctx.tenantId}`
-  })
+  // Contacto: lo que el cliente lee en el ticket y en la factura. Solo se
+  // toca si el formulario lo trae, para no borrarlo desde un formulario
+  // que no lo muestra.
+  const trae = (k: string) => formData.has(k)
+  const texto = (k: string, max: number) =>
+    String(formData.get(k) ?? '')
+      .trim()
+      .slice(0, max) || null
+  const address = texto('address', 200)
+  const phone = texto('phone', 30)
+  const email = texto('email', 120)
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return { ok: false, error: 'Ese correo no parece valido.' }
+  }
+
+  try {
+    const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      if (await rncInvalido(tx, rnc)) return 'rnc'
+      await tx`
+        update public.companies
+        set legal_name = ${legal}, tax_id = ${rnc}, updated_at = now()
+        where id = ${id} and tenant_id = ${ctx.tenantId}`
+      if (trae('address') || trae('phone') || trae('email')) {
+        await tx`
+          update public.companies
+          set address = ${address}, phone = ${phone}, email = ${email}, updated_at = now()
+          where id = ${id} and tenant_id = ${ctx.tenantId}`
+      }
+      return 'ok'
+    })
+    if (res === 'rnc') return { ok: false, error: MENSAJE_RNC }
+  } catch (e) {
+    return { ok: false, error: limpiarError(e) }
+  }
 
   revalidatePath('/empresas')
   return { ok: true }

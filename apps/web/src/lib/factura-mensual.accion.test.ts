@@ -142,33 +142,33 @@ describe('La factura cobra la formula completa', () => {
       usage: USO,
       taxRate: 0.18,
       // Instalacion de lo recien activado: 5 dentro de los incluidos, 2 a US$600.
-      oneTimeCharges: [{ label: 'Instalacion de modulos', amountCents: toCents(1200) }],
+      oneTimeCharges: [{ label: 'Instalación de módulos', amountCents: toCents(1200) }],
     })
   })
 
   it('usuarios, sucursales, empresas y storage de mas, cada uno con su precio', async () => {
     const f = await factura('2099-03-01')
     expect(linea(f, 'Base mensual')?.amount).toBe(399)
-    expect(linea(f, 'Modulos activos')).toMatchObject({
+    expect(linea(f, 'Módulos activos')).toMatchObject({
       amount: 138,
-      detail: '2 de 7 facturables (5 incluidos en el tier)',
+      detail: '2 de 7 facturables (5 incluidos en el plan)',
     })
-    expect(linea(f, 'Modulos en prueba')?.amount).toBe(0)
+    expect(linea(f, 'Módulos en prueba')?.amount).toBe(0)
     expect(linea(f, 'Usuarios extra')).toMatchObject({
       amount: 21,
-      detail: '28 usuarios, 25 incluidos -> 3 x',
+      detail: '28 usuarios, 25 incluidos: 3 de más',
     })
     expect(linea(f, 'Sucursales extra')?.amount).toBe(40)
     expect(linea(f, 'Empresas extra')?.amount).toBe(90)
-    expect(linea(f, 'Storage extra')).toMatchObject({
+    expect(linea(f, 'Almacenamiento extra')).toMatchObject({
       amount: 0.4,
-      detail: '101 GB, 100 GB incluido -> 1 GB',
+      detail: '101 GB en archivos, 100 GB incluidos: 1 GB de más',
     })
   })
 
   it('la instalacion de lo recien activado, una vez y sin descuento', async () => {
     const f = await factura('2099-03-01')
-    expect(linea(f, 'Instalacion de modulos')?.amount).toBe(1200)
+    expect(linea(f, 'Instalación de módulos')?.amount).toBe(1200)
   })
 
   it('ITBIS 18 % sobre todo, porque el cliente es de RD', async () => {
@@ -225,7 +225,7 @@ describe('La instalacion se cobra una vez', () => {
     const r = await generateMonthlyInvoices(ABRIL, c.slug)
     expect(r.created).toHaveLength(1)
     const f = await factura('2099-04-01')
-    expect(linea(f, 'Instalacion de modulos')).toBeUndefined()
+    expect(linea(f, 'Instalación de módulos')).toBeUndefined()
     // 688.40 + 18 % = 812.31
     expect(Number(f.total)).toBe(812.31)
   })

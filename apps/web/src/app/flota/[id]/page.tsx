@@ -109,7 +109,15 @@ export default async function VehiculoDetallePage({
         from public.vehicles veh
         left join public.employees e on e.id = veh.assigned_driver_id
         where veh.id = ${id} and veh.tenant_id = ${ctx.tenantId}`
-      if (!h) return { head: null, documentos: [], combustible: [], mantenimiento: [], multas: [], empleados: [] }
+      if (!h)
+        return {
+          head: null,
+          documentos: [],
+          combustible: [],
+          mantenimiento: [],
+          multas: [],
+          empleados: [],
+        }
 
       const d = await tx<DocumentoRow[]>`
         select id, doc_type, expiry_date::text from public.vehicle_documents
@@ -163,11 +171,23 @@ export default async function VehiculoDetallePage({
         <PageHeader
           icon="local_shipping"
           title={`${head.plate} · ${head.brand} ${head.model}`}
-          description={head.driver_name ? `Conductor: ${head.driver_name}` : 'Sin conductor asignado'}
+          description={
+            head.driver_name ? `Conductor: ${head.driver_name}` : 'Sin conductor asignado'
+          }
           crumbs={[{ label: 'Flota', href: `/flota${qs}` }, { label: head.plate }]}
           meta={
             <div className="flex items-center gap-2">
-              <Badge tone={head.status === 'active' ? 'success' : head.status === 'maintenance' ? 'warning' : 'neutral'}> {/* registry:allow -- estado de vehiculo, no id de modulo */}
+              <Badge
+                tone={
+                  head.status === 'active'
+                    ? 'success'
+                    : head.status === 'maintenance'
+                      ? 'warning'
+                      : 'neutral'
+                }
+              >
+                {' '}
+                {/* registry:allow -- estado de vehiculo, no id de modulo */}
                 {ESTADO_VEHICULO[head.status] ?? head.status}
               </Badge>
               <span className="text-xs text-[var(--color-text-muted)]">
@@ -217,7 +237,10 @@ export default async function VehiculoDetallePage({
               </TBody>
             </Table>
             {puedeGestionar && (
-              <form action={registrarDocumentoForm} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3">
+              <form
+                action={registrarDocumentoForm}
+                className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3"
+              >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tipo
@@ -231,7 +254,7 @@ export default async function VehiculoDetallePage({
                   Vencimiento
                   <input type="date" name="expiryDate" required className={claseInput} />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar
                 </BotonEnvio>
@@ -259,7 +282,10 @@ export default async function VehiculoDetallePage({
                 {[...combustible].reverse().map((c, i, arr) => {
                   const anterior = arr[i + 1]
                   const rendimiento = anterior
-                    ? eficienciaCombustible(Number(c.odometer_km) - Number(anterior.odometer_km), Number(c.liters))
+                    ? eficienciaCombustible(
+                        Number(c.odometer_km) - Number(anterior.odometer_km),
+                        Number(c.liters),
+                      )
                     : null
                   return (
                     <TR key={c.id}>
@@ -271,7 +297,9 @@ export default async function VehiculoDetallePage({
                         <span className="tabular">RD$ {money(Number(c.cost))}</span>
                       </TD>
                       <TD numeric>
-                        <span className="tabular">{Number(c.odometer_km).toLocaleString('es-DO')}</span>
+                        <span className="tabular">
+                          {Number(c.odometer_km).toLocaleString('es-DO')}
+                        </span>
                       </TD>
                       <TD numeric>
                         {rendimiento !== null && (
@@ -284,7 +312,10 @@ export default async function VehiculoDetallePage({
               </TBody>
             </Table>
             {puedeGestionar && (
-              <form action={registrarCombustibleForm} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3">
+              <form
+                action={registrarCombustibleForm}
+                className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3"
+              >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Conductor
@@ -299,17 +330,32 @@ export default async function VehiculoDetallePage({
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Litros
-                  <input name="liters" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="liters"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Costo
-                  <input name="cost" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="cost"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Kilometraje
-                  <input name="odometerKm" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="odometerKm"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="local_gas_station" size={14} />
                   Registrar
                 </BotonEnvio>
@@ -328,7 +374,7 @@ export default async function VehiculoDetallePage({
                 <TR>
                   <TH>Fecha</TH>
                   <TH>Tipo</TH>
-                  <TH>Descripcion</TH>
+                  <TH>Descripción</TH>
                   <TH numeric>Costo</TH>
                   <TH numeric>Kilometraje</TH>
                 </TR>
@@ -343,14 +389,19 @@ export default async function VehiculoDetallePage({
                       <span className="tabular">RD$ {money(Number(m.cost))}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{Number(m.odometer_km).toLocaleString('es-DO')}</span>
+                      <span className="tabular">
+                        {Number(m.odometer_km).toLocaleString('es-DO')}
+                      </span>
                     </TD>
                   </TR>
                 ))}
               </TBody>
             </Table>
             {puedeGestionar && (
-              <form action={registrarMantenimientoForm} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3">
+              <form
+                action={registrarMantenimientoForm}
+                className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3"
+              >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tipo
@@ -369,13 +420,18 @@ export default async function VehiculoDetallePage({
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Kilometraje
-                  <input name="odometerKm" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="odometerKm"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Proximo a km
+                  Próximo a km
                   <input name="nextDueKm" inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="build" size={14} />
                   Registrar
                 </BotonEnvio>
@@ -393,12 +449,12 @@ export default async function VehiculoDetallePage({
               <THead>
                 <TR>
                   <TH>Fecha</TH>
-                  <TH>Razon</TH>
+                  <TH>Razón</TH>
                   <TH numeric>Monto</TH>
                   <TH>Estado</TH>
                   {puedeMultas && (
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   )}
                 </TR>
@@ -412,7 +468,17 @@ export default async function VehiculoDetallePage({
                       <span className="tabular">RD$ {money(Number(m.amount))}</span>
                     </TD>
                     <TD>
-                      <Badge tone={m.status === 'paid' ? 'success' : m.status === 'dismissed' ? 'neutral' : m.status === 'disputed' ? 'warning' : 'danger'}>
+                      <Badge
+                        tone={
+                          m.status === 'paid'
+                            ? 'success'
+                            : m.status === 'dismissed'
+                              ? 'neutral'
+                              : m.status === 'disputed'
+                                ? 'warning'
+                                : 'danger'
+                        }
+                      >
                         {ESTADO_MULTA[m.status] ?? m.status}
                       </Badge>
                     </TD>
@@ -425,7 +491,7 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="paid" />
-                                <BotonEnvio  className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Pagar
                                 </BotonEnvio>
                               </form>
@@ -433,7 +499,7 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="disputed" />
-                                <BotonEnvio  className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Disputar
                                 </BotonEnvio>
                               </form>
@@ -445,7 +511,7 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="paid" />
-                                <BotonEnvio  className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Pagar
                                 </BotonEnvio>
                               </form>
@@ -453,7 +519,7 @@ export default async function VehiculoDetallePage({
                                 {campos}
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="dismissed" />
-                                <BotonEnvio  className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                                <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                                   Descartar
                                 </BotonEnvio>
                               </form>
@@ -467,7 +533,10 @@ export default async function VehiculoDetallePage({
               </TBody>
             </Table>
             {puedeMultas && (
-              <form action={registrarMultaForm} className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3">
+              <form
+                action={registrarMultaForm}
+                className="flex flex-wrap items-end gap-3 border-t border-[var(--color-border)] p-3"
+              >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Conductor
@@ -482,13 +551,18 @@ export default async function VehiculoDetallePage({
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto
-                  <input name="amount" required inputMode="decimal" className={`tabular ${claseInput}`} />
+                  <input
+                    name="amount"
+                    required
+                    inputMode="decimal"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Razon
                   <input name="reason" required className={claseInput} />
                 </label>
-                <BotonEnvio  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="receipt_long" size={14} />
                   Registrar
                 </BotonEnvio>

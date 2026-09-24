@@ -30,9 +30,13 @@ async function asegurarConfig(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.ecf_config (tenant_id) values (${ctx.tenantId})
-    on conflict (tenant_id) do nothing`)
+    on conflict (tenant_id) do nothing`,
+  )
 
   revalidatePath('/facturacion-electronica')
   return { ok: true }
@@ -87,12 +91,16 @@ async function cambiarContingencia(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Esa contingencia no existe.' }
   }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.ecf_config
     set contingencia = ${apagar ? null : modo},
         contingencia_desde = ${apagar ? null : new Date().toISOString()},
         updated_at = now()
-    where tenant_id = ${ctx.tenantId}`)
+    where tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath('/facturacion-electronica')
   return { ok: true }
@@ -112,10 +120,14 @@ async function rotarToken(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     update public.ecf_config
     set endpoint_token = replace(gen_random_uuid()::text, '-', ''), updated_at = now()
-    where tenant_id = ${ctx.tenantId}`)
+    where tenant_id = ${ctx.tenantId}`,
+  )
 
   revalidatePath('/facturacion-electronica')
   return { ok: true }
@@ -123,13 +135,21 @@ async function rotarToken(fd: FormData): Promise<ActionResult> {
 
 // ── Versiones para <form action> ────────────────────────────────────────
 export async function asegurarConfigForm(fd: FormData): Promise<void> {
-  await anotarAviso(await asegurarConfig(fd), 'asegurarConfig', 'Listo, ya puedes declarar tus URL.')
+  await anotarAviso(
+    await asegurarConfig(fd),
+    'asegurarConfig',
+    'Listo, ya puedes declarar tus URL.',
+  )
 }
 export async function cambiarAmbienteForm(fd: FormData): Promise<void> {
   await anotarAviso(await cambiarAmbiente(fd), 'cambiarAmbiente', 'Listo, cambiamos el ambiente.')
 }
 export async function cambiarContingenciaForm(fd: FormData): Promise<void> {
-  await anotarAviso(await cambiarContingencia(fd), 'cambiarContingencia', 'Listo, actualizamos la contingencia.')
+  await anotarAviso(
+    await cambiarContingencia(fd),
+    'cambiarContingencia',
+    'Listo, actualizamos la contingencia.',
+  )
 }
 export async function rotarTokenForm(fd: FormData): Promise<void> {
   await anotarAviso(

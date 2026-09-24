@@ -15,7 +15,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { saldoPrestamo } from '@regb/operations'
+import { saldoPrestamo, totalAPagarPrestamo } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -24,7 +24,7 @@ import { ESTADO_PRESTAMO, TIPO_PRESTAMO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Prestamos & Adelantos · REGB ERP' }
+export const metadata = { title: 'Préstamos & Adelantos · REGB ERP' }
 
 interface EmpleadoOption {
   id: string
@@ -36,7 +36,9 @@ interface PrestamoRow {
   employee_name: string
   loan_type: string
   principal: string
+  installments: number
   installment_amount: string
+  monthly_rate: string
   status: string
 }
 
@@ -69,7 +71,8 @@ export default async function BeneficiosPage({
 
       const p = await tx<PrestamoRow[]>`
         select l.id, e.first_name || ' ' || e.last_name as employee_name, l.loan_type,
-               l.principal::text, l.installment_amount::text, l.status
+               l.principal::text, l.installments, l.installment_amount::text,
+               l.monthly_rate::text, l.status
         from public.benefit_loans l
         join public.employees e on e.id = l.employee_id
         where l.tenant_id = ${ctx.tenantId}
@@ -92,7 +95,18 @@ export default async function BeneficiosPage({
 
   const prestamosConSaldo = prestamos.map((p) => ({
     ...p,
-    saldo: saldoPrestamo(Number(p.principal), pagosPorId.get(p.id) ?? []),
+    // Con interes, el saldo es contra todas las cuotas, no contra el
+    // principal: si no, el prestamo se daba por saldado sin cobrar el
+    // interes pactado (0138).
+    saldo: saldoPrestamo(
+      totalAPagarPrestamo(
+        Number(p.principal),
+        p.installments,
+        Number(p.installment_amount),
+        Number(p.monthly_rate),
+      ),
+      pagosPorId.get(p.id) ?? [],
+    ),
   }))
 
   const activos = prestamosConSaldo.filter((p) => p.status === 'active')
@@ -110,11 +124,11 @@ export default async function BeneficiosPage({
         <PageHeader
           icon="volunteer_activism"
           title="Prestamos & Adelantos"
-          description="El saldo se deriva siempre de los pagos reales -nunca un numero guardado que se desincroniza-."
+          description="La cuota se descuenta sola en cada nómina que se procesa. Si el empleado paga por su cuenta, regístralo aquí: el saldo sale siempre de los pagos."
           actions={
             <a
               href={`/beneficios/planes${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="health_and_safety" size={18} />
               Planes & Inscripciones
@@ -145,7 +159,7 @@ export default async function BeneficiosPage({
                 <TH>Estado</TH>
                 {puedePagar && (
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 )}
               </TR>
@@ -167,26 +181,47 @@ export default async function BeneficiosPage({
                     </span>
                   </TD>
                   <TD>
-                    <Badge tone={badgeTono(p.status)}>{ESTADO_PRESTAMO[p.status] ?? p.status}</Badge>
+                    <Badge tone={badgeTono(p.status)}>
+                      {ESTADO_PRESTAMO[p.status] ?? p.status}
+                    </Badge>
                   </TD>
                   {puedePagar && (
                     <TD>
                       {p.status === 'active' && (
-                        <form action={registrarPagoForm} className="flex items-center gap-1.5">
+                        // Un pago que el empleado hizo POR SU CUENTA. Antes este
+                        // boton lo anotaba como "por nomina" sin nomina: bajaba
+                        // el saldo sin que nadie pagara, y la siguiente nomina
+                        // descontaba la cuota otra vez. Lo de nomina lo registra
+                        // procesarPeriodo() solo (0132).
+                        <form
+                          action={registrarPagoForm}
+                          className="flex flex-wrap items-center gap-1.5"
+                        >
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="loanId" value={p.id} />
-                          <input type="hidden" name="source" value="payroll" />
                           <input
-                            type="hidden"
                             name="amount"
-                            value={Math.min(p.saldo, Number(p.installment_amount))}
+                            aria-label="Monto del pago"
+                            inputMode="decimal"
+                            required
+                            defaultValue={Math.min(p.saldo, Number(p.installment_amount)).toFixed(
+                              2,
+                            )}
+                            className="tabular h-8 w-24 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
                           />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                          <select
+                            name="source"
+                            aria-label="Como pago"
+                            defaultValue="cash"
+                            className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                          >
+                            <option value="cash">Efectivo</option>
+                            <option value="transfer">Transferencia</option>
+                          </select>
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                             <Icon name="payments" size={14} />
-                            Registrar cuota
+                            Registrar pago
                           </BotonEnvio>
                         </form>
                       )}
@@ -229,15 +264,32 @@ export default async function BeneficiosPage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto (RD$)
-                  <input name="principal" required inputMode="decimal" placeholder="0.00" className={`tabular ${claseInput}`} />
+                  <input
+                    name="principal"
+                    required
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cuotas
-                  <input name="installments" required inputMode="numeric" placeholder="12" className={`tabular ${claseInput}`} />
+                  <input
+                    name="installments"
+                    required
+                    inputMode="numeric"
+                    placeholder="12"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Tasa mensual (opcional)
-                  <input name="monthlyRate" inputMode="decimal" placeholder="0" className={`tabular ${claseInput}`} />
+                  Interés mensual % (opcional)
+                  <input
+                    name="monthlyRate"
+                    inputMode="decimal"
+                    placeholder="0"
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha de inicio
@@ -247,15 +299,15 @@ export default async function BeneficiosPage({
                   Nota (opcional)
                   <input name="notes" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="send" size={18} />
                   Registrar
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                La cuota se calcula sola -sin interes por defecto, el caso tipico de un prestamo interno-.
+                La cuota se calcula sola y se descuenta en cada nómina desde la fecha de inicio. Sin
+                interés por defecto; con interés, escribe el porcentaje mensual (1.5 = 1.5 % al
+                mes).
               </p>
             </CardBody>
           </Card>

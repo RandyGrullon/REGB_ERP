@@ -12,7 +12,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'bank-rec',
-  name: 'Conciliacion bancaria',
+  name: 'Conciliación bancaria',
   description: 'Import de estados de cuenta y emparejamiento asistido con partidas pendientes.',
   icon: 'compare_arrows',
   category: 'advanced',
@@ -37,7 +37,7 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/conciliacion', label: 'Conciliacion', perm: 'bank-rec.view' },
+    { path: '/conciliacion', label: 'Conciliación', perm: 'bank-rec.view' },
     { path: '/conciliacion/:id', label: 'Import', perm: 'bank-rec.view', hidden: true },
   ],
 

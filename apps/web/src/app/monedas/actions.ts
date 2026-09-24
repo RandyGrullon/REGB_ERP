@@ -28,7 +28,9 @@ export async function ponerTasa(fd: FormData): Promise<ActionResult> {
   const permiso = exigir(ctx, 'multicurrency', 'multicurrency.rate.set')
   if (!permiso.ok) return permiso
 
-  const currencyCode = String(fd.get('currencyCode') ?? '').trim().toUpperCase()
+  const currencyCode = String(fd.get('currencyCode') ?? '')
+    .trim()
+    .toUpperCase()
   const rateDate = String(fd.get('rateDate') ?? '').trim() || new Date().toISOString().slice(0, 10)
   const rate = num(String(fd.get('rate') ?? ''))
 

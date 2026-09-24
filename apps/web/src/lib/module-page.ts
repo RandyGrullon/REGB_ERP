@@ -240,6 +240,12 @@ export async function modulePage(
       activePlatform: platform,
       demoMode: r.demo,
       isProvider: session?.isProvider ?? false,
+      // Los enlaces del pie del menu, solo a quien le sirven: un cajero no
+      // pide modulos -le cuestan al dueño- ni administra permisos.
+      puedeMarketplace:
+        permisoDelRol(r.ctx, 'marketplace', 'subscription.manage').ok ||
+        permisoDelRol(r.ctx, 'marketplace', 'marketplace.view').ok,
+      puedeRoles: permisoDelRol(r.ctx, 'rbac', 'rbac.role.view').ok,
       aviso,
       guia: guiaDelPaso(params, r.ctx.demoQs),
       data: {
@@ -328,10 +334,12 @@ async function buildSearchIndex(r: Resolved): Promise<SearchEntry[]> {
   // Registros: nombres reales del tenant, bajo RLS.
   const rows = await asUser(r.ctx.userId, r.ctx.tenantId, async (tx) => {
     const productos = r.ctx.licensedModules.has('products')
-      ? await tx<{ name: string; sku: string }[]>`
-          select name, sku from public.products
+      ? // 200 y no 50: un colmado tiene cientos de productos y con 50 la
+        // busqueda no encontraba casi nada pasada la "C".
+        await tx<{ id: string; name: string; sku: string }[]>`
+          select id::text, name, sku from public.products
           where tenant_id = ${r.ctx.tenantId} and active
-          order by name limit 50`
+          order by name limit 200`
       : []
     const gente = r.ctx.licensedModules.has('users')
       ? await tx<{ display_name: string }[]>`
@@ -345,7 +353,9 @@ async function buildSearchIndex(r: Resolved): Promise<SearchEntry[]> {
       type: 'registro',
       label: p.name,
       detail: `Producto · ${p.sku}`,
-      path: '/products',
+      // A la ficha del producto, no a la lista: encontrarlo y tener que
+      // buscarlo otra vez en la tabla era buscar dos veces.
+      path: `/products/${p.id}`,
     })
   }
   for (const g of rows.gente) {
@@ -396,6 +406,20 @@ export function exigir(
     return { ok: false, error: MENSAJE_SOLO_LECTURA }
   }
   return permisoDelRol(ctx, moduleId, accion, amount)
+}
+
+/**
+ * Quien entra al marketplace y quien pide. Pedir le sube la factura al
+ * dueño: es `subscription.manage` (el Owner; el Admin de fabrica lo tiene
+ * negado, 0006), el mismo permiso que exige `solicitarActivacion`. Ver el
+ * catalogo es eso o `marketplace.view`. Un cajero no entra: antes veia la
+ * mensualidad del dueño y el boton de pedir con solo escribir la ruta.
+ */
+export function accesoMarketplace(userId: string, role: Role): { ver: boolean; pedir: boolean } {
+  const ctx = { userId, role, activeModules: new Set(['marketplace']) }
+  const pedir = can('subscription.manage', { module: 'marketplace' }, ctx).allowed
+  const ver = pedir || can('marketplace.view', { module: 'marketplace' }, ctx).allowed
+  return { ver, pedir }
 }
 
 /** Solo el rol y los modulos, sin mirar el estado de cuenta. */

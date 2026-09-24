@@ -18,7 +18,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'maintenance',
   name: 'Mantenimiento (CMMS)',
-  description: 'Preventivo y correctivo, ordenes de trabajo, repuestos y MTBF.',
+  description: 'Preventivo y correctivo, órdenes de trabajo, repuestos y MTBF.',
   icon: 'build',
   category: 'advanced',
   version: '0.1.0',

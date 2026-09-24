@@ -1,14 +1,5 @@
 import { notFound } from 'next/navigation'
-import {
-  Badge,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Icon,
-  PageHeader,
-  StatCard,
-} from '@regb/ui'
+import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCard } from '@regb/ui'
 import {
   avanceChecklist,
   costoRepuestos,
@@ -74,9 +65,12 @@ const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
-const money = (n: number) => `RD$${n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const money = (n: number) =>
+  `RD$${n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
-const tonoEstado = (s: EstadoOrdenServicio): 'success' | 'danger' | 'warning' | 'info' | 'neutral' => {
+const tonoEstado = (
+  s: EstadoOrdenServicio,
+): 'success' | 'danger' | 'warning' | 'info' | 'neutral' => {
   if (s === 'done') return 'success'
   if (s === 'cancelled') return 'danger'
   if (s === 'in_progress') return 'info'
@@ -103,46 +97,55 @@ export default async function OrdenServicioPage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'field-service')
 
-  const { head, pasos, repuestos, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<OrdenHead[]>`
+  const { head, pasos, repuestos, productos } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<OrdenHead[]>`
       select so.id, so.code, c.name as customer_name, so.status, so.priority, so.description,
              so.address, so.scheduled_at::text, so.started_at::text, so.completed_at::text,
              so.signed_by, so.signed_at::text
       from public.service_orders so
       join public.customers c on c.id = so.customer_id
       where so.id = ${id} and so.tenant_id = ${ctx.tenantId}`
-    if (!h) return { head: null, pasos: [], repuestos: [], productos: [] }
+      if (!h) return { head: null, pasos: [], repuestos: [], productos: [] }
 
-    const p = await tx<Paso[]>`
+      const p = await tx<Paso[]>`
       select id, label, required, done, done_at::text
       from public.service_checklist_items
       where tenant_id = ${ctx.tenantId} and order_id = ${id}
       order by position, created_at`
 
-    const r = await tx<Repuesto[]>`
+      const r = await tx<Repuesto[]>`
       select sp.id, sp.description, sp.qty::text, sp.unit_cost::text, pr.name as product_name
       from public.service_parts sp
       left join public.products pr on pr.id = sp.product_id
       where sp.tenant_id = ${ctx.tenantId} and sp.order_id = ${id}
       order by sp.created_at`
 
-    const pr = await tx<ProductoOption[]>`
+      const pr = await tx<ProductoOption[]>`
       select id, name, sku, cost::text from public.products
       where tenant_id = ${ctx.tenantId} and active order by name limit 300`
 
-    return { head: h, pasos: p, repuestos: r, productos: pr }
-  })
+      return { head: h, pasos: p, repuestos: r, productos: pr }
+    },
+  )
 
   if (!head) notFound()
 
   const terminada = head.status === 'done' || head.status === 'cancelled'
   const hechos = pasos.filter((p) => p.done).length
   const avance = avanceChecklist(hechos, pasos.length)
-  const costo = costoRepuestos(repuestos.map((r) => ({ qty: Number(r.qty), unitCost: Number(r.unit_cost) })))
+  const costo = costoRepuestos(
+    repuestos.map((r) => ({ qty: Number(r.qty), unitCost: Number(r.unit_cost) })),
+  )
   const minutos =
     head.started_at === null
       ? null
-      : minutosEnSitio(new Date(head.started_at), head.completed_at === null ? null : new Date(head.completed_at))
+      : minutosEnSitio(
+          new Date(head.started_at),
+          head.completed_at === null ? null : new Date(head.completed_at),
+        )
   // El mismo calculo que la accion: aqui es para EXPLICAR, alla es para decidir.
   const faltaParaCerrar = motivoNoCierre(pasos, head.signed_by)
 
@@ -163,9 +166,14 @@ export default async function OrdenServicioPage({
         <PageHeader
           icon="handyman"
           title={`${head.code} · ${head.customer_name}`}
-          crumbs={[{ label: 'Servicio en campo', href: `/servicio-en-campo${qs}` }, { label: head.code }]}
+          crumbs={[
+            { label: 'Servicio en campo', href: `/servicio-en-campo${qs}` },
+            { label: head.code },
+          ]}
           description={head.description}
-          actions={<Badge tone={tonoEstado(head.status)}>{ESTADO_ORDEN[head.status] ?? head.status}</Badge>}
+          actions={
+            <Badge tone={tonoEstado(head.status)}>{ESTADO_ORDEN[head.status] ?? head.status}</Badge>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -175,14 +183,18 @@ export default async function OrdenServicioPage({
             hint={`${hechos} de ${pasos.length}`}
           />
           <StatCard label="Repuestos" value={money(costo)} />
-          <StatCard label="Tiempo en sitio" value={minutos === null ? 'en curso' : `${minutos} min`} />
+          <StatCard
+            label="Tiempo en sitio"
+            value={minutos === null ? 'en curso' : `${minutos} min`}
+          />
           <StatCard label="Prioridad" value={PRIORIDAD_ORDEN[head.priority] ?? head.priority} />
         </section>
 
         {head.address !== null && (
           <p className="text-xs text-[var(--color-text-muted)]">
             <Icon name="location_on" size={14} /> {head.address}
-            {head.scheduled_at !== null && ` · agendada ${new Date(head.scheduled_at).toLocaleString('es-DO')}`}
+            {head.scheduled_at !== null &&
+              ` · agendada ${new Date(head.scheduled_at).toLocaleString('es-DO')}`}
           </p>
         )}
 
@@ -192,7 +204,7 @@ export default async function OrdenServicioPage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="scheduled" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="event" size={14} />
                   Agendar
                 </BotonEnvio>
@@ -202,7 +214,7 @@ export default async function OrdenServicioPage({
               <form action={transicionarOrdenForm}>
                 {campos}
                 <input type="hidden" name="siguiente" value="in_progress" />
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="play_arrow" size={14} />
                   Llegue al sitio
                 </BotonEnvio>
@@ -211,7 +223,7 @@ export default async function OrdenServicioPage({
             <form action={transicionarOrdenForm}>
               {campos}
               <input type="hidden" name="siguiente" value="cancelled" />
-              <BotonEnvio  className={botonSecundarioClase}>
+              <BotonEnvio className={botonSecundarioClase}>
                 <Icon name="close" size={14} />
                 Cancelar orden
               </BotonEnvio>
@@ -226,8 +238,8 @@ export default async function OrdenServicioPage({
           <CardBody>
             {pasos.length === 0 ? (
               <p className="py-2 text-xs text-[var(--color-text-muted)]">
-                Esta orden todavia no tiene checklist. Sin pasos obligatorios se puede cerrar con solo la firma -pero
-                entonces no queda constancia de que se reviso-.
+                Esta orden todavía no tiene checklist. Sin pasos obligatorios se puede cerrar con
+                solo la firma -pero entonces no queda constancia de que se reviso-.
               </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
@@ -245,7 +257,8 @@ export default async function OrdenServicioPage({
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
                         {p.required ? 'Obligatorio' : 'Opcional'}
-                        {p.done_at !== null && ` · marcado ${new Date(p.done_at).toLocaleString('es-DO')}`}
+                        {p.done_at !== null &&
+                          ` · marcado ${new Date(p.done_at).toLocaleString('es-DO')}`}
                       </p>
                     </div>
                     {puedeEjecutar && !terminada ? (
@@ -253,15 +266,17 @@ export default async function OrdenServicioPage({
                         {campos}
                         <input type="hidden" name="itemId" value={p.id} />
                         <BotonEnvio
-                          
                           className={p.done ? botonSecundarioClase : botonClase}
-                          aria-label={p.done ? `Desmarcar ${p.label}` : `Marcar ${p.label}`}>
+                          aria-label={p.done ? `Desmarcar ${p.label}` : `Marcar ${p.label}`}
+                        >
                           <Icon name={p.done ? 'undo' : 'check'} size={14} />
                           {p.done ? 'Desmarcar' : 'Marcar'}
                         </BotonEnvio>
                       </form>
                     ) : (
-                      <Badge tone={p.done ? 'success' : 'neutral'}>{p.done ? 'Hecho' : 'Pendiente'}</Badge>
+                      <Badge tone={p.done ? 'success' : 'neutral'}>
+                        {p.done ? 'Hecho' : 'Pendiente'}
+                      </Badge>
                     )}
                   </li>
                 ))}
@@ -273,13 +288,18 @@ export default async function OrdenServicioPage({
                 {campos}
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Paso
-                  <input name="label" required className={inputClase} placeholder="Revisar presion del gas" />
+                  <input
+                    name="label"
+                    required
+                    className={inputClase}
+                    placeholder="Revisar presion del gas"
+                  />
                 </label>
                 <label className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="required" defaultChecked />
                   Obligatorio para cerrar
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Agregar paso
                 </BotonEnvio>
@@ -295,12 +315,16 @@ export default async function OrdenServicioPage({
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
               {repuestos.length === 0 && (
-                <li className="py-2 text-xs text-[var(--color-text-muted)]">Todavia no se registro ningun repuesto.</li>
+                <li className="py-2 text-xs text-[var(--color-text-muted)]">
+                  Todavía no se registro ningún repuesto.
+                </li>
               )}
               {repuestos.map((r) => (
                 <li key={r.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm text-[var(--color-text-primary)]">{r.description}</p>
+                    <p className="truncate text-sm text-[var(--color-text-primary)]">
+                      {r.description}
+                    </p>
                     {r.product_name !== null && (
                       <p className="text-xs text-[var(--color-text-muted)]">{r.product_name}</p>
                     )}
@@ -318,7 +342,7 @@ export default async function OrdenServicioPage({
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Producto (opcional)
                   <select name="productId" defaultValue="" className={inputClase}>
-                    <option value="">Sin producto del catalogo</option>
+                    <option value="">Sin producto del catálogo</option>
                     {productos.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.sku} · {p.name}
@@ -328,17 +352,33 @@ export default async function OrdenServicioPage({
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Descripcion
-                  <input name="description" required className={inputClase} placeholder="Capacitor 35uF" />
+                  <input
+                    name="description"
+                    required
+                    className={inputClase}
+                    placeholder="Capacitor 35uF"
+                  />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cantidad
-                  <input name="qty" required inputMode="decimal" defaultValue="1" className={`${inputClase} tabular`} />
+                  <input
+                    name="qty"
+                    required
+                    inputMode="decimal"
+                    defaultValue="1"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Costo unitario
-                  <input name="unitCost" required inputMode="decimal" className={`${inputClase} tabular`} />
+                  <input
+                    name="unitCost"
+                    required
+                    inputMode="decimal"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Registrar
                 </BotonEnvio>
@@ -365,7 +405,9 @@ export default async function OrdenServicioPage({
             ) : head.status === 'in_progress' ? (
               <>
                 {faltaParaCerrar !== null && pasos.some((p) => p.required && !p.done) && (
-                  <p className="mb-3 text-xs text-[var(--color-semantic-text-warning)]">{faltaParaCerrar}</p>
+                  <p className="mb-3 text-xs text-[var(--color-semantic-text-warning)]">
+                    {faltaParaCerrar}
+                  </p>
                 )}
                 {puedeEjecutar && (
                   <form action={transicionarOrdenForm} className="flex flex-wrap items-end gap-3">
@@ -373,9 +415,14 @@ export default async function OrdenServicioPage({
                     <input type="hidden" name="siguiente" value="done" />
                     <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Nombre de quien recibe
-                      <input name="signedBy" required className={inputClase} placeholder="Ana Rosario" />
+                      <input
+                        name="signedBy"
+                        required
+                        className={inputClase}
+                        placeholder="Ana Rosario"
+                      />
                     </label>
-                    <BotonEnvio  className={botonClase}>
+                    <BotonEnvio className={botonClase}>
                       <Icon name="draw" size={14} />
                       Cerrar con firma
                     </BotonEnvio>

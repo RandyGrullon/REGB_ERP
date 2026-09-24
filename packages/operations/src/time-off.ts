@@ -55,3 +55,22 @@ export function saldoVacaciones(
 ): number {
   return Math.max(0, vacacionesAcumuladas(fechaContratacion, fechaCorte) - diasYaTomados)
 }
+
+/**
+ * Si una solicitud de vacaciones cabe en el saldo -null si cabe; si no,
+ * el mensaje para quien la pide o la aprueba-. `saldo` ya viene sin lo
+ * comprometido: al PEDIR, lo aprobado y lo pendiente (dos solicitudes de
+ * 10 dias con 14 de saldo no caben las dos); al APROBAR, solo lo aprobado.
+ *
+ * Hasta 0138 no se revisaba en ningun lado: se podian pedir y aprobar 30
+ * dias a quien tenia 0, y el saldo se quedaba en 0 -nunca negativo- como
+ * si no hubiera pasado nada.
+ */
+export function validarDiasDeVacaciones(saldo: number, diasPedidos: number): string | null {
+  if (diasPedidos <= saldo) return null
+  const dias = (n: number) => `${n} día${n === 1 ? '' : 's'}`
+  if (saldo <= 0) {
+    return `No quedan días de vacaciones disponibles y se piden ${dias(diasPedidos)}. El derecho se gana al cumplir cada año de servicio.`
+  }
+  return `Se piden ${dias(diasPedidos)} y solo quedan ${dias(saldo)} de vacaciones disponibles.`
+}

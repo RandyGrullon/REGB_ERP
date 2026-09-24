@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { pasoDesdeGuia } from '@/app/tutorial/actions'
+import { BotonEnvio } from '@/components/BotonEnvio'
 
 /**
  * La guia que acompaña al tour DENTRO de la pantalla de destino.
@@ -45,16 +47,23 @@ export interface PasoGuia {
 
 export function GuiaFlotante({ guia }: { guia: PasoGuia }) {
   const [oculta, setOculta] = useState(false)
-  const [resaltado, setResaltado] = useState(false)
+  // En demo el negocio y el rol viajan en la URL; la accion los necesita.
+  const demo = useMemo(() => {
+    const q = new URLSearchParams(guia.tutorial.split('?')[1] ?? '')
+    return { tenant: q.get('tenant') ?? '', rol: q.get('rol') ?? '' }
+  }, [guia.tutorial])
 
   useEffect(() => {
     if (guia.target === undefined || oculta) return
     const el = document.querySelector(`[data-tour="${CSS.escape(guia.target)}"]`)
     if (!(el instanceof HTMLElement)) {
-      setResaltado(false)
+      // Un paso sin su ancla en la pantalla es trabajo pendiente nuestro, no
+      // algo que el cliente deba leer: antes salia en la tarjeta.
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(`[guía] falta data-tour="${guia.target}" en esta pantalla`)
+      }
       return
     }
-    setResaltado(true)
     el.scrollIntoView({ block: 'center', behavior: 'smooth' })
     el.classList.add('guia-resaltado')
     return () => el.classList.remove('guia-resaltado')
@@ -91,7 +100,6 @@ export function GuiaFlotante({ guia }: { guia: PasoGuia }) {
           <div className="min-w-0 flex-1">
             <p className="text-xs text-[var(--color-text-muted)]">
               Tutorial · paso {guia.paso} de {guia.total}
-              {guia.target !== undefined && !resaltado && ' · esta pantalla aun no señala el elemento'}
             </p>
             <h2 className="mt-1 truncate font-medium text-[var(--color-text-primary)]">
               {guia.titulo}
@@ -128,21 +136,22 @@ export function GuiaFlotante({ guia }: { guia: PasoGuia }) {
         </div>
 
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {guia.siguiente !== null ? (
-            <a
-              href={guia.siguiente}
-              className="h-9 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              Siguiente paso
-            </a>
-          ) : (
-            <a
-              href={guia.tutorial}
-              className="h-9 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium leading-9 text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-            >
-              Terminar el tour
-            </a>
-          )}
+          {/* Guarda el avance y despues navega: con un enlace, recorrer
+              las pantallas no contaba para nada. */}
+          <form action={pasoDesdeGuia}>
+            <input type="hidden" name="tenant" value={demo.tenant} />
+            <input type="hidden" name="rol" value={demo.rol} />
+            <input type="hidden" name="tourId" value={guia.tourId} />
+            <input type="hidden" name="step" value={guia.paso - 1} />
+            <input type="hidden" name="destino" value={guia.siguiente ?? guia.tutorial} />
+            <BotonEnvio className="h-9 rounded-full bg-[var(--color-brand)] px-3 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+              {guia.siguiente !== null
+                ? 'Siguiente paso'
+                : guia.paso >= guia.total
+                  ? 'Terminar el tour'
+                  : 'Seguir en el tutorial'}
+            </BotonEnvio>
+          </form>
           <a
             href={guia.tutorial}
             className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm leading-9 text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"

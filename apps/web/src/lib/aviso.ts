@@ -42,12 +42,22 @@ export { COOKIE_AVISO, type Aviso } from './aviso-comun'
  * Aurora: "Guardamos tu cambio" antes que "Operacion exitosa".
  */
 const VERBOS: { prueba: RegExp; texto: string }[] = [
-  { prueba: /^(crear|agregar|añadir|nuevo|registrar|abrir|emitir|generar|invitar|importar)/i, texto: 'Listo, lo agregamos.' },
+  {
+    prueba: /^(crear|agregar|añadir|nuevo|registrar|abrir|emitir|generar|invitar|importar)/i,
+    texto: 'Listo, lo agregamos.',
+  },
   { prueba: /^(eliminar|borrar|quitar|remover)/i, texto: 'Listo, lo eliminamos.' },
   { prueba: /^(anular|cancelar)/i, texto: 'Listo, quedo anulado.' },
-  { prueba: /^(cerrar|finalizar|completar|terminar|confirmar|aprobar|entregar|recibir|pagar|cobrar|conciliar|contabilizar|enviar|publicar|activar)/i, texto: 'Listo, quedo hecho.' },
+  {
+    prueba:
+      /^(cerrar|finalizar|completar|terminar|confirmar|aprobar|entregar|recibir|pagar|cobrar|conciliar|contabilizar|enviar|publicar|activar)/i,
+    texto: 'Listo, quedo hecho.',
+  },
   { prueba: /^(rechazar|denegar)/i, texto: 'Listo, quedo rechazado.' },
-  { prueba: /^(alternar|cambiar|mover|transicionar|reprogramar|asignar|marcar)/i, texto: 'Listo, lo cambiamos.' },
+  {
+    prueba: /^(alternar|cambiar|mover|transicionar|reprogramar|asignar|marcar)/i,
+    texto: 'Listo, lo cambiamos.',
+  },
 ]
 
 export function textoDeExito(accion: string): string {

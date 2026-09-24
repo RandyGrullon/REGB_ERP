@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'performance',
-  name: 'Desempeno',
+  name: 'Desempeño',
   description: 'OKR y KPI, evaluacion 360, reuniones 1:1 y planes de mejora.',
   icon: 'trending_up',
   category: 'advanced',

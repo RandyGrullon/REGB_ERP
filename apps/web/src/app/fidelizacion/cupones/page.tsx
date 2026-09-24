@@ -48,11 +48,7 @@ const badgeEstado = (s: string): 'success' | 'danger' | 'neutral' => {
 }
 
 /** Cupones de fidelizacion (modulo 38): activo hasta redimirse o expirar, ambos terminales. */
-export default async function CuponesPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function CuponesPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'loyalty')
 
@@ -81,37 +77,49 @@ export default async function CuponesPage({
         />
 
         {cupones.length === 0 ? (
-          <EmptyState icon="confirmation_number" title="Todavia no hay ningun cupon" description="Crea el primero abajo." />
+          <EmptyState
+            icon="confirmation_number"
+            title="Todavia no hay ningun cupon"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Codigo</TH>
+                <TH>Código</TH>
                 <TH>Cliente</TH>
                 <TH numeric>Descuento</TH>
                 <TH>Vence</TH>
                 <TH>Estado</TH>
                 <TH>
-                  <span className="sr-only">Accion</span>
+                  <span className="sr-only">Acción</span>
                 </TH>
               </TR>
             </THead>
             <TBody>
               {cupones.map((c) => {
-                const vencido = c.status === 'active' && !cuponVigente(c.expires_at ? new Date(c.expires_at) : null, new Date())
+                const vencido =
+                  c.status === 'active' &&
+                  !cuponVigente(c.expires_at ? new Date(c.expires_at) : null, new Date())
                 return (
                   <TR key={c.id}>
                     <TD className="text-[var(--color-text-primary)]">
                       <Mono>{c.code}</Mono>
                     </TD>
-                    <TD className="text-[var(--color-text-muted)]">{c.customer_name ?? 'Cualquier cliente'}</TD>
+                    <TD className="text-[var(--color-text-muted)]">
+                      {c.customer_name ?? 'Cualquier cliente'}
+                    </TD>
                     <TD numeric>
                       <span className="tabular">
-                        {c.discount_type === 'percentage' ? `${(Number(c.discount_value) * 100).toFixed(0)}%` : `RD$ ${Number(c.discount_value).toLocaleString('es-DO', { minimumFractionDigits: 2 })}`}
+                        {c.discount_type === 'percentage'
+                          ? `${(Number(c.discount_value) * 100).toFixed(0)}%`
+                          : `RD$ ${Number(c.discount_value).toLocaleString('es-DO', { minimumFractionDigits: 2 })}`}
                       </span>
                     </TD>
                     <TD className="text-[var(--color-text-muted)]">
-                      {c.expires_at ? new Date(c.expires_at).toLocaleDateString('es-DO') : 'Sin vencimiento'}
+                      {c.expires_at
+                        ? new Date(c.expires_at).toLocaleDateString('es-DO')
+                        : 'Sin vencimiento'}
                     </TD>
                     <TD>
                       <Badge tone={badgeEstado(vencido ? 'expired' : c.status)}>
@@ -126,9 +134,7 @@ export default async function CuponesPage({
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="couponId" value={c.id} />
                             <input type="hidden" name="siguiente" value="redeemed" />
-                            <BotonEnvio
-                              
-                              className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                               Redimir
                             </BotonEnvio>
                           </form>
@@ -202,9 +208,7 @@ export default async function CuponesPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

@@ -1,17 +1,7 @@
-import {
-  EmptyState,
-  Icon,
-  PageHeader,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
-  Table,
-} from '@regb/ui'
+import { EmptyState, Icon, PageHeader, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
 import { esDeducibleDeItbis } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { exigir, modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { reembolsarGastoForm, resolverGastoForm } from '../actions'
 import { CATEGORIA_GASTO } from '../estados'
@@ -49,10 +39,16 @@ export default async function AprobarGastosPage({
   searchParams: Promise<DemoParams>
 }) {
   const params = await searchParams
-  const { ctx, shell } = await modulePage(params, 'expenses')
+  // La ruta pide aprobar, como declara el manifest: con solo `expenses.view`
+  // se veian los botones y cada clic terminaba en error.
+  const { ctx, shell } = await modulePage(params, 'expenses', 'expenses.approve')
+  const puedeReembolsar = exigir(ctx, 'expenses', 'expenses.reimburse').ok
 
-  const [porAprobar, porReembolsar, periodos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const a = await tx<GastoRow[]>`
+  const [porAprobar, porReembolsar, periodos] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const a = await tx<GastoRow[]>`
       select x.id, e.first_name || ' ' || e.last_name as employee_name, x.category,
              x.expense_date::text, x.amount::text, x.vendor_name, x.ncf
       from public.expenses x
@@ -60,7 +56,7 @@ export default async function AprobarGastosPage({
       where x.tenant_id = ${ctx.tenantId} and x.status = 'submitted'
       order by x.created_at`
 
-    const r = await tx<GastoRow[]>`
+      const r = await tx<GastoRow[]>`
       select x.id, e.first_name || ' ' || e.last_name as employee_name, x.category,
              x.expense_date::text, x.amount::text, x.vendor_name, x.ncf
       from public.expenses x
@@ -68,12 +64,23 @@ export default async function AprobarGastosPage({
       where x.tenant_id = ${ctx.tenantId} and x.status = 'approved'
       order by x.decided_at`
 
-    const p = await tx<{ id: string; period_start: string; period_end: string }[]>`
+      // Solo las nominas que todavia se pueden pagar: una procesada ya no
+      // suma nada (la base lo rechaza) y ofrecerla era invitar al error.
+      const p = await tx<{ id: string; period_start: string; period_end: string }[]>`
       select id, period_start::text, period_end::text from public.payroll_periods
-      where tenant_id = ${ctx.tenantId} order by period_start desc limit 12`
+      where tenant_id = ${ctx.tenantId} and status = 'draft'
+      order by period_start limit 12`
 
-    return [a, r, p.map((x) => ({ id: x.id, label: `${x.period_start} → ${x.period_end}` }))] as const
-  })
+      return [
+        a,
+        r,
+        p.map((x) => ({
+          id: x.id,
+          label: `Nómina ${fechaCorta(x.period_start)} – ${fechaCorta(x.period_end)}`,
+        })),
+      ] as const
+    },
+  )
 
   const qs = ctx.demoQs
 
@@ -86,7 +93,7 @@ export default async function AprobarGastosPage({
         <PageHeader
           icon="fact_check"
           title="Aprobar gastos"
-          description="Reportado → aprobado o rechazado. Aprobado → reembolsado. Una vez rechazado o reembolsado, el gasto queda fijo."
+          description="Reportado → aprobado o rechazado. Aprobado → reembolsado. Por nómina, el reembolso se suma al neto de la nómina en borrador que elijas, sin TSS ni ISR. Una vez rechazado o reembolsado, el gasto queda fijo."
           crumbs={[{ label: 'Gastos', href: `/gastos${qs}` }, { label: 'Aprobar' }]}
         />
 
@@ -95,18 +102,18 @@ export default async function AprobarGastosPage({
             Por aprobar
           </h2>
           {porAprobar.length === 0 ? (
-            <EmptyState icon="fact_check" title="No hay ningun gasto por aprobar" description="" />
+            <EmptyState icon="fact_check" title="No hay ningún gasto por aprobar" description="" />
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Empleado</TH>
-                  <TH>Categoria</TH>
+                  <TH>Categoría</TH>
                   <TH>Fecha</TH>
                   <TH>Proveedor</TH>
                   <TH numeric>Monto</TH>
                   <TH>
-                    <span className="sr-only">Accion</span>
+                    <span className="sr-only">Acción</span>
                   </TH>
                 </TR>
               </THead>
@@ -127,9 +134,7 @@ export default async function AprobarGastosPage({
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={g.id} />
                           <input type="hidden" name="decision" value="approved" />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-semantic-success)] px-2 text-xs font-medium text-white hover:opacity-90">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                             <Icon name="check" size={14} />
                             Aprobar
                           </BotonEnvio>
@@ -139,9 +144,7 @@ export default async function AprobarGastosPage({
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={g.id} />
                           <input type="hidden" name="decision" value="rejected" />
-                          <BotonEnvio
-                            
-                            className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="close" size={14} />
                             Rechazar
                           </BotonEnvio>
@@ -160,16 +163,20 @@ export default async function AprobarGastosPage({
             Aprobados, por reembolsar
           </h2>
           {porReembolsar.length === 0 ? (
-            <EmptyState icon="payments" title="No hay ningun gasto aprobado sin reembolsar" description="" />
+            <EmptyState
+              icon="payments"
+              title="No hay ningún gasto aprobado sin reembolsar"
+              description=""
+            />
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Empleado</TH>
-                  <TH>Categoria</TH>
+                  <TH>Categoría</TH>
                   <TH numeric>Monto</TH>
                   <TH>ITBIS</TH>
-                  <TH>Reembolsar</TH>
+                  {puedeReembolsar && <TH>Reembolsar</TH>}
                 </TR>
               </THead>
               <TBody>
@@ -183,34 +190,38 @@ export default async function AprobarGastosPage({
                     <TD className="text-xs text-[var(--color-text-muted)]">
                       {esDeducibleDeItbis(g.ncf) ? 'Deducible' : 'Sin NCF'}
                     </TD>
-                    <TD>
-                      <form action={reembolsarGastoForm} className="flex items-center gap-1.5">
-                        <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                        <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                        <input type="hidden" name="recordId" value={g.id} />
-                        <select name="method" required defaultValue="transfer" className={claseInput}>
-                          <option value="transfer">Transferencia</option>
-                          <option value="cash">Efectivo</option>
-                          <option value="payroll">Nomina</option>
-                        </select>
-                        {periodos.length > 0 && (
-                          <select name="payrollPeriodId" defaultValue="" className={claseInput}>
-                            <option value="">Sin periodo</option>
+                    {puedeReembolsar && (
+                      <TD>
+                        <form
+                          action={reembolsarGastoForm}
+                          className="flex flex-wrap items-center gap-1.5"
+                        >
+                          <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                          <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                          <input type="hidden" name="recordId" value={g.id} />
+                          {/* Un solo campo: como se paga y, si es por nomina, en cual. */}
+                          <select
+                            name="destino"
+                            required
+                            defaultValue="transfer"
+                            aria-label="Cómo se reembolsa"
+                            className={claseInput}
+                          >
+                            <option value="transfer">Por transferencia</option>
+                            <option value="cash">En efectivo</option>
                             {periodos.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.label}
+                              <option key={p.id} value={`payroll:${p.id}`}>
+                                En la {p.label.toLowerCase()}
                               </option>
                             ))}
                           </select>
-                        )}
-                        <BotonEnvio
-                          
-                          className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                          <Icon name="payments" size={14} />
-                          Reembolsar
-                        </BotonEnvio>
-                      </form>
-                    </TD>
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                            <Icon name="payments" size={14} />
+                            Reembolsar
+                          </BotonEnvio>
+                        </form>
+                      </TD>
+                    )}
                   </TR>
                 ))}
               </TBody>

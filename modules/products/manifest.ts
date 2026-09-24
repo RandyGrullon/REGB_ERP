@@ -8,7 +8,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'products',
   name: 'Productos',
-  description: 'Catalogo de productos con precios, impuestos, categorias y punto de reorden.',
+  description: 'Catálogo de productos con precios, impuestos, categorías y punto de reorden.',
   icon: 'inventory_2',
   category: 'core',
   version: '0.1.0',
@@ -33,7 +33,7 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/products', label: 'Catalogo', perm: 'products.view' },
+    { path: '/products', label: 'Catálogo', perm: 'products.view' },
     {
       path: '/products/categories',
       label: 'Categorias',

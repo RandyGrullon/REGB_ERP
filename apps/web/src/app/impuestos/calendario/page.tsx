@@ -115,11 +115,11 @@ export default async function CalendarioPage({
     obligaciones: calendarioFiscal(p, hoy),
   }))
 
-  const pendientes = bloques.flatMap((b) =>
-    b.obligaciones.filter((o) => estadoDe(o) === 'pending'),
-  )
+  const pendientes = bloques.flatMap((b) => b.obligaciones.filter((o) => estadoDe(o) === 'pending'))
   const vencidas = pendientes.filter((o) => o.vencida)
-  const proxima = pendientes.filter((o) => !o.vencida).sort((a, b) => a.diasRestantes - b.diasRestantes)[0]
+  const proxima = pendientes
+    .filter((o) => !o.vencida)
+    .sort((a, b) => a.diasRestantes - b.diasRestantes)[0]
 
   return (
     <Shell {...shell} activePath="/impuestos/calendario">
@@ -161,7 +161,11 @@ export default async function CalendarioPage({
                 }
               : {})}
           />
-          <StatCard label="Pendientes" value={String(pendientes.length)} hint="en los dos periodos" />
+          <StatCard
+            label="Pendientes"
+            value={String(pendientes.length)}
+            hint="en los dos periodos"
+          />
           <StatCard label="Vencidas" value={String(vencidas.length)} hint="y sin anotar" />
         </section>
 
@@ -172,10 +176,11 @@ export default async function CalendarioPage({
           <Icon name="info" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
           <p className="text-[var(--color-text-secondary)]">
             El sistema no se entera solo de que subiste un archivo: la DGII no le avisa a nadie. El
-            estado de aqui es lo que <strong className="text-[var(--color-text-primary)]">tu</strong>{' '}
-            anotas. Las fechas corren de fin de semana al lunes, pero{' '}
+            estado de aqui es lo que{' '}
+            <strong className="text-[var(--color-text-primary)]">tu</strong> anotas. Las fechas
+            corren de fin de semana al lunes, pero{' '}
             <strong className="text-[var(--color-text-primary)]">no conocen los feriados</strong>:
-            si el lunes es feriado, el plazo real puede ser un dia mas.
+            si el lunes es feriado, el plazo real puede ser un día más.
           </p>
         </div>
 
@@ -217,8 +222,8 @@ export default async function CalendarioPage({
                         </span>
                         <span className="block text-xs text-[var(--color-text-muted)]">
                           {o.vencida
-                            ? `hace ${Math.abs(o.diasRestantes)} dia${Math.abs(o.diasRestantes) === 1 ? '' : 's'}`
-                            : `faltan ${o.diasRestantes} dia${o.diasRestantes === 1 ? '' : 's'}`}
+                            ? `hace ${Math.abs(o.diasRestantes)} día${Math.abs(o.diasRestantes) === 1 ? '' : 's'}`
+                            : `faltan ${o.diasRestantes} día${o.diasRestantes === 1 ? '' : 's'}`}
                         </span>
                       </TD>
                       <TD>
@@ -254,11 +259,7 @@ export default async function CalendarioPage({
                           )}
                           {puedeRegistrar && esInformativo && !listo && (
                             <form action={registrarInformativoForm}>
-                              <input
-                                type="hidden"
-                                name="tenant"
-                                value={qs ? ctx.tenantSlug : ''}
-                              />
+                              <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="form" value={o.form} />
                               <input type="hidden" name="period" value={b.periodo} />

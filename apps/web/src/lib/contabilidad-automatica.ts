@@ -192,7 +192,11 @@ const ventaCajaAnulada: HandlerContable = async (e, sql) => {
       sourceId: saleId,
       asegurar: () => contabilizarVentaCaja(sql, e, saleId),
     },
-    { sourceType: 'pos_sale_void', fecha: v.fecha, descripcion: `Anulacion de la venta de caja ${v.number}` },
+    {
+      sourceType: 'pos_sale_void',
+      fecha: v.fecha,
+      descripcion: `Anulacion de la venta de caja ${v.number}`,
+    },
   )
 }
 
@@ -203,7 +207,9 @@ async function contabilizarFacturaCliente(
   e: EventoPendiente,
   invoiceId: string,
 ): Promise<void> {
-  const [f] = await sql<{ number: string; total: string; tax: string; fecha: string; cliente: string }[]>`
+  const [f] = await sql<
+    { number: string; total: string; tax: string; fecha: string; cliente: string }[]
+  >`
     select i.number, i.total::text, i.tax::text, i.issue_date::text as fecha, c.name as cliente
     from public.customer_invoices i join public.customers c on c.id = i.customer_id
     where i.id = ${invoiceId} and i.tenant_id = ${e.tenant_id}`
@@ -248,7 +254,11 @@ const facturaClienteAnulada: HandlerContable = async (e, sql) => {
       sourceId: invoiceId,
       asegurar: () => contabilizarFacturaCliente(sql, e, invoiceId),
     },
-    { sourceType: 'ar_invoice_void', fecha: hoy!.fecha, descripcion: `Anulacion de la factura ${f.number}` },
+    {
+      sourceType: 'ar_invoice_void',
+      fecha: hoy!.fecha,
+      descripcion: `Anulacion de la factura ${f.number}`,
+    },
   )
 }
 
@@ -313,7 +323,14 @@ const notaCreditoEmitida: HandlerContable = async (e, sql) => {
   const notaId = idDe(e, 'creditNoteId')
   if (!notaId || !(await contabilidadActiva(sql, e.tenant_id))) return
   const [n] = await sql<
-    { number: string; invoice_id: string; total: string; tax: string; fecha: string; factura: string }[]
+    {
+      number: string
+      invoice_id: string
+      total: string
+      tax: string
+      fecha: string
+      factura: string
+    }[]
   >`
     select n.number, n.invoice_id, n.total::text, n.tax::text, n.issue_date::text as fecha,
            i.number as factura

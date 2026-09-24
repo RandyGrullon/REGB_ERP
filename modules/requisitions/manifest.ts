@@ -11,7 +11,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'requisitions',
   name: 'Requisiciones',
-  description: 'Solicitud interna con flujo de aprobacion por monto y jerarquia.',
+  description: 'Solicitud interna con flujo de aprobación por monto y jerarquía.',
   icon: 'assignment',
   category: 'standard',
   version: '0.1.0',

@@ -16,7 +16,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'quotes',
   name: 'Cotizaciones',
-  description: 'Plantillas, versiones, aprobacion y firma electronica.',
+  description: 'Plantillas, versiones, aprobación y firma electrónica.',
   icon: 'description',
   category: 'standard',
   version: '0.1.0',
@@ -36,7 +36,13 @@ export default defineModule({
 
   routes: [
     { path: '/cotizaciones-venta', label: 'Cotizaciones', perm: 'quotes.view' },
-    { path: '/cotizaciones-venta/:id', label: 'Detalle de la cotizacion', perm: 'quotes.view', hidden: true },
+    { path: '/cotizaciones-venta/:id', label: 'Detalle de la cotización', perm: 'quotes.view', hidden: true },
+    {
+      path: '/cotizaciones-venta/:id/imprimir',
+      label: 'Imprimir cotización',
+      perm: 'quotes.view',
+      hidden: true,
+    },
   ],
 
   dashboardWidgets: ['quotes-pending-approval'],

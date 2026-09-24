@@ -48,11 +48,7 @@ const badgeEstado = (estado: string): 'success' | 'warning' | 'danger' | 'neutra
 }
 
 /** Rutas (modulo 53): planificacion y prueba de entrega -sin GPS ni optimizacion real-. */
-export default async function RutasPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function RutasPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'logistics')
 
@@ -92,7 +88,11 @@ export default async function RutasPage({
         </section>
 
         {rutas.length === 0 ? (
-          <EmptyState icon="route" title="Todavia no hay ninguna ruta" description="Planifica la primera abajo." />
+          <EmptyState
+            icon="route"
+            title="Todavia no hay ninguna ruta"
+            description="Planifica la primera abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -166,9 +166,7 @@ export default async function RutasPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Planificar
                 </BotonEnvio>

@@ -29,6 +29,19 @@ function numeroOpcional(raw: string): number | null | undefined {
   return Number.isFinite(n) && n >= 0 ? n : undefined
 }
 
+/**
+ * Tasa de ITBIS elegida en el formulario: 18 % general, 16 % reducida
+ * (aceites, azucar, cafe, mantequilla… Ley 253-12) o exento. Antes solo
+ * habia una casilla "exento": un colmado no podia crear su aceite al 16 %.
+ * `null` = no vino en el formulario, y manda lo de antes (la casilla o la
+ * tasa por defecto del negocio).
+ */
+function tasaElegida(fd: FormData): number | null {
+  const v = String(fd.get('tasa') ?? '').trim()
+  if (v === '0' || v === '0.16' || v === '0.18') return Number(v)
+  return null
+}
+
 export async function crearProducto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
   if (!ctx) return { ok: false, error: 'Sesion no valida.' }
@@ -45,6 +58,7 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
   const cost = numeroOpcional(String(fd.get('cost') ?? ''))
   const reorder = numeroOpcional(String(fd.get('reorderPoint') ?? ''))
   const exento = fd.get('exento') === 'on'
+  const tasa = tasaElegida(fd)
   // Un concepto vendible sin existencias: envio, instalacion, mano de obra.
   const sinStock = fd.get('sinStock') === 'on'
 
@@ -74,7 +88,8 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
           (${ctx.tenantId}, ${sku}, ${name}, ${unit}, ${price ?? 0}, ${cost},
            ${barcode}, ${categoryId}, ${cat?.name ?? null},
            ${sinStock ? null : reorder},
-           case when ${exento} then 0 else public.tasa_itbis_por_defecto() end,
+           coalesce(${tasa}::numeric,
+                    case when ${exento} then 0 else public.tasa_itbis_por_defecto() end),
            ${!sinStock})
         returning id`
 
@@ -113,6 +128,7 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
   const categoryId = String(fd.get('categoryId') ?? '') || null
   const reorder = numeroOpcional(String(fd.get('reorderPoint') ?? ''))
   const exento = fd.get('exento') === 'on'
+  const tasaNueva = tasaElegida(fd)
 
   if (!id || name.length < 2) return { ok: false, error: 'Datos incompletos.' }
   if (reorder === undefined) return { ok: false, error: 'El punto de reorden no es valido.' }
@@ -149,6 +165,7 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
         category      = ${cat?.name ?? null},
         reorder_point = ${reorder},
         tax_rate      = case
+                          when ${tasaNueva}::numeric is not null then ${tasaNueva}::numeric
                           when ${exento} then 0
                           when tax_rate = 0 then public.tasa_itbis_por_defecto()
                           else tax_rate

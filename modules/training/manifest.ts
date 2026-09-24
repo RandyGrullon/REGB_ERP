@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'training',
-  name: 'Capacitacion (LMS)',
+  name: 'Capacitación (LMS)',
   description: 'Cursos, evaluaciones, certificados y matriz de competencias.',
   icon: 'school',
   category: 'advanced',

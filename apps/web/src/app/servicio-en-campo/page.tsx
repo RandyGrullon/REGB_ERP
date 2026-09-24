@@ -48,7 +48,9 @@ const inputClase =
 const botonClase =
   'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 
-const tonoEstado = (s: EstadoOrdenServicio): 'success' | 'danger' | 'warning' | 'info' | 'neutral' => {
+const tonoEstado = (
+  s: EstadoOrdenServicio,
+): 'success' | 'danger' | 'warning' | 'info' | 'neutral' => {
   if (s === 'done') return 'success'
   if (s === 'cancelled') return 'danger'
   if (s === 'in_progress') return 'info'
@@ -110,12 +112,15 @@ export default async function ServicioEnCampoPage({
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Ordenes abiertas" value={String(abiertas.length)} />
           <StatCard label="En sitio ahora" value={String(enSitio)} />
-          <StatCard label="Terminadas" value={String(ordenes.filter((o) => o.status === 'done').length)} />
+          <StatCard
+            label="Terminadas"
+            value={String(ordenes.filter((o) => o.status === 'done').length)}
+          />
         </section>
 
         <Card>
           <CardHeader>
-            <CardTitle>Ordenes de servicio</CardTitle>
+            <CardTitle>Órdenes de servicio</CardTitle>
           </CardHeader>
           <CardBody>
             {ordenes.length === 0 ? (
@@ -140,7 +145,10 @@ export default async function ServicioEnCampoPage({
                   {ordenes.map((o) => (
                     <TR key={o.id}>
                       <TD className="text-[var(--color-text-primary)]">
-                        <a href={`/servicio-en-campo/${o.id}${qs}`} className="underline-offset-2 hover:underline">
+                        <a
+                          href={`/servicio-en-campo/${o.id}${qs}`}
+                          className="underline-offset-2 hover:underline"
+                        >
                           {o.code}
                         </a>
                         {o.priority !== 'normal' && (
@@ -150,9 +158,13 @@ export default async function ServicioEnCampoPage({
                         )}
                       </TD>
                       <TD>{o.customer_name}</TD>
-                      <TD className="max-w-64 truncate text-[var(--color-text-muted)]">{o.description}</TD>
+                      <TD className="max-w-64 truncate text-[var(--color-text-muted)]">
+                        {o.description}
+                      </TD>
                       <TD className="text-[var(--color-text-muted)]">
-                        {o.scheduled_at === null ? 'sin fecha' : new Date(o.scheduled_at).toLocaleString('es-DO')}
+                        {o.scheduled_at === null
+                          ? 'sin fecha'
+                          : new Date(o.scheduled_at).toLocaleString('es-DO')}
                       </TD>
                       <TD numeric>
                         <span className="tabular">
@@ -162,12 +174,17 @@ export default async function ServicioEnCampoPage({
                         </span>
                       </TD>
                       <TD>
-                        <Badge tone={tonoEstado(o.status)}>{ESTADO_ORDEN[o.status] ?? o.status}</Badge>
-                        {Number(o.pasos_pendientes) > 0 && o.status !== 'done' && o.status !== 'cancelled' && (
-                          <span className="ml-2 text-xs text-[var(--color-text-muted)]">
-                            {o.pasos_pendientes} paso{Number(o.pasos_pendientes) === 1 ? '' : 's'} sin marcar
-                          </span>
-                        )}
+                        <Badge tone={tonoEstado(o.status)}>
+                          {ESTADO_ORDEN[o.status] ?? o.status}
+                        </Badge>
+                        {Number(o.pasos_pendientes) > 0 &&
+                          o.status !== 'done' &&
+                          o.status !== 'cancelled' && (
+                            <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                              {o.pasos_pendientes} paso{Number(o.pasos_pendientes) === 1 ? '' : 's'}{' '}
+                              sin marcar
+                            </span>
+                          )}
                       </TD>
                     </TR>
                   ))}
@@ -190,11 +207,20 @@ export default async function ServicioEnCampoPage({
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Que hay que hacer
-                  <input name="description" required className={inputClase} placeholder="Mantenimiento de aire acondicionado" />
+                  <input
+                    name="description"
+                    required
+                    className={inputClase}
+                    placeholder="Mantenimiento de aire acondicionado"
+                  />
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Direccion
-                  <input name="address" className={inputClase} placeholder="Calle Duarte 45, Santiago" />
+                  <input
+                    name="address"
+                    className={inputClase}
+                    placeholder="Calle Duarte 45, Santiago"
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Prioridad
@@ -210,7 +236,7 @@ export default async function ServicioEnCampoPage({
                   Agendar para (opcional)
                   <input type="datetime-local" name="scheduledAt" className={inputClase} />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Crear orden
                 </BotonEnvio>

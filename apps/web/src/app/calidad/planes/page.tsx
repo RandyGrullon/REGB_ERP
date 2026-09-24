@@ -22,7 +22,7 @@ import { ALCANCE_PLAN } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Planes de inspeccion · REGB ERP' }
+export const metadata = { title: 'Planes de inspección · REGB ERP' }
 
 interface PlanRow {
   id: string
@@ -40,11 +40,7 @@ interface ProductoOption {
 }
 
 /** Planes de inspeccion (modulo 58): plantillas de criterios, por producto o generales. */
-export default async function PlanesPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function PlanesPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'quality', 'quality.manage')
 
@@ -76,7 +72,11 @@ export default async function PlanesPage({
         />
 
         {planes.length === 0 ? (
-          <EmptyState icon="checklist" title="Todavia no hay ningun plan" description="Crea el primero abajo." />
+          <EmptyState
+            icon="checklist"
+            title="Todavia no hay ningun plan"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -92,7 +92,10 @@ export default async function PlanesPage({
               {planes.map((p) => (
                 <TR key={p.id}>
                   <TD className="text-[var(--color-text-primary)]">
-                    <a href={`/calidad/planes/${p.id}${qs}`} className="underline-offset-2 hover:underline">
+                    <a
+                      href={`/calidad/planes/${p.id}${qs}`}
+                      className="underline-offset-2 hover:underline"
+                    >
                       {p.name}
                     </a>
                   </TD>
@@ -102,7 +105,9 @@ export default async function PlanesPage({
                     <span className="tabular">{p.criterios}</span>
                   </TD>
                   <TD>
-                    <Badge tone={p.active ? 'success' : 'neutral'}>{p.active ? 'Activo' : 'Inactivo'}</Badge>
+                    <Badge tone={p.active ? 'success' : 'neutral'}>
+                      {p.active ? 'Activo' : 'Inactivo'}
+                    </Badge>
                   </TD>
                 </TR>
               ))}
@@ -134,7 +139,7 @@ export default async function PlanesPage({
                     required
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
-                    <option value="receiving">Recepcion</option>
+                    <option value="receiving">Recepción</option>
                     <option value="production">En proceso</option>
                     <option value="final">Final</option>
                     <option value="other">Otro</option>
@@ -154,9 +159,7 @@ export default async function PlanesPage({
                     ))}
                   </select>
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

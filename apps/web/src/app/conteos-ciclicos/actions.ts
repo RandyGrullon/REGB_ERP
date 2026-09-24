@@ -102,12 +102,6 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
   if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [conteo] = await tx<{ id: string }[]>`
-      insert into public.cycle_counts (tenant_id, warehouse_id, started_by)
-      values (${ctx.tenantId}, ${warehouseId}, ${ctx.userId})
-      returning id`
-    const countId = conteo!.id
-
     // `public.existencias` y no `stock_levels`: desde 0109 la columna
     // `avg_cost` no es legible por `authenticated` -asi no se filtra por
     // PostgREST- y la vista la destapa solo a quien tiene
@@ -116,7 +110,17 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
       select product_id, qty_on_hand::text, avg_cost::text from public.existencias()
       where tenant_id = ${ctx.tenantId} and warehouse_id = ${warehouseId} and qty_on_hand > 0`
 
+    // Se mira ANTES de crear el conteo. Antes se insertaba primero y el
+    // `return` de aqui no deshace nada (no es una excepcion): cada intento
+    // sobre un almacen vacio dejaba un conteo "Contando" sin productos,
+    // que nadie podia enviar ni cerrar.
     if (existencias.length === 0) return 'sin-existencias'
+
+    const [conteo] = await tx<{ id: string }[]>`
+      insert into public.cycle_counts (tenant_id, warehouse_id, started_by)
+      values (${ctx.tenantId}, ${warehouseId}, ${ctx.userId})
+      returning id`
+    const countId = conteo!.id
 
     for (const e of existencias) {
       await tx`
@@ -146,14 +150,19 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
   const countId = String(fd.get('countId') ?? '')
   const counted = num(String(fd.get('counted') ?? ''))
   if (!lineId) return { ok: false, error: 'Falta la linea.' }
-  if (counted === null || counted < 0) return { ok: false, error: 'La cantidad contada no es valida.' }
+  if (counted === null || counted < 0)
+    return { ok: false, error: 'La cantidad contada no es valida.' }
 
   try {
     // Unica puerta desde 0115: comprueba que el conteo siga en
     // `counting`. Un UPDATE directo dejaba cambiar el numero cuando ya
     // estaba delante del supervisor o ya habia movido inventario.
-    await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
-      select public.contar_ciclico(${lineId}, ${counted})`)
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`
+      select public.contar_ciclico(${lineId}, ${counted})`,
+    )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -227,7 +236,13 @@ export async function aprobarConteo(fd: FormData): Promise<ActionResult> {
     }
 
     const lineas = await tx<
-      { id: string; product_id: string; system_qty: string; counted_qty: string; unit_cost: string }[]
+      {
+        id: string
+        product_id: string
+        system_qty: string
+        counted_qty: string
+        unit_cost: string
+      }[]
     >`
       select id, product_id, system_qty::text, counted_qty::text, unit_cost::text
       from public.cycle_count_lines where count_id = ${countId} and tenant_id = ${ctx.tenantId}`
@@ -305,7 +320,11 @@ export async function recalcularAbcForm(fd: FormData): Promise<void> {
   await anotarAviso(await recalcularAbc(fd), 'recalcularAbc')
 }
 export async function iniciarConteoForm(fd: FormData): Promise<void> {
-  await anotarAviso(await iniciarConteo(fd), 'iniciarConteo')
+  await anotarAviso(
+    await iniciarConteo(fd),
+    'iniciarConteo',
+    'Listo, el conteo quedo abierto para contar.',
+  )
 }
 export async function registrarLineaConteoForm(fd: FormData): Promise<void> {
   await anotarAviso(await registrarLineaConteo(fd), 'registrarLineaConteo')

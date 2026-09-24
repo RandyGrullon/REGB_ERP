@@ -152,8 +152,15 @@ export default async function ActivoFijoDetallePage({
         />
 
         <section aria-label="Valores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Base actual" value={`RD$ ${money(Number(head.current_basis))}`} hint="costo o ultimo revaluo" />
-          <StatCard label="Depreciacion acumulada" value={`RD$ ${money(Number(head.accumulated))}`} />
+          <StatCard
+            label="Base actual"
+            value={`RD$ ${money(Number(head.current_basis))}`}
+            hint="costo o ultimo revaluo"
+          />
+          <StatCard
+            label="Depreciacion acumulada"
+            value={`RD$ ${money(Number(head.accumulated))}`}
+          />
           <StatCard label="Valor en libros" value={`RD$ ${money(Number(head.book_value))}`} />
           <StatCard
             label="Vida util"
@@ -195,13 +202,17 @@ export default async function ActivoFijoDetallePage({
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Motivo
-                      <input name="reason" required minLength={4} placeholder="Avaluo de perito" className={claseInput} />
+                      <input
+                        name="reason"
+                        required
+                        minLength={4}
+                        placeholder="Avaluo de perito"
+                        className={claseInput}
+                      />
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="price_change" size={18} />
-                      Registrar revaluo
+                      Registrar revalúo
                     </BotonEnvio>
                   </form>
                 </CardBody>
@@ -231,12 +242,18 @@ export default async function ActivoFijoDetallePage({
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Motivo
-                      <input name="reason" required minLength={4} placeholder="Vendida a un tercero" className={claseInput} />
+                      <input
+                        name="reason"
+                        required
+                        minLength={4}
+                        placeholder="Vendida a un tercero"
+                        className={claseInput}
+                      />
                     </label>
                     <BotonEnvio
-                      
                       title="No se puede deshacer: un activo dado de baja queda historico"
-                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
+                    >
                       <Icon name="remove_circle" size={18} />
                       Dar de baja
                     </BotonEnvio>
@@ -249,7 +266,7 @@ export default async function ActivoFijoDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Calendario de depreciacion</CardTitle>
+            <CardTitle>Calendario de depreciación</CardTitle>
           </CardHeader>
           <CardBody>
             {calendario.length === 0 ? (
@@ -262,14 +279,17 @@ export default async function ActivoFijoDetallePage({
                   <THead>
                     <TR>
                       <TH>Mes</TH>
-                      <TH numeric>Depreciacion</TH>
+                      <TH numeric>Depreciación</TH>
                       <TH numeric>Acumulada</TH>
                       <TH numeric>Valor en libros</TH>
                     </TR>
                   </THead>
                   <TBody>
                     {calendario.map((p) => (
-                      <TR key={p.period} className={p.period <= mesesTranscurridos ? '' : 'opacity-60'}>
+                      <TR
+                        key={p.period}
+                        className={p.period <= mesesTranscurridos ? '' : 'opacity-60'}
+                      >
                         <TD>{p.period}</TD>
                         <TD numeric>
                           <span className="tabular">{money(p.depreciation)}</span>
@@ -287,7 +307,7 @@ export default async function ActivoFijoDetallePage({
               </div>
             )}
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              Proyectado desde la base actual -si hubo un revaluo, ya lo incluye-. Los meses ya
+              Proyectado desde la base actual -si hubo un revalúo, ya lo incluye-. Los meses ya
               corridos (con fondo normal) coinciden con el historial de abajo.
             </p>
           </CardBody>
@@ -296,13 +316,13 @@ export default async function ActivoFijoDetallePage({
         {depreciaciones.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Depreciacion registrada</CardTitle>
+              <CardTitle>Depreciación registrada</CardTitle>
             </CardHeader>
             <CardBody>
               <Table>
                 <THead>
                   <TR>
-                    <TH>Periodo</TH>
+                    <TH>Período</TH>
                     <TH numeric>Monto</TH>
                   </TR>
                 </THead>

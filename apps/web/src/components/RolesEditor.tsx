@@ -178,7 +178,9 @@ export function RolesEditor({
           >
             ←
           </a>
-          <span className="flex-1 text-sm font-semibold text-[var(--color-text-primary)]">Roles</span>
+          <span className="flex-1 text-sm font-semibold text-[var(--color-text-primary)]">
+            Roles
+          </span>
           <TemaToggle />
         </header>
 
@@ -311,8 +313,8 @@ export function RolesEditor({
             <div className="mb-5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-semantic-info)_10%,transparent)] px-3 py-2">
               <p className="text-xs text-[var(--color-text-secondary)]">
                 <strong className="text-[var(--color-semantic-text-info)]">Importante:</strong>{' '}
-                ocultar un modulo del sidebar es comodidad, no seguridad. Lo que de verdad protege
-                es el permiso: quien no lo tenga recibe un 403 aunque escriba la direccion a mano.
+                ocultar un módulo del menú es comodidad, no seguridad. Lo que de verdad protege es
+                el permiso: quien no lo tenga no entra aunque escriba la dirección a mano.
               </p>
             </div>
 
@@ -324,7 +326,7 @@ export function RolesEditor({
             >
               {rol.visibleModules.includes('*') ? (
                 <p className="text-sm text-[var(--color-semantic-text-success)]">
-                  ✓ Ve todos los modulos que el cliente tenga activos
+                  ✓ Ve todos los módulos que el cliente tenga activos
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
@@ -362,7 +364,7 @@ export function RolesEditor({
                   })}
                   {modules.length === 0 && (
                     <p className="text-sm text-[var(--color-text-muted)]">
-                      El cliente no tiene modulos activos todavia.
+                      El cliente no tiene módulos activos todavía.
                     </p>
                   )}
                 </div>
@@ -374,8 +376,8 @@ export function RolesEditor({
               titulo="Que puede hacer"
               ayuda={
                 canEdit
-                  ? 'Toca un permiso para ciclarlo: sin definir → concedido → denegado. Una denegacion gana sobre cualquier permiso mas general.'
-                  : 'Rojo tachado = denegado explicitamente. Una denegacion gana sobre cualquier permiso mas general.'
+                  ? 'Toca un permiso para ciclarlo: sin definir → concedido → denegado. Una denegacion gana sobre cualquier permiso más general.'
+                  : 'Rojo tachado = denegado explicitamente. Una denegacion gana sobre cualquier permiso más general.'
               }
             >
               <div className="space-y-3">
@@ -406,7 +408,7 @@ export function RolesEditor({
                 ))}
                 {modules.length === 0 && (
                   <p className="text-sm text-[var(--color-text-muted)]">
-                    Sin modulos activos no hay permisos que configurar.
+                    Sin módulos activos no hay permisos que configurar.
                   </p>
                 )}
               </div>
@@ -606,7 +608,7 @@ function ScopeEditor({
       {derivados.length > 0 && (
         <div className="rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2">
           <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Derivado de la asignacion
+            Derivado de la asignación
           </p>
           <ul className="mt-1 space-y-0.5">
             {derivados.map((d) => (

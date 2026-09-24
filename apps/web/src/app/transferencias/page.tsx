@@ -102,7 +102,7 @@ export default async function TransferenciasPage({
               <TR>
                 <TH>De</TH>
                 <TH>A</TH>
-                <TH numeric>Lineas</TH>
+                <TH numeric>Líneas</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
@@ -160,6 +160,9 @@ export default async function TransferenciasPage({
                   <select
                     name="toWarehouseId"
                     required
+                    // Otro almacen por defecto: con los dos iguales, el primer
+                    // intento siempre rebotaba con "no pueden ser el mismo".
+                    defaultValue={almacenes[1]?.id ?? almacenes[0]?.id}
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
                     {almacenes.map((a) => (
@@ -176,9 +179,7 @@ export default async function TransferenciasPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>

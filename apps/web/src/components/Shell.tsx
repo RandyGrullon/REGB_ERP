@@ -60,6 +60,10 @@ export interface ShellProps {
   demoMode: boolean
   /** Usuario del proveedor: ve el enlace a REGB Control (§7). */
   isProvider?: boolean
+  /** Puede ver el marketplace (dueño o quien mire modulos). */
+  puedeMarketplace?: boolean
+  /** Puede ver los roles y permisos. */
+  puedeRoles?: boolean
   /** Sesion de impersonacion activa: banner permanente (§7.4). */
   impersonating?: boolean
   /** Ruta actual, para resaltar en el sidebar. */
@@ -119,6 +123,8 @@ export function Shell({
   activePlatform,
   demoMode,
   isProvider = false,
+  puedeMarketplace = true,
+  puedeRoles = true,
   impersonating = false,
   activePath = '/',
   aviso = null,
@@ -157,18 +163,22 @@ export function Shell({
 
   const enlacesPie = (
     <div className="space-y-0.5">
-      <a href={`/marketplace${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
-        <Icon name="extension" size={18} className="shrink-0 text-[var(--color-text-muted)]" />
-        Marketplace
-      </a>
-      <a href={`/roles${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
-        <Icon
-          name="admin_panel_settings"
-          size={18}
-          className="shrink-0 text-[var(--color-text-muted)]"
-        />
-        Roles y permisos
-      </a>
+      {puedeMarketplace && (
+        <a href={`/marketplace${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
+          <Icon name="extension" size={18} className="shrink-0 text-[var(--color-text-muted)]" />
+          Marketplace
+        </a>
+      )}
+      {puedeRoles && (
+        <a href={`/roles${qs}`} className={cn(pieCls, 'text-[var(--color-text-secondary)]')}>
+          <Icon
+            name="admin_panel_settings"
+            size={18}
+            className="shrink-0 text-[var(--color-text-muted)]"
+          />
+          Roles y permisos
+        </a>
+      )}
       {/* Solo el proveedor: su panel por encima de los tenants (§7). En demo se muestra porque toda la app es vitrina. */}
       {(isProvider || demoMode) && (
         <a
@@ -237,7 +247,7 @@ export function Shell({
                   >
                     <option value="web">Web</option>
                     <option value="desktop">Escritorio</option>
-                    <option value="mobile">Movil</option>
+                    <option value="mobile">Móvil</option>
                   </select>
                 </label>
               </>
@@ -280,10 +290,12 @@ export function Shell({
         <div
           role="alert"
           data-bajo-la-cabecera
-          className="flex h-9 shrink-0 items-center justify-center gap-2 bg-[var(--color-accent-plum)] px-4 text-xs font-medium text-white"
+          // Colores invertidos del tema: `accent-plum` en oscuro es casi
+          // blanco y el texto blanco desaparecia justo en el tema principal.
+          className="flex h-9 shrink-0 items-center justify-center gap-2 bg-[var(--color-text-primary)] px-4 text-xs font-medium text-[var(--color-surface-base)]"
         >
-          <Icon name="visibility" size={16} /> Estas viendo los datos de {data.tenant.name} como
-          proveedor. La sesion expira sola a los 60 minutos y quedo registrada en ambas bitacoras.
+          <Icon name="visibility" size={16} /> Estás viendo los datos de {data.tenant.name} como
+          proveedor. La sesión expira sola a los 60 minutos y quedó registrada en ambas bitácoras.
           <a href="/control" className="underline">
             Terminar
           </a>
@@ -348,7 +360,7 @@ export function Shell({
             <EmptyState
               icon="lock"
               title="Aqui no hay nada para ti todavia"
-              description={`El rol "${data.roleName}" no tiene ningun modulo visible en ${activePlatform}. Cambia de rol arriba para verlo desde otra silla.`}
+              description={`El rol "${data.roleName}" no tiene ningún módulo visible en ${activePlatform}. Cambia de rol arriba para verlo desde otra silla.`}
             />
           ) : (
             <>

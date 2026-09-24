@@ -53,7 +53,9 @@ export default async function HistorialTasaPage({
   const currencyCode = code.toUpperCase()
 
   const [moneda, tasas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [m] = await tx<Moneda[]>`select code, name, symbol from public.currencies where code = ${currencyCode}`
+    const [m] = await tx<
+      Moneda[]
+    >`select code, name, symbol from public.currencies where code = ${currencyCode}`
     if (!m) return [null, []] as const
 
     const t = await tx<TasaRow[]>`
@@ -103,7 +105,7 @@ export default async function HistorialTasaPage({
         {tasas.length >= 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Diferencia cambiaria: primera tasa vs. la mas reciente</CardTitle>
+              <CardTitle>Diferencia cambiaria: primera tasa vs. la más reciente</CardTitle>
             </CardHeader>
             <CardBody>
               <form method="get" className="flex flex-wrap items-end gap-3">
@@ -119,9 +121,7 @@ export default async function HistorialTasaPage({
                 </label>
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   Calcular
                 </BotonEnvio>
               </form>

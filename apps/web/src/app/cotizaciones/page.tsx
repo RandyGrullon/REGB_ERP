@@ -85,7 +85,11 @@ export default async function CotizacionesPage({
         </section>
 
         {rfqs.length === 0 ? (
-          <EmptyState icon="compare_arrows" title="Todavia no hay ningun RFQ" description="Crea el primero abajo." />
+          <EmptyState
+            icon="compare_arrows"
+            title="Todavia no hay ningun RFQ"
+            description="Crea el primero abajo."
+          />
         ) : (
           <Table>
             <THead>
@@ -146,9 +150,7 @@ export default async function CotizacionesPage({
                   Fecha limite
                   <input type="date" name="deadline" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear RFQ
                 </BotonEnvio>

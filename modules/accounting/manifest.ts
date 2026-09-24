@@ -19,7 +19,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'accounting',
   name: 'Contabilidad',
-  description: 'Catalogo de cuentas, asientos de partida doble, mayor y balanza.',
+  description: 'Catálogo de cuentas, asientos de partida doble, mayor y balanza.',
   icon: 'account_balance',
   category: 'advanced',
   version: '0.1.0',
@@ -48,7 +48,7 @@ export default defineModule({
     { path: '/contabilidad', label: 'Asientos', perm: 'accounting.view' },
     {
       path: '/contabilidad/cuentas',
-      label: 'Catalogo de cuentas',
+      label: 'Catálogo de cuentas',
       perm: 'accounting.accounts.manage',
       icon: 'account_tree',
     },

@@ -68,8 +68,11 @@ export default async function RecursosPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'resources')
 
-  const { semanas, asignaciones, usuarios, tareas } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const s = await tx<FilaSemana[]>`
+  const { semanas, asignaciones, usuarios, tareas } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const s = await tx<FilaSemana[]>`
       select rc.user_id, up.display_name, rc.week_start::text,
              rc.hours_capacity::text as capacidad,
              public.resource_allocated_hours(${ctx.tenantId}, rc.user_id, rc.week_start)::text as asignadas
@@ -78,7 +81,7 @@ export default async function RecursosPage({
       where rc.tenant_id = ${ctx.tenantId}
       order by rc.week_start desc, up.display_name`
 
-    const a = await tx<Asignacion[]>`
+      const a = await tx<Asignacion[]>`
       select ra.id, up.display_name, pt.name as task_name, p.name as project_name,
              ra.week_start::text, ra.hours::text
       from public.resource_allocations ra
@@ -88,20 +91,23 @@ export default async function RecursosPage({
       where ra.tenant_id = ${ctx.tenantId}
       order by ra.week_start desc, p.name`
 
-    const u = await tx<UsuarioOption[]>`
+      const u = await tx<UsuarioOption[]>`
       select user_id, display_name from public.user_profiles where tenant_id = ${ctx.tenantId} order by display_name`
 
-    const t = await tx<TareaOption[]>`
+      const t = await tx<TareaOption[]>`
       select pt.id, pt.name, p.name as project_name
       from public.project_tasks pt
       join public.projects p on p.id = pt.project_id
       where pt.tenant_id = ${ctx.tenantId}
       order by p.name, pt.name limit 300`
 
-    return { semanas: s, asignaciones: a, usuarios: u, tareas: t }
-  })
+      return { semanas: s, asignaciones: a, usuarios: u, tareas: t }
+    },
+  )
 
-  const sobrecargados = semanas.filter((s) => estaSobrecargado(Number(s.capacidad), Number(s.asignadas))).length
+  const sobrecargados = semanas.filter((s) =>
+    estaSobrecargado(Number(s.capacidad), Number(s.asignadas)),
+  ).length
   const puedeGestionar = exigir(ctx, 'resources', 'resources.manage').ok
   const qs = ctx.demoQs
   const campos = (
@@ -131,7 +137,11 @@ export default async function RecursosPage({
           </CardHeader>
           <CardBody>
             {semanas.length === 0 ? (
-              <EmptyState icon="calendar_month" title="Todavia no hay capacidad fijada" description="Fija la primera abajo." />
+              <EmptyState
+                icon="calendar_month"
+                title="Todavia no hay capacidad fijada"
+                description="Fija la primera abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -151,7 +161,9 @@ export default async function RecursosPage({
                     const sobre = estaSobrecargado(cap, asig)
                     return (
                       <TR key={`${s.user_id}-${s.week_start}`}>
-                        <TD className="text-[var(--color-text-primary)]">{s.display_name ?? 'Usuario'}</TD>
+                        <TD className="text-[var(--color-text-primary)]">
+                          {s.display_name ?? 'Usuario'}
+                        </TD>
                         <TD className="text-[var(--color-text-muted)]">
                           {new Date(s.week_start).toLocaleDateString('es-DO')}
                         </TD>
@@ -195,9 +207,15 @@ export default async function RecursosPage({
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Horas
-                  <input name="hoursCapacity" required inputMode="decimal" defaultValue="40" className={`${inputClase} tabular`} />
+                  <input
+                    name="hoursCapacity"
+                    required
+                    inputMode="decimal"
+                    defaultValue="40"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Fijar
                 </BotonEnvio>
@@ -213,7 +231,9 @@ export default async function RecursosPage({
           <CardBody>
             <ul className="divide-y divide-[var(--color-border)]">
               {asignaciones.length === 0 && (
-                <li className="py-2 text-xs text-[var(--color-text-muted)]">Todavia no hay asignaciones.</li>
+                <li className="py-2 text-xs text-[var(--color-text-muted)]">
+                  Todavía no hay asignaciones.
+                </li>
               )}
               {asignaciones.map((a) => (
                 <li key={a.id} className="flex items-center justify-between gap-3 py-2">
@@ -222,10 +242,13 @@ export default async function RecursosPage({
                       {a.display_name ?? 'Usuario'} · {a.task_name}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {a.project_name} · semana del {new Date(a.week_start).toLocaleDateString('es-DO')}
+                      {a.project_name} · semana del{' '}
+                      {new Date(a.week_start).toLocaleDateString('es-DO')}
                     </p>
                   </div>
-                  <span className="tabular text-sm text-[var(--color-text-primary)]">{a.hours} h</span>
+                  <span className="tabular text-sm text-[var(--color-text-primary)]">
+                    {a.hours} h
+                  </span>
                 </li>
               ))}
             </ul>
@@ -259,9 +282,14 @@ export default async function RecursosPage({
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Horas
-                  <input name="hours" required inputMode="decimal" className={`${inputClase} tabular`} />
+                  <input
+                    name="hours"
+                    required
+                    inputMode="decimal"
+                    className={`${inputClase} tabular`}
+                  />
                 </label>
-                <BotonEnvio  className={botonClase}>
+                <BotonEnvio className={botonClase}>
                   <Icon name="add" size={14} />
                   Asignar
                 </BotonEnvio>

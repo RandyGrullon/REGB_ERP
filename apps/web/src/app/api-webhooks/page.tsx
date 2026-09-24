@@ -19,7 +19,12 @@ import {
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { alternarEndpointForm, crearEndpointForm, enviarPruebaForm, revocarLlaveForm } from './actions'
+import {
+  alternarEndpointForm,
+  crearEndpointForm,
+  enviarPruebaForm,
+  revocarLlaveForm,
+} from './actions'
 import { CrearLlaveForm } from './CrearLlaveForm'
 import { ESTADO_ENDPOINT, ESTADO_LLAVE, SCOPE_LABEL } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
@@ -104,7 +109,11 @@ export default async function ApiWebhooksPage({
           </CardHeader>
           <CardBody>
             {llaves.length === 0 ? (
-              <EmptyState icon="key" title="Todavia no hay ninguna llave" description="Crea la primera abajo." />
+              <EmptyState
+                icon="key"
+                title="Todavia no hay ninguna llave"
+                description="Crea la primera abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -115,7 +124,7 @@ export default async function ApiWebhooksPage({
                     <TH numeric>Limite/min</TH>
                     <TH>Estado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -133,7 +142,9 @@ export default async function ApiWebhooksPage({
                         <span className="tabular">{k.rate_limit_per_minute}</span>
                       </TD>
                       <TD>
-                        <Badge tone={k.status === 'active' ? 'success' : 'neutral'}>{ESTADO_LLAVE[k.status] ?? k.status}</Badge>
+                        <Badge tone={k.status === 'active' ? 'success' : 'neutral'}>
+                          {ESTADO_LLAVE[k.status] ?? k.status}
+                        </Badge>
                       </TD>
                       <TD>
                         {puedeGestionar && k.status === 'active' && (
@@ -141,9 +152,7 @@ export default async function ApiWebhooksPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="keyId" value={k.id} />
-                            <BotonEnvio
-                              
-                              className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
                               Revocar
                             </BotonEnvio>
                           </form>
@@ -155,7 +164,11 @@ export default async function ApiWebhooksPage({
               </Table>
             )}
 
-            {puedeGestionar && <div className="mt-4"><CrearLlaveForm tenant={qs ? ctx.tenantSlug : ''} rol={qs ? ctx.roleName : ''} /></div>}
+            {puedeGestionar && (
+              <div className="mt-4">
+                <CrearLlaveForm tenant={qs ? ctx.tenantSlug : ''} rol={qs ? ctx.roleName : ''} />
+              </div>
+            )}
           </CardBody>
         </Card>
 
@@ -165,7 +178,11 @@ export default async function ApiWebhooksPage({
           </CardHeader>
           <CardBody>
             {endpoints.length === 0 ? (
-              <EmptyState icon="webhook" title="Todavia no hay ningun endpoint" description="Crea el primero abajo." />
+              <EmptyState
+                icon="webhook"
+                title="Todavia no hay ningun endpoint"
+                description="Crea el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -174,7 +191,7 @@ export default async function ApiWebhooksPage({
                     <TH>Eventos</TH>
                     <TH>Estado</TH>
                     <TH>
-                      <span className="sr-only">Accion</span>
+                      <span className="sr-only">Acción</span>
                     </TH>
                   </TR>
                 </THead>
@@ -186,7 +203,9 @@ export default async function ApiWebhooksPage({
                       </TD>
                       <TD className="text-[var(--color-text-muted)]">{e.event_types.join(', ')}</TD>
                       <TD>
-                        <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>{ESTADO_ENDPOINT[e.status] ?? e.status}</Badge>
+                        <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
+                          {ESTADO_ENDPOINT[e.status] ?? e.status}
+                        </Badge>
                       </TD>
                       <TD>
                         {puedeGestionar && (
@@ -195,9 +214,7 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="endpointId" value={e.id} />
-                              <BotonEnvio
-                                
-                                className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 <Icon name="send" size={12} />
                                 Probar
                               </BotonEnvio>
@@ -206,10 +223,12 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="endpointId" value={e.id} />
-                              <input type="hidden" name="siguiente" value={e.status === 'active' ? 'paused' : 'active'} />
-                              <BotonEnvio
-                                
-                                className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <input
+                                type="hidden"
+                                name="siguiente"
+                                value={e.status === 'active' ? 'paused' : 'active'}
+                              />
+                              <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
                                 {e.status === 'active' ? 'Pausar' : 'Reanudar'}
                               </BotonEnvio>
                             </form>
@@ -244,9 +263,7 @@ export default async function ApiWebhooksPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Crear
                 </BotonEnvio>
@@ -261,7 +278,9 @@ export default async function ApiWebhooksPage({
           </CardHeader>
           <CardBody>
             {entregas.length === 0 ? (
-              <p className="text-xs text-[var(--color-text-muted)]">Todavia no se ha entregado ningun webhook.</p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Todavía no se ha entregado ningún webhook.
+              </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
                 {entregas.map((d) => (
@@ -270,9 +289,13 @@ export default async function ApiWebhooksPage({
                       <p className="text-sm text-[var(--color-text-primary)]">
                         <Mono>{d.url}</Mono>
                       </p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{new Date(d.attempted_at).toLocaleString('es-DO')}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {new Date(d.attempted_at).toLocaleString('es-DO')}
+                      </p>
                     </div>
-                    <Badge tone={d.success ? 'success' : 'danger'}>{d.status_code ?? 'Sin respuesta'}</Badge>
+                    <Badge tone={d.success ? 'success' : 'danger'}>
+                      {d.status_code ?? 'Sin respuesta'}
+                    </Badge>
                   </li>
                 ))}
               </ul>
@@ -286,7 +309,7 @@ export default async function ApiWebhooksPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              El limite por minuto se guarda como configuracion -esta version todavia no expone un
+              El limite por minuto se guarda como configuracion -esta version todavía no expone un
               endpoint REST real que lo aplique contra trafico entrante-. Los webhooks salientes SI
               hacen una llamada HTTP real a la URL configurada.
             </p>

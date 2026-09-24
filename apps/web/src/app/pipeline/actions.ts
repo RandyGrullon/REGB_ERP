@@ -44,11 +44,16 @@ export async function crearOportunidad(fd: FormData): Promise<ActionResult> {
   const leadId = String(fd.get('leadId') ?? '') || null
 
   if (!name) return { ok: false, error: 'Ponle un nombre a la oportunidad.' }
-  if (amount === null || amount < 0) return { ok: false, error: 'El monto debe ser un numero valido.' }
+  if (amount === null || amount < 0)
+    return { ok: false, error: 'El monto debe ser un numero valido.' }
 
-  await asUser(ctx.userId, ctx.tenantId, (tx) => tx`
+  await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx`
     insert into public.opportunities (tenant_id, lead_id, name, amount, probability)
-    values (${ctx.tenantId}, ${leadId}, ${name}, ${amount}, ${PROBABILIDAD_POR_ETAPA.prospecting})`)
+    values (${ctx.tenantId}, ${leadId}, ${name}, ${amount}, ${PROBABILIDAD_POR_ETAPA.prospecting})`,
+  )
 
   revalidatePath('/pipeline')
   return { ok: true }

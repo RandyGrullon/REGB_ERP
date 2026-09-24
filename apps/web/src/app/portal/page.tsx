@@ -68,15 +68,11 @@ const badgeTono = (estado: string): 'success' | 'warning' | 'danger' | 'neutral'
 }
 
 /** Portal del Empleado (modulo 70): tu expediente, tu volante, tu saldo, los anuncios. */
-export default async function PortalPage({
-  searchParams,
-}: {
-  searchParams: Promise<DemoParams>
-}) {
+export default async function PortalPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'hr-portal')
 
-  const { yo, volantes, solicitudes, tomado, anuncios } = await asUser(
+  const { yo, volantes, solicitudes, tomado, pendientes, anuncios } = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -88,7 +84,16 @@ export default async function PortalPage({
         select id, title, body, published_at::text from public.hr_announcements
         where tenant_id = ${ctx.tenantId} order by published_at desc limit 10`
 
-      if (!yo) return { yo: null, volantes: [] as MiVolante[], solicitudes: [], tomado: 0, anuncios: an }
+      if (!yo) {
+        return {
+          yo: null,
+          volantes: [] as MiVolante[],
+          solicitudes: [],
+          tomado: 0,
+          pendientes: 0,
+          anuncios: an,
+        }
+      }
 
       const v = await misVolantes(tx, 12)
 
@@ -99,12 +104,21 @@ export default async function PortalPage({
         order by start_date desc
         limit 12`
 
-      const [t] = await tx<{ dias: string }[]>`
-        select coalesce(sum(business_days), 0)::text as dias from public.time_off_requests
+      const [t] = await tx<{ dias: string; pendientes: string }[]>`
+        select coalesce(sum(business_days) filter (where status = 'approved'), 0)::text as dias,
+               coalesce(sum(business_days) filter (where status = 'pending'), 0)::text as pendientes
+        from public.time_off_requests
         where tenant_id = ${ctx.tenantId} and employee_id = ${yo.id}
-          and leave_type = 'vacation' and status = 'approved'`
+          and leave_type = 'vacation' and status in ('approved', 'pending')`
 
-      return { yo, volantes: v, solicitudes: s, tomado: Number(t?.dias ?? 0), anuncios: an }
+      return {
+        yo,
+        volantes: v,
+        solicitudes: s,
+        tomado: Number(t?.dias ?? 0),
+        pendientes: Number(t?.pendientes ?? 0),
+        anuncios: an,
+      }
     },
   )
 
@@ -117,6 +131,14 @@ export default async function PortalPage({
     'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
 
   const saldo = yo ? saldoVacaciones(new Date(`${yo.hire_date}T00:00:00`), hoy, tomado) : 0
+  // Quien no ha cumplido el año todavia no tiene dias (art. 177): se le
+  // dice desde cuando puede irse, en vez de dejarlo descubrirlo con un error.
+  const primerAniversario = (() => {
+    if (!yo || yo.hire_date.slice(0, 10) === '') return null
+    const [y, m, d] = yo.hire_date.slice(0, 10).split('-').map(Number)
+    const aniversario = new Date(y! + 1, m! - 1, d!)
+    return aniversario > hoy ? aniversario : null
+  })()
 
   return (
     <Shell {...shell} activePath="/portal">
@@ -124,19 +146,27 @@ export default async function PortalPage({
         <PageHeader
           icon="badge"
           title="Mi portal"
-          description="Tu expediente, tu volante y tu saldo de vacaciones -los mismos numeros que ya calculan payroll y time-off, nunca recalculados aqui-."
+          description="Tu expediente, tus volantes y tu saldo de vacaciones. Solo ves lo tuyo."
         />
 
         {!yo ? (
           <EmptyState
             icon="badge"
-            title="Tu cuenta no esta vinculada a un expediente"
-            description="Para ver tus volantes, RRHH tiene que vincular tu cuenta con tu expediente desde Empleados. No lo buscamos por tu correo: dos personas pueden compartirlo, y aqui solo se ve lo tuyo."
+            title="Tu cuenta no está vinculada a un expediente"
+            description="Para ver tus volantes, RRHH tiene que vincular tu cuenta con tu expediente desde Empleados. No lo buscamos por tu correo: dos personas pueden compartirlo, y aquí solo se ve lo tuyo."
           />
         ) : (
           <>
             <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-              <StatCard label="Saldo de vacaciones" value={`${saldo} dias`} />
+              <StatCard
+                label="Saldo de vacaciones"
+                value={`${saldo} día${saldo === 1 ? '' : 's'}`}
+                hint={
+                  pendientes > 0
+                    ? `${pendientes} pedido${pendientes === 1 ? '' : 's'}, por aprobar`
+                    : undefined
+                }
+              />
               <StatCard label="Volantes disponibles" value={String(volantes.length)} />
             </section>
 
@@ -158,20 +188,25 @@ export default async function PortalPage({
                   </div>
                   <div>
                     <p className="text-xs text-[var(--color-text-muted)]">Desde</p>
-                    <p className="text-[var(--color-text-primary)]">{fechaCorta(yo.hire_date)}</p>
+                    <p className="text-[var(--color-text-primary)]">
+                      {fechaCorta(yo.hire_date)} {yo.hire_date.slice(0, 4)}
+                    </p>
                   </div>
                 </div>
                 {puedeEditar && (
-                  <form action={editarMiTelefonoForm} className="flex items-end gap-3">
+                  <form action={editarMiTelefonoForm} className="flex flex-wrap items-end gap-3">
                     <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                    <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                      Telefono
-                      <input name="phone" defaultValue={yo.phone ?? ''} className={claseInput} />
+                    <label className="flex min-w-0 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                      Teléfono
+                      <input
+                        name="phone"
+                        type="tel"
+                        defaultValue={yo.phone ?? ''}
+                        className={claseInput}
+                      />
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                       <Icon name="save" size={18} />
                       Guardar
                     </BotonEnvio>
@@ -186,58 +221,106 @@ export default async function PortalPage({
               </CardHeader>
               <CardBody>
                 {volantes.length === 0 ? (
-                  <EmptyState icon="receipt_long" title="Todavia no hay ningun volante" description="" />
+                  <EmptyState
+                    icon="receipt_long"
+                    title="Todavía no hay ningún volante"
+                    description="Cuando RRHH procese tu primera nómina, tu volante aparece aquí."
+                  />
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <THead>
-                        <TR>
-                          <TH>Periodo</TH>
-                          <TH numeric>Dias</TH>
-                          <TH numeric>Bruto</TH>
-                          <TH numeric>Reembolsos</TH>
-                          <TH numeric>TSS</TH>
-                          <TH numeric>ISR</TH>
-                          <TH numeric>Descuentos</TH>
-                          <TH numeric>Neto</TH>
-                        </TR>
-                      </THead>
-                      <TBody>
-                        {volantes.map((v) => (
-                          <TR key={v.period_id}>
-                            <TD>
-                              {fechaCorta(v.period_start)} → {fechaCorta(v.period_end)}
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">
-                                {v.paid_days === null ? '—' : Number(v.paid_days)}
-                              </span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">{money(Number(v.gross_salary))}</span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">{money(Number(v.reimbursements))}</span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">{money(Number(v.tss_deduction))}</span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">{money(Number(v.income_tax))}</span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular">{money(Number(v.other_deductions))}</span>
-                            </TD>
-                            <TD numeric>
-                              <span className="tabular font-semibold text-[var(--color-text-primary)]">
-                                {money(Number(v.net_salary))}
-                              </span>
-                            </TD>
+                  <>
+                    {/* En el teléfono, un volante por tarjeta: la tabla de ocho
+                      columnas obligaba a desplazarse de lado para ver el neto. */}
+                    <ul className="space-y-3 sm:hidden" aria-label="Mis volantes">
+                      {volantes.map((v) => (
+                        <li
+                          key={v.period_id}
+                          className="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4"
+                        >
+                          <div className="flex items-baseline justify-between gap-3">
+                            <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                              {fechaCorta(v.period_start)} – {fechaCorta(v.period_end)}
+                            </p>
+                            <p className="tabular text-base font-bold text-[var(--color-text-primary)]">
+                              RD$ {money(Number(v.net_salary))}
+                            </p>
+                          </div>
+                          <p className="text-xs text-[var(--color-text-muted)]">
+                            Neto · se paga el {fechaCorta(v.pay_date)}
+                            {v.paid_days !== null ? ` · ${Number(v.paid_days)} días` : ''}
+                          </p>
+                          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            {(
+                              [
+                                ['Bruto', v.gross_salary, false],
+                                ['Reembolsos', v.reimbursements, false],
+                                ['TSS', v.tss_deduction, true],
+                                ['ISR', v.income_tax, true],
+                                ['Préstamos y otros', v.other_deductions, true],
+                              ] as const
+                            ).map(([etiqueta, monto, resta]) => (
+                              <div key={etiqueta} className="contents">
+                                <dt className="text-[var(--color-text-secondary)]">{etiqueta}</dt>
+                                <dd className="tabular text-right text-[var(--color-text-primary)]">
+                                  {resta && Number(monto) > 0 ? '−' : ''}
+                                  {money(Number(monto))}
+                                </dd>
+                              </div>
+                            ))}
+                          </dl>
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="hidden overflow-x-auto sm:block">
+                      <Table>
+                        <THead>
+                          <TR>
+                            <TH>Período</TH>
+                            <TH numeric>Días</TH>
+                            <TH numeric>Bruto</TH>
+                            <TH numeric>Reembolsos</TH>
+                            <TH numeric>TSS</TH>
+                            <TH numeric>ISR</TH>
+                            <TH numeric>Descuentos</TH>
+                            <TH numeric>Neto</TH>
                           </TR>
-                        ))}
-                      </TBody>
-                    </Table>
-                  </div>
+                        </THead>
+                        <TBody>
+                          {volantes.map((v) => (
+                            <TR key={v.period_id}>
+                              <TD>
+                                {fechaCorta(v.period_start)} → {fechaCorta(v.period_end)}
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">
+                                  {v.paid_days === null ? '—' : Number(v.paid_days)}
+                                </span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">{money(Number(v.gross_salary))}</span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">{money(Number(v.reimbursements))}</span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">{money(Number(v.tss_deduction))}</span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">{money(Number(v.income_tax))}</span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular">{money(Number(v.other_deductions))}</span>
+                              </TD>
+                              <TD numeric>
+                                <span className="tabular font-semibold text-[var(--color-text-primary)]">
+                                  {money(Number(v.net_salary))}
+                                </span>
+                              </TD>
+                            </TR>
+                          ))}
+                        </TBody>
+                      </Table>
+                    </div>
+                  </>
                 )}
               </CardBody>
             </Card>
@@ -248,14 +331,18 @@ export default async function PortalPage({
               </CardHeader>
               <CardBody className="space-y-3">
                 {solicitudes.length === 0 ? (
-                  <EmptyState icon="beach_access" title="Todavia no has pedido vacaciones" description="" />
+                  <EmptyState
+                    icon="beach_access"
+                    title="Todavía no has pedido vacaciones"
+                    description="Elige las fechas abajo. Se cuentan solo los días laborables."
+                  />
                 ) : (
                   <Table>
                     <THead>
                       <TR>
                         <TH>Desde</TH>
                         <TH>Hasta</TH>
-                        <TH numeric>Dias</TH>
+                        <TH numeric>Días</TH>
                         <TH>Estado</TH>
                       </TR>
                     </THead>
@@ -278,8 +365,22 @@ export default async function PortalPage({
                   </Table>
                 )}
 
+                {puedeSolicitar && primerAniversario && (
+                  <p className="text-xs text-[var(--color-text-muted)]">
+                    Tus primeros 14 días de vacaciones se ganan al cumplir un año, el{' '}
+                    {primerAniversario.toLocaleDateString('es-DO', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                    . Puedes pedirlos desde ya para fechas a partir de ese día.
+                  </p>
+                )}
                 {puedeSolicitar && (
-                  <form action={solicitarDesdePortalForm} className="flex flex-wrap items-end gap-3">
+                  <form
+                    action={solicitarDesdePortalForm}
+                    className="flex flex-wrap items-end gap-3"
+                  >
                     <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -294,9 +395,7 @@ export default async function PortalPage({
                       Motivo (opcional)
                       <input name="reason" className={claseInput} />
                     </label>
-                    <BotonEnvio
-                      
-                      className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                    <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                       <Icon name="send" size={18} />
                       Pedir vacaciones
                     </BotonEnvio>
@@ -313,11 +412,14 @@ export default async function PortalPage({
           </CardHeader>
           <CardBody>
             {anuncios.length === 0 ? (
-              <EmptyState icon="campaign" title="Todavia no hay ningun anuncio" description="" />
+              <EmptyState icon="campaign" title="Todavía no hay ningún anuncio" description="" />
             ) : (
               <ul className="space-y-3">
                 {anuncios.map((a) => (
-                  <li key={a.id} className="border-b border-[var(--color-border-subtle)] pb-3 last:border-0">
+                  <li
+                    key={a.id}
+                    className="border-b border-[var(--color-border)] pb-3 last:border-0"
+                  >
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-[var(--color-text-primary)]">{a.title}</p>
                       {esAnuncioVigente(new Date(a.published_at), hoy) && (

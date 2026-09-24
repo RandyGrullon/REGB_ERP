@@ -18,7 +18,7 @@ import { precioPorVolumen } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { crearEntradaForm } from '../actions'
+import { crearEntradaForm, quitarEntradaForm } from '../actions'
 import { ALCANCE_LISTA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
@@ -28,6 +28,12 @@ interface ListaHead {
   id: string
   name: string
   scope: string
+  status: string
+  start_date: string
+  end_date: string | null
+  cliente: string | null
+  channel: string | null
+  asignados: string
 }
 
 interface EntradaRow {
@@ -48,6 +54,15 @@ const claseInput =
 
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** "20", no "20.0000". */
+const cant = (raw: string | number) =>
+  Number(raw).toLocaleString('es-DO', { maximumFractionDigits: 4 })
+const fecha = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 
 /** Cuotas de precio de una lista (modulo 41): cual precio aplica segun la cantidad. */
 export default async function ListaPrecioDetallePage({
@@ -63,7 +78,13 @@ export default async function ListaPrecioDetallePage({
 
   const { lista, entradas, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [head] = await tx<ListaHead[]>`
-      select id, name, scope from public.price_lists where id = ${id} and tenant_id = ${ctx.tenantId}`
+      select pl.id, pl.name, pl.scope, pl.status, pl.start_date::text, pl.end_date::text,
+             c.name as cliente, pl.channel,
+             (select count(*) from public.customers a
+               where a.tenant_id = pl.tenant_id and a.price_list_id = pl.id)::text as asignados
+      from public.price_lists pl
+      left join public.customers c on c.id = pl.customer_id
+      where pl.id = ${id} and pl.tenant_id = ${ctx.tenantId}`
 
     if (!head) return { lista: null, entradas: [], productos: [] }
 
@@ -99,12 +120,27 @@ export default async function ListaPrecioDetallePage({
         <PageHeader
           icon="sell"
           title={lista.name}
-          description={`Alcance: ${ALCANCE_LISTA[lista.scope] ?? lista.scope}`}
-          crumbs={[{ label: 'Listas de precio', href: `/listas-precio${qs}` }, { label: lista.name }]}
+          description={
+            `${ALCANCE_LISTA[lista.scope] ?? lista.scope}` +
+            (lista.cliente ? ` · ${lista.cliente}` : '') +
+            (lista.channel ? ` · canal ${lista.channel}` : '') +
+            ` · desde ${fecha(lista.start_date)}` +
+            (lista.end_date ? ` hasta ${fecha(lista.end_date)}` : ', sin fecha de fin') +
+            (lista.status === 'active' ? '' : ' · INACTIVA') +
+            (Number(lista.asignados) > 0 ? ` · asignada a ${lista.asignados} cliente(s)` : '')
+          }
+          crumbs={[
+            { label: 'Listas de precio', href: `/listas-precio${qs}` },
+            { label: lista.name },
+          ]}
         />
 
         {entradas.length === 0 ? (
-          <EmptyState icon="sell" title="Todavia no hay ninguna cuota de precio" description="Registra la primera abajo." />
+          <EmptyState
+            icon="sell"
+            title="Todavia no hay ninguna cuota de precio"
+            description="Registra la primera abajo."
+          />
         ) : (
           Array.from(entradasPorProducto.entries()).map(([nombreProducto, cuotas]) => (
             <Card key={nombreProducto}>
@@ -116,27 +152,48 @@ export default async function ListaPrecioDetallePage({
                   <THead>
                     <TR>
                       <TH numeric>Desde cuantas unidades</TH>
-                      <TH numeric>Precio unitario</TH>
+                      <TH numeric>Precio sin ITBIS</TH>
+                      {puedeGestionar && (
+                        <TH>
+                          <span className="sr-only">Quitar</span>
+                        </TH>
+                      )}
                     </TR>
                   </THead>
                   <TBody>
                     {cuotas.map((c) => (
                       <TR key={c.id}>
                         <TD numeric>
-                          <span className="tabular">{c.min_quantity}</span>
+                          <span className="tabular">{cant(c.min_quantity)}</span>
                         </TD>
                         <TD numeric>
                           <span className="tabular font-semibold text-[var(--color-text-primary)]">
                             RD$ {money(Number(c.unit_price))}
                           </span>
                         </TD>
+                        {puedeGestionar && (
+                          <TD>
+                            <form action={quitarEntradaForm} className="inline">
+                              <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                              <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                              <input type="hidden" name="listId" value={lista.id} />
+                              <input type="hidden" name="entryId" value={c.id} />
+                              <BotonEnvio
+                                aria-label={`Quitar la cuota desde ${cant(c.min_quantity)} de ${nombreProducto}`}
+                                className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                              >
+                                <Icon name="delete" size={16} />
+                              </BotonEnvio>
+                            </form>
+                          </TD>
+                        )}
                       </TR>
                     ))}
                   </TBody>
                 </Table>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  Ejemplo: pedir {Math.round(Number(cuotas[cuotas.length - 1]!.min_quantity) * 1.5)} unidades usaria
-                  RD${' '}
+                  Ejemplo: pedir {Math.round(Number(cuotas[cuotas.length - 1]!.min_quantity) * 1.5)}{' '}
+                  unidades usaria RD${' '}
                   {money(
                     precioPorVolumen(
                       cuotas.map((c) => ({
@@ -175,19 +232,32 @@ export default async function ListaPrecioDetallePage({
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Desde cuantas unidades
-                  <input name="minQuantity" defaultValue="1" inputMode="decimal" required className={`tabular ${claseInput}`} />
+                  <input
+                    name="minQuantity"
+                    defaultValue="1"
+                    inputMode="decimal"
+                    required
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Precio unitario
-                  <input name="unitPrice" inputMode="decimal" required className={`tabular ${claseInput}`} />
+                <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Precio sin ITBIS
+                  <input
+                    name="unitPrice"
+                    inputMode="decimal"
+                    required
+                    className={`tabular ${claseInput}`}
+                  />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
                   Agregar cuota
                 </BotonEnvio>
               </form>
+              <p className="mt-2 text-xs text-[var(--color-text-muted)]">
+                Si el producto ya tiene una cuota desde esa misma cantidad, se le corrige el precio.
+                El ITBIS se suma al vender, como en el catálogo.
+              </p>
             </CardBody>
           </Card>
         )}

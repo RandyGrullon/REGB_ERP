@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { formatTaxId, isValidCedula } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -43,22 +44,38 @@ export async function crearEmpleado(fd: FormData): Promise<ActionResult> {
   const hireDate = String(fd.get('hireDate') ?? '').trim()
   const salary = num(String(fd.get('salary') ?? ''))
   const managerId = String(fd.get('managerId') ?? '') || null
-  const nationalId = String(fd.get('nationalId') ?? '').trim() || null
+  const cedula = String(fd.get('nationalId') ?? '').trim() || null
+  const email =
+    String(fd.get('email') ?? '')
+      .trim()
+      .toLowerCase() || null
+  const phone = String(fd.get('phone') ?? '').trim() || null
 
   if (code.length < 1) return { ok: false, error: 'Escribe el codigo del empleado.' }
-  if (firstName.length < 2 || lastName.length < 2) return { ok: false, error: 'Escribe el nombre completo.' }
+  if (firstName.length < 2 || lastName.length < 2)
+    return { ok: false, error: 'Escribe el nombre completo.' }
   if (position.length < 2) return { ok: false, error: 'Escribe el cargo.' }
   if (!hireDate) return { ok: false, error: 'Falta la fecha de ingreso.' }
-  if (salary === null || salary < 0) return { ok: false, error: 'El salario no es valido.' }
+  if (salary === null || salary <= 0) return { ok: false, error: 'Escribe el salario mensual.' }
+  // La cedula es la llave del empleado ante la TSS y la DGII: con un digito
+  // mal puesto la nomina sale igual y la TSS la rechaza despues.
+  if (cedula && !isValidCedula(cedula)) {
+    return { ok: false, error: 'La cédula no es válida: revisa los 11 dígitos.' }
+  }
+  // Siempre 001-0000000-1: con y sin guiones eran dos cedulas distintas para la base.
+  const nationalId = cedula ? formatTaxId(cedula) : null
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, error: 'El correo no es válido.' }
+  }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [emp] = await tx<{ id: string }[]>`
         insert into public.employees
           (tenant_id, code, first_name, last_name, national_id, hire_date, position,
-           department, manager_id, salary)
+           department, manager_id, salary, email, phone)
         values (${ctx.tenantId}, ${code}, ${firstName}, ${lastName}, ${nationalId}, ${hireDate},
-                ${position}, ${department}, ${managerId}, ${salary})
+                ${position}, ${department}, ${managerId}, ${salary}, ${email}, ${phone})
         returning id`
 
       await tx`
@@ -91,7 +108,8 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
 
   const employeeId = String(fd.get('employeeId') ?? '')
   const contractType = String(fd.get('contractType') ?? 'indefinido')
-  const startDate = String(fd.get('startDate') ?? '').trim() || new Date().toISOString().slice(0, 10)
+  const startDate =
+    String(fd.get('startDate') ?? '').trim() || new Date().toISOString().slice(0, 10)
   const salary = num(String(fd.get('salary') ?? ''))
   const position = String(fd.get('position') ?? '').trim()
 
@@ -99,12 +117,16 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
   if (!['indefinido', 'determinado', 'por_obra'].includes(contractType)) {
     return { ok: false, error: 'Tipo de contrato no valido.' }
   }
-  if (salary === null || salary < 0) return { ok: false, error: 'El salario no es valido.' }
+  if (salary === null || salary <= 0)
+    return { ok: false, error: 'Escribe el nuevo salario mensual.' }
   if (position.length < 2) return { ok: false, error: 'Escribe el cargo.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.crear_contrato_empleado(${employeeId}, ${contractType}, ${startDate}, ${salary}, ${position})`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) =>
+        tx`select public.crear_contrato_empleado(${employeeId}, ${contractType}, ${startDate}, ${salary}, ${position})`,
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -124,7 +146,8 @@ export async function darDeBajaEmpleado(fd: FormData): Promise<ActionResult> {
   if (!permiso.ok) return permiso
 
   const employeeId = String(fd.get('employeeId') ?? '')
-  const terminationDate = String(fd.get('terminationDate') ?? '').trim() || new Date().toISOString().slice(0, 10)
+  const terminationDate =
+    String(fd.get('terminationDate') ?? '').trim() || new Date().toISOString().slice(0, 10)
   const reason = String(fd.get('reason') ?? '').trim()
 
   if (!employeeId) return { ok: false, error: 'Falta el empleado.' }
@@ -169,8 +192,10 @@ export async function vincularUsuario(fd: FormData): Promise<ActionResult> {
   if (!employeeId) return { ok: false, error: 'Falta el empleado.' }
 
   try {
-    await asUser(ctx.userId, ctx.tenantId, (tx) =>
-      tx`select public.vincular_empleado_usuario(${employeeId}, ${userId})`,
+    await asUser(
+      ctx.userId,
+      ctx.tenantId,
+      (tx) => tx`select public.vincular_empleado_usuario(${employeeId}, ${userId})`,
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -189,8 +214,8 @@ export async function vincularUsuarioForm(fd: FormData): Promise<void> {
     await vincularUsuario(fd),
     'vincularUsuario',
     quita
-      ? 'Listo, quitamos el vinculo: esa cuenta ya no ve este expediente.'
-      : 'Listo, la cuenta quedo vinculada: ya ve este expediente en su portal.',
+      ? 'Listo, quitamos el vínculo: esa cuenta ya no ve este expediente.'
+      : 'Listo, la cuenta quedó vinculada: ya ve este expediente en su portal.',
   )
 }
 export async function crearEmpleadoForm(fd: FormData): Promise<void> {

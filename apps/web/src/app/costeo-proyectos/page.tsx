@@ -28,20 +28,26 @@ export default async function CosteoProyectosPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'project-costing')
 
-  const filas = await asUser(ctx.userId, ctx.tenantId, (tx) => tx<Fila[]>`
+  const filas = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<Fila[]>`
     select p.id, p.name, p.status,
            public.project_budget_total(p.id)::text as presupuesto,
            public.project_cost_total(p.id)::text as real,
            public.project_wip(p.id)::text as wip
     from public.projects p
     where p.tenant_id = ${ctx.tenantId}
-    order by p.created_at desc`)
+    order by p.created_at desc`,
+  )
 
   const qs = ctx.demoQs
   const totalPresupuesto = filas.reduce((a, f) => a + Number(f.presupuesto), 0)
   const totalReal = filas.reduce((a, f) => a + Number(f.real), 0)
   const totalWip = filas.reduce((a, f) => a + Number(f.wip), 0)
-  const sobrePresupuesto = filas.filter((f) => Number(f.real) > Number(f.presupuesto) && Number(f.presupuesto) > 0).length
+  const sobrePresupuesto = filas.filter(
+    (f) => Number(f.real) > Number(f.presupuesto) && Number(f.presupuesto) > 0,
+  ).length
 
   return (
     <Shell {...shell} activePath="/costeo-proyectos">
@@ -86,7 +92,10 @@ export default async function CosteoProyectosPage({
                 return (
                   <TR key={f.id}>
                     <TD className="text-[var(--color-text-primary)]">
-                      <a href={`/costeo-proyectos/${f.id}${qs}`} className="underline-offset-2 hover:underline">
+                      <a
+                        href={`/costeo-proyectos/${f.id}${qs}`}
+                        className="underline-offset-2 hover:underline"
+                      >
                         {f.name}
                       </a>
                     </TD>
@@ -108,7 +117,11 @@ export default async function CosteoProyectosPage({
                       {mrg === null ? (
                         <Badge tone="neutral">Sin presupuesto</Badge>
                       ) : (
-                        <span className={`tabular ${mrg < 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}`}>{pct(mrg)}</span>
+                        <span
+                          className={`tabular ${mrg < 0 ? 'text-[var(--color-semantic-text-danger)]' : ''}`}
+                        >
+                          {pct(mrg)}
+                        </span>
                       )}
                     </TD>
                     <TD numeric>

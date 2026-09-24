@@ -134,7 +134,11 @@ export default async function CuentaBancariaPage({
             value={`RD$ ${money(Number(head.opening_balance))}`}
             hint="al registrar la cuenta"
           />
-          <StatCard label="Entradas" value={`RD$ ${money(entradas)}`} hint="depositos y traspasos" />
+          <StatCard
+            label="Entradas"
+            value={`RD$ ${money(entradas)}`}
+            hint="depositos y traspasos"
+          />
           <StatCard label="Salidas" value={`RD$ ${money(salidas)}`} hint="retiros y traspasos" />
         </section>
 
@@ -183,9 +187,7 @@ export default async function CuentaBancariaPage({
                   Fecha
                   <input name="transactionDate" type="date" className={claseInput} />
                 </label>
-                <BotonEnvio
-                  
-                  className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
                   Registrar
                 </BotonEnvio>
@@ -205,7 +207,7 @@ export default async function CuentaBancariaPage({
           <CardBody>
             {movimientos.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Esta cuenta todavia no tiene movimientos.
+                Esta cuenta todavía no tiene movimientos.
               </p>
             ) : (
               <Table>
