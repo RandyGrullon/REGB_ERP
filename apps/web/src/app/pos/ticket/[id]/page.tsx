@@ -50,7 +50,7 @@ interface Head {
 const NOMBRE_COMPROBANTE: Record<string, string> = {
   B01: 'Factura de crédito fiscal',
   B02: 'Factura de consumo',
-  B14: 'Comprobante de regimenes especiales',
+  B14: 'Comprobante de regímenes especiales',
   B15: 'Comprobante gubernamental',
 }
 
@@ -170,7 +170,7 @@ export default async function TicketPage({
             <p className="text-center text-[12px] font-bold">NCF: {head.ncf}</p>
             {head.ncf_expires_on && (
               <p className="text-center">
-                Valido hasta:{' '}
+                Válido hasta:{' '}
                 {new Date(`${head.ncf_expires_on}T12:00:00`).toLocaleDateString('es-DO', {
                   day: '2-digit',
                   month: '2-digit',
@@ -182,7 +182,7 @@ export default async function TicketPage({
         ) : (
           <p className="border border-black py-1 text-center text-[10px] font-bold uppercase">
             Sin comprobante fiscal
-            <span className="block font-normal normal-case">no valido para crédito fiscal</span>
+            <span className="block font-normal normal-case">no válido para crédito fiscal</span>
           </p>
         )}
         <p>Ticket: {head.number}</p>
@@ -194,6 +194,7 @@ export default async function TicketPage({
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
+            timeZone: 'America/Santo_Domingo',
           })}
         </p>
         {head.cashier_name && <p>Cajero: {head.cashier_name}</p>}

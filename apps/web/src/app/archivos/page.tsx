@@ -59,7 +59,7 @@ const TIPOS: { value: string; label: string }[] = [
   { value: '', label: 'Todos los tipos' },
   { value: 'image', label: 'Imagenes' },
   { value: 'pdf', label: 'PDF' },
-  { value: 'sheet', label: 'Hojas de calculo' },
+  { value: 'sheet', label: 'Hojas de cálculo' },
   { value: 'doc', label: 'Documentos' },
   { value: 'otro', label: 'Otros' },
 ]
@@ -131,7 +131,7 @@ export default async function ArchivosPage({
           description={
             enPapelera
               ? 'Nada se borra de verdad. Lo que esta aquí se puede restaurar cuando quieras.'
-              : 'Documentos del negocio: contratos, cedulas, facturas escaneadas.'
+              : 'Documentos del negocio: contratos, cédulas, facturas escaneadas.'
           }
           crumbs={
             enPapelera
@@ -183,7 +183,7 @@ export default async function ArchivosPage({
               hayFiltros
                 ? 'Ningún archivo coincide'
                 : enPapelera
-                  ? 'La papelera esta vacia'
+                  ? 'La papelera está vacía'
                   : 'Todavía no hay archivos'
             }
             description={
@@ -191,7 +191,7 @@ export default async function ArchivosPage({
                 ? 'Prueba con otro nombre o quita el filtro de tipo.'
                 : enPapelera
                   ? 'Lo que envies a la papelera aparece aquí, listo para restaurar.'
-                  : 'Sube el primero con el formulario de abajo. Contratos, cedulas, cotizaciones: todo junto y buscable.'
+                  : 'Sube el primero con el formulario de abajo. Contratos, cédulas, cotizaciones: todo junto y buscable.'
             }
           />
         ) : (
@@ -295,8 +295,8 @@ export default async function ArchivosPage({
                   Subir
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
-                  Hasta 512 KB por archivo en desarrollo; en produccion el binario vive en Supabase
-                  Storage sin ese limite.
+                  Hasta 512 KB por archivo en desarrollo; en producción el binario vive en Supabase
+                  Storage sin ese límite.
                 </p>
               </form>
             </CardBody>

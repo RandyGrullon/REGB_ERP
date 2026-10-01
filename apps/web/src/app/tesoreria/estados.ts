@@ -5,7 +5,7 @@ export const TIPO_MOVIMIENTO: Record<
   string,
   { label: string; tone: MovimientoTone; icono: string; entra: boolean }
 > = {
-  deposit: { label: 'Deposito', tone: 'success', icono: 'south_west', entra: true },
+  deposit: { label: 'Depósito', tone: 'success', icono: 'south_west', entra: true },
   withdrawal: { label: 'Retiro', tone: 'warning', icono: 'north_east', entra: false },
   transfer_in: {
     label: 'Entrada por transferencia',

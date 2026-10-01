@@ -19,7 +19,7 @@ import { ErrorVacaciones, revisarVacaciones } from '../vacaciones/saldo'
  */
 
 const SIN_VINCULO =
-  'Tu cuenta no esta vinculada a ningun expediente. Pide a RRHH que la vincule desde Empleados.'
+  'Tu cuenta no está vinculada a ningún expediente. Pide a RRHH que la vincule desde Empleados.'
 
 function demoDe(fd: FormData): DemoParams {
   return {
@@ -31,7 +31,7 @@ function demoDe(fd: FormData): DemoParams {
 /** Actualiza el telefono del propio expediente. */
 export async function editarMiTelefono(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'hr-portal', 'hr-portal.edit-profile')
   if (!permiso.ok) return permiso
 
@@ -59,7 +59,7 @@ export async function editarMiTelefono(fd: FormData): Promise<ActionResult> {
 /** Pide vacaciones desde el portal -siempre para el empleado propio-. */
 export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'hr-portal', 'hr-portal.request-time-off')
   if (!permiso.ok) return permiso
 
@@ -78,7 +78,7 @@ export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> 
 
   const businessDays = diasLaborablesEntre(inicio, fin)
   if (businessDays === 0) {
-    return { ok: false, error: 'El rango elegido no incluye ningun dia laborable.' }
+    return { ok: false, error: 'El rango elegido no incluye ningún día laborable.' }
   }
 
   try {
@@ -113,16 +113,71 @@ export async function solicitarDesdePortal(fd: FormData): Promise<ActionResult> 
   return { ok: true }
 }
 
+const CATEGORIAS_GASTO = ['travel', 'meals', 'transport', 'supplies', 'lodging', 'other']
+
+/**
+ * Reporta un gasto PROPIO desde el portal. El empleado no elige a nombre
+ * de quién: `reportar_gasto()` (0132, la misma que usa la app móvil) lo
+ * pone a nombre del expediente vinculado a la cuenta del token.
+ */
+export async function reportarMiGasto(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
+  const permiso = exigir(ctx, 'expenses', 'expenses.submit')
+  if (!permiso.ok) return permiso
+
+  const category = String(fd.get('category') ?? '')
+  const expenseDate = String(fd.get('expenseDate') ?? '')
+  const amount = Number(
+    String(fd.get('amount') ?? '')
+      .replace(/,/g, '')
+      .trim() || 'NaN',
+  )
+  const vendorName = String(fd.get('vendorName') ?? '').trim() || null
+  const ncf =
+    String(fd.get('ncf') ?? '')
+      .trim()
+      .toUpperCase() || null
+  const note = String(fd.get('receiptNote') ?? '').trim() || null
+
+  if (!CATEGORIAS_GASTO.includes(category)) return { ok: false, error: 'Elige una categoría.' }
+  if (!expenseDate) return { ok: false, error: 'Elige la fecha del gasto.' }
+  if (!Number.isFinite(amount) || amount <= 0)
+    return { ok: false, error: 'El monto debe ser mayor que cero.' }
+
+  try {
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      const yo = await resolverMiEmpleado(tx)
+      if (!yo) throw new Error(SIN_VINCULO)
+
+      await tx`
+        select public.reportar_gasto(${category}, ${expenseDate}::date, ${amount},
+                                     ${vendorName}, null, ${ncf}, ${note})`
+
+      await tx`
+        select public.emit_event('expenses.expense.submitted',
+          ${JSON.stringify({ employeeId: yo.id, category, amount })}::text::jsonb, 'expenses')`
+    })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'Error inesperado'
+    return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
+  }
+
+  revalidatePath('/portal')
+  revalidatePath('/gastos')
+  return { ok: true }
+}
+
 /** Publica un anuncio para todo el tenant. */
 export async function publicarAnuncio(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'hr-portal', 'hr-portal.manage-announcements')
   if (!permiso.ok) return permiso
 
   const title = String(fd.get('title') ?? '').trim()
   const body = String(fd.get('body') ?? '').trim()
-  if (!title) return { ok: false, error: 'Escribe un titulo.' }
+  if (!title) return { ok: false, error: 'Escribe un título.' }
   if (!body) return { ok: false, error: 'Escribe el contenido del anuncio.' }
 
   try {
@@ -154,6 +209,13 @@ export async function solicitarDesdePortalForm(fd: FormData): Promise<void> {
     await solicitarDesdePortal(fd),
     'solicitarDesdePortal',
     'Listo, pediste tus vacaciones: quedan pendientes de aprobación.',
+  )
+}
+export async function reportarMiGastoForm(fd: FormData): Promise<void> {
+  await anotarAviso(
+    await reportarMiGasto(fd),
+    'reportarMiGasto',
+    'Listo, reportaste tu gasto: queda pendiente de aprobación.',
   )
 }
 export async function publicarAnuncioForm(fd: FormData): Promise<void> {

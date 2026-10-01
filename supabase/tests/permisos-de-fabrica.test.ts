@@ -91,6 +91,26 @@ describe('Un cliente nuevo nace con los roles de fabrica completos', () => {
     expect(p['pos.export']).toBe(true)
     expect(p['pos.ncf.manage']).toBe(true)
   })
+
+  it('el Contador abre todas las pantallas de finanzas de su menu (0161)', async () => {
+    const p = await permisos('Contador')
+    for (const k of [
+      'fixed-assets.*',
+      'budgets.*',
+      'cost-centers.*',
+      'e-invoice.*',
+      'bi.*',
+      'multicurrency.*',
+      'consolidation.*',
+    ]) {
+      expect(p[k], k).toBe(true)
+    }
+    // Lo que 0006 le nego sigue negado.
+    expect(p['payroll.view']).toBe(false)
+    const [r] = await sql<{ visible_modules: string[] }[]>`
+      select visible_modules from public.roles where tenant_id = ${tenant} and name = 'Contador'`
+    expect(r!.visible_modules).toEqual(expect.arrayContaining(['multicurrency', 'consolidation']))
+  })
 })
 
 describe('El Empleado entra a su portal', () => {

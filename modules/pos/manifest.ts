@@ -21,8 +21,11 @@ export default defineModule({
     monthly: { pyme: 19, mediano: 69, grande: 190 },
   },
 
-  requires: ['products'],
-  recommends: ['inventory'],
+  // Cada turno descuenta de un almacén, y los almacenes son de Existencias:
+  // sin él la caja no abre (0171). Antes era solo una recomendación y el
+  // alta dejaba clientes con caja y sin donde descontar.
+  requires: ['products', 'inventory'],
+  recommends: [],
 
   permissions: [
     'pos.view',

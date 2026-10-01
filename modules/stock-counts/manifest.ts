@@ -29,10 +29,15 @@ export default defineModule({
   requires: ['inventory'],
   recommends: ['barcode'],
 
-  permissions: ['stock-counts.view', 'stock-counts.manage', 'stock-counts.count', 'stock-counts.approve'],
+  permissions: [
+    'stock-counts.view',
+    'stock-counts.manage',
+    'stock-counts.count',
+    'stock-counts.approve',
+  ],
 
   routes: [
-    { path: '/conteos-ciclicos', label: 'Conteos ciclicos', perm: 'stock-counts.view' },
+    { path: '/conteos-ciclicos', label: 'Conteos cíclicos', perm: 'stock-counts.view' },
     { path: '/conteos-ciclicos/:id', label: 'Detalle', perm: 'stock-counts.view', hidden: true },
   ],
 

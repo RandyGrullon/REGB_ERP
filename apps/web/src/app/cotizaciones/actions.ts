@@ -25,7 +25,7 @@ const num = (raw: string): number | null => {
 /** Crea un RFQ nuevo. */
 export async function crearRfq(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'rfq', 'rfq.manage')
   if (!permiso.ok) return permiso
 
@@ -33,7 +33,7 @@ export async function crearRfq(fd: FormData): Promise<ActionResult> {
   const description = String(fd.get('description') ?? '').trim() || null
   const deadline = String(fd.get('deadline') ?? '') || null
 
-  if (!title) return { ok: false, error: 'Escribe el titulo.' }
+  if (!title) return { ok: false, error: 'Escribe el título.' }
 
   try {
     await asUser(
@@ -55,13 +55,13 @@ export async function crearRfq(fd: FormData): Promise<ActionResult> {
 /** Invita a un proveedor a cotizar. */
 export async function invitarProveedor(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'rfq', 'rfq.manage')
   if (!permiso.ok) return permiso
 
   const rfqId = String(fd.get('rfqId') ?? '')
   const supplierId = String(fd.get('supplierId') ?? '')
-  if (!rfqId) return { ok: false, error: 'Falta el RFQ.' }
+  if (!rfqId) return { ok: false, error: 'Falta la solicitud de cotización.' }
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
 
   try {
@@ -75,7 +75,7 @@ export async function invitarProveedor(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key'))
-      return { ok: false, error: 'Ese proveedor ya esta invitado.' }
+      return { ok: false, error: 'Ese proveedor ya está invitado.' }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
 
@@ -86,7 +86,7 @@ export async function invitarProveedor(fd: FormData): Promise<ActionResult> {
 /** Registra la cotizacion de un proveedor -queda fija desde el momento en que se registra-. */
 export async function registrarCotizacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'rfq', 'rfq.manage')
   if (!permiso.ok) return permiso
 
@@ -96,12 +96,12 @@ export async function registrarCotizacion(fd: FormData): Promise<ActionResult> {
   const leadTimeDays = Number.parseInt(String(fd.get('leadTimeDays') ?? ''), 10)
   const notes = String(fd.get('notes') ?? '').trim() || null
 
-  if (!rfqId) return { ok: false, error: 'Falta el RFQ.' }
+  if (!rfqId) return { ok: false, error: 'Falta la solicitud de cotización.' }
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (totalAmount === null || totalAmount <= 0)
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (!Number.isInteger(leadTimeDays) || leadTimeDays < 0) {
-    return { ok: false, error: 'El plazo de entrega debe ser un entero de 0 o mas dias.' }
+    return { ok: false, error: 'El plazo de entrega debe ser un entero de 0 o más días.' }
   }
 
   try {
@@ -117,7 +117,7 @@ export async function registrarCotizacion(fd: FormData): Promise<ActionResult> {
     if (msg.includes('duplicate key')) {
       return {
         ok: false,
-        error: 'Ese proveedor ya cotizo en este RFQ. Una cotizacion registrada no se cambia.',
+        error: 'Ese proveedor ya cotizó en esta solicitud. Una cotización registrada no se cambia.',
       }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -130,21 +130,21 @@ export async function registrarCotizacion(fd: FormData): Promise<ActionResult> {
 /** Adjudica el RFQ a un proveedor. */
 export async function adjudicarRfq(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'rfq', 'rfq.award')
   if (!permiso.ok) return permiso
 
   const rfqId = String(fd.get('rfqId') ?? '')
   const supplierId = String(fd.get('supplierId') ?? '')
-  if (!rfqId) return { ok: false, error: 'Falta el RFQ.' }
+  if (!rfqId) return { ok: false, error: 'Falta la solicitud de cotización.' }
   if (!supplierId) return { ok: false, error: 'Elige el proveedor ganador.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [row] = await tx<{ status: string }[]>`
         select status from public.rfqs where id = ${rfqId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Ese RFQ no existe.')
-      if (row.status !== 'open') throw new Error('Ese RFQ ya fue resuelto.')
+      if (!row) throw new Error('Esa solicitud no existe.')
+      if (row.status !== 'open') throw new Error('Esa solicitud ya fue resuelta.')
 
       // La regla que el modulo promete -"gana siempre el monto mas bajo,
       // nunca a criterio de quien compra"- la hace cumplir el servidor, no
@@ -157,7 +157,7 @@ export async function adjudicarRfq(fd: FormData): Promise<ActionResult> {
         select supplier_id, total_amount::text, lead_time_days from public.rfq_quotes
         where rfq_id = ${rfqId} and tenant_id = ${ctx.tenantId}`
       if (cotizaciones.length === 0)
-        throw new Error('Registra al menos una cotizacion antes de adjudicar.')
+        throw new Error('Registra al menos una cotización antes de adjudicar.')
       const ganador = mejorCotizacion(
         cotizaciones.map((c) => ({
           supplierId: c.supplier_id,
@@ -166,11 +166,11 @@ export async function adjudicarRfq(fd: FormData): Promise<ActionResult> {
         })),
       )
       if (!cotizaciones.some((c) => c.supplier_id === supplierId)) {
-        throw new Error('Ese proveedor no cotizo en este RFQ.')
+        throw new Error('Ese proveedor no cotizó en esta solicitud.')
       }
       if (supplierId !== ganador) {
         throw new Error(
-          'Se adjudica a la mejor oferta: el monto mas bajo y, si empatan, el plazo mas corto.',
+          'Se adjudica a la mejor oferta: el monto más bajo y, si empatan, el plazo más corto.',
         )
       }
 
@@ -198,13 +198,13 @@ export async function crearRfqForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearRfq(fd), 'crearRfq')
 }
 export async function invitarProveedorForm(fd: FormData): Promise<void> {
-  await anotarAviso(await invitarProveedor(fd), 'invitarProveedor', 'Listo, quedo invitado.')
+  await anotarAviso(await invitarProveedor(fd), 'invitarProveedor', 'Listo, quedó invitado.')
 }
 export async function registrarCotizacionForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await registrarCotizacion(fd),
     'registrarCotizacion',
-    'Listo, anotamos su cotizacion.',
+    'Listo, anotamos su cotización.',
   )
 }
 export async function adjudicarRfqForm(fd: FormData): Promise<void> {
@@ -213,6 +213,6 @@ export async function adjudicarRfqForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await adjudicarRfq(fd),
     'adjudicarRfq',
-    'Listo, quedo adjudicado a la mejor oferta.',
+    'Listo, quedó adjudicado a la mejor oferta.',
   )
 }

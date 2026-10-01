@@ -25,24 +25,24 @@ describe('motivoSinTurno', () => {
 
   it('el Owner sin almacen no lee que su rol no puede: lee que falta el almacen, con el enlace', () => {
     const m = motivoSinTurno(base)!
-    expect(m.titulo).toBe('Falta crear un almacen')
+    expect(m.titulo).toBe('Falta crear un almacén')
     expect(m.descripcion).not.toContain('Tu rol')
     expect(m.enlace).toEqual({
       href: '/inventory/warehouses?tenant=x&rol=Owner',
-      texto: 'Crear un almacen',
+      texto: 'Crear un almacén',
     })
   })
 
   it('si no puede crear almacenes, se le dice a quien pedirselo, sin enlace a un 404', () => {
     const m = motivoSinTurno({ ...base, puedeCrearAlmacen: false })!
-    expect(m.titulo).toBe('Falta crear un almacen')
+    expect(m.titulo).toBe('Falta crear un almacén')
     expect(m.descripcion).toContain('Existencias > Almacenes')
     expect(m.enlace).toBeNull()
   })
 
   it('sin el modulo de existencias, el almacen no se ve: se dice y se manda al marketplace', () => {
     const m = motivoSinTurno({ ...base, tieneExistencias: false })!
-    expect(m.titulo).toBe('La caja necesita un almacen')
+    expect(m.titulo).toBe('La caja necesita un almacén')
     expect(m.descripcion).toContain('Existencias')
     expect(m.enlace).toEqual({
       href: '/marketplace?tenant=x&rol=Owner',

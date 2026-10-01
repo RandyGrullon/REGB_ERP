@@ -34,7 +34,7 @@ const num = (raw: string): number | null => {
 /** Crea una transferencia en borrador -sin lineas todavia-. */
 export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.create')
   if (!permiso.ok) return permiso
 
@@ -42,10 +42,10 @@ export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
   const toWarehouseId = String(fd.get('toWarehouseId') ?? '')
   const notes = String(fd.get('notes') ?? '').trim() || null
 
-  if (!fromWarehouseId) return { ok: false, error: 'Elige el almacen de origen.' }
-  if (!toWarehouseId) return { ok: false, error: 'Elige el almacen de destino.' }
+  if (!fromWarehouseId) return { ok: false, error: 'Elige el almacén de origen.' }
+  if (!toWarehouseId) return { ok: false, error: 'Elige el almacén de destino.' }
   if (fromWarehouseId === toWarehouseId) {
-    return { ok: false, error: 'El origen y el destino no pueden ser el mismo almacen.' }
+    return { ok: false, error: 'El origen y el destino no pueden ser el mismo almacén.' }
   }
 
   try {
@@ -69,7 +69,7 @@ export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
 /** Agrega una linea a una transferencia todavia en borrador. */
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.create')
   if (!permiso.ok) return permiso
 
@@ -84,7 +84,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
     const [order] = await tx<{ status: string }[]>`
       select status from public.transfer_orders where id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!order) return 'no-existe'
-    if (order.status !== 'draft') return 'Solo se puede agregar lineas mientras esta en borrador.'
+    if (order.status !== 'draft') return 'Solo se puede agregar líneas mientras está en borrador.'
 
     // Un servicio (envio, instalacion) no tiene existencias: aceptarlo aqui
     // solo aplazaba el error al momento de despachar el camion.
@@ -110,13 +110,13 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 /** Quita una linea -solo posible mientras la transferencia sigue en borrador-. */
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.create')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const orderId = String(fd.get('orderId') ?? '')
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
 
   try {
     await asUser(
@@ -137,7 +137,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
 /** Despacha la transferencia: fija qty_sent en cada linea y saca el stock del origen. */
 export async function despacharTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.dispatch')
   if (!permiso.ok) return permiso
 
@@ -156,7 +156,7 @@ export async function despacharTransferencia(fd: FormData): Promise<ActionResult
     const lineas = await tx<{ id: string; product_id: string; qty_requested: string }[]>`
       select id, product_id, qty_requested::text from public.transfer_order_lines
       where order_id = ${orderId} and tenant_id = ${ctx.tenantId}`
-    if (lineas.length === 0) return 'Agrega al menos una linea antes de despachar.'
+    if (lineas.length === 0) return 'Agrega al menos una línea antes de despachar.'
 
     // No se despacha lo que no esta. El kardex suma y resta sin mirar: sin
     // esto, el origen quedaba en negativo y el destino recibia existencia
@@ -179,7 +179,7 @@ export async function despacharTransferencia(fd: FormData): Promise<ActionResult
       const detalle = faltantes
         .map((f) => `${f.sku}: hay ${Number(f.hay)}, se piden ${Number(f.pedido)}`)
         .join('; ')
-      return `No hay suficiente en el almacen de origen (${detalle}).`
+      return `No hay suficiente en el almacén de origen (${detalle}).`
     }
 
     for (const l of lineas) {
@@ -217,7 +217,7 @@ export async function despacharTransferencia(fd: FormData): Promise<ActionResult
 /** Recibe la transferencia: fija qty_received en cada linea y entra el stock al destino. */
 export async function recibirTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.receive')
   if (!permiso.ok) return permiso
 
@@ -250,11 +250,11 @@ export async function recibirTransferencia(fd: FormData): Promise<ActionResult> 
     for (const l of lineas) {
       const qty = porId.get(l.id)
       if (qty === null || qty === undefined) {
-        return `${l.sku}: escribe cuanto llego (0 si no llego nada).`
+        return `${l.sku}: escribe cuánto llegó (0 si no llegó nada).`
       }
       if (qty < 0) return `${l.sku}: la cantidad recibida no puede ser negativa.`
       if (qty > Number(l.qty_sent)) {
-        return `${l.sku}: salieron ${Number(l.qty_sent)} y no pueden llegar ${qty}. Si llego de mas, fue un error al despachar: cuentalo en el origen.`
+        return `${l.sku}: salieron ${Number(l.qty_sent)} y no pueden llegar ${qty}. Si llegó de más, fue un error al despachar: cuéntalo en el origen.`
       }
       aRecibir.push({ id: l.id, productId: l.product_id, qty })
     }
@@ -298,7 +298,7 @@ export async function recibirTransferencia(fd: FormData): Promise<ActionResult> 
 /** Cancela una transferencia -solo posible mientras sigue en borrador-. */
 export async function cancelarTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'transfers', 'transfers.create')
   if (!permiso.ok) return permiso
 
@@ -310,7 +310,7 @@ export async function cancelarTransferencia(fd: FormData): Promise<ActionResult>
       select status from public.transfer_orders where id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!order) return 'no-existe'
     if (!transicionValidaTransferencia(order.status as EstadoTransferencia, 'cancelled')) {
-      return 'Esa transferencia ya no se puede cancelar -ya salio del almacen-.'
+      return 'Esa transferencia ya no se puede cancelar: ya salió del almacén.'
     }
 
     await tx`
@@ -341,14 +341,14 @@ export async function despacharTransferenciaForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await despacharTransferencia(fd),
     'despacharTransferencia',
-    'Listo, salio del almacen: queda en transito hasta que la reciban.',
+    'Listo, salió del almacén: queda en tránsito hasta que la reciban.',
   )
 }
 export async function recibirTransferenciaForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await recibirTransferencia(fd),
     'recibirTransferencia',
-    'Listo, la mercancia entro al almacen de destino.',
+    'Listo, la mercancía entró al almacén de destino.',
   )
 }
 export async function cancelarTransferenciaForm(fd: FormData): Promise<void> {

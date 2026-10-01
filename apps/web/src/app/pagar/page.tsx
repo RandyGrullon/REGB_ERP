@@ -96,6 +96,7 @@ export default async function PagarPage({
 
   const puedeCrear = exigir(ctx, 'ap', 'ap.invoice.create').ok
   const puedePagar = exigir(ctx, 'ap', 'ap.payment.record').ok
+  const veRetenciones = exigir(ctx, 'taxes', 'taxes.view').ok
   const qs = ctx.demoQs
   const hoy = new Date()
   // Hoy en RD, para la fecha de emision por defecto: `toISOString()` da el
@@ -115,7 +116,7 @@ export default async function PagarPage({
         <PageHeader
           icon="request_page"
           title="Cuentas por pagar"
-          description="A quien le debemos, cuanto y desde cuando. La retencion reduce lo que se le paga al proveedor -esa parte va a la DGII-."
+          description="A quién le debemos, cuánto y desde cuándo. La retención reduce lo que se le paga al proveedor: esa parte va a la DGII."
           actions={
             <form action={marcarVencidasForm}>
               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
@@ -140,7 +141,7 @@ export default async function PagarPage({
           <StatCard
             label="Vencido"
             value={`RD$ ${money(Number(totales?.vencido ?? 0))}`}
-            hint="paso su fecha"
+            hint={Number(totales?.vencido ?? 0) > 0 ? 'ya pasó su fecha' : 'nada atrasado'}
           />
           <StatCard label="Proveedores" value={String(proveedores.length)} hint="activos" />
         </section>
@@ -148,7 +149,7 @@ export default async function PagarPage({
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
           <SearchField
             defaultValue={q}
-            label="Numero o proveedor"
+            label="Número o proveedor"
             placeholder="F-001, Distribuidora…"
           />
           <FilterSelect label="Estado" name="estado" defaultValue={estado}>
@@ -173,109 +174,181 @@ export default async function PagarPage({
             }
           />
         ) : (
-          <Table>
-            <THead>
-              <TR>
-                <TH>Factura</TH>
-                <TH>Proveedor</TH>
-                <TH>Emitida</TH>
-                <TH>Vence</TH>
-                <TH numeric>Total</TH>
-                <TH numeric>Pagado</TH>
-                <TH numeric>Saldo</TH>
-                <TH>Estado</TH>
-                {puedePagar && (
-                  <TH>
-                    <span className="sr-only">Pagar</span>
-                  </TH>
-                )}
-              </TR>
-            </THead>
-            <TBody>
+          <>
+            {/* En el teléfono, una tarjeta por factura: la tabla de nueve
+              columnas escondía el saldo y el estado detrás de un scroll. */}
+            <ul className="space-y-2 md:hidden" aria-label="Facturas de proveedor">
               {facturas.map((f) => {
                 const e = ESTADO_FACTURA[f.status] ?? { label: f.status, tone: 'neutral' as const }
                 const saldo = Number(f.saldo)
                 const dias = daysOverdue(new Date(`${f.due_date}T12:00:00`), hoy)
                 return (
-                  <TR key={f.id} className={f.status === 'void' ? 'opacity-50' : ''}>
-                    <TD>
+                  <li
+                    key={f.id}
+                    className={`rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3 ${f.status === 'void' ? 'opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <a
+                          href={`/pagar/${f.id}${qs}`}
+                          className="font-semibold text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                        >
+                          <Mono>{f.supplier_invoice_number}</Mono>
+                        </a>
+                        <p className="truncate text-sm text-[var(--color-text-primary)]">
+                          {f.supplier_name}
+                        </p>
+                      </div>
+                      <Badge tone={e.tone}>{e.label}</Badge>
+                    </div>
+                    <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                      <dt className="text-[var(--color-text-muted)]">Vence</dt>
+                      <dd className="text-right text-[var(--color-text-secondary)]">
+                        {fecha(f.due_date)}
+                        {dias > 0 && saldo > 0 && f.status !== 'void' && (
+                          <span className="block text-[var(--color-semantic-text-danger)]">
+                            {dias} día{dias === 1 ? '' : 's'} de atraso
+                          </span>
+                        )}
+                      </dd>
+                      <dt className="text-[var(--color-text-muted)]">Total</dt>
+                      <dd className="tabular text-right text-[var(--color-text-secondary)]">
+                        {money(Number(f.total))}
+                      </dd>
+                      <dt className="text-[var(--color-text-muted)]">Saldo</dt>
+                      <dd className="tabular text-right font-semibold text-[var(--color-text-primary)]">
+                        RD$ {money(saldo)}
+                      </dd>
+                    </dl>
+                    {puedePagar && saldo > 0 && f.status !== 'void' && (
                       <a
                         href={`/pagar/${f.id}${qs}`}
-                        className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                        className="mt-3 flex h-11 items-center justify-center gap-1.5 rounded-full bg-[var(--color-brand)] text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
-                        <Mono>{f.supplier_invoice_number}</Mono>
+                        <Icon name="payments" size={18} />
+                        Registrar pago
                       </a>
-                    </TD>
-                    <TD className="font-medium text-[var(--color-text-primary)]">
-                      {f.supplier_name}
-                    </TD>
-                    <TD>{fecha(f.issue_date)}</TD>
-                    <TD>
-                      {fecha(f.due_date)}
-                      {dias > 0 && saldo > 0 && f.status !== 'void' && (
-                        <span className="block text-[10px] text-[var(--color-semantic-text-danger)]">
-                          {dias} dias de atraso
-                        </span>
-                      )}
-                    </TD>
-                    <TD numeric>
-                      <span className="tabular">{money(Number(f.total))}</span>
-                      {Number(f.retencion) > 0 && (
-                        <span className="block text-[10px] text-[var(--color-semantic-text-warning)]">
-                          -{money(Number(f.retencion))} retenido
-                        </span>
-                      )}
-                    </TD>
-                    <TD numeric>
-                      <span className="tabular text-[var(--color-semantic-text-success)]">
-                        {money(Number(f.pagado))}
-                      </span>
-                    </TD>
-                    <TD numeric>
-                      <span className="tabular font-semibold">{money(saldo)}</span>
-                    </TD>
-                    <TD>
-                      <Badge tone={e.tone}>{e.label}</Badge>
-                    </TD>
-                    {puedePagar && (
-                      <TD>
-                        {saldo > 0 && f.status !== 'void' && (
-                          <form action={registrarPagoForm} className="flex items-center gap-1">
-                            <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                            <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                            <input type="hidden" name="invoiceId" value={f.id} />
-                            <input
-                              name="amount"
-                              defaultValue={saldo.toFixed(2)}
-                              inputMode="decimal"
-                              aria-label={`Monto a pagar de ${f.supplier_invoice_number}`}
-                              className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
-                            />
-                            <select
-                              name="method"
-                              aria-label="Forma de pago"
-                              className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
-                            >
-                              <option value="transfer">Transf.</option>
-                              <option value="check">Cheque</option>
-                              <option value="cash">Efectivo</option>
-                              <option value="card">Tarjeta</option>
-                            </select>
-                            <BotonEnvio
-                              aria-label={`Registrar pago de ${f.supplier_invoice_number}`}
-                              className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                            >
-                              <Icon name="payments" size={18} />
-                            </BotonEnvio>
-                          </form>
-                        )}
-                      </TD>
                     )}
-                  </TR>
+                  </li>
                 )
               })}
-            </TBody>
-          </Table>
+            </ul>
+            <div className="hidden md:block">
+              <Table className="min-w-[860px]">
+                <THead>
+                  <TR>
+                    <TH>Factura</TH>
+                    <TH>Proveedor</TH>
+                    <TH>Vence</TH>
+                    <TH numeric>Total</TH>
+                    <TH numeric>Saldo</TH>
+                    <TH>Estado</TH>
+                    {puedePagar && (
+                      <TH>
+                        <span className="sr-only">Pagar</span>
+                      </TH>
+                    )}
+                  </TR>
+                </THead>
+                <TBody>
+                  {facturas.map((f) => {
+                    const e = ESTADO_FACTURA[f.status] ?? {
+                      label: f.status,
+                      tone: 'neutral' as const,
+                    }
+                    const saldo = Number(f.saldo)
+                    const dias = daysOverdue(new Date(`${f.due_date}T12:00:00`), hoy)
+                    return (
+                      <TR key={f.id} className={f.status === 'void' ? 'opacity-50' : ''}>
+                        <TD className="whitespace-nowrap">
+                          <a
+                            href={`/pagar/${f.id}${qs}`}
+                            className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                          >
+                            <Mono>{f.supplier_invoice_number}</Mono>
+                          </a>
+                        </TD>
+                        <TD className="min-w-36 font-medium text-[var(--color-text-primary)]">
+                          {f.supplier_name}
+                        </TD>
+                        <TD className="whitespace-nowrap">
+                          {fecha(f.due_date)}
+                          {dias > 0 && saldo > 0 && f.status !== 'void' ? (
+                            <span className="block text-[11px] text-[var(--color-semantic-text-danger)]">
+                              {dias} día{dias === 1 ? '' : 's'} de atraso
+                            </span>
+                          ) : (
+                            <span className="block text-[11px] text-[var(--color-text-muted)]">
+                              emitida {fecha(f.issue_date)}
+                            </span>
+                          )}
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular">{money(Number(f.total))}</span>
+                          {Number(f.retencion) > 0 && (
+                            <span className="block whitespace-nowrap text-[10px] text-[var(--color-semantic-text-warning)]">
+                              −{money(Number(f.retencion))} retenido
+                            </span>
+                          )}
+                          {Number(f.pagado) > 0 && (
+                            <span className="block whitespace-nowrap text-[11px] text-[var(--color-semantic-text-success)]">
+                              pagado {money(Number(f.pagado))}
+                            </span>
+                          )}
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular font-semibold">{money(saldo)}</span>
+                        </TD>
+                        <TD>
+                          <Badge tone={e.tone}>{e.label}</Badge>
+                        </TD>
+                        {puedePagar && (
+                          <TD>
+                            {saldo > 0 && f.status !== 'void' && (
+                              <form action={registrarPagoForm} className="flex items-center gap-1">
+                                <input
+                                  type="hidden"
+                                  name="tenant"
+                                  value={qs ? ctx.tenantSlug : ''}
+                                />
+                                <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                                <input type="hidden" name="invoiceId" value={f.id} />
+                                <input
+                                  name="amount"
+                                  defaultValue={saldo.toFixed(2)}
+                                  inputMode="decimal"
+                                  aria-label={`Monto a pagar de ${f.supplier_invoice_number}`}
+                                  className="tabular h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-xs text-[var(--color-text-primary)]"
+                                />
+                                <select
+                                  name="method"
+                                  aria-label="Forma de pago"
+                                  className="h-8 w-[5.25rem] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
+                                >
+                                  <option value="transfer">Transf.</option>
+                                  <option value="check">Cheque</option>
+                                  <option value="cash">Efectivo</option>
+                                  <option value="card">Tarjeta</option>
+                                </select>
+                                <BotonEnvio
+                                  aria-label={`Registrar pago de ${f.supplier_invoice_number}`}
+                                  title="Registrar el pago"
+                                  className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2.5 text-xs font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                                >
+                                  <Icon name="payments" size={16} />
+                                  Pagar
+                                </BotonEnvio>
+                              </form>
+                            )}
+                          </TD>
+                        )}
+                      </TR>
+                    )
+                  })}
+                </TBody>
+              </Table>
+            </div>
+          </>
         )}
 
         {puedeCrear && proveedores.length > 0 && (
@@ -320,14 +393,14 @@ export default async function PagarPage({
                   />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Fecha de emision
+                  Fecha de emisión
                   <input
                     name="issueDate"
                     type="date"
                     required
                     defaultValue={hoyRD}
                     max={hoyRD}
-                    title="La que trae la factura: decide en que 606 se declara."
+                    title="La que trae la factura: decide en qué 606 se declara."
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
@@ -398,7 +471,7 @@ export default async function PagarPage({
                   />
                 </label>
                 <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Tipo de retencion ISR
+                  Tipo de retención ISR
                   <select
                     name="isrRetentionType"
                     defaultValue=""
@@ -416,7 +489,7 @@ export default async function PagarPage({
                   NCF que modifica
                   <input
                     name="modifiedNcf"
-                    placeholder="Solo notas de credito"
+                    placeholder="Solo notas de crédito"
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
@@ -427,10 +500,23 @@ export default async function PagarPage({
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 El vencimiento sale de los días de crédito que ese proveedor te da a ti, contados
-                desde la fecha de emision. Las retenciones se escriben a mano -no hay calculo
-                automatico- y van <strong>separadas</strong>: el ITBIS retenido se paga en el IT-1 y
-                el ISR retenido en el IR-17. Con NCF, el tipo de gasto es obligatorio: sin el, el
-                606 no se puede generar.
+                desde la fecha de emisión. Las retenciones se escriben a mano
+                {veRetenciones && (
+                  <>
+                    {' '}
+                    (la calculadora está en{' '}
+                    <a
+                      href={`/impuestos/retenciones${qs}`}
+                      className="text-[var(--color-text-link)] hover:underline"
+                    >
+                      Retenciones
+                    </a>
+                    )
+                  </>
+                )}{' '}
+                y van <strong>separadas</strong>: el ITBIS retenido se paga en el IT-1 y el ISR
+                retenido en el IR-17. Con NCF, el tipo de gasto es obligatorio: sin él, el 606 no se
+                puede generar.
               </p>
             </CardBody>
           </Card>

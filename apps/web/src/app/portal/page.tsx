@@ -19,18 +19,30 @@ import { esAnuncioVigente, saldoVacaciones } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { editarMiTelefonoForm, solicitarDesdePortalForm } from './actions'
+import { editarMiTelefonoForm, reportarMiGastoForm, solicitarDesdePortalForm } from './actions'
 import { misVolantes, resolverMiEmpleado, type MiVolante } from './mi-empleado'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { TIPO_AUSENCIA } from '../vacaciones/estados'
+import { CATEGORIA_GASTO, ESTADO_GASTO } from '../gastos/estados'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Mi portal · REGB ERP' }
 
 interface SolicitudRow {
   id: string
+  leave_type: string
   start_date: string
   end_date: string
   business_days: number
+  status: string
+}
+
+interface GastoRow {
+  id: string
+  category: string
+  expense_date: string
+  amount: string
+  vendor_name: string | null
   status: string
 }
 
@@ -72,7 +84,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'hr-portal')
 
-  const { yo, volantes, solicitudes, tomado, pendientes, anuncios } = await asUser(
+  const { yo, volantes, solicitudes, tomado, pendientes, anuncios, gastos } = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -92,13 +104,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           tomado: 0,
           pendientes: 0,
           anuncios: an,
+          gastos: [] as GastoRow[],
         }
       }
 
       const v = await misVolantes(tx, 12)
 
       const s = await tx<SolicitudRow[]>`
-        select id, start_date::text, end_date::text, business_days, status
+        select id, leave_type, start_date::text, end_date::text, business_days, status
         from public.time_off_requests
         where tenant_id = ${ctx.tenantId} and employee_id = ${yo.id}
         order by start_date desc
@@ -111,6 +124,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         where tenant_id = ${ctx.tenantId} and employee_id = ${yo.id}
           and leave_type = 'vacation' and status in ('approved', 'pending')`
 
+      // Solo los suyos. Sin el módulo de gastos, la RLS devuelve cero filas.
+      const g = await tx<GastoRow[]>`
+        select id, category, expense_date::text, amount::text, vendor_name, status
+        from public.expenses
+        where tenant_id = ${ctx.tenantId} and employee_id = ${yo.id}
+        order by expense_date desc, created_at desc
+        limit 10`
+
       return {
         yo,
         volantes: v,
@@ -118,12 +139,18 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         tomado: Number(t?.dias ?? 0),
         pendientes: Number(t?.pendientes ?? 0),
         anuncios: an,
+        gastos: g,
       }
     },
   )
 
   const puedeEditar = exigir(ctx, 'hr-portal', 'hr-portal.edit-profile').ok
   const puedeSolicitar = exigir(ctx, 'hr-portal', 'hr-portal.request-time-off').ok
+  const puedeGastos = exigir(ctx, 'expenses', 'expenses.submit').ok
+  const hoyISO = new Date(Date.now() - 4 * 3_600_000).toISOString().slice(0, 10)
+  const gastoPendiente = gastos
+    .filter((g) => g.status === 'submitted' || g.status === 'approved')
+    .reduce((a, g) => a + Number(g.amount), 0)
   const qs = ctx.demoQs
   const hoy = new Date()
 
@@ -146,14 +173,14 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
         <PageHeader
           icon="badge"
           title="Mi portal"
-          description="Tu expediente, tus volantes y tu saldo de vacaciones. Solo ves lo tuyo."
+          description="Tu expediente, tus volantes, tus vacaciones y tus gastos. Solo ves lo tuyo."
         />
 
         {!yo ? (
           <EmptyState
             icon="badge"
             title="Tu cuenta no está vinculada a un expediente"
-            description="Para ver tus volantes, RRHH tiene que vincular tu cuenta con tu expediente desde Empleados. No lo buscamos por tu correo: dos personas pueden compartirlo, y aquí solo se ve lo tuyo."
+            description="Para ver tus volantes y tu saldo de vacaciones, RRHH tiene que vincular tu cuenta con tu expediente desde Empleados. No lo buscamos por tu correo: dos personas pueden compartirlo, y aquí solo se ve lo tuyo."
           />
         ) : (
           <>
@@ -164,10 +191,20 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                 hint={
                   pendientes > 0
                     ? `${pendientes} pedido${pendientes === 1 ? '' : 's'}, por aprobar`
-                    : undefined
+                    : primerAniversario && saldo === 0
+                      ? `ganas 14 el ${primerAniversario.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })}`
+                      : undefined
                 }
               />
-              <StatCard label="Volantes disponibles" value={String(volantes.length)} />
+              <StatCard
+                label="Último neto cobrado"
+                value={volantes[0] ? `RD$ ${money(Number(volantes[0].net_salary))}` : '—'}
+                hint={
+                  volantes[0]
+                    ? `pagado el ${fechaCorta(volantes[0].pay_date)}`
+                    : 'todavía no hay volantes'
+                }
+              />
             </section>
 
             <Card>
@@ -222,9 +259,10 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
               <CardBody>
                 {volantes.length === 0 ? (
                   <EmptyState
+                    className="py-6"
                     icon="receipt_long"
                     title="Todavía no hay ningún volante"
-                    description="Cuando RRHH procese tu primera nómina, tu volante aparece aquí."
+                    description="Tu volante sale aquí el mismo día en que RRHH procese la nómina: lo que ganaste, lo que se descontó (TSS, ISR, préstamos) y lo que cobras."
                   />
                 ) : (
                   <>
@@ -288,7 +326,7 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                           {volantes.map((v) => (
                             <TR key={v.period_id}>
                               <TD>
-                                {fechaCorta(v.period_start)} → {fechaCorta(v.period_end)}
+                                {fechaCorta(v.period_start)} – {fechaCorta(v.period_end)}
                               </TD>
                               <TD numeric>
                                 <span className="tabular">
@@ -332,16 +370,17 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
               <CardBody className="space-y-3">
                 {solicitudes.length === 0 ? (
                   <EmptyState
+                    className="py-6"
                     icon="beach_access"
-                    title="Todavía no has pedido vacaciones"
-                    description="Elige las fechas abajo. Se cuentan solo los días laborables."
+                    title="Todavía no has pedido vacaciones ni permisos"
+                    description="Elige las fechas abajo. Se cuentan solo los días laborables, y RRHH te aprueba o te rechaza la solicitud aquí mismo."
                   />
                 ) : (
                   <Table>
                     <THead>
                       <TR>
-                        <TH>Desde</TH>
-                        <TH>Hasta</TH>
+                        <TH>Tipo</TH>
+                        <TH>Fechas</TH>
                         <TH numeric>Días</TH>
                         <TH>Estado</TH>
                       </TR>
@@ -349,8 +388,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                     <TBody>
                       {solicitudes.map((s) => (
                         <TR key={s.id}>
-                          <TD>{fechaCorta(s.start_date)}</TD>
-                          <TD>{fechaCorta(s.end_date)}</TD>
+                          <TD>{TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}</TD>
+                          <TD className="whitespace-nowrap">
+                            {s.start_date === s.end_date
+                              ? fechaCorta(s.start_date)
+                              : `${fechaCorta(s.start_date)} – ${fechaCorta(s.end_date)}`}
+                          </TD>
                           <TD numeric>
                             <span className="tabular">{s.business_days}</span>
                           </TD>
@@ -403,6 +446,127 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                 )}
               </CardBody>
             </Card>
+
+            {(puedeGastos || gastos.length > 0) && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Mis gastos</CardTitle>
+                </CardHeader>
+                <CardBody className="space-y-3">
+                  {gastos.length === 0 ? (
+                    <p className="text-sm text-[var(--color-text-secondary)]">
+                      Si pagaste algo de la empresa con tu dinero (un taxi, un almuerzo con un
+                      cliente, materiales), repórtalo aquí y te lo devuelven.
+                    </p>
+                  ) : (
+                    <>
+                      {gastoPendiente > 0 && (
+                        <p className="text-xs text-[var(--color-text-muted)]">
+                          Te deben RD$ {money(gastoPendiente)} en gastos por aprobar o por
+                          reembolsar.
+                        </p>
+                      )}
+                      <ul className="divide-y divide-[var(--color-border)]" aria-label="Mis gastos">
+                        {gastos.map((g) => (
+                          <li key={g.id} className="flex items-center justify-between gap-3 py-2">
+                            <div className="min-w-0">
+                              <p className="text-sm text-[var(--color-text-primary)]">
+                                {CATEGORIA_GASTO[g.category] ?? g.category}
+                                {g.vendor_name ? ` · ${g.vendor_name}` : ''}
+                              </p>
+                              <p className="text-xs text-[var(--color-text-muted)]">
+                                {fechaCorta(g.expense_date)}
+                              </p>
+                            </div>
+                            <div className="flex shrink-0 flex-col items-end gap-1">
+                              <span className="tabular text-sm font-semibold text-[var(--color-text-primary)]">
+                                RD$ {money(Number(g.amount))}
+                              </span>
+                              <Badge
+                                tone={
+                                  g.status === 'reimbursed'
+                                    ? 'success'
+                                    : g.status === 'rejected'
+                                      ? 'danger'
+                                      : g.status === 'approved'
+                                        ? 'info'
+                                        : 'warning'
+                                }
+                              >
+                                {ESTADO_GASTO[g.status] ?? g.status}
+                              </Badge>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+
+                  {puedeGastos && (
+                    <form action={reportarMiGastoForm} className="flex flex-wrap items-end gap-3">
+                      <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                      <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                      <label className="flex min-w-36 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        Qué pagaste
+                        <select
+                          name="category"
+                          required
+                          defaultValue="transport"
+                          className={claseInput}
+                        >
+                          {Object.entries(CATEGORIA_GASTO).map(([id, label]) => (
+                            <option key={id} value={id}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        Fecha
+                        <input
+                          type="date"
+                          name="expenseDate"
+                          required
+                          max={hoyISO}
+                          defaultValue={hoyISO}
+                          className={claseInput}
+                        />
+                      </label>
+                      <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        Monto (RD$)
+                        <input
+                          name="amount"
+                          required
+                          inputMode="decimal"
+                          placeholder="0.00"
+                          className={`tabular text-right ${claseInput}`}
+                        />
+                      </label>
+                      <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        Dónde (opcional)
+                        <input
+                          name="vendorName"
+                          placeholder="Taxi, colmado, ferretería…"
+                          className={claseInput}
+                        />
+                      </label>
+                      <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        NCF (si te lo dieron)
+                        <input name="ncf" placeholder="B0100000001" className={claseInput} />
+                      </label>
+                      <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                        Para qué fue
+                        <input name="receiptNote" className={claseInput} />
+                      </label>
+                      <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                        <Icon name="receipt_long" size={18} />
+                        Reportar gasto
+                      </BotonEnvio>
+                    </form>
+                  )}
+                </CardBody>
+              </Card>
+            )}
           </>
         )}
 
@@ -412,7 +576,12 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
           </CardHeader>
           <CardBody>
             {anuncios.length === 0 ? (
-              <EmptyState icon="campaign" title="Todavía no hay ningún anuncio" description="" />
+              <EmptyState
+                className="py-6"
+                icon="campaign"
+                title="Todavía no hay ningún anuncio"
+                description="Aquí salen los avisos de la empresa para todo el equipo: horarios especiales, cambios de política, días libres."
+              />
             ) : (
               <ul className="space-y-3">
                 {anuncios.map((a) => (
@@ -420,8 +589,8 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                     key={a.id}
                     className="border-b border-[var(--color-border)] pb-3 last:border-0"
                   >
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-[var(--color-text-primary)]">{a.title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-[var(--color-text-primary)]">{a.title}</p>
                       {esAnuncioVigente(new Date(a.published_at), hoy) && (
                         <Badge tone="info">Nuevo</Badge>
                       )}

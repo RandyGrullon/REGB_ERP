@@ -16,6 +16,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
+import { fechaFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -43,6 +44,8 @@ interface MovimientoRow {
   reference: string | null
   transaction_date: string
   created_by_name: string | null
+  /** En una transferencia, la otra cuenta: la referencia guarda el id del traspaso. */
+  contraparte: string | null
 }
 
 const money = (n: number) =>
@@ -68,9 +71,19 @@ export default async function CuentaBancariaPage({
       where id = ${id} and tenant_id = ${ctx.tenantId}`
     if (!h) return [null, [], null] as const
 
+    // Las dos mitades de una transferencia llevan en `reference` el id del
+    // traspaso (trigger de 0044): se enseña la otra cuenta, no el uuid.
     const m = await tx<MovimientoRow[]>`
       select t.id, t.type, t.amount::text, t.description, t.reference,
-             t.transaction_date::text, up.display_name as created_by_name
+             t.transaction_date::text, up.display_name as created_by_name,
+             case when t.type in ('transfer_in', 'transfer_out') then (
+               select coalesce(o.account_name || ' · ' || o.bank_name, null)
+               from public.bank_transfers bt
+               join public.bank_accounts o
+                 on o.id = case when t.type = 'transfer_in' then bt.from_account_id
+                                else bt.to_account_id end
+               where bt.tenant_id = t.tenant_id and bt.id::text = t.reference
+             ) end as contraparte
       from public.bank_transactions t
       left join public.user_profiles up
         on up.tenant_id = t.tenant_id and up.user_id = t.created_by
@@ -114,7 +127,7 @@ export default async function CuentaBancariaPage({
           icon="account_balance"
           title={head.account_name}
           description={`${head.bank_name} · ${TIPO_CUENTA[head.account_type] ?? head.account_type}`}
-          crumbs={[{ label: 'Tesoreria', href: `/tesoreria${qs}` }, { label: head.account_name }]}
+          crumbs={[{ label: 'Tesorería', href: `/tesoreria${qs}` }, { label: head.account_name }]}
           meta={
             <div className="flex flex-wrap items-center gap-2">
               <Mono>{head.account_number}</Mono>
@@ -137,7 +150,7 @@ export default async function CuentaBancariaPage({
           <StatCard
             label="Entradas"
             value={`RD$ ${money(entradas)}`}
-            hint="depositos y traspasos"
+            hint="depósitos y traspasos"
           />
           <StatCard label="Salidas" value={`RD$ ${money(salidas)}`} hint="retiros y traspasos" />
         </section>
@@ -155,7 +168,7 @@ export default async function CuentaBancariaPage({
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tipo
                   <select name="type" className={claseInput}>
-                    <option value="deposit">Deposito</option>
+                    <option value="deposit">Depósito</option>
                     <option value="withdrawal">Retiro</option>
                   </select>
                 </label>
@@ -175,7 +188,7 @@ export default async function CuentaBancariaPage({
                     name="description"
                     required
                     minLength={3}
-                    placeholder="Deposito de la venta del dia"
+                    placeholder="Depósito de la venta del día"
                     className={claseInput}
                   />
                 </label>
@@ -185,7 +198,12 @@ export default async function CuentaBancariaPage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
-                  <input name="transactionDate" type="date" className={claseInput} />
+                  <input
+                    name="transactionDate"
+                    type="date"
+                    defaultValue={fechaFiscal(new Date())}
+                    className={claseInput}
+                  />
                 </label>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="add" size={18} />
@@ -210,7 +228,7 @@ export default async function CuentaBancariaPage({
                 Esta cuenta todavía no tiene movimientos.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[720px]">
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
@@ -230,13 +248,27 @@ export default async function CuentaBancariaPage({
                     }
                     return (
                       <TR key={m.id}>
-                        <TD>{fecha(m.transaction_date)}</TD>
+                        <TD className="whitespace-nowrap">{fecha(m.transaction_date)}</TD>
                         <TD className="text-[var(--color-text-primary)]">{m.description}</TD>
                         <TD>
-                          <Badge tone={t.tone}>{t.label}</Badge>
+                          <Badge tone={t.tone} className="whitespace-nowrap">
+                            {t.label}
+                          </Badge>
                         </TD>
-                        <TD>{m.reference ?? '—'}</TD>
+                        <TD>
+                          {m.contraparte ? (
+                            <span className="text-xs">
+                              {m.type === 'transfer_in' ? 'Desde ' : 'Hacia '}
+                              {m.contraparte}
+                            </span>
+                          ) : /^[0-9a-f-]{36}$/.test(m.reference ?? '') ? (
+                            'Transferencia entre cuentas'
+                          ) : (
+                            (m.reference ?? '—')
+                          )}
+                        </TD>
                         <TD>{m.created_by_name ?? '—'}</TD>
+
                         <TD numeric>
                           <span
                             className={`tabular ${

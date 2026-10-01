@@ -60,7 +60,7 @@ function parsearLineas(texto: string): LineaParseada[] {
 /** Registra un import: el encabezado del estado de cuenta y sus lineas pegadas. */
 export async function crearImport(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bank-rec', 'bank-rec.import.create')
   if (!permiso.ok) return permiso
 
@@ -71,14 +71,14 @@ export async function crearImport(fd: FormData): Promise<ActionResult> {
   const textoLineas = String(fd.get('lines') ?? '')
 
   if (!accountId) return { ok: false, error: 'Elige la cuenta bancaria.' }
-  if (!periodStart || !periodEnd) return { ok: false, error: 'Falta el periodo del estado.' }
-  if (statementBalance === null) return { ok: false, error: 'El saldo del estado no es valido.' }
+  if (!periodStart || !periodEnd) return { ok: false, error: 'Falta el período del estado.' }
+  if (statementBalance === null) return { ok: false, error: 'El saldo del estado no es válido.' }
 
   const lineas = parsearLineas(textoLineas)
   if (lineas.length === 0) {
     return {
       ok: false,
-      error: 'Pega al menos una linea con el formato fecha,descripcion,monto.',
+      error: 'Pega al menos una línea con el formato fecha,descripción,monto.',
     }
   }
 
@@ -109,7 +109,7 @@ export async function crearImport(fd: FormData): Promise<ActionResult> {
     })
   } catch (e) {
     if (e instanceof Error && e.message === 'sin-cuenta') {
-      return { ok: false, error: 'Esa cuenta no existe o esta inactiva.' }
+      return { ok: false, error: 'Esa cuenta no existe o está inactiva.' }
     }
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
@@ -122,7 +122,7 @@ export async function crearImport(fd: FormData): Promise<ActionResult> {
 /** Confirma un emparejamiento -sugerido por el sistema o elegido a mano-. */
 export async function confirmarMatch(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bank-rec', 'bank-rec.match.confirm')
   if (!permiso.ok) return permiso
 
@@ -148,7 +148,7 @@ export async function confirmarMatch(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key') || msg.includes('unique constraint')) {
-      return { ok: false, error: 'Ese movimiento ya se concilio con otra linea.' }
+      return { ok: false, error: 'Ese movimiento ya se concilio con otra línea.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -160,13 +160,13 @@ export async function confirmarMatch(fd: FormData): Promise<ActionResult> {
 /** Deshace un emparejamiento: la linea vuelve a pendiente. */
 export async function desconciliar(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bank-rec', 'bank-rec.match.confirm')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const importId = String(fd.get('importId') ?? '')
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
 
   await asUser(
     ctx.userId,
@@ -181,13 +181,13 @@ export async function desconciliar(fd: FormData): Promise<ActionResult> {
 /** Marca una linea como ignorada: nunca va a tener pareja, pero no se borra. */
 export async function ignorarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bank-rec', 'bank-rec.match.confirm')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const importId = String(fd.get('importId') ?? '')
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
 
   await asUser(
     ctx.userId,
@@ -204,13 +204,13 @@ export async function ignorarLinea(fd: FormData): Promise<ActionResult> {
 /** Vuelve una linea ignorada a pendiente. */
 export async function reactivarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bank-rec', 'bank-rec.match.confirm')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const importId = String(fd.get('importId') ?? '')
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
 
   await asUser(
     ctx.userId,

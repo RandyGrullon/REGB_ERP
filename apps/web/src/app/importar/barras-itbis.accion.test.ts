@@ -90,7 +90,7 @@ describe('codigo de barras y tasa de ITBIS desde el CSV', () => {
     expect(aviso()).toEqual({
       tipo: 'ok',
       texto:
-        'Importamos 4 productos nuevos. 1 ya existia y lo dejamos como estaba. 2 filas rechazadas: mira el detalle abajo.',
+        'Importamos 4 productos nuevos. 1 ya existía y lo dejamos como estaba. 2 filas rechazadas: mira el detalle abajo.',
     })
 
     const l = await lote('colmado-barras.csv')
@@ -119,7 +119,7 @@ describe('codigo de barras y tasa de ITBIS desde el CSV', () => {
       [6, 'barcode'],
     ])
     expect(rechazadas[1]!.message).toBe(
-      'El codigo de barras "7460000000099" ya lo tiene el producto VIE-1: un codigo de barras identifica un solo producto.',
+      'El código de barras "7460000000099" ya lo tiene el producto VIE-1: un código de barras identifica un solo producto.',
     )
     // Cada fila en un solo monton, y el lote cuenta las rechazadas por la
     // base junto con las rechazadas por la lectura.
@@ -145,7 +145,7 @@ describe('codigo de barras y tasa de ITBIS desde el CSV', () => {
     await deshacerImportacion(c.fd({ batchId: l.id }))
     expect(aviso()).toEqual({
       tipo: 'ok',
-      texto: 'Deshicimos la importacion: borramos 4 productos.',
+      texto: 'Deshicimos la importación: borramos 4 productos.',
     })
     expect((await productos()).map((p) => p.sku)).toEqual(['EXIST-1', 'VIE-1'])
 

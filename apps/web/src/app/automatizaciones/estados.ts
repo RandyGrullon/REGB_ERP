@@ -12,5 +12,5 @@ export const OPERADOR_CONDICION: Record<string, string> = {
 }
 
 export const ACCION_LABEL: Record<string, string> = {
-  create_notification: 'Crear una notificacion',
+  create_notification: 'Crear una notificación',
 }

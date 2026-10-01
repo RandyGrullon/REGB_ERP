@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation'
 import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCard } from '@regb/ui'
-import { desviacion, margen, trabajoEnCurso } from '@regb/operations'
+import { trabajoEnCurso } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { agregarPresupuestoForm, marcarFacturadoForm, registrarCostoForm } from '../actions'
 import { CATEGORIA_PRESUPUESTO } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaCorta } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 
@@ -32,16 +33,20 @@ interface Costo {
   amount: string
   incurred_on: string
   billed: boolean
+  budget_id: string | null
   budget_concept: string | null
 }
 
-const money = (n: number) => n.toLocaleString('es-DO', { minimumFractionDigits: 2 })
+const money = (n: number) =>
+  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** Con signo de verdad (−) pegado a "RD$", no suelto al principio de otra línea. */
+const rd = (n: number) => `${n < 0 ? '−' : ''}RD$ ${money(Math.abs(n))}`
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
 const inputClase =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 
-/** Costeo de un proyecto (modulo 73): presupuesto contra real, con cada costo como hecho historico. */
+/** Costeo de un proyecto (modulo 73): presupuesto contra real, con cada costo como hecho histórico. */
 export default async function CosteoProyectoPage({
   params,
   searchParams,
@@ -69,7 +74,7 @@ export default async function CosteoProyectoPage({
 
     const c = await tx<Costo[]>`
       select pc.id, pc.concept, pc.amount::text, pc.incurred_on::text, pc.billed,
-             pb.concept as budget_concept
+             pc.budget_id, pb.concept as budget_concept
       from public.project_costs pc
       left join public.project_budgets pb on pb.id = pc.budget_id
       where pc.tenant_id = ${ctx.tenantId} and pc.project_id = ${id}
@@ -83,9 +88,15 @@ export default async function CosteoProyectoPage({
   const pres = Number(head.presupuesto)
   const real = Number(head.real)
   const facturado = Number(head.facturado)
-  const mrg = margen(pres, real)
-  const desv = desviacion(pres, real)
+  const disponible = pres - real
+  const consumido = pres > 0 ? Math.round((real / pres) * 100) : null
   const wip = trabajoEnCurso(real, facturado)
+  // Lo gastado contra cada línea: para ver cuál se pasó, no solo el total.
+  const gastadoPorLinea = new Map<string, number>()
+  for (const c of costos) {
+    if (c.budget_id)
+      gastadoPorLinea.set(c.budget_id, (gastadoPorLinea.get(c.budget_id) ?? 0) + Number(c.amount))
+  }
 
   const puedeGestionar = exigir(ctx, 'project-costing', 'project-costing.manage').ok
   const qs = ctx.demoQs
@@ -110,16 +121,27 @@ export default async function CosteoProyectoPage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Presupuesto" value={`RD$ ${money(pres)}`} />
-          <StatCard label="Gastado real" value={`RD$ ${money(real)}`} />
-          <StatCard label="Desviacion" value={`${desv > 0 ? '+' : ''}RD$ ${money(desv)}`} />
-          <StatCard label="WIP sin facturar" value={`RD$ ${money(wip)}`} />
+          <StatCard label="Presupuesto" value={rd(pres)} />
+          <StatCard
+            label="Gastado"
+            value={rd(real)}
+            hint={
+              consumido === null
+                ? 'sin presupuesto contra qué comparar'
+                : `${consumido}% del presupuesto`
+            }
+          />
+          <StatCard
+            label={disponible < 0 ? 'Gastado de más' : 'Disponible'}
+            value={rd(Math.abs(disponible))}
+            hint={disponible < 0 ? 'por encima del presupuesto' : 'queda por gastar'}
+          />
+          <StatCard
+            label="Costo sin facturar"
+            value={rd(wip)}
+            hint="gastado que todavía no se le cobra al cliente"
+          />
         </section>
-
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Margen:{' '}
-          {mrg === null ? 'sin presupuesto contra que comparar' : `${(mrg * 100).toFixed(1)}%`}
-        </p>
 
         <Card>
           <CardHeader>
@@ -132,19 +154,28 @@ export default async function CosteoProyectoPage({
                   Todavía no hay líneas de presupuesto.
                 </li>
               )}
-              {presupuesto.map((l) => (
-                <li key={l.id} className="flex items-center justify-between gap-3 py-2">
-                  <div>
-                    <p className="text-sm text-[var(--color-text-primary)]">{l.concept}</p>
-                    <p className="text-xs text-[var(--color-text-muted)]">
-                      {CATEGORIA_PRESUPUESTO[l.category] ?? l.category}
-                    </p>
-                  </div>
-                  <span className="tabular text-sm text-[var(--color-text-primary)]">
-                    RD$ {money(Number(l.amount))}
-                  </span>
-                </li>
-              ))}
+              {presupuesto.map((l) => {
+                const monto = Number(l.amount)
+                const gastado = gastadoPorLinea.get(l.id) ?? 0
+                const excedido = gastado > monto
+                return (
+                  <li key={l.id} className="flex items-center justify-between gap-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-sm text-[var(--color-text-primary)]">{l.concept}</p>
+                      <p className="text-xs text-[var(--color-text-muted)]">
+                        {CATEGORIA_PRESUPUESTO[l.category] ?? l.category} · gastado {rd(gastado)}
+                        {monto > 0 ? ` (${Math.round((gastado / monto) * 100)}%)` : ''}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {excedido && <Badge tone="danger">Excedida</Badge>}
+                      <span className="tabular whitespace-nowrap text-sm text-[var(--color-text-primary)]">
+                        {rd(monto)}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
 
             {puedeGestionar && (
@@ -155,7 +186,7 @@ export default async function CosteoProyectoPage({
                   <input name="concept" required className={inputClase} />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Categoria
+                  Categoría
                   <select name="category" defaultValue="general" className={inputClase}>
                     {Object.entries(CATEGORIA_PRESUPUESTO).map(([v, l]) => (
                       <option key={v} value={v}>
@@ -198,15 +229,15 @@ export default async function CosteoProyectoPage({
                   <div>
                     <p className="text-sm text-[var(--color-text-primary)]">{c.concept}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {new Date(c.incurred_on).toLocaleDateString('es-DO')}
+                      {fechaCorta(c.incurred_on, true)}
                       {c.budget_concept
-                        ? ` · contra "${c.budget_concept}"`
+                        ? ` · contra «${c.budget_concept}»`
                         : ' · sin línea de presupuesto'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="tabular text-sm text-[var(--color-text-primary)]">
-                      RD$ {money(Number(c.amount))}
+                    <span className="tabular whitespace-nowrap text-sm text-[var(--color-text-primary)]">
+                      {rd(Number(c.amount))}
                     </span>
                     {c.billed ? (
                       <Badge tone="success">Facturado</Badge>
@@ -214,8 +245,11 @@ export default async function CosteoProyectoPage({
                       <form action={marcarFacturadoForm}>
                         {campos}
                         <input type="hidden" name="costId" value={c.id} />
-                        <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
-                          Facturar
+                        <BotonEnvio
+                          title="Marca este costo como ya facturado al cliente"
+                          className="flex h-8 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
+                        >
+                          Marcar facturado
                         </BotonEnvio>
                       </form>
                     ) : (
@@ -268,13 +302,12 @@ export default async function CosteoProyectoPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>Por qué un costo no se edita</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Un costo registrado nunca cambia de monto -es un hecho historico-. Lo único que se
-              puede mover después es marcarlo facturado, porque eso es información nueva, no una
-              correccion del pasado.
+              Un costo registrado no cambia de monto: es algo que ya pasó y queda en el historial.
+              Lo único que se marca después es si ya se le facturó al cliente.
             </p>
           </CardBody>
         </Card>

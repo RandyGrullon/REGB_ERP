@@ -25,7 +25,7 @@ function demoDe(formData: FormData) {
 
 async function subir(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'files', 'files.create')
   if (!permiso.ok) return permiso
 
@@ -38,7 +38,7 @@ async function subir(formData: FormData): Promise<ActionResult> {
   if (file.size > MAX_BYTES) {
     return {
       ok: false,
-      error: `Ese archivo pesa ${(file.size / 1024).toFixed(0)} KB y el limite es ${MAX_BYTES / 1024} KB.`,
+      error: `Ese archivo pesa ${(file.size / 1024).toFixed(0)} KB y el límite es ${MAX_BYTES / 1024} KB.`,
     }
   }
 
@@ -73,7 +73,7 @@ async function subir(formData: FormData): Promise<ActionResult> {
 
 async function aPapelera(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'files', 'files.delete')
   if (!permiso.ok) return permiso
 
@@ -92,7 +92,7 @@ async function aPapelera(formData: FormData): Promise<ActionResult> {
 
 async function restaurar(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'files', 'files.edit')
   if (!permiso.ok) return permiso
 

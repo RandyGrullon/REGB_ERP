@@ -47,17 +47,17 @@ interface Pendiente {
 const AMBIENTES: { id: string; label: string; detalle: string }[] = [
   {
     id: 'testecf',
-    label: 'Pre-certificacion',
-    detalle: 'Pruebas libres. Los envios se guardan 60 días.',
+    label: 'Precertificación',
+    detalle: 'Pruebas libres. Los envíos se guardan 60 días.',
   },
-  { id: 'certecf', label: 'Certificacion', detalle: 'El set de pruebas formal de la DGII.' },
+  { id: 'certecf', label: 'Certificación', detalle: 'El set de pruebas formal de la DGII.' },
   { id: 'ecf', label: 'Producción', detalle: 'Validez fiscal real.' },
 ]
 
 const CONTINGENCIAS: { id: string; label: string; detalle: string }[] = [
   {
     id: 'sin-conexion',
-    label: 'Sin conexion',
+    label: 'Sin conexión',
     detalle: `Hay sistema pero no internet. Se siguen emitiendo e-CF y hay ${HORAS_PARA_REMITIR} horas para remitirlos.`,
   },
   {
@@ -70,9 +70,9 @@ const CONTINGENCIAS: { id: string; label: string; detalle: string }[] = [
 const inputClase =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] disabled:opacity-60'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] disabled:opacity-60'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] disabled:opacity-60'
 
 /**
  * Facturacion electronica (modulo 25).
@@ -138,7 +138,7 @@ export default async function FacturacionElectronicaPage({
       <div className="space-y-5">
         <PageHeader
           icon="receipt_long"
-          title="Facturacion electronica"
+          title="Facturación electrónica"
           description="e-CF de la DGII. Obligatorio para un negocio pequeño desde el 15 de noviembre de 2026."
         />
 
@@ -152,10 +152,10 @@ export default async function FacturacionElectronicaPage({
             className="shrink-0 text-[var(--color-semantic-text-warning)]"
           />
           <p className="text-[var(--color-text-secondary)]">
-            Este modulo{' '}
+            Este módulo{' '}
             <strong className="text-[var(--color-text-primary)]">todavía no emite</strong>. Lo que
-            hay listo es la configuracion, el enrutado de lo que entra y las reglas de negocio.
-            Falta el certificado digital, la firma XAdES y la transmision, y{' '}
+            hay listo es la configuración, la recepción de lo que te envían y las reglas de
+            negocio. Falta el certificado digital, la firma electrónica y la transmisión, y{' '}
             <strong className="text-[var(--color-text-primary)]">
               nada se ha probado contra los servidores de la DGII
             </strong>
@@ -168,8 +168,8 @@ export default async function FacturacionElectronicaPage({
             <CardBody>
               <EmptyState
                 icon="receipt_long"
-                title="Todavia no has configurado la facturacion electronica"
-                description="Al activarla generamos el token de tus URL publicas. Son las tres direcciones que la DGII te va a pedir en la postulacion."
+                title="Todavía no has configurado la facturación electrónica"
+                description="Al activarla generamos las tres direcciones (URL) que la DGII te va a pedir en la postulación, con una clave que es solo tuya."
               />
               {puedeGestionar && (
                 <form action={asegurarConfigForm} className="mt-4 flex justify-center">
@@ -189,7 +189,11 @@ export default async function FacturacionElectronicaPage({
                 label="Ambiente"
                 value={AMBIENTES.find((a) => a.id === config.ambiente)?.label ?? config.ambiente}
               />
-              <StatCard label="Certificado" value={config.certificado ? 'Si' : 'No'} />
+              <StatCard
+                label="Certificado digital"
+                value={config.certificado ? 'Cargado' : 'Falta'}
+                hint={config.certificado ? 'listo para firmar' : 'lo emite una entidad certificadora'}
+              />
               <StatCard label="Emitidos" value={String(emitidos)} />
               <StatCard label="Recibidos" value={String(recibidos)} />
             </section>
@@ -217,7 +221,7 @@ export default async function FacturacionElectronicaPage({
                   </p>
                   {config.contingencia === 'sin-conexion' && (
                     <p className="mt-1 text-xs">
-                      Leyenda obligatoria en la representacion impresa:{' '}
+                      Leyenda obligatoria en la representación impresa:{' '}
                       <em className="text-[var(--color-text-primary)]">{LEYENDA_CONTINGENCIA}</em>
                     </p>
                   )}
@@ -231,14 +235,14 @@ export default async function FacturacionElectronicaPage({
               </CardHeader>
               <CardBody>
                 <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-                  La DGII no solo recibe: tambien te llama a ti. Copia estas tres tal cual al
-                  formulario de postulacion. Llevan un token que es solo tuyo -tratalo como una
-                  contraseña-.
+                  La DGII no solo recibe: también te llama a ti. Copia estas tres tal cual al
+                  formulario de postulación. Llevan una clave que es solo tuya: trátala como una
+                  contraseña.
                 </p>
 
                 {baseEsLocal && (
                   <p className="mb-3 rounded-[var(--radius-md)] border border-[var(--color-semantic-warning)] p-2 text-xs text-[var(--color-semantic-text-warning)]">
-                    Estas URL apuntan a <Mono>{base}</Mono>, que es esta maquina. No sirven para
+                    Estas URL apuntan a <Mono>{base}</Mono>, que es esta máquina. No sirven para
                     declarar nada: la DGII tiene que poder alcanzarlas desde internet.
                   </p>
                 )}
@@ -253,14 +257,14 @@ export default async function FacturacionElectronicaPage({
                           'Donde recibes los e-CF que otros te emiten.',
                         ],
                         [
-                          'Aprobacion',
+                          'Aprobación',
                           urls.aprobacion,
                           'Donde recibes aprobaciones o rechazos comerciales.',
                         ],
                         [
-                          'Autenticacion',
+                          'Autenticación',
                           urls.autenticacion,
-                          'Tu propio servicio semilla → token.',
+                          'Donde la DGII se identifica antes de enviarte algo.',
                         ],
                       ] as const
                     ).map(([titulo, url, detalle]) => (
@@ -284,11 +288,11 @@ export default async function FacturacionElectronicaPage({
                     {campos}
                     <BotonEnvio className={botonSecundarioClase}>
                       <Icon name="refresh" size={14} />
-                      Rotar el token
+                      Cambiar la clave
                     </BotonEnvio>
                     <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
-                      Despues de rotar hay que volver a declarar las tres URL en la DGII. Hasta que
-                      lo hagas, le estara pegando a una ruta que ya no responde.
+                      Después de cambiarla hay que volver a declarar las tres URL en la DGII. Hasta
+                      que lo hagas, la DGII estará llamando a una dirección que ya no responde.
                     </p>
                   </form>
                 )}
@@ -369,7 +373,7 @@ export default async function FacturacionElectronicaPage({
             {pendientes.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Emitidos sin conexion, sin remitir</CardTitle>
+                  <CardTitle>Emitidos sin conexión, sin remitir</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <ul className="divide-y divide-[var(--color-border)]">

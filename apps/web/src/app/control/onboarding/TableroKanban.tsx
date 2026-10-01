@@ -75,7 +75,7 @@ export function TableroKanban({
         }
       } catch {
         setError(
-          `No movimos ${t.legal_name}: se perdio la conexion. Sigue en ${nombreDeEtapa(t.stage)}.`,
+          `No movimos ${t.legal_name}: se perdió la conexión. Sigue en ${nombreDeEtapa(t.stage)}.`,
         )
         setAnuncio(`No se movio ${t.legal_name}.`)
       }
@@ -116,8 +116,8 @@ export function TableroKanban({
       )}
 
       <p id="ayuda-tablero" className="text-xs text-[var(--color-text-muted)]">
-        Arrastra una tarjeta a otra columna, o enfocala y usa las flechas izquierda y derecha. En el
-        telefono, usa &quot;Mover a&quot;.
+        Arrastra una tarjeta a otra columna, o enfócala y usa las flechas izquierda y derecha. En el
+        teléfono, usa &quot;Mover a&quot;.
       </p>
 
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
@@ -250,7 +250,7 @@ function Tarjeta({
           </Badge>
         )}
         {c.dueno_pendiente && (
-          <Badge tone="info" dot={false} title="La invitacion Owner esta pendiente">
+          <Badge tone="info" dot={false} title="La invitación Owner está pendiente">
             dueño sin entrar
           </Badge>
         )}
@@ -266,7 +266,7 @@ function Tarjeta({
           disabled={!anterior}
           onClick={() => anterior && moverA(c, anterior.id)}
           aria-label={
-            anterior ? `Mover ${c.legal_name} a ${anterior.label}` : 'Ya esta en la primera etapa'
+            anterior ? `Mover ${c.legal_name} a ${anterior.label}` : 'Ya está en la primera etapa'
           }
           className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-30"
         >
@@ -296,7 +296,7 @@ function Tarjeta({
           disabled={!siguiente}
           onClick={() => siguiente && moverA(c, siguiente.id)}
           aria-label={
-            siguiente ? `Mover ${c.legal_name} a ${siguiente.label}` : 'Ya esta en la última etapa'
+            siguiente ? `Mover ${c.legal_name} a ${siguiente.label}` : 'Ya está en la última etapa'
           }
           className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-30"
         >

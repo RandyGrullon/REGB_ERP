@@ -4,7 +4,6 @@ import {
   avanceChecklist,
   costoRepuestos,
   minutosEnSitio,
-  motivoNoCierre,
   type EstadoOrdenServicio,
 } from '@regb/operations'
 import { asUser } from '@/lib/db'
@@ -13,11 +12,13 @@ import { Shell } from '@/components/Shell'
 import {
   agregarPasoForm,
   alternarPasoForm,
+  asignarTecnicoForm,
   registrarRepuestoForm,
   transicionarOrdenForm,
 } from '../actions'
-import { ESTADO_ORDEN, PRIORIDAD_ORDEN } from '../estados'
+import { ESTADO_ORDEN, PRIORIDAD_ORDEN, motivoParaNoCerrar } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, pesos } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -25,6 +26,9 @@ interface OrdenHead {
   id: string
   code: string
   customer_name: string
+  customer_phone: string | null
+  technician_id: string | null
+  tecnico: string | null
   status: EstadoOrdenServicio
   priority: string
   description: string
@@ -62,11 +66,19 @@ interface ProductoOption {
 const inputClase =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
-const money = (n: number) =>
-  `RD$${n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+const cuando = (iso: string) =>
+  new Date(iso).toLocaleString('es-DO', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+const hora = (iso: string) =>
+  new Date(iso).toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' })
 
 const tonoEstado = (
   s: EstadoOrdenServicio,
@@ -96,19 +108,25 @@ export default async function OrdenServicioPage({
   const { id } = await params
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'field-service')
+  const puedeGestionar = exigir(ctx, 'field-service', 'field-service.manage').ok
+  const soloMias = !puedeGestionar && exigir(ctx, 'field-service', 'field-service.view.assigned').ok
 
-  const { head, pasos, repuestos, productos } = await asUser(
+  const { head, pasos, repuestos, productos, tecnicos } = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
       const [h] = await tx<OrdenHead[]>`
-      select so.id, so.code, c.name as customer_name, so.status, so.priority, so.description,
+      select so.id, so.code, c.name as customer_name, c.phone as customer_phone,
+             so.technician_id, up.display_name as tecnico,
+             so.status, so.priority, so.description,
              so.address, so.scheduled_at::text, so.started_at::text, so.completed_at::text,
              so.signed_by, so.signed_at::text
       from public.service_orders so
       join public.customers c on c.id = so.customer_id
+      left join public.user_profiles up
+        on up.tenant_id = so.tenant_id and up.user_id = so.technician_id
       where so.id = ${id} and so.tenant_id = ${ctx.tenantId}`
-      if (!h) return { head: null, pasos: [], repuestos: [], productos: [] }
+      if (!h) return { head: null, pasos: [], repuestos: [], productos: [], tecnicos: [] }
 
       const p = await tx<Paso[]>`
       select id, label, required, done, done_at::text
@@ -125,13 +143,25 @@ export default async function OrdenServicioPage({
 
       const pr = await tx<ProductoOption[]>`
       select id, name, sku, cost::text from public.products
-      where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+      where tenant_id = ${ctx.tenantId} and active and tracks_stock order by name limit 300`
 
-      return { head: h, pasos: p, repuestos: r, productos: pr }
+      const t = puedeGestionar
+        ? await tx<{ user_id: string; name: string }[]>`
+            select m.user_id, coalesce(up.display_name, up.email, 'Sin nombre') as name
+            from public.memberships m
+            left join public.user_profiles up
+              on up.tenant_id = m.tenant_id and up.user_id = m.user_id
+            where m.tenant_id = ${ctx.tenantId} and m.is_active
+            order by name`
+        : []
+
+      return { head: h, pasos: p, repuestos: r, productos: pr, tecnicos: t }
     },
   )
 
   if (!head) notFound()
+  // Un técnico solo abre las suyas: la de otro "no existe" para él.
+  if (soloMias && head.technician_id !== ctx.userId) notFound()
 
   const terminada = head.status === 'done' || head.status === 'cancelled'
   const hechos = pasos.filter((p) => p.done).length
@@ -147,10 +177,9 @@ export default async function OrdenServicioPage({
           head.completed_at === null ? null : new Date(head.completed_at),
         )
   // El mismo calculo que la accion: aqui es para EXPLICAR, alla es para decidir.
-  const faltaParaCerrar = motivoNoCierre(pasos, head.signed_by)
+  const faltaParaCerrar = motivoParaNoCerrar(pasos, head.signed_by)
 
   const puedeEjecutar = exigir(ctx, 'field-service', 'field-service.execute').ok
-  const puedeGestionar = exigir(ctx, 'field-service', 'field-service.manage').ok
   const qs = ctx.demoQs
   const campos = (
     <>
@@ -167,79 +196,141 @@ export default async function OrdenServicioPage({
           icon="handyman"
           title={`${head.code} · ${head.customer_name}`}
           crumbs={[
-            { label: 'Servicio en campo', href: `/servicio-en-campo${qs}` },
+            {
+              label: soloMias ? 'Mis órdenes' : 'Servicio en campo',
+              href: `/servicio-en-campo${qs}`,
+            },
             { label: head.code },
           ]}
           description={head.description}
           actions={
             <Badge tone={tonoEstado(head.status)}>{ESTADO_ORDEN[head.status] ?? head.status}</Badge>
           }
+          meta={
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--color-text-secondary)]">
+              {head.address !== null && (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="location_on" size={14} />
+                  {head.address}
+                </span>
+              )}
+              {head.scheduled_at !== null && (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="event" size={14} />
+                  {cuando(head.scheduled_at)}
+                </span>
+              )}
+              {head.customer_phone && (
+                <a
+                  href={`tel:${head.customer_phone}`}
+                  className="inline-flex items-center gap-1 text-[var(--color-text-link)] hover:underline"
+                >
+                  <Icon name="call" size={14} />
+                  {head.customer_phone}
+                </a>
+              )}
+              <span className="inline-flex items-center gap-1">
+                <Icon name="engineering" size={14} />
+                {head.tecnico ?? 'Sin técnico asignado'}
+              </span>
+            </div>
+          }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
-            label="Checklist"
+            label="Pasos hechos"
             value={avance === null ? '—' : `${(avance * 100).toFixed(0)}%`}
-            hint={`${hechos} de ${pasos.length}`}
+            hint={pasos.length === 0 ? 'sin lista de pasos' : `${hechos} de ${pasos.length}`}
           />
-          <StatCard label="Repuestos" value={money(costo)} />
+          <StatCard
+            label="Repuestos"
+            value={pesos(costo)}
+            hint={repuestos.length === 1 ? '1 repuesto' : `${repuestos.length} repuestos`}
+          />
           <StatCard
             label="Tiempo en sitio"
-            value={minutos === null ? 'en curso' : `${minutos} min`}
+            value={
+              head.started_at === null ? '—' : minutos === null ? 'En curso' : `${minutos} min`
+            }
+            hint={
+              head.started_at === null ? 'todavía no llega' : `llegó a las ${hora(head.started_at)}`
+            }
           />
           <StatCard label="Prioridad" value={PRIORIDAD_ORDEN[head.priority] ?? head.priority} />
         </section>
 
-        {head.address !== null && (
-          <p className="text-xs text-[var(--color-text-muted)]">
-            <Icon name="location_on" size={14} /> {head.address}
-            {head.scheduled_at !== null &&
-              ` · agendada ${new Date(head.scheduled_at).toLocaleString('es-DO')}`}
-          </p>
-        )}
+        {!terminada && (puedeGestionar || puedeEjecutar) && (
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            {puedeGestionar && (
+              <form action={asignarTecnicoForm} className="flex flex-wrap items-end gap-3">
+                {campos}
+                <label className="flex min-w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Técnico asignado
+                  <select
+                    name="technicianId"
+                    defaultValue={head.technician_id ?? ''}
+                    className={inputClase}
+                  >
+                    <option value="">Sin asignar</option>
+                    {tecnicos.map((t) => (
+                      <option key={t.user_id} value={t.user_id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <BotonEnvio className={botonSecundarioClase}>
+                  <Icon name="engineering" size={14} />
+                  Asignar
+                </BotonEnvio>
+              </form>
+            )}
 
-        {puedeEjecutar && !terminada && (
-          <div className="flex flex-wrap items-center gap-2">
-            {head.status === 'draft' && (
-              <form action={transicionarOrdenForm}>
-                {campos}
-                <input type="hidden" name="siguiente" value="scheduled" />
-                <BotonEnvio className={botonClase}>
-                  <Icon name="event" size={14} />
-                  Agendar
-                </BotonEnvio>
-              </form>
+            {puedeEjecutar && (
+              <div className="flex flex-wrap items-center gap-2">
+                {head.status === 'draft' && (
+                  <form action={transicionarOrdenForm}>
+                    {campos}
+                    <input type="hidden" name="siguiente" value="scheduled" />
+                    <BotonEnvio className={botonClase}>
+                      <Icon name="event" size={14} />
+                      Agendar
+                    </BotonEnvio>
+                  </form>
+                )}
+                {head.status === 'scheduled' && (
+                  <form action={transicionarOrdenForm}>
+                    {campos}
+                    <input type="hidden" name="siguiente" value="in_progress" />
+                    <BotonEnvio className={botonClase}>
+                      <Icon name="play_arrow" size={14} />
+                      Llegué al sitio
+                    </BotonEnvio>
+                  </form>
+                )}
+                <form action={transicionarOrdenForm}>
+                  {campos}
+                  <input type="hidden" name="siguiente" value="cancelled" />
+                  <BotonEnvio className={botonSecundarioClase}>
+                    <Icon name="close" size={14} />
+                    Cancelar orden
+                  </BotonEnvio>
+                </form>
+              </div>
             )}
-            {head.status === 'scheduled' && (
-              <form action={transicionarOrdenForm}>
-                {campos}
-                <input type="hidden" name="siguiente" value="in_progress" />
-                <BotonEnvio className={botonClase}>
-                  <Icon name="play_arrow" size={14} />
-                  Llegue al sitio
-                </BotonEnvio>
-              </form>
-            )}
-            <form action={transicionarOrdenForm}>
-              {campos}
-              <input type="hidden" name="siguiente" value="cancelled" />
-              <BotonEnvio className={botonSecundarioClase}>
-                <Icon name="close" size={14} />
-                Cancelar orden
-              </BotonEnvio>
-            </form>
           </div>
         )}
 
         <Card>
           <CardHeader>
-            <CardTitle>Checklist</CardTitle>
+            <CardTitle>Pasos de la visita</CardTitle>
           </CardHeader>
           <CardBody>
             {pasos.length === 0 ? (
               <p className="py-2 text-xs text-[var(--color-text-muted)]">
-                Esta orden todavía no tiene checklist. Sin pasos obligatorios se puede cerrar con
-                solo la firma -pero entonces no queda constancia de que se reviso-.
+                Esta orden todavía no tiene pasos. Sin pasos obligatorios se puede cerrar con solo
+                la firma, pero entonces no queda constancia de qué se revisó.
               </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
@@ -257,8 +348,7 @@ export default async function OrdenServicioPage({
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
                         {p.required ? 'Obligatorio' : 'Opcional'}
-                        {p.done_at !== null &&
-                          ` · marcado ${new Date(p.done_at).toLocaleString('es-DO')}`}
+                        {p.done_at !== null && ` · marcado ${cuando(p.done_at)}`}
                       </p>
                     </div>
                     {puedeEjecutar && !terminada ? (
@@ -292,7 +382,7 @@ export default async function OrdenServicioPage({
                     name="label"
                     required
                     className={inputClase}
-                    placeholder="Revisar presion del gas"
+                    placeholder="Revisar presión del gas"
                   />
                 </label>
                 <label className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-muted)]">
@@ -316,7 +406,7 @@ export default async function OrdenServicioPage({
             <ul className="divide-y divide-[var(--color-border)]">
               {repuestos.length === 0 && (
                 <li className="py-2 text-xs text-[var(--color-text-muted)]">
-                  Todavía no se registro ningún repuesto.
+                  Todavía no se registró ningún repuesto.
                 </li>
               )}
               {repuestos.map((r) => (
@@ -329,8 +419,11 @@ export default async function OrdenServicioPage({
                       <p className="text-xs text-[var(--color-text-muted)]">{r.product_name}</p>
                     )}
                   </div>
-                  <span className="tabular text-sm text-[var(--color-text-primary)]">
-                    {r.qty} × {money(Number(r.unit_cost))}
+                  <span className="tabular text-right text-sm text-[var(--color-text-primary)]">
+                    {cantidad(r.qty)} × {pesos(r.unit_cost)}
+                    <span className="block text-xs text-[var(--color-text-muted)]">
+                      {pesos(Number(r.qty) * Number(r.unit_cost))}
+                    </span>
                   </span>
                 </li>
               ))}
@@ -351,7 +444,7 @@ export default async function OrdenServicioPage({
                   </select>
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
@@ -398,7 +491,7 @@ export default async function OrdenServicioPage({
                 {head.signed_at !== null && (
                   <span className="text-[var(--color-text-muted)]">
                     {' '}
-                    el {new Date(head.signed_at).toLocaleString('es-DO')}
+                    el {cuando(head.signed_at)}
                   </span>
                 )}
               </p>

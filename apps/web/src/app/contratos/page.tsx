@@ -19,6 +19,7 @@ import {
 import { contratoVigente } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaCorta } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { crearContratoForm } from './actions'
 import { ESTADO_CONTRATO } from './estados'
@@ -83,19 +84,19 @@ export default async function ContratosPage({
       <div className="space-y-5">
         <PageHeader
           icon="assignment"
-          title="Contratos & Suscripciones"
-          description="Renovar crea un contrato nuevo -con el escalamiento de precio aplicado-, nunca sobrescribe el anterior."
+          title="Contratos y suscripciones"
+          description="Contratos de servicio y suscripciones con su vencimiento. Renovar crea un contrato nuevo con el aumento de precio pactado; el anterior queda en el historial."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Contratos" value={String(contratos.length)} />
-          <StatCard label="Vencen en 30 dias" value={String(vencenPronto)} />
+          <StatCard label="Vencen en 30 días" value={String(vencenPronto)} />
         </section>
 
         {contratos.length === 0 ? (
           <EmptyState
             icon="assignment"
-            title="Todavia no hay ningun contrato"
+            title="Todavía no hay ningún contrato"
             description="Crea el primero abajo."
           />
         ) : (
@@ -124,9 +125,7 @@ export default async function ContratosPage({
                   <TD numeric>
                     <span className="tabular">RD$ {money(Number(c.base_amount))}</span>
                   </TD>
-                  <TD className="text-[var(--color-text-muted)]">
-                    {new Date(c.end_date).toLocaleDateString('es-DO')}
-                  </TD>
+                  <TD className="text-[var(--color-text-muted)]">{fechaCorta(c.end_date, true)}</TD>
                   <TD>
                     <Badge tone={badgeEstado(c.status)}>
                       {ESTADO_CONTRATO[c.status] ?? c.status}
@@ -201,7 +200,7 @@ export default async function ContratosPage({
                   />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Escalamiento %
+                  Aumento al renovar
                   <input
                     name="escalationPct"
                     placeholder="0.10 = 10%"
@@ -211,7 +210,7 @@ export default async function ContratosPage({
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="autoRenew" />
-                  Renovacion automática
+                  Renovación automática
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />

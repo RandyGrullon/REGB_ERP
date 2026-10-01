@@ -1,9 +1,12 @@
+import { Suspense } from 'react'
 import { Badge, Icon, StatCard } from '@regb/ui'
 import { redirect } from 'next/navigation'
 import { asUser, db } from '@/lib/db'
 import { exigir, modulePage, primeraRutaVisible, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
-import { Widget, cargarDatosWidgets, ordenarWidgets, type DatosWidgets } from '@/components/widgets'
+import { BloqueWidgets, EsqueletoWidgets, agruparWidgets } from '@/components/widgets'
+import { MANIFESTS } from '@/lib/bootstrap'
+import { TITULO_SECCION } from '@/lib/secciones'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,7 +73,7 @@ export default async function Page({
 
   const { ctx, shell } = await modulePage(params, 'dashboard')
 
-  const [stats, datosWidgets] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const stats = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [row] = await tx<
       {
         usuarios: string
@@ -98,13 +101,13 @@ export default async function Page({
           where tenant_id = ${ctx.tenantId} and user_id = ${ctx.userId}
             and completed)                                                    as tour_hecho,
         -- Mismo criterio que el marketplace (lib/marketplace.ts): activos y
-        -- pruebas vigentes. Antes se contaban los módulos con manifest y el
-        -- inicio decia 18 donde el marketplace, un clic después, decia 20.
+        -- pruebas vigentes. Antes se contaban los modulos con manifest y el
+        -- inicio decia 18 donde el marketplace, un clic despues, decia 20.
         (select count(*) from regb.tenant_modules tm
           where tm.tenant_id = ${ctx.tenantId}
             and (tm.status = 'active'
                  or (tm.status = 'trial' and tm.trial_ends_at >= current_date)))  as modulos`
-    const s = {
+    return {
       usuarios: Number(row?.usuarios ?? 0),
       sucursales: Number(row?.sucursales ?? 0),
       productos: Number(row?.productos ?? 0),
@@ -113,21 +116,12 @@ export default async function Page({
       tourHecho: row?.tour_hecho ?? false,
       modulos: Number(row?.modulos ?? 0),
     }
-    // Los widgets van en el mismo `asUser`: una sola sesion de RLS para
-    // toda la pantalla de inicio, que es la que mas se abre del ERP. Las
-    // claves salen del registry —el dashboard no sabe de que modulo vino
-    // cada una, ni le hace falta.
-    // `veCosto` se decide aqui, con el mismo `can()` que el resto de la
-    // web, y no dentro de la consulta: `asUser` no lleva `role_id` en los
-    // claims, asi que `rls.has_perm()` diria que si para cualquiera.
-    const w: DatosWidgets = await cargarDatosWidgets(
-      tx,
-      ctx.tenantId,
-      shell.data.widgets,
-      exigir(ctx, 'inventory', 'inventory.cost.view').ok,
-    )
-    return [s, w] as const
   })
+
+  // `veCosto` se decide aqui, con el mismo `can()` que el resto de la web,
+  // y no dentro de la consulta. Los widgets NO se esperan aquí: cada bloque
+  // se carga solo dentro de su <Suspense> (ver BloqueWidgets).
+  const veCosto = exigir(ctx, 'inventory', 'inventory.cost.view').ok
 
   const qs = ctx.demoQs
 
@@ -175,6 +169,15 @@ export default async function Page({
     },
   ].filter((p) => p.puede)
   const hechos = pasos.filter((p) => p.hecho).length
+
+  // La sección de cada widget sale del manifest que lo declara, y el orden
+  // de las secciones, del menú de ESTE rol: los dos ya vienen resueltos.
+  const seccionDe = new Map<string, string>()
+  for (const m of MANIFESTS.values()) {
+    for (const w of m.dashboardWidgets ?? []) seccionDe.set(w, m.navSection ?? 'operacion')
+  }
+  const ordenSecciones = [...new Set(shell.data.sidebar.map((m) => m.navSection ?? 'operacion'))]
+  const bloques = agruparWidgets(shell.data.widgets, seccionDe, ordenSecciones)
   const verDiagnostico = params.diagnostico === '1'
 
   return (
@@ -267,14 +270,31 @@ export default async function Page({
         )}
 
         {/* Lo del negocio primero: ventas, caja, inventario, cartera. Cada
-            modulo declara sus widgets; el inicio solo los pinta. */}
-        {shell.data.widgets.length > 0 && (
-          <section aria-label="Tu negocio hoy" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {ordenarWidgets(shell.data.widgets).map((w) => (
-              <Widget key={w} clave={w} datos={datosWidgets} qs={qs} />
-            ))}
+            modulo declara sus widgets; el inicio solo los pinta, en bloques
+            con los mismos nombres que el menú. */}
+        {bloques.map((b) => (
+          <section key={b.seccion} aria-labelledby={`widgets-${b.seccion}`} className="space-y-3">
+            <h2
+              id={`widgets-${b.seccion}`}
+              className="text-sm font-semibold text-[var(--color-text-secondary)]"
+            >
+              {b.seccion === 'hoy'
+                ? 'Tu negocio hoy'
+                : TITULO_SECCION[b.seccion] || 'Más indicadores'}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <Suspense fallback={<EsqueletoWidgets n={b.claves.length} />}>
+                <BloqueWidgets
+                  claves={b.claves}
+                  userId={ctx.userId}
+                  tenantId={ctx.tenantId}
+                  veCosto={veCosto}
+                  qs={qs}
+                />
+              </Suspense>
+            </div>
           </section>
-        )}
+        ))}
 
         <section aria-label="Tu cuenta" className="grid grid-cols-2 gap-3 xl:grid-cols-4">
           <StatCard label="Usuarios activos" value={String(stats.usuarios)} hint="con acceso hoy" />

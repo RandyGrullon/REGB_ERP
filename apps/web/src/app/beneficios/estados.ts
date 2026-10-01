@@ -1,6 +1,6 @@
 /** Etiquetas del tipo de prestamo. */
 export const TIPO_PRESTAMO: Record<string, string> = {
-  loan: 'Prestamo',
+  loan: 'Préstamo',
   advance: 'Adelanto',
 }
 
@@ -13,7 +13,7 @@ export const ESTADO_PRESTAMO: Record<string, string> = {
 
 /** Etiquetas de la fuente de un pago. */
 export const FUENTE_PAGO: Record<string, string> = {
-  payroll: 'Nomina',
+  payroll: 'Nómina',
   cash: 'Efectivo',
   transfer: 'Transferencia',
 }

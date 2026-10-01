@@ -35,7 +35,7 @@ const num = (raw: string): number | null => {
 export async function crearLista(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('crearLista', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'price-lists', 'price-lists.manage')
     if (!permiso.ok) return permiso
 
@@ -47,7 +47,7 @@ export async function crearLista(fd: FormData): Promise<ActionResult> {
     const endDate = String(fd.get('endDate') ?? '') || null
 
     if (!name) return { ok: false, error: 'Escribe el nombre de la lista.' }
-    if (!ALCANCES.includes(scope)) return { ok: false, error: 'Elige un alcance valido.' }
+    if (!ALCANCES.includes(scope)) return { ok: false, error: 'Elige un alcance válido.' }
     if (scope === 'customer' && !customerId) return { ok: false, error: 'Elige el cliente.' }
     if (scope === 'channel' && !channel) return { ok: false, error: 'Escribe el canal.' }
     if (!startDate) return { ok: false, error: 'Elige la fecha de inicio.' }
@@ -75,14 +75,14 @@ export async function crearLista(fd: FormData): Promise<ActionResult> {
 export async function cambiarEstadoLista(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('cambiarEstadoLista', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'price-lists', 'price-lists.manage')
     if (!permiso.ok) return permiso
 
     const listId = String(fd.get('listId') ?? '')
     const status = String(fd.get('status') ?? '')
     if (!listId) return { ok: false, error: 'Falta la lista.' }
-    if (!ESTADOS.includes(status)) return { ok: false, error: 'Estado invalido.' }
+    if (!ESTADOS.includes(status)) return { ok: false, error: 'Estado inválido.' }
 
     await asUser(
       ctx.userId,
@@ -112,7 +112,7 @@ export async function crearEntrada(fd: FormData): Promise<CuotaGuardada> {
   let actualizada = false
   const r = await sinExcepciones('crearEntrada', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'price-lists', 'price-lists.manage')
     if (!permiso.ok) return permiso
 
@@ -124,8 +124,8 @@ export async function crearEntrada(fd: FormData): Promise<CuotaGuardada> {
     if (!listId) return { ok: false, error: 'Falta la lista.' }
     if (!productId) return { ok: false, error: 'Elige el producto.' }
     if (unitPrice === null || unitPrice < 0)
-      return { ok: false, error: 'El precio debe ser un numero valido.' }
-    if (minQuantity <= 0) return { ok: false, error: 'La cantidad minima debe ser mayor que cero.' }
+      return { ok: false, error: 'El precio debe ser un número válido.' }
+    if (minQuantity <= 0) return { ok: false, error: 'La cantidad mínima debe ser mayor que cero.' }
 
     const [fila] = await asUser(
       ctx.userId,
@@ -149,7 +149,7 @@ export async function crearEntrada(fd: FormData): Promise<CuotaGuardada> {
 export async function quitarEntrada(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('quitarEntrada', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'price-lists', 'price-lists.manage')
     if (!permiso.ok) return permiso
 
@@ -176,7 +176,7 @@ export async function quitarEntrada(fd: FormData): Promise<ActionResult> {
 export async function asignarListaCliente(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('asignarListaCliente', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'price-lists', 'price-lists.manage')
     if (!permiso.ok) return permiso
 
@@ -210,7 +210,7 @@ export async function crearEntradaForm(fd: FormData): Promise<void> {
   await anotarAviso(
     r,
     'crearEntrada',
-    r.ok && r.actualizada ? 'Esa cuota ya existia: le corregimos el precio.' : undefined,
+    r.ok && r.actualizada ? 'Esa cuota ya existía: le corregimos el precio.' : undefined,
   )
 }
 export async function quitarEntradaForm(fd: FormData): Promise<void> {

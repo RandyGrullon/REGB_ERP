@@ -1,6 +1,14 @@
 #!/usr/bin/env node
-/** Aplica supabase/seed/demo.sql. Idempotente. */
-import { readFile } from 'node:fs/promises'
+/**
+ * Aplica supabase/seed/demo.sql y despues cada `demo-*.sql` de la misma
+ * carpeta, en orden alfabetico. Idempotente.
+ *
+ * Los `demo-<area>.sql` existen para que la demo de cada area (ventas,
+ * finanzas, personas...) crezca en su propio archivo: con todo en uno
+ * solo, dos personas que llenan pantallas vacias a la vez chocan en el
+ * mismo archivo de 3,000 lineas.
+ */
+import { readFile, readdir } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import postgres from 'postgres'
@@ -16,8 +24,12 @@ if (!url) {
 const sql = postgres(url, { max: 1, onnotice: () => {} })
 
 try {
-  const body = await readFile(join(DIR, '..', 'seed', 'demo.sql'), 'utf8')
-  await sql.unsafe(body)
+  const carpeta = join(DIR, '..', 'seed')
+  const extras = (await readdir(carpeta)).filter((f) => /^demo-.+\.sql$/.test(f)).sort()
+  for (const archivo of ['demo.sql', ...extras]) {
+    await sql.unsafe(await readFile(join(carpeta, archivo), 'utf8'))
+    if (archivo !== 'demo.sql') console.log(`  + ${archivo}`)
+  }
 
   const tenants = await sql`
     select t.slug, t.tier, count(tm.module_id) as modulos

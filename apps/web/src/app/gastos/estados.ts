@@ -18,7 +18,7 @@ export const ESTADO_GASTO: Record<string, string> = {
 
 /** Etiquetas del metodo de reembolso. */
 export const METODO_REEMBOLSO: Record<string, string> = {
-  payroll: 'Nomina',
+  payroll: 'Nómina',
   transfer: 'Transferencia',
   cash: 'Efectivo',
 }

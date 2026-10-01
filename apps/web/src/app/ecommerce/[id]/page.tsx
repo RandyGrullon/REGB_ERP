@@ -13,6 +13,7 @@ import {
 import type { EstadoPedidoCanal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { transicionarPedidoForm } from '../actions'
 import { ESTADO_PEDIDO_CANAL, PLATAFORMA_CANAL } from '../estados'
@@ -42,7 +43,7 @@ interface Linea {
 
 const money = (n: number) => n.toLocaleString('es-DO', { minimumFractionDigits: 2 })
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' => {
   if (s === 'imported') return 'success'
   if (s === 'cancelled') return 'danger'
@@ -88,6 +89,8 @@ export default async function PedidoCanalDetallePage({
     </>
   )
 
+  const sumaLineas = lineas.reduce((t, l) => t + Number(l.quantity) * Number(l.unit_price), 0)
+
   return (
     <Shell {...shell} activePath="/ecommerce">
       <div className="space-y-5">
@@ -95,7 +98,7 @@ export default async function PedidoCanalDetallePage({
           icon="storefront"
           title={head.external_order_id}
           crumbs={[
-            { label: 'E-commerce sync', href: `/ecommerce${qs}` },
+            { label: 'Tienda en línea', href: `/ecommerce${qs}` },
             { label: head.external_order_id },
           ]}
           actions={
@@ -112,7 +115,7 @@ export default async function PedidoCanalDetallePage({
           />
           <StatCard label="Cliente" value={head.customer_name} />
           <StatCard label="Total" value={`RD$ ${money(Number(head.total))}`} />
-          <StatCard label="Recibido" value={new Date(head.received_at).toLocaleString('es-DO')} />
+          <StatCard label="Recibido" value={fechaHoraRD(head.received_at)} />
         </section>
 
         {puedeGestionar && head.status === 'received' && (
@@ -146,8 +149,9 @@ export default async function PedidoCanalDetallePage({
                       {l.product_name ?? 'Sin vincular'}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      SKU externo <Mono>{l.external_sku}</Mono> · {l.quantity} x RD${' '}
-                      {money(Number(l.unit_price))}
+                      SKU externo <Mono>{l.external_sku}</Mono> ·{' '}
+                      {Number(l.quantity).toLocaleString('es-DO', { maximumFractionDigits: 3 })} ×
+                      RD$ {money(Number(l.unit_price))}
                     </p>
                   </div>
                   <span className="tabular text-sm text-[var(--color-text-primary)]">
@@ -156,17 +160,37 @@ export default async function PedidoCanalDetallePage({
                 </li>
               ))}
             </ul>
+            {/* Las líneas llegan sin ITBIS y el total de la tienda lo trae
+                incluido (con envío o descuentos, si los hubo): sin esta
+                cuenta, las líneas no cuadran con el total de arriba. */}
+            {lineas.length > 0 && (
+              <dl className="mt-2 space-y-1 border-t border-[var(--color-border)] pt-2 text-sm">
+                <div className="flex justify-between text-[var(--color-text-secondary)]">
+                  <dt>Suma de las líneas</dt>
+                  <dd className="tabular">RD$ {money(sumaLineas)}</dd>
+                </div>
+                <div className="flex justify-between text-[var(--color-text-secondary)]">
+                  <dt>ITBIS, envío y descuentos de la tienda</dt>
+                  <dd className="tabular">RD$ {money(Number(head.total) - sumaLineas)}</dd>
+                </div>
+                <div className="flex justify-between font-semibold text-[var(--color-text-primary)]">
+                  <dt>Total del pedido</dt>
+                  <dd className="tabular">RD$ {money(Number(head.total))}</dd>
+                </div>
+              </dl>
+            )}
           </CardBody>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>El total de la tienda</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              El total de este pedido se registro tal cual llego -nunca se recalcula con una formula
-              propia, porque ya lo calculo el canal externo-.
+              El total se registró tal cual lo mandó la tienda en línea, con sus precios y
+              descuentos. Aquí no se recalcula: si no cuadra con lo que esperabas, revísalo en la
+              tienda antes de importarlo.
             </p>
           </CardBody>
         </Card>

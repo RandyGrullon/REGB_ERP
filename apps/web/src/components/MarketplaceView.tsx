@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
-import { Badge, Button, EmptyState, Icon, cn } from '@regb/ui'
+import { Badge, Button, EmptyState, Icon, Logo, cn } from '@regb/ui'
 import {
   AREAS,
   areaDe,
@@ -202,6 +202,7 @@ export function MarketplaceView({
           <Icon name="chevron_left" size={22} />
           Volver
         </a>
+        <Logo size="sm" decorative />
         <span className="truncate text-sm font-semibold text-[var(--color-text-primary)]">
           Marketplace
         </span>

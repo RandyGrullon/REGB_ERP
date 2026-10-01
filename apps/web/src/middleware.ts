@@ -1,5 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { inicioPorSesion } from '@/lib/inicio-por-sesion'
+import { rutaInterna } from '@/lib/ruta-interna'
 
 /**
  * Refresco de sesion y guardia de rutas.
@@ -25,6 +27,15 @@ const PUBLICAS = [
   // MUERTAS -y en desarrollo funcionaban, porque sin Supabase el
   // middleware se aparta-. Un fallo que solo aparece donde importa.
   '/api/ecf/',
+  // Lo que llama un programador de tareas (Vercel Cron, `pnpm alertas`,
+  // `pnpm despachar`). No traen sesion de nadie: se protegen con su propio
+  // secreto (`Authorization: Bearer $REGB_CRON_SECRET`) y sin el responden
+  // 401/503. Mismo fallo que /api/ecf/: con Supabase configurado el
+  // middleware las mandaba a /login con un 307, el cron "funcionaba" y los
+  // eventos -asientos automaticos, automatizaciones, webhooks- no salian.
+  '/api/eventos/despachar',
+  '/api/salud',
+  '/api/alertas',
 ]
 
 export async function middleware(request: NextRequest) {
@@ -60,19 +71,40 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
   const esPublica = PUBLICAS.some((p) => path.startsWith(p))
 
+  // Una redireccion tiene que llevarse las cookies que getUser() acaba de
+  // refrescar: si no, el navegador se queda con el token viejo y la
+  // siguiente peticion vuelve a refrescar (o a caer al login).
+  const redirigir = (destino: URL) => {
+    const r = NextResponse.redirect(destino)
+    for (const c of response.cookies.getAll()) r.cookies.set(c)
+    return r
+  }
+
   if (!user && !esPublica) {
     const login = request.nextUrl.clone()
     login.pathname = '/login'
+    login.search = ''
     // Para devolverlo a donde iba despues de entrar.
     login.searchParams.set('siguiente', path)
-    return NextResponse.redirect(login)
+    return redirigir(login)
   }
 
-  if (user && path === '/login') {
-    const inicio = request.nextUrl.clone()
-    inicio.pathname = '/'
-    inicio.search = ''
-    return NextResponse.redirect(inicio)
+  // Con sesion, "el inicio" depende de quien es: el proveedor no tiene
+  // cliente (su inicio es /control) y quien no tiene cliente o lo tiene
+  // suspendido no puede pintar `/`. Sin esto, `/` -> /login -> `/` era un
+  // bucle (ver inicio-por-sesion.ts). Solo se leen los claims aqui, en las
+  // dos rutas que lo necesitan.
+  if (user && (path === '/' || path === '/login')) {
+    const { data } = await supabase.auth.getClaims()
+    const inicio = data?.claims ? inicioPorSesion(data.claims) : '/'
+
+    if (path === '/login') {
+      // Si venia de algun sitio (una invitacion, una pantalla), alli.
+      let ruta = rutaInterna(request.nextUrl.searchParams.get('siguiente'))
+      if (ruta === '/' || ruta.startsWith('/login')) ruta = inicio
+      return redirigir(new URL(ruta, request.nextUrl.origin))
+    }
+    if (inicio !== '/') return redirigir(new URL(inicio, request.nextUrl.origin))
   }
 
   return response

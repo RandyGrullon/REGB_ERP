@@ -24,7 +24,7 @@ import { ESTADO_INSCRIPCION } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Planes & Inscripciones · REGB ERP' }
+export const metadata = { title: 'Planes e inscripciones · REGB ERP' }
 
 interface EmpleadoOption {
   id: string
@@ -43,7 +43,7 @@ interface InscripcionRow {
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/** Planes & Inscripciones (modulo 69): quien esta inscrito, cuanto aporta cada quien. */
+/** Planes e inscripciones (modulo 69): quien esta inscrito, cuanto aporta cada quien. */
 export default async function PlanesPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'benefits')
@@ -70,6 +70,8 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
       employer_contribution: Number(i.employer_contribution),
     })),
   )
+  const activas = inscripciones.filter((i) => i.status === 'active')
+  const aporteEmpleados = activas.reduce((a, i) => a + Number(i.employee_contribution), 0)
   const puedeGestionar = exigir(ctx, 'benefits', 'benefits.manage-enrollments').ok
   const qs = ctx.demoQs
 
@@ -81,23 +83,33 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
       <div className="space-y-5">
         <PageHeader
           icon="health_and_safety"
-          title="Planes & Inscripciones"
-          description="Quién está inscrito en cada plan y cuánto aportan el empleado y la empresa. Los reclamos se tramitan con la aseguradora."
+          title="Planes e inscripciones"
+          description="Quién está inscrito en cada plan y cuánto aportan el empleado y la empresa cada mes. El aporte del empleado todavía no se descuenta solo en la nómina: se registra aquí para llevar la cuenta. Los reclamos se tramitan con la aseguradora."
           crumbs={[
-            { label: 'Prestamos & Adelantos', href: `/beneficios${qs}` },
+            { label: 'Préstamos y adelantos', href: `/beneficios${qs}` },
             { label: 'Planes' },
           ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Costo patronal mensual" value={`RD$ ${money(costoMensual)}`} />
+          <StatCard
+            label="Costo patronal mensual"
+            value={`RD$ ${money(costoMensual)}`}
+            hint="lo que paga la empresa"
+          />
+          <StatCard
+            label="Aporte de los empleados"
+            value={`RD$ ${money(aporteEmpleados)}`}
+            hint="al mes, entre todos"
+          />
+          <StatCard label="Inscripciones activas" value={String(activas.length)} />
         </section>
 
         {inscripciones.length === 0 ? (
           <EmptyState
             icon="health_and_safety"
-            title="Todavia no hay ninguna inscripcion"
-            description="Registra la primera abajo."
+            title="Todavía no hay ninguna inscripción"
+            description="Inscribe a un empleado en un plan (seguro de salud, seguro de vida) con lo que aporta él y lo que aporta la empresa. Registra la primera abajo."
           />
         ) : (
           <Table>
@@ -155,7 +167,7 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
         {puedeGestionar && empleados.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva inscripcion</CardTitle>
+              <CardTitle>Nueva inscripción</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearInscripcionForm} className="flex flex-wrap items-end gap-3">

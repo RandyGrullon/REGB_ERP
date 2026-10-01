@@ -64,7 +64,7 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
     rol: String(fd.get('rol') ?? '') || undefined,
   }
   const ctx = await actionCtx(demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   // Pedir un modulo le sube la factura al dueño: no lo decide un cajero.
   // Owner lo tiene por `*`; el Admin de fabrica lo tiene negado a proposito
@@ -83,9 +83,9 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
     const crudo: unknown = JSON.parse(String(fd.get('modulos') ?? '[]'))
     modulos = Array.isArray(crudo) ? crudo.filter((m): m is string => typeof m === 'string') : []
   } catch {
-    return { ok: false, error: 'No se pudo leer la seleccion.' }
+    return { ok: false, error: 'No se pudo leer la selección.' }
   }
-  if (modulos.length === 0) return { ok: false, error: 'Elige al menos un modulo.' }
+  if (modulos.length === 0) return { ok: false, error: 'Elige al menos un módulo.' }
 
   const nota =
     String(fd.get('nota') ?? '')
@@ -131,7 +131,7 @@ export async function solicitarActivacion(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'sin-modulos') {
-    return { ok: false, error: 'Ninguno de esos modulos esta disponible todavia.' }
+    return { ok: false, error: 'Ninguno de esos módulos está disponible todavía.' }
   }
 
   // 'layout' y no solo la pagina: la ficha `/marketplace/[id]` tambien

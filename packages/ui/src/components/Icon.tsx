@@ -44,7 +44,13 @@ export function Icon({
     <span
       aria-hidden="true"
       translate="no"
-      className={cn('material-symbols-rounded select-none leading-none', className)}
+      // `overflow-hidden` + `inline-block`: mientras la fuente de íconos no
+      // carga (o si falla), la ligadura se pinta como texto ("expand_more")
+      // y se salía de su caja: en /pos daba 47 px de scroll horizontal.
+      className={cn(
+        'material-symbols-rounded inline-block shrink-0 select-none overflow-hidden leading-none',
+        className,
+      )}
       style={{
         ...style,
         fontSize: size,

@@ -36,7 +36,7 @@ const num = (raw: string): number | null => {
 
 export async function crearPlan(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'commissions', 'commissions.manage')
   if (!permiso.ok) return permiso
 
@@ -46,7 +46,7 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Ponle un nombre al plan.' }
   if (!['percentage', 'fixed'].includes(basis))
-    return { ok: false, error: 'Elige un esquema valido.' }
+    return { ok: false, error: 'Elige un esquema válido.' }
   if (rate === null || rate <= 0) return { ok: false, error: 'La tasa debe ser mayor que cero.' }
 
   await asUser(
@@ -63,7 +63,7 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
 
 export async function crearEntrada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'commissions', 'commissions.manage')
   if (!permiso.ok) return permiso
 
@@ -102,7 +102,7 @@ export async function crearEntrada(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de una comision -pending/approved/rejected/paid-. */
 export async function transicionarEntrada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'commissions', 'commissions.manage')
   if (!permiso.ok) return permiso
 
@@ -113,7 +113,7 @@ export async function transicionarEntrada(fd: FormData): Promise<ActionResult> {
     const [e] = await tx<{ status: EstadoComision }[]>`
       select status from public.commission_entries where id = ${entryId} and tenant_id = ${ctx.tenantId} for update`
     if (!e) return 'no-existe'
-    if (!transicionValidaComision(e.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaComision(e.status, siguiente)) return 'Esa transición no está permitida.'
 
     const aprobando = siguiente === 'approved'
     const pagando = siguiente === 'paid'
@@ -133,7 +133,7 @@ export async function transicionarEntrada(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Esa comision no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa comisión no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath('/comisiones')

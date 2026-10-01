@@ -38,6 +38,11 @@ interface RequisicionRow {
   estimated_amount: string
   status: string
   po_reference: string | null
+  po_id: string | null
+  created_at: string
+  approved_at: string | null
+  decision_note: string | null
+  aprobado_por: string | null
 }
 
 const money = (n: number) =>
@@ -69,9 +74,15 @@ export default async function RequisicionesPage({
 
     const r = await tx<RequisicionRow[]>`
       select pr.id, e.first_name || ' ' || e.last_name as employee_name, pr.department, pr.description,
-             pr.estimated_amount::text, pr.status, pr.po_reference
+             pr.estimated_amount::text, pr.status, pr.po_reference,
+             (select po.id from public.purchase_orders po
+               where po.tenant_id = pr.tenant_id and po.number = pr.po_reference) as po_id,
+             pr.created_at::text, pr.approved_at::text, pr.decision_note,
+             up.display_name as aprobado_por
       from public.purchase_requisitions pr
       join public.employees e on e.id = pr.employee_id
+      left join public.user_profiles up
+        on up.tenant_id = pr.tenant_id and up.user_id = pr.approved_by
       where pr.tenant_id = ${ctx.tenantId}
       order by pr.created_at desc`
 
@@ -79,8 +90,18 @@ export default async function RequisicionesPage({
   })
 
   const pendientes = requisiciones.filter((r) => r.status === 'pending').length
+  const porComprar = requisiciones.filter((r) => r.status === 'approved').length
+  const montoPendiente = requisiciones
+    .filter((r) => r.status === 'pending')
+    .reduce((a, r) => a + Number(r.estimated_amount), 0)
+  const puedeVerCompras = exigir(ctx, 'purchase-orders', 'purchase-orders.view').ok
+  const fecha = (iso: string) =>
+    new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })
   const puedeSolicitar = exigir(ctx, 'requisitions', 'requisitions.request').ok
   const puedeAprobar = exigir(ctx, 'requisitions', 'requisitions.approve').ok
+  // Marcar convertida la hace quien aprueba o quien hace la orden de compra
+  // (el comprador): "lo aprobado pasa a Compras para convertirlo en orden".
+  const puedeConvertir = puedeAprobar || exigir(ctx, 'purchase-orders', 'purchase-orders.create').ok
   const qs = ctx.demoQs
 
   return (
@@ -89,29 +110,39 @@ export default async function RequisicionesPage({
         <PageHeader
           icon="assignment"
           title="Requisiciones"
-          description="Aprobar usa el mismo limite de monto que ya tiene cada rol -si no alcanza, el sistema lo dice claro-."
+          description="Lo que un empleado necesita que se compre. Quien aprueba lo hace hasta el límite de monto de su rol; lo aprobado pasa a Compras para convertirlo en orden."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Pendientes de aprobar" value={String(pendientes)} />
-          <StatCard label="Requisiciones totales" value={String(requisiciones.length)} />
+          <StatCard
+            label="Pendientes de aprobar"
+            value={String(pendientes)}
+            hint={`RD$ ${money(montoPendiente)} en total`}
+          />
+          <StatCard
+            label="Aprobadas por comprar"
+            value={String(porComprar)}
+            hint="sin orden todavía"
+          />
+          <StatCard label="Requisiciones" value={String(requisiciones.length)} hint="todas" />
         </section>
 
         {requisiciones.length === 0 ? (
           <EmptyState
             icon="assignment"
-            title="Todavia no hay ninguna requisicion"
-            description="Registra la primera abajo."
+            title="Todavía no hay ninguna requisición"
+            description="Cuando alguien del equipo necesite algo (papelería, repuestos, mercancía), se registra abajo con su monto estimado y queda esperando aprobación."
           />
         ) : (
           <Table>
             <THead>
               <TR>
+                <TH>Pedida</TH>
                 <TH>Empleado</TH>
-                <TH>Que se necesita</TH>
+                <TH>Qué se necesita</TH>
                 <TH numeric>Monto estimado</TH>
                 <TH>Estado</TH>
-                {puedeAprobar && (
+                {puedeConvertir && (
                   <TH>
                     <span className="sr-only">Acción</span>
                   </TH>
@@ -121,27 +152,57 @@ export default async function RequisicionesPage({
             <TBody>
               {requisiciones.map((r) => (
                 <TR key={r.id}>
+                  <TD className="whitespace-nowrap">{fecha(r.created_at)}</TD>
                   <TD className="text-[var(--color-text-primary)]">
                     {r.employee_name}
-                    {r.department ? ` · ${r.department}` : ''}
+                    {r.department && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {r.department}
+                      </span>
+                    )}
                   </TD>
-                  <TD className="max-w-64 truncate">{r.description}</TD>
+                  <TD className="max-w-72">
+                    <span className="line-clamp-2" title={r.description}>
+                      {r.description}
+                    </span>
+                    {r.decision_note && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {r.decision_note}
+                      </span>
+                    )}
+                  </TD>
                   <TD numeric>
-                    <span className="tabular">RD$ {money(Number(r.estimated_amount))}</span>
+                    <span className="tabular whitespace-nowrap">
+                      RD$ {money(Number(r.estimated_amount))}
+                    </span>
                   </TD>
                   <TD>
                     <Badge tone={badgeTono(r.status)}>
                       {ESTADO_REQUISICION[r.status] ?? r.status}
                     </Badge>
-                    {r.po_reference ? (
-                      <span className="ml-1 text-xs text-[var(--color-text-muted)]">
-                        {r.po_reference}
+                    {r.po_reference &&
+                      (r.po_id && puedeVerCompras ? (
+                        <a
+                          href={`/compras/${r.po_id}${qs}`}
+                          className="block pt-1 text-xs whitespace-nowrap text-[var(--color-text-link)] hover:underline"
+                        >
+                          {r.po_reference}
+                        </a>
+                      ) : (
+                        <span className="block pt-1 text-xs whitespace-nowrap text-[var(--color-text-muted)]">
+                          {r.po_reference}
+                        </span>
+                      ))}
+                    {r.approved_at && r.status !== 'pending' && (
+                      <span className="block text-xs whitespace-nowrap text-[var(--color-text-muted)]">
+                        {r.aprobado_por ? `${r.aprobado_por}, ` : ''}
+                        {fecha(r.approved_at)}
                       </span>
-                    ) : null}
+                    )}
                   </TD>
-                  {puedeAprobar && (
+                  {puedeConvertir && (
                     <TD>
-                      {r.status === 'pending' && (
+                      {r.status === 'pending' && puedeAprobar && (
                         <div className="flex gap-1.5">
                           <form action={resolverRequisicionForm}>
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
@@ -173,10 +234,10 @@ export default async function RequisicionesPage({
                           <input
                             name="poReference"
                             aria-label={`Referencia de orden para ${r.description}`}
-                            placeholder="OC-2026-00001"
+                            placeholder="Número de la orden"
                             className={claseInput}
                           />
-                          <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             Marcar convertida
                           </BotonEnvio>
                         </form>
@@ -192,7 +253,7 @@ export default async function RequisicionesPage({
         {puedeSolicitar && empleados.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva requisicion</CardTitle>
+              <CardTitle>Nueva requisición</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearRequisicionForm} className="flex flex-wrap items-end gap-3">
@@ -213,8 +274,13 @@ export default async function RequisicionesPage({
                   <input name="department" className={claseInput} />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Que se necesita
-                  <input name="description" required className={claseInput} />
+                  Qué se necesita
+                  <input
+                    name="description"
+                    required
+                    placeholder="Resmas de papel y tóner para la oficina"
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Monto estimado

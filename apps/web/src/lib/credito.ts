@@ -193,7 +193,7 @@ export async function exigirCredito(
       ok: false,
       // Sin el nombre interno del permiso: lo lee el vendedor con el
       // cliente delante (cliente misterioso, 23 sep 2026).
-      error: `${s.mensaje} La excepcion la autoriza el dueno o quien lleva el credito: ${permiso.error}`,
+      error: `${s.mensaje} La excepción la autoriza el dueño o quien lleva el crédito: ${permiso.error}`,
     }
   }
   const motivo = p.excepcion.motivo.trim()
@@ -201,7 +201,7 @@ export async function exigirCredito(
     return {
       ok: false,
       error:
-        'Escribe el motivo de la excepcion (quien responde, cuando paga): queda en la bitacora con tu nombre.',
+        'Escribe el motivo de la excepción (quién responde, cuándo paga): queda en la bitácora con tu nombre.',
     }
   }
 

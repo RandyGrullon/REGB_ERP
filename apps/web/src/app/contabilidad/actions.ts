@@ -34,17 +34,17 @@ const num = (raw: string): number | null => {
 
 export async function crearCuenta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
   if (!permiso.ok) return permiso
 
   const code = String(fd.get('code') ?? '').trim()
   const name = String(fd.get('name') ?? '').trim()
   const type = String(fd.get('type') ?? '')
-  if (code.length < 1) return { ok: false, error: 'El codigo de cuenta no puede estar vacio.' }
+  if (code.length < 1) return { ok: false, error: 'El código de cuenta no puede estar vacío.' }
   if (name.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
   if (!['asset', 'liability', 'equity', 'revenue', 'expense'].includes(type)) {
-    return { ok: false, error: 'Elige un tipo de cuenta valido.' }
+    return { ok: false, error: 'Elige un tipo de cuenta válido.' }
   }
 
   // Un codigo repetido lanzaba la excepcion de la base sin atrapar y la
@@ -59,7 +59,7 @@ export async function crearCuenta(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: `Ya tienes una cuenta con el codigo ${code}.` }
+      return { ok: false, error: `Ya tienes una cuenta con el código ${code}.` }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -70,7 +70,7 @@ export async function crearCuenta(fd: FormData): Promise<ActionResult> {
 
 export async function alternarCuenta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
   if (!permiso.ok) return permiso
 
@@ -98,7 +98,7 @@ export async function alternarCuenta(fd: FormData): Promise<ActionResult> {
               PROPOSITOS_CONTABLES.find((p) => p.proposito === u.purpose)?.etiqueta ?? u.purpose,
           )
           .join(', ')
-        return `La cuenta ${cuenta.code} ${cuenta.name} la usan los asientos automaticos (${nombres}). Asigna otra en el Mapa de cuentas antes de desactivarla.`
+        return `La cuenta ${cuenta.code} ${cuenta.name} la usan los asientos automáticos (${nombres}). Asigna otra en el Mapa de cuentas antes de desactivarla.`
       }
     }
 
@@ -118,15 +118,15 @@ export async function alternarCuenta(fd: FormData): Promise<ActionResult> {
 /** Crea el asiento en borrador. Las lineas se agregan despues. */
 export async function crearAsiento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.entry.create')
   if (!permiso.ok) return permiso
 
   const description = String(fd.get('description') ?? '').trim()
   const entryDate = String(fd.get('entryDate') ?? '').trim()
-  if (description.length < 3) return { ok: false, error: 'Describe de que trata el asiento.' }
+  if (description.length < 3) return { ok: false, error: 'Describe de qué trata el asiento.' }
   if (entryDate !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(entryDate)) {
-    return { ok: false, error: 'La fecha del asiento no es valida.' }
+    return { ok: false, error: 'La fecha del asiento no es válida.' }
   }
 
   try {
@@ -153,7 +153,7 @@ export async function crearAsiento(fd: FormData): Promise<ActionResult> {
 
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.entry.create')
   if (!permiso.ok) return permiso
 
@@ -164,7 +164,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const memo = String(fd.get('memo') ?? '').trim() || null
   if (!entryId || !accountId) return { ok: false, error: 'Elige cuenta.' }
   if (monto === null || monto <= 0) return { ok: false, error: 'El monto debe ser positivo.' }
-  if (lado !== 'debit' && lado !== 'credit') return { ok: false, error: 'Elige debito o credito.' }
+  if (lado !== 'debit' && lado !== 'credit') return { ok: false, error: 'Elige débito o crédito.' }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [entry] = await tx<{ status: string }[]>`
@@ -181,7 +181,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'no-existe') return { ok: false, error: 'Ese asiento no existe.' }
-  if (res === 'no-borrador') return { ok: false, error: 'Solo se agregan lineas a un borrador.' }
+  if (res === 'no-borrador') return { ok: false, error: 'Solo se agregan líneas a un borrador.' }
 
   revalidatePath(`/contabilidad/${entryId}`)
   return { ok: true }
@@ -189,7 +189,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.entry.create')
   if (!permiso.ok) return permiso
 
@@ -214,7 +214,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
  */
 export async function contabilizarAsiento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.entry.post')
   if (!permiso.ok) return permiso
 
@@ -236,7 +236,7 @@ export async function contabilizarAsiento(fd: FormData): Promise<ActionResult> {
 /** Borra un asiento en borrador. Uno contabilizado lo rechaza el trigger. */
 export async function borrarAsiento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.entry.delete')
   if (!permiso.ok) return permiso
 
@@ -269,7 +269,7 @@ export async function borrarAsiento(fd: FormData): Promise<ActionResult> {
  */
 export async function guardarMapaCuenta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
   if (!permiso.ok) return permiso
 
@@ -284,7 +284,7 @@ export async function guardarMapaCuenta(fd: FormData): Promise<ActionResult> {
       select code, name, type, is_active from public.accounts
       where id = ${accountId} and tenant_id = ${ctx.tenantId}`
     if (!cuenta) return 'Esa cuenta no existe.'
-    if (!cuenta.is_active) return `La cuenta ${cuenta.code} ${cuenta.name} esta desactivada.`
+    if (!cuenta.is_active) return `La cuenta ${cuenta.code} ${cuenta.name} está desactivada.`
     if (cuenta.type !== def.tipo) {
       const quiere = (TIPO_CUENTA[def.tipo] ?? def.tipo).toLowerCase()
       const tiene = (TIPO_CUENTA[cuenta.type] ?? cuenta.type).toLowerCase()
@@ -311,7 +311,7 @@ export async function guardarMapaCuenta(fd: FormData): Promise<ActionResult> {
  */
 export async function crearCuentasPorDefecto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'accounting', 'accounting.accounts.manage')
   if (!permiso.ok) return permiso
 

@@ -60,7 +60,7 @@ export function alcanceDelRespaldo(ctx: ModulePageCtx): AlcanceRespaldo {
   for (const m of [...ctx.licensedModules].sort()) {
     const nombre = nombreDeModulo(m)
     if (!exigir(ctx, m, `${m}.view`).ok) {
-      fuera.push({ modulo: m, nombre, motivo: 'tu rol no abre este modulo' })
+      fuera.push({ modulo: m, nombre, motivo: 'tu rol no abre este módulo' })
       continue
     }
     const negada = Object.entries(ctx.role.permissions).find(

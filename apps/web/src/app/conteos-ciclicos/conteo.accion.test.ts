@@ -75,7 +75,7 @@ afterAll(async () => {
 describe('iniciar', () => {
   it('un almacen sin existencias no deja un conteo vacio colgado', async () => {
     const r = await iniciarConteo(c.fd({ warehouseId: vacio }))
-    expect(r).toEqual({ ok: false, error: 'Ese almacen no tiene existencias para contar.' })
+    expect(r).toEqual({ ok: false, error: 'Ese almacén no tiene existencias para contar.' })
     expect(await conteos(vacio)).toBe(0)
   })
 })

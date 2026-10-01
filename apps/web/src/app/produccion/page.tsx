@@ -22,6 +22,7 @@ import { Shell } from '@/components/Shell'
 import { crearOrdenForm } from './actions'
 import { ESTADO_ORDEN } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Órdenes de producción · REGB ERP' }
@@ -30,11 +31,13 @@ interface OrdenRow {
   id: string
   sku: string
   product_name: string
+  unit: string
   warehouse_name: string
   status: string
   qty_planned: string
   qty_completed: string
   qty_scrapped: string
+  created_at: string
 }
 
 interface BomOption {
@@ -66,8 +69,9 @@ export default async function ProduccionPage({
 
   const { ordenes, boms, almacenes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const o = await tx<OrdenRow[]>`
-      select po.id, p.sku, p.name as product_name, w.name as warehouse_name, po.status,
-             po.qty_planned::text, po.qty_completed::text, po.qty_scrapped::text
+      select po.id, p.sku, p.name as product_name, p.unit, w.name as warehouse_name, po.status,
+             po.qty_planned::text, po.qty_completed::text, po.qty_scrapped::text,
+             po.created_at::text
       from public.production_orders po
       join public.bill_of_materials bm on bm.id = po.bom_id
       join public.products p on p.id = bm.product_id
@@ -97,26 +101,36 @@ export default async function ProduccionPage({
       <div className="space-y-5">
         <PageHeader
           icon="precision_manufacturing"
-          title="Ordenes de produccion"
-          description="Lanzamiento sobre el BOM activo, consumo de una sola vez al liberar, avance y mermas con su propio historial."
+          title="Órdenes de producción"
+          description="Qué se fabrica, cuánto y en qué almacén. Al liberar la orden se sacan los componentes de su receta; lo que se termina entra al inventario y la merma queda anotada."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="En progreso" value={String(enProgreso)} />
-          <StatCard label="Total" value={String(ordenes.length)} />
+          <StatCard label="En progreso" value={String(enProgreso)} hint="liberadas en la planta" />
+          <StatCard
+            label="Borradores"
+            value={String(ordenes.filter((o) => o.status === 'draft').length)}
+            hint="por liberar"
+          />
+          <StatCard
+            label="Completadas"
+            value={String(ordenes.filter((o) => o.status === 'completed').length)}
+            hint="de las últimas 30"
+          />
         </section>
 
         {ordenes.length === 0 ? (
           <EmptyState
             icon="precision_manufacturing"
-            title="Todavia no hay ninguna orden"
-            description="Crea la primera abajo."
+            title="Todavía no hay ninguna orden"
+            description="Crea la primera abajo con una receta activa (Lista de materiales), el almacén y la cantidad a fabricar."
           />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Producto</TH>
+                <TH>Creada</TH>
                 <TH>Almacén</TH>
                 <TH numeric>Planificado</TH>
                 <TH numeric>Completado</TH>
@@ -135,18 +149,24 @@ export default async function ProduccionPage({
                       <Mono>{o.sku}</Mono> {o.product_name}
                     </a>
                   </TD>
+                  <TD className="whitespace-nowrap">
+                    {new Date(o.created_at).toLocaleDateString('es-DO', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </TD>
                   <TD>{o.warehouse_name}</TD>
                   <TD numeric>
-                    <span className="tabular">{o.qty_planned}</span>
+                    <span className="tabular">{cantidad(o.qty_planned, o.unit)}</span>
                   </TD>
                   <TD numeric>
                     <span className="tabular text-[var(--color-semantic-text-success)]">
-                      {o.qty_completed}
+                      {cantidad(o.qty_completed)}
                     </span>
                   </TD>
                   <TD numeric>
                     <span className="tabular text-[var(--color-semantic-text-danger)]">
-                      {o.qty_scrapped}
+                      {cantidad(o.qty_scrapped)}
                     </span>
                   </TD>
                   <TD>
@@ -168,7 +188,7 @@ export default async function ProduccionPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  BOM activo
+                  Receta activa
                   <select
                     name="bomId"
                     required
@@ -182,7 +202,7 @@ export default async function ProduccionPage({
                   </select>
                 </label>
                 <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen
+                  Almacén
                   <select
                     name="warehouseId"
                     required

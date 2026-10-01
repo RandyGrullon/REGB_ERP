@@ -21,14 +21,14 @@ const TIPOS_CUENTA = ['checking', 'savings']
 /** Cambia el estado de homologacion de un proveedor. */
 export async function cambiarHomologacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'suppliers', 'suppliers.manage')
   if (!permiso.ok) return permiso
 
   const supplierId = String(fd.get('supplierId') ?? '')
   const status = String(fd.get('status') ?? '')
   if (!supplierId) return { ok: false, error: 'Falta el proveedor.' }
-  if (!ESTADOS.includes(status)) return { ok: false, error: 'Estado invalido.' }
+  if (!ESTADOS.includes(status)) return { ok: false, error: 'Estado inválido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -52,7 +52,7 @@ export async function cambiarHomologacion(fd: FormData): Promise<ActionResult> {
 /** Registra un documento de un proveedor -su vigencia se calcula siempre contra hoy-. */
 export async function crearDocumento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'suppliers', 'suppliers.manage-documents')
   if (!permiso.ok) return permiso
 
@@ -64,7 +64,7 @@ export async function crearDocumento(fd: FormData): Promise<ActionResult> {
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (!TIPOS_DOCUMENTO.includes(docType))
-    return { ok: false, error: 'Elige un tipo de documento valido.' }
+    return { ok: false, error: 'Elige un tipo de documento válido.' }
 
   try {
     await asUser(
@@ -86,7 +86,7 @@ export async function crearDocumento(fd: FormData): Promise<ActionResult> {
 /** Registra una cuenta bancaria de un proveedor. */
 export async function crearCuentaBancaria(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'suppliers', 'suppliers.manage')
   if (!permiso.ok) return permiso
 
@@ -98,9 +98,9 @@ export async function crearCuentaBancaria(fd: FormData): Promise<ActionResult> {
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (!bankName) return { ok: false, error: 'Escribe el nombre del banco.' }
-  if (!accountNumber) return { ok: false, error: 'Escribe el numero de cuenta.' }
+  if (!accountNumber) return { ok: false, error: 'Escribe el número de cuenta.' }
   if (!TIPOS_CUENTA.includes(accountType))
-    return { ok: false, error: 'Elige un tipo de cuenta valido.' }
+    return { ok: false, error: 'Elige un tipo de cuenta válido.' }
 
   try {
     await asUser(
@@ -122,7 +122,7 @@ export async function crearCuentaBancaria(fd: FormData): Promise<ActionResult> {
 /** Registra una evaluacion -queda fija desde el momento en que se registra-. */
 export async function registrarEvaluacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'suppliers', 'suppliers.evaluate')
   if (!permiso.ok) return permiso
 
@@ -133,7 +133,7 @@ export async function registrarEvaluacion(fd: FormData): Promise<ActionResult> {
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (!Number.isInteger(score) || score < 1 || score > 5) {
-    return { ok: false, error: 'La calificacion debe ser un numero de 1 a 5.' }
+    return { ok: false, error: 'La calificación debe ser un número de 1 a 5.' }
   }
 
   try {

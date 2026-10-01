@@ -1,9 +1,9 @@
 /** Etiquetas de etapa de una oportunidad, en el orden del kanban. */
 export const ETAPA_OPORTUNIDAD: Record<string, string> = {
-  prospecting: 'Prospeccion',
-  qualification: 'Calificacion',
+  prospecting: 'Prospección',
+  qualification: 'Calificación',
   proposal: 'Propuesta',
-  negotiation: 'Negociacion',
+  negotiation: 'Negociación',
   won: 'Ganada',
   lost: 'Perdida',
 }

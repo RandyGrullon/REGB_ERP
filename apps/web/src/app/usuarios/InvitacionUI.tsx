@@ -174,7 +174,7 @@ export function InvitarForm({
             required
             minLength={3}
             autoComplete="off"
-            placeholder="Juana Perez"
+            placeholder="Juana Pérez"
             className={CAMPO}
           />
         </label>

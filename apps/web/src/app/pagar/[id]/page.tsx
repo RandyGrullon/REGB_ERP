@@ -60,7 +60,7 @@ const money = (n: number) =>
 
 const METODO_LABEL: Record<string, string> = {
   cash: 'Efectivo',
-  transfer: 'Transf.',
+  transfer: 'Transferencia',
   check: 'Cheque',
   card: 'Tarjeta',
 }
@@ -163,7 +163,7 @@ export default async function FacturaProveedorDetallePage({
               </span>
               {dias > 0 && saldo > 0 && head.status !== 'void' && (
                 <Badge tone="danger" dot={false}>
-                  {dias} dias de atraso
+                  {dias} día{dias === 1 ? '' : 's'} de atraso
                 </Badge>
               )}
             </div>
@@ -194,7 +194,10 @@ export default async function FacturaProveedorDetallePage({
           }
         />
 
-        <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+        <section
+          aria-label="Totales"
+          className="grid grid-cols-2 gap-3 md:grid-cols-3 2xl:grid-cols-5"
+        >
           <StatCard
             label="Subtotal"
             value={`RD$ ${money(Number(head.subtotal))}`}
@@ -243,7 +246,7 @@ export default async function FacturaProveedorDetallePage({
                     aria-label="Forma de pago"
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
-                    <option value="transfer">Transf.</option>
+                    <option value="transfer">Transferencia</option>
                     <option value="check">Cheque</option>
                     <option value="cash">Efectivo</option>
                     <option value="card">Tarjeta</option>
@@ -329,17 +332,17 @@ export default async function FacturaProveedorDetallePage({
                     />
                   </label>
                   <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    ISR de la retencion
+                    ISR de la retención
                     <input
                       name="isrRetention"
                       inputMode="decimal"
                       defaultValue={isr.toFixed(2)}
-                      title={`De los ${money(retencion)} retenidos, cuanto fue ISR. El resto se declara como ITBIS retenido.`}
+                      title={`De los ${money(retencion)} retenidos, cuánto fue ISR. El resto se declara como ITBIS retenido.`}
                       className="tabular h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-right text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
                   <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Tipo de retencion ISR
+                    Tipo de retención ISR
                     <select
                       name="isrRetentionType"
                       defaultValue={head.isr_retention_type ?? ''}
@@ -358,13 +361,13 @@ export default async function FacturaProveedorDetallePage({
                     <input
                       name="modifiedNcf"
                       defaultValue={head.modified_ncf ?? ''}
-                      placeholder="Solo notas de credito"
+                      placeholder="Solo notas de crédito"
                       className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
                   <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                     <Icon name="sell" size={18} />
-                    Guardar clasificacion
+                    Guardar clasificación
                   </BotonEnvio>
                 </form>
               )}
@@ -386,7 +389,7 @@ export default async function FacturaProveedorDetallePage({
                 Todavía no se ha registrado ningún pago.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[560px]">
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
@@ -399,7 +402,8 @@ export default async function FacturaProveedorDetallePage({
                 <TBody>
                   {pagos.map((p) => (
                     <TR key={p.id}>
-                      <TD>{fechaHora(p.paid_at)}</TD>
+                      <TD className="whitespace-nowrap">{fechaHora(p.paid_at)}</TD>
+
                       <TD>{METODO_LABEL[p.method] ?? p.method}</TD>
                       <TD>{p.reference ?? '—'}</TD>
                       <TD>{p.paid_by_name ?? '—'}</TD>

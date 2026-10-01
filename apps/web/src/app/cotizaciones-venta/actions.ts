@@ -75,7 +75,7 @@ export async function crearCotizacion(fd: FormData): Promise<CotizacionCreada> {
   const salida: { quoteId?: string; number?: string } = {}
   const r = await sinExcepciones('crearCotizacion', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'quotes', 'quotes.manage')
     if (!permiso.ok) return permiso
 
@@ -115,9 +115,9 @@ async function exigirBorrador(
   const [q] = await tx<{ status: EstadoCotizacion; customer_id: string | null }[]>`
     select status, customer_id from public.quotes
     where id = ${quoteId} and tenant_id = ${tenantId} for update`
-  if (!q) return 'Esa cotizacion no existe.'
+  if (!q) return 'Esa cotización no existe.'
   if (q.status !== 'draft') {
-    return 'Esta cotizacion ya se envio: lo que vio el cliente no se cambia. Crea una version nueva.'
+    return 'Esta cotización ya se envió: lo que vio el cliente no se cambia. Crea una versión nueva.'
   }
   return q
 }
@@ -125,7 +125,7 @@ async function exigirBorrador(
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('agregarLineaCotizacion', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'quotes', 'quotes.manage')
     if (!permiso.ok) return permiso
 
@@ -142,7 +142,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
     if (quantity === null || quantity <= 0)
       return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
     if (precioEscrito !== null && precioEscrito < 0) {
-      return { ok: false, error: 'El precio debe ser un numero valido.' }
+      return { ok: false, error: 'El precio debe ser un número válido.' }
     }
     if (discountPct < 0 || discountPct > 100)
       return { ok: false, error: 'El descuento va de 0 a 100.' }
@@ -164,7 +164,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
       // obligatorio y vacio, y cada vendedor ponia el precio que recordaba.
       let unitPrice = precioEscrito
       if (unitPrice === null) {
-        if (!p) return 'Escribe el precio unitario: no se pudo leer el del catalogo.'
+        if (!p) return 'Escribe el precio unitario: no se pudo leer el del catálogo.'
         const { precio } = await precioDeVenta(
           tx,
           ctx.tenantId,
@@ -178,7 +178,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
       try {
         totalLinea = lineTotals({ quantity, unitPrice, discountPct, taxRate }).total
       } catch {
-        return 'Esos numeros no son validos.'
+        return 'Esos números no son válidos.'
       }
 
       await tx`
@@ -197,7 +197,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('quitarLineaCotizacion', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'quotes', 'quotes.manage')
     if (!permiso.ok) return permiso
 
@@ -223,7 +223,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
 export async function transicionarCotizacion(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('transicionarCotizacion', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'quotes', 'quotes.manage')
     if (!permiso.ok) return permiso
 
@@ -238,9 +238,9 @@ export async function transicionarCotizacion(fd: FormData): Promise<ActionResult
         from public.quotes q where q.id = ${quoteId} and q.tenant_id = ${ctx.tenantId} for update`
       if (!q) return 'no-existe'
       if (!transicionValidaCotizacion(q.status, siguiente))
-        return 'Esa transicion no esta permitida.'
+        return 'Esa transición no está permitida.'
       if (siguiente === 'sent' && q.lineas === 0) {
-        return 'Agrega al menos una linea antes de enviarla: una cotizacion vacia no le dice nada al cliente.'
+        return 'Agrega al menos una línea antes de enviarla: una cotización vacía no le dice nada al cliente.'
       }
 
       const enviando = siguiente === 'sent'
@@ -262,7 +262,7 @@ export async function transicionarCotizacion(fd: FormData): Promise<ActionResult
       return 'ok'
     })
 
-    if (resultado === 'no-existe') return { ok: false, error: 'Esa cotizacion no existe.' }
+    if (resultado === 'no-existe') return { ok: false, error: 'Esa cotización no existe.' }
     if (resultado !== 'ok') return { ok: false, error: resultado }
 
     revalidatePath(`/cotizaciones-venta/${quoteId}`)
@@ -275,7 +275,7 @@ export async function transicionarCotizacion(fd: FormData): Promise<ActionResult
 export async function crearVersionNueva(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('crearVersionNueva', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'quotes', 'quotes.manage')
     if (!permiso.ok) return permiso
 
@@ -295,17 +295,17 @@ export async function crearVersionNueva(fd: FormData): Promise<ActionResult> {
       >`
         select status, quote_number, version, customer_id, terms, valid_until::text, sales_order_id
         from public.quotes where id = ${quoteId} and tenant_id = ${ctx.tenantId} for update`
-      if (!actual) return { error: 'Esa cotizacion no existe.' }
+      if (!actual) return { error: 'Esa cotización no existe.' }
       if (actual.status === 'draft') {
         return {
-          error: 'Una cotizacion en borrador se edita directo, no necesita una version nueva.',
+          error: 'Una cotización en borrador se edita directo, no necesita una versión nueva.',
         }
       }
       if (actual.status === 'superseded')
-        return { error: 'Esa cotizacion ya fue sustituida por otra version.' }
+        return { error: 'Esa cotización ya fue sustituida por otra versión.' }
       if (actual.sales_order_id) {
         return {
-          error: 'Esta cotizacion ya se convirtio en pedido: los cambios se hacen en el pedido.',
+          error: 'Esta cotización ya se convirtió en pedido: los cambios se hacen en el pedido.',
         }
       }
 
@@ -365,7 +365,7 @@ export async function convertirEnPedido(fd: FormData): Promise<PedidoDesdeCotiza
   const salida: { orderId?: string; number?: string } = {}
   const r = await sinExcepciones('convertirEnPedido', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const pc = exigir(ctx, 'quotes', 'quotes.manage')
     if (!pc.ok) return pc
     const pp = exigir(ctx, 'sales-orders', 'sales-orders.create')
@@ -387,24 +387,24 @@ export async function convertirEnPedido(fd: FormData): Promise<PedidoDesdeCotiza
       >`
         select status, quote_number, version, customer_id, sales_order_id
         from public.quotes where id = ${quoteId} and tenant_id = ${ctx.tenantId} for update`
-      if (!q) return { error: 'Esa cotizacion no existe.' }
+      if (!q) return { error: 'Esa cotización no existe.' }
       if (q.sales_order_id) {
         const [o] = await tx<{ number: string }[]>`
           select number from public.sales_orders where id = ${q.sales_order_id}`
         return {
-          error: `Esta cotizacion ya se convirtio en el pedido ${o?.number ?? ''}.`.replace(
+          error: `Esta cotización ya se convirtió en el pedido ${o?.number ?? ''}.`.replace(
             ' .',
             '.',
           ),
         }
       }
       if (q.status !== 'approved') {
-        return { error: 'Solo una cotizacion aprobada por el cliente se convierte en pedido.' }
+        return { error: 'Solo una cotización aprobada por el cliente se convierte en pedido.' }
       }
       if (!q.customer_id) {
         return {
           error:
-            'La cotizacion no tiene cliente: crea una version nueva con el cliente y apruebala.',
+            'La cotización no tiene cliente: crea una versión nueva con el cliente y apruébala.',
         }
       }
 
@@ -419,7 +419,7 @@ export async function convertirEnPedido(fd: FormData): Promise<PedidoDesdeCotiza
       >`
         select product_id, quantity::text, unit_price::text, discount_pct::text, tax_rate::text
         from public.quote_lines where quote_id = ${quoteId} and tenant_id = ${ctx.tenantId}`
-      if (lineas.length === 0) return { error: 'La cotizacion no tiene lineas.' }
+      if (lineas.length === 0) return { error: 'La cotización no tiene líneas.' }
 
       const [w] = warehouseElegido
         ? await tx<{ id: string }[]>`
@@ -429,7 +429,7 @@ export async function convertirEnPedido(fd: FormData): Promise<PedidoDesdeCotiza
             select id from public.warehouses
             where tenant_id = ${ctx.tenantId} and is_active
             order by is_default desc, name limit 1`
-      if (!w) return { error: 'No hay un almacen activo que despache el pedido.' }
+      if (!w) return { error: 'No hay un almacén activo que despache el pedido.' }
 
       const entradas = lineas.map((l) => ({
         quantity: Number(l.quantity),
@@ -441,7 +441,7 @@ export async function convertirEnPedido(fd: FormData): Promise<PedidoDesdeCotiza
 
       const [n] = await tx<{ next_sales_order_number: string }[]>`
         select public.next_sales_order_number(${ctx.tenantId})`
-      const nota = `Desde la cotizacion ${q.quote_number} v${q.version}`
+      const nota = `Desde la cotización ${q.quote_number} v${q.version}`
       const [o] = await tx<{ id: string }[]>`
         insert into public.sales_orders
           (tenant_id, number, customer_id, warehouse_id, created_by, notes,
@@ -483,7 +483,7 @@ export async function crearCotizacionForm(fd: FormData): Promise<void> {
     await anotarAviso(r, 'crearCotizacion')
     return
   }
-  await anotarAviso(r, 'crearCotizacion', `Cotizacion ${r.number} creada. Agregale las lineas.`)
+  await anotarAviso(r, 'crearCotizacion', `Cotización ${r.number} creada. Agrégale las líneas.`)
   redirect(`/cotizaciones-venta/${r.quoteId}${qsDe(fd)}`)
 }
 export async function agregarLineaForm(fd: FormData): Promise<void> {
@@ -493,10 +493,10 @@ export async function quitarLineaForm(fd: FormData): Promise<void> {
   await anotarAviso(await quitarLinea(fd), 'quitarLinea')
 }
 const TEXTO_TRANSICION: Record<string, string> = {
-  sent: 'Cotizacion marcada como enviada: ya no se edita. Imprimela para el cliente.',
-  approved: 'Cotizacion aprobada. Ya la puedes convertir en pedido.',
-  rejected: 'Cotizacion rechazada.',
-  expired: 'Cotizacion marcada como vencida.',
+  sent: 'Cotización marcada como enviada: ya no se edita. Imprímela para el cliente.',
+  approved: 'Cotización aprobada. Ya la puedes convertir en pedido.',
+  rejected: 'Cotización rechazada.',
+  expired: 'Cotización marcada como vencida.',
 }
 export async function transicionarCotizacionForm(fd: FormData): Promise<void> {
   await anotarAviso(
@@ -517,7 +517,7 @@ export async function convertirEnPedidoForm(fd: FormData): Promise<void> {
   await anotarAviso(
     r,
     'convertirEnPedido',
-    `Pedido ${r.number} creado con los precios de la cotizacion. Revisalo y confirmalo para apartar la mercancia.`,
+    `Pedido ${r.number} creado con los precios de la cotización. Revísalo y confírmalo para apartar la mercancía.`,
   )
   redirect(`/pedidos/${r.orderId}${qsDe(fd)}`)
 }

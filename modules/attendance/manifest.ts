@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'attendance',
-  name: 'Asistencia & Ponches',
+  name: 'Asistencia y ponches',
   description: 'Marcaje con geocerca y QR, horas extra y tardanzas calculadas.',
   icon: 'fingerprint',
   category: 'standard',

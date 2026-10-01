@@ -65,7 +65,7 @@ describe('invitar y cotizar', () => {
     expect(await invitarProveedor(c.fd({ rfqId: rfq, supplierId: barato }))).toEqual({ ok: true })
     expect(await invitarProveedor(c.fd({ rfqId: rfq, supplierId: barato }))).toEqual({
       ok: false,
-      error: 'Ese proveedor ya esta invitado.',
+      error: 'Ese proveedor ya está invitado.',
     })
   })
 
@@ -84,14 +84,14 @@ describe('invitar y cotizar', () => {
       c.fd({ rfqId: rfq, supplierId: barato, totalAmount: '100000', leadTimeDays: '1' }),
     )
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/ya cotizo/)
+    if (!r.ok) expect(r.error).toMatch(/ya cotizó/)
   })
 })
 
 describe('adjudicar', () => {
   it('no se adjudica a quien no cotizo', async () => {
     const r = await adjudicarRfq(c.fd({ rfqId: rfq, supplierId: sinCotizar }))
-    expect(r).toEqual({ ok: false, error: 'Ese proveedor no cotizo en este RFQ.' })
+    expect(r).toEqual({ ok: false, error: 'Ese proveedor no cotizó en esta solicitud.' })
   })
 
   it('no se adjudica a una oferta que no es la mejor, aunque entregue antes', async () => {

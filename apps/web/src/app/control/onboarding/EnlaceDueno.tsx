@@ -44,7 +44,7 @@ export function EnlaceUnaVez({
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-xs font-semibold text-[var(--color-text-secondary)]">
-        Enlace de invitacion para {correo}
+        Enlace de invitación para {correo}
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <input

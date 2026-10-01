@@ -41,6 +41,8 @@ interface EntryHead {
   /** Factura de proveedor o de cliente de donde salio el asiento, si la hay. */
   factura_ap: string | null
   factura_ar: string | null
+  /** Solo cuando el asiento es de otra empresa del cliente, no de la principal. */
+  empresa: string | null
 }
 
 interface LineRow {
@@ -97,7 +99,9 @@ export default async function AsientoDetallePage({
                when e.source_type = 'ar_late_fee' then
                  (select f.invoice_id::text from public.invoice_late_fees f
                    where f.id = e.source_id and f.tenant_id = e.tenant_id)
-             end as factura_ar
+             end as factura_ar,
+             (select coalesce(c.trade_name, c.legal_name) from public.companies c
+               where c.id = e.company_id and not c.is_default) as empresa
       from public.journal_entries e
       where e.id = ${id} and e.tenant_id = ${ctx.tenantId}`
     if (!h) return [null, [], []] as const
@@ -167,9 +171,12 @@ export default async function AsientoDetallePage({
           meta={
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={e.tone}>{e.label}</Badge>
+              {head.empresa && (
+                <span className="text-xs text-[var(--color-text-muted)]">{head.empresa}</span>
+              )}
               {head.source_type !== 'manual' && (
                 <span className="text-xs text-[var(--color-text-muted)]">
-                  {ORIGEN_ASIENTO[head.source_type] ?? 'Automatico'}
+                  {ORIGEN_ASIENTO[head.source_type] ?? 'Automático'}
                 </span>
               )}
               {origen && (
@@ -219,12 +226,18 @@ export default async function AsientoDetallePage({
         />
 
         <section aria-label="Totales" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Debito" value={`RD$ ${money(totalDebito)}`} />
-          <StatCard label="Credito" value={`RD$ ${money(totalCredito)}`} />
+          <StatCard label="Débito" value={`RD$ ${money(totalDebito)}`} />
+          <StatCard label="Crédito" value={`RD$ ${money(totalCredito)}`} />
           <StatCard
             label="Diferencia"
             value={`RD$ ${money(Math.abs(totalDebito - totalCredito))}`}
-            hint={totalDebito === totalCredito ? 'cuadra' : 'no cuadra todavía'}
+            hint={
+              lines.length === 0
+                ? 'sin líneas todavía'
+                : totalDebito === totalCredito
+                  ? 'cuadra'
+                  : 'no cuadra todavía'
+            }
           />
         </section>
 
@@ -241,12 +254,12 @@ export default async function AsientoDetallePage({
             </CardBody>
           </Card>
         ) : (
-          <Table>
+          <Table className="min-w-[560px]">
             <THead>
               <TR>
                 <TH>Cuenta</TH>
                 <TH>Nota</TH>
-                <TH numeric>Debito</TH>
+                <TH numeric>Débito</TH>
                 <TH numeric>Crédito</TH>
                 {enBorrador && puedeEditar && (
                   <TH>
@@ -259,10 +272,16 @@ export default async function AsientoDetallePage({
               {lines.map((l) => (
                 <TR key={l.id}>
                   <TD>
-                    <Mono>{l.account_code}</Mono>{' '}
-                    <span className="font-medium text-[var(--color-text-primary)]">
-                      {l.account_name}
-                    </span>
+                    <a
+                      href={`/contabilidad/mayor?cuenta=${l.account_id}${qs.replace('?', '&')}`}
+                      title="Ver el mayor de esta cuenta"
+                      className="hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
+                      <Mono>{l.account_code}</Mono>{' '}
+                      <span className="font-medium text-[var(--color-text-primary)]">
+                        {l.account_name}
+                      </span>
+                    </a>
                   </TD>
                   <TD className="text-[var(--color-text-secondary)]">{l.memo ?? '—'}</TD>
                   <TD numeric>
@@ -324,7 +343,7 @@ export default async function AsientoDetallePage({
                     required
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
-                    <option value="debit">Debito</option>
+                    <option value="debit">Débito</option>
                     <option value="credit">Crédito</option>
                   </select>
                 </label>
@@ -357,7 +376,7 @@ export default async function AsientoDetallePage({
         {enBorrador && cuentas.length === 0 && (
           <Card>
             <CardBody className="pt-4 text-sm text-[var(--color-text-secondary)]">
-              Necesitas al menos una cuenta activa en el catalogo para agregar lineas.{' '}
+              Necesitas al menos una cuenta activa en el catálogo para agregar líneas.{' '}
               <a
                 href={`/contabilidad/cuentas${qs}`}
                 className="text-[var(--color-text-link)] hover:underline"

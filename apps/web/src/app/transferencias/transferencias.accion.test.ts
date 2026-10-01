@@ -162,7 +162,7 @@ describe('el costo viaja con la mercancia (0137)', () => {
   it('una linea en blanco no se salta: se pide la cantidad', async () => {
     const r = await recibir(orden, await lineaDe(orden), '')
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/escribe cuanto llego/)
+    if (!r.ok) expect(r.error).toMatch(/escribe cuánto llegó/)
   })
 
   it('en el destino entra con el costo con el que salio, no a cero', async () => {

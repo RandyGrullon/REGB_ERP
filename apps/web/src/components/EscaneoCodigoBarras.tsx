@@ -86,7 +86,9 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
 
         return () => clearInterval(intervalo)
       } catch {
-        setEstado('No se pudo activar la camara -revisa los permisos del navegador-.')
+        setEstado(
+          'No se pudo activar la cámara. Revisa que el navegador tenga permiso para usarla.',
+        )
         setCamaraActiva(false)
       }
     }
@@ -122,7 +124,7 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
               className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
             >
               <Icon name="photo_camera" size={18} />
-              Activar camara
+              Activar cámara
             </button>
           )}
           {estado && <p className="text-xs text-[var(--color-semantic-text-danger)]">{estado}</p>}
@@ -130,8 +132,8 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
       )}
       {!soportada && (
         <p className="text-xs text-[var(--color-text-muted)]">
-          Tu navegador no soporta escaneo con camara -escribe el código abajo, o usa un lector
-          fisico: funciona identico-.
+          Este navegador no deja usar la cámara para escanear. Escribe el código abajo o usa una
+          pistola lectora: funciona igual.
         </p>
       )}
 
@@ -139,12 +141,12 @@ export function EscaneoCodigoBarras({ action, tenant, rol }: Props) {
         <input type="hidden" name="tenant" value={tenant} />
         <input type="hidden" name="rol" value={rol} />
         <label className="flex min-w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-          Codigo
+          Código
           <input
             ref={inputRef}
             name="codigo"
             autoFocus
-            placeholder="Escanea o escribe el codigo"
+            placeholder="Escanea o escribe el código"
             className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
           />
         </label>

@@ -21,6 +21,7 @@ import { Shell } from '@/components/Shell'
 import { cancelarDevolucionForm, enviarDevolucionForm } from './actions'
 import { ESTADO_RECEPCION, ORIGEN_DEVOLUCION } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Recepciones · REGB ERP' }
@@ -31,6 +32,8 @@ interface OrdenPendiente {
   supplier_name: string
   warehouse_name: string
   pendiente: string
+  lineas_pendientes: string
+  order_date: string
 }
 
 interface RecepcionRow {
@@ -53,9 +56,6 @@ interface DevolucionRow {
   origin: string
 }
 
-const money = (n: number) =>
-  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-
 /** Recepciones (modulo 46): inspeccion, discrepancias y devolucion al proveedor. */
 export default async function RecepcionesPage({
   searchParams,
@@ -72,7 +72,10 @@ export default async function RecepcionesPage({
       const p = await tx<OrdenPendiente[]>`
         select po.id, po.number, s.name as supplier_name, w.name as warehouse_name,
                (select coalesce(sum(l.qty_ordered - l.qty_received), 0) from public.purchase_order_lines l
-                 where l.order_id = po.id)::text as pendiente
+                 where l.order_id = po.id)::text as pendiente,
+               (select count(*) from public.purchase_order_lines l
+                 where l.order_id = po.id and l.qty_received < l.qty_ordered)::text as lineas_pendientes,
+               po.order_date::text
         from public.purchase_orders po
         join public.suppliers s on s.id = po.supplier_id
         join public.warehouses w on w.id = po.warehouse_id
@@ -115,14 +118,30 @@ export default async function RecepcionesPage({
         <PageHeader
           icon="inventory_2"
           title="Recepciones"
-          description="Inspeccion real al recibir -aceptado contra rechazado-, discrepancia detectada sola, y devolucion al proveedor de lo que no paso."
+          description="Lo que llega del proveedor se cuenta y se inspecciona: lo aceptado entra al almacén, lo rechazado se devuelve, y si no cuadra con la orden queda marcado."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Ordenes por recibir" value={String(pendientes.length)} />
-          <StatCard label="Recepciones registradas" value={String(recepciones.length)} />
-          <StatCard label="Con discrepancias" value={String(conDiscrepancias)} />
-          <StatCard label="Devoluciones pendientes" value={String(devoluciones.length)} />
+          <StatCard
+            label="Órdenes por recibir"
+            value={String(pendientes.length)}
+            hint="confirmadas"
+          />
+          <StatCard
+            label="Recepciones registradas"
+            value={String(recepciones.length)}
+            hint={recepciones.length >= 50 ? 'las últimas 50' : 'en total'}
+          />
+          <StatCard
+            label="Con discrepancias"
+            value={String(conDiscrepancias)}
+            hint="no cuadró algo"
+          />
+          <StatCard
+            label="Devoluciones pendientes"
+            value={String(devoluciones.length)}
+            hint="por enviar al proveedor"
+          />
         </section>
 
         <Card>
@@ -133,8 +152,8 @@ export default async function RecepcionesPage({
             {pendientes.length === 0 ? (
               <EmptyState
                 icon="inventory_2"
-                title="No hay ordenes con nada pendiente de recibir"
-                description=""
+                title="No hay órdenes con nada pendiente de recibir"
+                description="Cuando Compras confirme una orden, aparece aquí para recibirla en el almacén."
               />
             ) : (
               <Table>
@@ -143,7 +162,8 @@ export default async function RecepcionesPage({
                     <TH>Orden</TH>
                     <TH>Proveedor</TH>
                     <TH>Almacén</TH>
-                    <TH numeric>Pendiente</TH>
+                    <TH>Pedida</TH>
+                    <TH numeric>Falta recibir</TH>
                     {puedeRecibir && (
                       <TH>
                         <span className="sr-only">Acción</span>
@@ -168,8 +188,19 @@ export default async function RecepcionesPage({
                       </TD>
                       <TD>{o.supplier_name}</TD>
                       <TD>{o.warehouse_name}</TD>
+                      <TD className="whitespace-nowrap">
+                        {new Date(`${o.order_date.slice(0, 10)}T12:00:00`).toLocaleDateString(
+                          'es-DO',
+                          { day: 'numeric', month: 'short' },
+                        )}
+                      </TD>
                       <TD numeric>
-                        <span className="tabular">{money(Number(o.pendiente))}</span>
+                        <span className="tabular">{cantidad(o.pendiente)}</span>
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {o.lineas_pendientes === '1'
+                            ? 'en 1 línea'
+                            : `en ${o.lineas_pendientes} líneas`}
+                        </span>
                       </TD>
                       {puedeRecibir && (
                         <TD>
@@ -198,8 +229,8 @@ export default async function RecepcionesPage({
             {devoluciones.length === 0 ? (
               <EmptyState
                 icon="assignment_return"
-                title="No hay ninguna devolucion pendiente"
-                description=""
+                title="No hay ninguna devolución pendiente"
+                description="Lo que se rechaza al recibir, o lo que sale malo después, queda aquí hasta que se le envía al proveedor."
               />
             ) : (
               <Table>
@@ -208,7 +239,7 @@ export default async function RecepcionesPage({
                     <TH>Producto</TH>
                     <TH>Proveedor</TH>
                     <TH numeric>Cantidad</TH>
-                    <TH>Que se devuelve</TH>
+                    <TH>Qué se devuelve</TH>
                     <TH>Razón</TH>
                     {puedeDevolver && (
                       <TH>
@@ -223,7 +254,7 @@ export default async function RecepcionesPage({
                       <TD className="text-[var(--color-text-primary)]">{d.product_name}</TD>
                       <TD>{d.supplier_name}</TD>
                       <TD numeric>
-                        <span className="tabular">{d.qty}</span>
+                        <span className="tabular">{cantidad(d.qty)}</span>
                       </TD>
                       <TD>
                         <span className="text-[var(--color-text-primary)]">
@@ -233,7 +264,11 @@ export default async function RecepcionesPage({
                           {ORIGEN_DEVOLUCION[d.origin]?.efecto}
                         </span>
                       </TD>
-                      <TD className="max-w-56 truncate">{d.reason}</TD>
+                      <TD className="max-w-64">
+                        <span className="line-clamp-2" title={d.reason}>
+                          {d.reason}
+                        </span>
+                      </TD>
                       {puedeDevolver && (
                         <TD>
                           <div className="flex gap-1.5">
@@ -274,8 +309,8 @@ export default async function RecepcionesPage({
             {recepciones.length === 0 ? (
               <EmptyState
                 icon="fact_check"
-                title="Todavia no se ha registrado ninguna recepcion"
-                description=""
+                title="Todavía no se ha registrado ninguna recepción"
+                description="Cada vez que recibes una orden queda aquí quién la recibió, cuándo y si llegó completa."
               />
             ) : (
               <Table>
@@ -305,8 +340,14 @@ export default async function RecepcionesPage({
                         )}
                       </TD>
                       <TD>{r.supplier_name}</TD>
-                      <TD>{r.received_by_name ?? '—'}</TD>
-                      <TD>{new Date(r.received_at).toLocaleDateString('es-DO')}</TD>
+                      <TD>{r.received_by_name ?? 'Sin registrar'}</TD>
+                      <TD className="whitespace-nowrap">
+                        {new Date(r.received_at).toLocaleDateString('es-DO', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </TD>
                       <TD>
                         <Badge tone={r.status === 'with_discrepancies' ? 'warning' : 'success'}>
                           {ESTADO_RECEPCION[r.status] ?? r.status}

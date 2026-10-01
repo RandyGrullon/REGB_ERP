@@ -35,7 +35,7 @@ const ETAPAS: EtapaAplicacion[] = [
 /** Crea una vacante nueva. */
 export async function crearVacante(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-positions')
   if (!permiso.ok) return permiso
 
@@ -43,7 +43,7 @@ export async function crearVacante(fd: FormData): Promise<ActionResult> {
   const department = String(fd.get('department') ?? '').trim() || null
   const description = String(fd.get('description') ?? '').trim() || null
 
-  if (!title) return { ok: false, error: 'Escribe el titulo de la vacante.' }
+  if (!title) return { ok: false, error: 'Escribe el título de la vacante.' }
 
   try {
     await asUser(
@@ -65,7 +65,7 @@ export async function crearVacante(fd: FormData): Promise<ActionResult> {
 /** Cierra o pausa una vacante. */
 export async function cambiarEstadoVacante(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-positions')
   if (!permiso.ok) return permiso
 
@@ -94,7 +94,7 @@ export async function cambiarEstadoVacante(fd: FormData): Promise<ActionResult> 
 /** Registra un candidato nuevo -sin foto de curriculum, se escribe a mano-. */
 export async function crearCandidato(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-candidates')
   if (!permiso.ok) return permiso
 
@@ -106,7 +106,7 @@ export async function crearCandidato(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
 
   if (!firstName || !lastName) return { ok: false, error: 'Escribe el nombre completo.' }
-  if (!FUENTES_CANDIDATO.includes(source)) return { ok: false, error: 'Elige una fuente valida.' }
+  if (!FUENTES_CANDIDATO.includes(source)) return { ok: false, error: 'Elige una fuente válida.' }
 
   try {
     await asUser(
@@ -128,7 +128,7 @@ export async function crearCandidato(fd: FormData): Promise<ActionResult> {
 /** Aplica un candidato existente a una vacante. */
 export async function crearAplicacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-pipeline')
   if (!permiso.ok) return permiso
 
@@ -161,7 +161,7 @@ export async function crearAplicacion(fd: FormData): Promise<ActionResult> {
 /** Avanza -o rechaza- una aplicacion en el pipeline. */
 export async function cambiarEtapa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-pipeline')
   if (!permiso.ok) return permiso
 
@@ -169,14 +169,14 @@ export async function cambiarEtapa(fd: FormData): Promise<ActionResult> {
   const positionId = String(fd.get('positionId') ?? '')
   const nuevaEtapa = String(fd.get('stage') ?? '') as EtapaAplicacion
 
-  if (!applicationId) return { ok: false, error: 'Falta la aplicacion.' }
+  if (!applicationId) return { ok: false, error: 'Falta la aplicación.' }
   if (!ETAPAS.includes(nuevaEtapa)) return { ok: false, error: 'Etapa invalida.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [row] = await tx<{ stage: EtapaAplicacion }[]>`
         select stage from public.recruiting_applications where id = ${applicationId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa aplicacion no existe.')
+      if (!row) throw new Error('Esa aplicación no existe.')
       if (!transicionValida(row.stage, nuevaEtapa)) {
         throw new Error(`No se puede pasar de "${row.stage}" a "${nuevaEtapa}" directamente.`)
       }
@@ -201,7 +201,7 @@ export async function cambiarEtapa(fd: FormData): Promise<ActionResult> {
 /** Programa una entrevista para una aplicacion. */
 export async function programarEntrevista(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'recruiting', 'recruiting.manage-pipeline')
   if (!permiso.ok) return permiso
 
@@ -210,7 +210,7 @@ export async function programarEntrevista(fd: FormData): Promise<ActionResult> {
   const scheduledAt = String(fd.get('scheduledAt') ?? '')
   const interviewerName = String(fd.get('interviewerName') ?? '').trim() || null
 
-  if (!applicationId) return { ok: false, error: 'Falta la aplicacion.' }
+  if (!applicationId) return { ok: false, error: 'Falta la aplicación.' }
   if (!scheduledAt) return { ok: false, error: 'Elige la fecha y hora.' }
 
   try {

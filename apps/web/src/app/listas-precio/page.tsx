@@ -23,6 +23,9 @@ import { asignarListaClienteForm, cambiarEstadoListaForm, crearListaForm } from 
 import { ALCANCE_LISTA, ESTADO_LISTA } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
+/** Los códigos de canal que usa el sistema, con el nombre que entiende el cliente. */
+const CANAL: Record<string, string> = { pos: 'Caja', online: 'Tienda en línea' }
+
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Listas de precio · REGB ERP' }
 
@@ -96,7 +99,7 @@ export default async function ListasPrecioPage({
         <PageHeader
           icon="sell"
           title="Listas de precios"
-          description="Los pedidos y las cotizaciones toman el precio de aqui solos. Si un cliente tiene una lista asignada, esa manda; si no, la mas especifica vigente hoy: la del cliente, luego la del canal, luego la general. Los precios son sin ITBIS."
+          description="Los pedidos y las cotizaciones toman el precio de aquí solos. Si un cliente tiene una lista asignada, esa manda; si no, la más específica vigente hoy: la del cliente, luego la del canal, luego la general. Los precios son sin ITBIS."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -107,7 +110,7 @@ export default async function ListasPrecioPage({
         {listas.length === 0 ? (
           <EmptyState
             icon="sell"
-            title="Todavia no hay ninguna lista"
+            title="Todavía no hay ninguna lista"
             description="Crea la primera abajo."
           />
         ) : (
@@ -152,7 +155,7 @@ export default async function ListasPrecioPage({
                     <TD>
                       {ALCANCE_LISTA[l.scope] ?? l.scope}
                       {l.customer_name ? ` · ${l.customer_name}` : ''}
-                      {l.channel ? ` · ${l.channel}` : ''}
+                      {l.channel ? ` · ${CANAL[l.channel] ?? l.channel}` : ''}
                     </TD>
                     <TD>
                       <Badge tone={vigente ? 'success' : 'neutral'}>
@@ -224,7 +227,19 @@ export default async function ListasPrecioPage({
                 </label>
                 <label className="flex min-w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Canal (si es por canal)
-                  <input name="channel" placeholder="mayoreo" className={claseInput} />
+                  {/* El canal es un código: la caja cobra con «pos». Las
+                      sugerencias evitan una lista que nunca aplica por un
+                      nombre mal escrito. */}
+                  <input
+                    name="channel"
+                    list="canales-lista"
+                    placeholder="pos, online…"
+                    className={claseInput}
+                  />
+                  <datalist id="canales-lista">
+                    <option value="pos">Caja</option>
+                    <option value="online">Tienda en línea</option>
+                  </datalist>
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Desde

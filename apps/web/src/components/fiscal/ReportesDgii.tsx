@@ -159,7 +159,7 @@ function DescargarTxt({
       href={`/api/dgii/${reporte}${qs}${sep}periodo=${periodo}&formato=txt`}
       download
       aria-disabled={vacio}
-      title="Formato de la Norma General 07-2018. Verificalo antes de tu primer envio."
+      title="Formato de la Norma General 07-2018. Verifícalo antes de tu primer envío."
       className={`flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-dashed border-[var(--color-semantic-warning)] px-3 text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] ${
         vacio
           ? 'pointer-events-none opacity-40'
@@ -167,7 +167,7 @@ function DescargarTxt({
       }`}
     >
       <Icon name="draft" size={16} />
-      TXT de envio
+      TXT de envío
     </a>
   )
 }
@@ -270,7 +270,7 @@ export async function ReportesDgii({
       <PageHeader
         icon="account_balance"
         title="Reportes DGII"
-        description="Lo que vas a declarar este periodo: 606 de compras, 607 de ventas y 608 de comprobantes anulados."
+        description="Lo que vas a declarar este período: 606 de compras, 607 de ventas y 608 de comprobantes anulados."
         crumbs={crumbs}
       />
 
@@ -287,7 +287,7 @@ export async function ReportesDgii({
           />
           <p className="text-[var(--color-text-secondary)]">
             Hay <strong className="text-[var(--color-text-primary)]">{escondidas}</strong> venta
-            {escondidas === 1 ? '' : 's'} de este periodo en un modulo que esta apagado (
+            {escondidas === 1 ? '' : 's'} de este período en un módulo que está apagado (
             {ocultas.map((o) => o.modulo).join(', ')}). El 607 de abajo{' '}
             <strong className="text-[var(--color-text-primary)]">no las incluye</strong> y el TXT no
             se genera hasta volver a encenderlo: declarar de menos es una multa.
@@ -297,7 +297,7 @@ export async function ReportesDgii({
 
       <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
         <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          Periodo
+          Período
           <select
             name="periodo"
             defaultValue={periodo}
@@ -313,7 +313,7 @@ export async function ReportesDgii({
         <ToolbarActions hasFilters={periodo !== periodoActual} clearHref={`${rutaBase}${qs}`} />
       </Toolbar>
 
-      <section aria-label="Resumen del periodo" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <section aria-label="Resumen del período" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {veCompras && (
           <StatCard
             label="Compras"
@@ -333,8 +333,8 @@ export async function ReportesDgii({
       >
         <Icon name="info" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
         <p className="text-[var(--color-text-secondary)]">
-          Esto es lo que se declara, no el envio. La transmision del e-CF a la DGII llega con el
-          modulo de facturacion electronica. Un NCF anulado se{' '}
+          Esto es lo que se declara, no el envío. La transmisión del e-CF a la DGII llega con el
+          módulo de facturación electrónica. Un NCF anulado se{' '}
           <strong className="text-[var(--color-text-primary)]">declara en el 608</strong>, nunca se
           omite: para la DGII un hueco en la secuencia es una alerta.
         </p>
@@ -350,13 +350,13 @@ export async function ReportesDgii({
           className="shrink-0 text-[var(--color-semantic-text-warning)]"
         />
         <p className="text-[var(--color-text-secondary)]">
-          El <strong className="text-[var(--color-text-primary)]">TXT de envio</strong> sigue el
+          El <strong className="text-[var(--color-text-primary)]">TXT de envío</strong> sigue el
           formato de la Norma General 07-2018, pero{' '}
           <strong className="text-[var(--color-text-primary)]">
             todavía no se ha comparado con un archivo tuyo ya aceptado
           </strong>{' '}
-          por la DGII. Antes de tu primer envio, abrelo al lado de uno que hayas subido bien y
-          avisanos si algo no cuadra. Mientras tanto, el CSV es el camino seguro: lo revisa tu
+          por la DGII. Antes de tu primer envío, ábrelo al lado de uno que hayas subido bien y
+          avísanos si algo no cuadra. Mientras tanto, el CSV es el camino seguro: lo revisa tu
           contador antes de subir nada.
         </p>
       </div>
@@ -378,11 +378,11 @@ export async function ReportesDgii({
                 Hay{' '}
                 <strong className="text-[var(--color-text-primary)]">{comprasSinClasificar}</strong>{' '}
                 compra{comprasSinClasificar === 1 ? '' : 's'} sin clasificar el tipo de gasto. La
-                DGII pide un codigo del 01 al 11 y{' '}
+                DGII pide un código del 01 al 11 y{' '}
                 <strong className="text-[var(--color-text-primary)]">
                   el archivo del 606 no se genera
                 </strong>{' '}
-                hasta clasificarlas: no se le puede inventar un codigo a una factura, porque
+                hasta clasificarlas: no se le puede inventar un código a una factura, porque
                 declarar el alquiler del local como costo de venta es declarar mal.
               </p>
             </div>
@@ -406,8 +406,8 @@ export async function ReportesDgii({
             {compras.length === 0 ? (
               <EmptyState
                 icon="shopping_cart"
-                title="Sin compras en este periodo"
-                description="Cuando registres facturas de proveedor con NCF, apareceran aqui listas para el 606."
+                title="Sin compras en este período"
+                description="Cuando registres facturas de proveedor con NCF, aparecerán aquí listas para el 606."
               />
             ) : (
               <Table>
@@ -486,8 +486,8 @@ export async function ReportesDgii({
         {ventas.length === 0 ? (
           <EmptyState
             icon="receipt_long"
-            title="Sin comprobantes en este periodo"
-            description="Cuando emitas facturas o vendas en caja con NCF, apareceran aqui."
+            title="Sin comprobantes en este período"
+            description="Cuando emitas facturas o vendas en caja con NCF, aparecerán aquí."
           />
         ) : (
           <Table>
@@ -495,7 +495,7 @@ export async function ReportesDgii({
               <TR>
                 <TH>NCF</TH>
                 <TH>Origen</TH>
-                <TH>Identificacion del comprador</TH>
+                <TH>Identificación del comprador</TH>
                 <TH>Fecha</TH>
                 <TH numeric>Facturado</TH>
                 <TH numeric>ITBIS</TH>
@@ -562,7 +562,7 @@ export async function ReportesDgii({
           />
           <p className="text-[var(--color-text-secondary)]">
             Hay <strong className="text-[var(--color-text-primary)]">{sinClasificar}</strong>{' '}
-            anulacion{sinClasificar === 1 ? '' : 'es'} sin el motivo que pide la DGII. Son
+            anulación{sinClasificar === 1 ? '' : 'es'} sin el motivo que pide la DGII. Son
             anteriores a que el sistema lo pidiera, y{' '}
             <strong className="text-[var(--color-text-primary)]">
               el archivo del 608 no se genera
@@ -594,7 +594,7 @@ export async function ReportesDgii({
                 <TH>Origen</TH>
                 <TH>Fecha</TH>
                 <TH>Motivo DGII</TH>
-                <TH>Explicacion</TH>
+                <TH>Explicación</TH>
               </TR>
             </THead>
             <TBody>

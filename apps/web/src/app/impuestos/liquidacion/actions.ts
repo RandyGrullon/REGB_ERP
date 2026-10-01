@@ -65,12 +65,12 @@ const NOMBRE_MODULO: Record<string, string> = {
  */
 export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.filing.close')
   if (!permiso.ok) return permiso
 
   const period = String(fd.get('period') ?? '').trim()
-  if (!/^[0-9]{6}$/.test(period)) return { ok: false, error: 'El periodo va como AAAAMM.' }
+  if (!/^[0-9]{6}$/.test(period)) return { ok: false, error: 'El período va como AAAAMM.' }
 
   // El riesgo mas serio del modulo: las ventas viven bajo la RLS de DOS
   // modulos -la factura a credito (`ar`) y el ticket de caja (`pos`)-. Con
@@ -232,13 +232,13 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          'Ese periodo ya esta cerrado. Una declaracion cerrada no se recalcula: se corrige con una rectificativa.',
+          'Ese período ya está cerrado. Una declaración cerrada no se recalcula: se corrige con una rectificativa.',
       }
     }
     if (resultado.estado === 'escondidas') {
       return {
         ok: false,
-        error: `Hay ${resultado.documentos} venta(s) de ${legible(period)} en un modulo que esta apagado (${resultado.modulos.join(', ')}): el IT-1 saldria corto, y declarar de menos es una multa. Enciendelo antes de cerrar.`,
+        error: `Hay ${resultado.documentos} venta(s) de ${legible(period)} en un módulo que está apagado (${resultado.modulos.join(', ')}): el IT-1 saldría corto, y declarar de menos es una multa. Enciéndelo antes de cerrar.`,
       }
     }
     if (resultado.estado === 'falta') {
@@ -246,7 +246,7 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
       // que cerrar con un saldo a favor que ya se consumio en otro mes.
       return {
         ok: false,
-        error: `Falta cerrar ${legible(resultado.periodo)}: el saldo a favor se arrastra en cadena, un mes a la vez. Cierra ese periodo primero y despues este.`,
+        error: `Falta cerrar ${legible(resultado.periodo)}: el saldo a favor se arrastra en cadena, un mes a la vez. Cierra ese período primero y después este.`,
       }
     }
   } catch (e) {
@@ -261,12 +261,12 @@ export async function cerrarLiquidacion(fd: FormData): Promise<ActionResult> {
 /** Marca como pagada una declaracion ya presentada. */
 export async function marcarPagada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.filing.close')
   if (!permiso.ok) return permiso
 
   const id = String(fd.get('id') ?? '')
-  if (!id) return { ok: false, error: 'Falta la declaracion.' }
+  if (!id) return { ok: false, error: 'Falta la declaración.' }
   const receipt = String(fd.get('receiptNumber') ?? '').trim()
 
   try {

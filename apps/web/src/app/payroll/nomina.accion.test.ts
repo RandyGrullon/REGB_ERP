@@ -137,7 +137,7 @@ describe('Crear periodos: quincenas si, periodos que se cruzan no', () => {
     expect(r).toEqual({
       ok: false,
       error:
-        'Ese periodo se cruza con el del 2026-09-01 al 2026-09-15: cada empleado cobraria dos veces esos dias.',
+        'Ese período se cruza con el del 2026-09-01 al 2026-09-15: cada empleado cobraría dos veces esos días.',
     })
     const [n] = await db()<{ n: number }[]>`
       select count(*)::int as n from public.payroll_periods where tenant_id = ${c.tenantId}`
@@ -266,7 +266,7 @@ describe('Un periodo que se cruza con uno ya pagado no se procesa', () => {
     expect(r.ok).toBe(false)
     if (!r.ok)
       expect(r.error).toMatch(
-        /ya cobro dias de este periodo en la nomina del 2026-09-01 al 2026-09-15/,
+        /ya cobró días de este período en la nómina del 2026-09-01 al 2026-09-15/,
       )
     expect((await lineas(p!.id)).size).toBe(0)
     const [s] = await db()<

@@ -116,7 +116,7 @@ describe('el producto del ajuste se busca por codigo, codigo de barras o nombre'
     const r = await ajuste({ producto: 'teletransportador', qty: '1', unitCost: '1' })
     expect(r).toEqual({
       ok: false,
-      error: expect.stringContaining('No encontramos ningun producto con "teletransportador"'),
+      error: expect.stringContaining('No encontramos ningún producto con "teletransportador"'),
     })
   })
 

@@ -3,6 +3,7 @@ import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCar
 import type { EstadoContrato } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaCorta } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { renovarContratoForm, transicionarContratoForm } from '../actions'
 import { ESTADO_CONTRATO, FRECUENCIA_FACTURACION } from '../estados'
@@ -25,11 +26,11 @@ interface ContratoHead {
 }
 
 const money = (n: number) => n.toLocaleString('es-DO', { minimumFractionDigits: 2 })
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-DO')
+const fecha = (iso: string) => fechaCorta(iso, true)
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
   if (s === 'active') return 'success'
   if (s === 'cancelled' || s === 'expired') return 'danger'
@@ -102,7 +103,7 @@ export default async function ContratoDetallePage({
         <p className="text-xs text-[var(--color-text-muted)]">
           Vigente desde {fecha(head.start_date)} · Escalamiento{' '}
           {(Number(head.escalation_pct) * 100).toFixed(0)}% ·{' '}
-          {head.auto_renew ? 'Renovacion automática' : 'Renovacion manual'}
+          {head.auto_renew ? 'Renovación automática' : 'Renovación manual'}
         </p>
 
         {head.renewed_from_id && (
@@ -155,12 +156,12 @@ export default async function ContratoDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>Al renovar</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Renovar no edita este contrato: crea uno NUEVO con el escalamiento de precio aplicado,
-              y este queda marcado "renovado" -su historial completo sigue intacto-.
+              Renovar no edita este contrato: crea uno nuevo con el aumento de precio pactado, y
+              este queda marcado como renovado, con todo su historial.
             </p>
           </CardBody>
         </Card>

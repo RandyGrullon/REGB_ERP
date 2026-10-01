@@ -59,10 +59,23 @@ const pct = (fraccion: string) =>
   `${(Number(fraccion) * 100).toLocaleString('es-DO', { maximumFractionDigits: 2 })}%`
 
 const TIPO_PARTE: Record<string, string> = {
-  fisica: 'Persona fisica',
-  juridica: 'Persona juridica',
+  fisica: 'Persona física',
+  juridica: 'Persona jurídica',
   ambas: 'Ambas',
 }
+
+const TIPO_IMPUESTO: Record<string, string> = {
+  itbis: 'ITBIS',
+  isc: 'ISC',
+  propina: 'Propina legal',
+}
+
+const fechaCorta = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 
 const claseInput =
   'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
@@ -104,7 +117,7 @@ export default async function ImpuestosPage({
         <PageHeader
           icon="percent"
           title="Impuestos"
-          description="El catalogo de tasas de ITBIS de tu negocio y las reglas de retencion de tus proveedores, nombradas una vez y en un solo sitio."
+          description="Las tasas de ITBIS de tu negocio y las reglas de retención de tus proveedores, definidas una vez y en un solo sitio."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -115,7 +128,7 @@ export default async function ImpuestosPage({
           />
           <StatCard label="Tasas activas" value={String(tasas.filter((t) => t.is_active).length)} />
           <StatCard
-            label="Reglas de retencion"
+            label="Reglas de retención"
             value={String(reglas.filter((r) => r.is_active).length)}
             hint="activas"
           />
@@ -131,12 +144,12 @@ export default async function ImpuestosPage({
             className="shrink-0 text-[var(--color-semantic-text-warning)]"
           />
           <p className="text-[var(--color-text-secondary)]">
-            El 18%, el 16% y los dias de vencimiento vienen{' '}
+            El 18%, el 16% y los días de vencimiento vienen{' '}
             <strong className="text-[var(--color-text-primary)]">
               como punto de partida, no verificados contra una norma publicada este año
             </strong>
-            . Por eso son una tabla que puedes editar y no un numero escondido en el sistema:
-            revisalos con tu contador antes de tu primera declaracion.
+            . Por eso son una tabla que puedes editar y no un número escondido en el sistema:
+            revísalos con tu contador antes de tu primera declaración.
           </p>
         </div>
 
@@ -150,8 +163,8 @@ export default async function ImpuestosPage({
             <strong className="text-[var(--color-text-primary)]">
               nacen los productos que crees o importes desde ahora
             </strong>
-            , y de ahi la toman la caja, los pedidos, las cotizaciones y las órdenes de compra. Los
-            productos que ya existen conservan la suya: cambiarla aqui no los reescribe. Si la tasa
+            , y de ahí la toman la caja, los pedidos, las cotizaciones y las órdenes de compra. Los
+            productos que ya existen conservan la suya: cambiarla aquí no los reescribe. Si la tasa
             por defecto tiene vigencia futura, hasta ese día los productos nuevos nacen al 18%.
           </p>
         </div>
@@ -163,11 +176,11 @@ export default async function ImpuestosPage({
           {tasas.length === 0 ? (
             <EmptyState
               icon="percent"
-              title="Todavia no hay ninguna tasa"
-              description="Siembra las tres de la DGII -18% general, 16% reducida y exento- y ajustalas, o registra la tuya abajo."
+              title="Todavía no hay ninguna tasa"
+              description="Carga las tres de la DGII (18% general, 16% reducida y exento) y ajústalas, o registra la tuya abajo."
             />
           ) : (
-            <Table>
+            <Table className="min-w-[560px]">
               <THead>
                 <TR>
                   <TH>Tasa</TH>
@@ -192,16 +205,16 @@ export default async function ImpuestosPage({
                       </span>
                     </TD>
                     <TD>
-                      <span className="text-xs uppercase text-[var(--color-text-secondary)]">
-                        {t.kind}
+                      <span className="text-xs text-[var(--color-text-secondary)]">
+                        {TIPO_IMPUESTO[t.kind] ?? t.kind}
                       </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular font-semibold">{pct(t.rate)}</span>
                     </TD>
                     <TD>
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {t.effective_from}
+                      <span className="whitespace-nowrap text-xs text-[var(--color-text-muted)]">
+                        {fechaCorta(t.effective_from)}
                       </span>
                     </TD>
                     {puedeTasas && (
@@ -234,11 +247,11 @@ export default async function ImpuestosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="download" size={18} />
-                  Sembrar 18%, 16% y exento
+                  Cargar 18%, 16% y exento
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Se crean como punto de partida y quedan editables. Nada las vuelve a escribir
-                  despues.
+                  después.
                 </p>
               </form>
             </CardBody>
@@ -255,7 +268,7 @@ export default async function ImpuestosPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input name="code" required placeholder="ITBIS-18" className={claseInput} />
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -282,7 +295,7 @@ export default async function ImpuestosPage({
                     required
                     inputMode="decimal"
                     placeholder="18"
-                    title="En porcentaje: 18 es el 18%. Se guarda en fraccion (0.18), que es la convencion de la tabla."
+                    title="En porcentaje: 18 es el 18%."
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
@@ -301,16 +314,16 @@ export default async function ImpuestosPage({
 
         <section aria-labelledby="reglas" className="space-y-2">
           <h2 id="reglas" className="text-sm font-semibold text-[var(--color-text-primary)]">
-            Reglas de retencion
+            Reglas de retención
           </h2>
           {reglas.length === 0 ? (
             <EmptyState
               icon="account_balance_wallet"
-              title="Todavia no hay reglas de retencion"
-              description="Aqui se define cuanto se le retiene a un proveedor de ITBIS y de ISR. Cuentas por pagar tiene el campo, pero el numero que va dentro lo decides tu."
+              title="Todavía no hay reglas de retención"
+              description="Aquí se define cuánto se le retiene a un proveedor de ITBIS y de ISR. Cuentas por pagar tiene el campo, pero el número que va dentro lo decides tú."
             />
           ) : (
-            <Table>
+            <Table className="min-w-[760px]">
               <THead>
                 <TR>
                   <TH>Regla</TH>
@@ -383,7 +396,7 @@ export default async function ImpuestosPage({
         {puedeReglas && (
           <Card>
             <CardHeader>
-              <CardTitle>Registrar una regla de retencion</CardTitle>
+              <CardTitle>Registrar una regla de retención</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearReglaForm} className="space-y-3">
@@ -391,7 +404,7 @@ export default async function ImpuestosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Codigo
+                    Código
                     <input name="code" required placeholder="ISR-HON" className={claseInput} />
                   </label>
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -413,8 +426,8 @@ export default async function ImpuestosPage({
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Se le aplica a
                     <select name="partyType" defaultValue="fisica" className={claseInput}>
-                      <option value="fisica">Persona fisica</option>
-                      <option value="juridica">Persona juridica</option>
+                      <option value="fisica">Persona física</option>
+                      <option value="juridica">Persona jurídica</option>
                       <option value="ambas">Ambas</option>
                     </select>
                   </label>
@@ -425,12 +438,12 @@ export default async function ImpuestosPage({
                       required
                       inputMode="decimal"
                       placeholder="10"
-                      title="En porcentaje: 10 es el 10%, y 1 es el 1%. Antes un 1 se guardaba como 100%."
+                      title="En porcentaje: 10 es el 10%, y 1 es el 1%."
                       className={`tabular text-right ${claseInput}`}
                     />
                   </label>
                   <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Codigo DGII (solo ISR)
+                    Código DGII (solo ISR)
                     <select name="dgiiIsrType" defaultValue="" className={claseInput}>
                       <option value="">— sin código —</option>
                       {Object.entries(TIPOS_RETENCION_ISR_606).map(([codigo, texto]) => (
@@ -447,7 +460,8 @@ export default async function ImpuestosPage({
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   La base no se elige: el ITBIS se retiene sobre el ITBIS facturado y el ISR sobre
-                  el subtotal pagado. Poder cambiarlo seria poder equivocarse por seis.
+                  el subtotal pagado, así que no hay que elegirla.
+
                 </p>
               </form>
             </CardBody>

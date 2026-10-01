@@ -27,7 +27,7 @@ const num = (raw: string): number | null => {
 /** Crea un objetivo -de un empleado, o de toda la empresa si no se elige ninguno-. */
 export async function crearObjetivo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-objectives')
   if (!permiso.ok) return permiso
 
@@ -35,8 +35,8 @@ export async function crearObjetivo(fd: FormData): Promise<ActionResult> {
   const title = String(fd.get('title') ?? '').trim()
   const period = String(fd.get('period') ?? '').trim()
 
-  if (!title) return { ok: false, error: 'Escribe el titulo del objetivo.' }
-  if (!period) return { ok: false, error: 'Escribe el periodo (ej. 2026-Q3).' }
+  if (!title) return { ok: false, error: 'Escribe el título del objetivo.' }
+  if (!period) return { ok: false, error: 'Escribe el período (ej. 2026-Q3).' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -60,7 +60,7 @@ export async function crearObjetivo(fd: FormData): Promise<ActionResult> {
 /** Agrega un resultado clave a un objetivo. */
 export async function crearResultadoClave(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-objectives')
   if (!permiso.ok) return permiso
 
@@ -71,7 +71,7 @@ export async function crearResultadoClave(fd: FormData): Promise<ActionResult> {
 
   if (!objectiveId) return { ok: false, error: 'Falta el objetivo.' }
   if (!description) return { ok: false, error: 'Describe el resultado clave.' }
-  if (targetValue === null) return { ok: false, error: 'La meta debe ser un numero.' }
+  if (targetValue === null) return { ok: false, error: 'La meta debe ser un número.' }
 
   try {
     await asUser(
@@ -93,14 +93,14 @@ export async function crearResultadoClave(fd: FormData): Promise<ActionResult> {
 /** Actualiza el valor actual de un resultado clave -el progreso se deriva de esto, no se pide directamente-. */
 export async function actualizarProgreso(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-objectives')
   if (!permiso.ok) return permiso
 
   const keyResultId = String(fd.get('keyResultId') ?? '')
   const currentValue = num(String(fd.get('currentValue') ?? ''))
   if (!keyResultId) return { ok: false, error: 'Falta el resultado clave.' }
-  if (currentValue === null) return { ok: false, error: 'El valor debe ser un numero.' }
+  if (currentValue === null) return { ok: false, error: 'El valor debe ser un número.' }
 
   try {
     await asUser(
@@ -122,7 +122,7 @@ export async function actualizarProgreso(fd: FormData): Promise<ActionResult> {
 /** Agenda un 1:1. */
 export async function crearUnoAUno(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-one-on-ones')
   if (!permiso.ok) return permiso
 
@@ -151,7 +151,7 @@ export async function crearUnoAUno(fd: FormData): Promise<ActionResult> {
 /** Marca un 1:1 como realizado, con sus notas y compromisos. */
 export async function completarUnoAUno(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-one-on-ones')
   if (!permiso.ok) return permiso
 
@@ -181,7 +181,7 @@ export async function completarUnoAUno(fd: FormData): Promise<ActionResult> {
 /** Envia una evaluacion -queda fija desde el momento en que se envia-. */
 export async function enviarEvaluacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.submit-review')
   if (!permiso.ok) return permiso
 
@@ -194,9 +194,9 @@ export async function enviarEvaluacion(fd: FormData): Promise<ActionResult> {
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
   if (!cycle) return { ok: false, error: 'Escribe el ciclo (ej. 2026-Q3).' }
-  if (!TIPOS_EVALUACION.includes(reviewType)) return { ok: false, error: 'Elige un tipo valido.' }
+  if (!TIPOS_EVALUACION.includes(reviewType)) return { ok: false, error: 'Elige un tipo válido.' }
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-    return { ok: false, error: 'La calificacion debe ser un numero de 1 a 5.' }
+    return { ok: false, error: 'La calificación debe ser un número de 1 a 5.' }
   }
 
   try {
@@ -222,7 +222,7 @@ export async function enviarEvaluacion(fd: FormData): Promise<ActionResult> {
 /** Crea un plan de mejora. */
 export async function crearPlanMejora(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-improvement-plans')
   if (!permiso.ok) return permiso
 
@@ -259,7 +259,7 @@ export async function crearPlanMejora(fd: FormData): Promise<ActionResult> {
 /** Cierra un plan de mejora -completado o cancelado-. */
 export async function resolverPlanMejora(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'performance', 'performance.manage-improvement-plans')
   if (!permiso.ok) return permiso
 

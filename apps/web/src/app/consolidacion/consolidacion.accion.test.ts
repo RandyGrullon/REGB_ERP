@@ -164,7 +164,7 @@ describe('generarCorrida congela la foto', () => {
     )
     expect(r).toEqual({
       ok: false,
-      error: 'Ese grupo ya tiene una corrida para ese mismo periodo.',
+      error: 'Ese grupo ya tiene una corrida para ese mismo período.',
     })
     expect(await corridas(grupo)).toHaveLength(1)
   })

@@ -16,15 +16,15 @@ export const ESTADOS: Record<string, { label: string; tone: EntryStatusTone }> =
 export const ORIGEN_ASIENTO: Record<string, string> = {
   manual: 'Manual',
   pos_sale: 'Venta de caja',
-  pos_sale_void: 'Anulacion de venta',
-  ar_invoice: 'Factura a credito',
-  ar_invoice_void: 'Anulacion de factura',
+  pos_sale_void: 'Anulación de venta',
+  ar_invoice: 'Factura a crédito',
+  ar_invoice_void: 'Anulación de factura',
   ar_payment: 'Cobro',
   ar_payment_reversal: 'Reverso de cobro',
-  ar_credit_note: 'Nota de credito',
+  ar_credit_note: 'Nota de crédito',
   ar_late_fee: 'Cargo por mora',
   ap_invoice: 'Factura de proveedor',
-  ap_invoice_void: 'Anulacion de factura de proveedor',
+  ap_invoice_void: 'Anulación de factura de proveedor',
   ap_payment: 'Pago a proveedor',
 }
 

@@ -32,14 +32,14 @@ const num = (raw: string): number | null => {
 /** Da de alta un centro de costo. */
 export async function crearCentro(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'cost-centers', 'cost-centers.center.create')
   if (!permiso.ok) return permiso
 
   const code = String(fd.get('code') ?? '').trim()
   const name = String(fd.get('name') ?? '').trim()
 
-  if (code.length < 1) return { ok: false, error: 'Escribe el codigo del centro.' }
+  if (code.length < 1) return { ok: false, error: 'Escribe el código del centro.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre del centro.' }
 
   try {
@@ -53,7 +53,7 @@ export async function crearCentro(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya existe un centro con ese codigo.' }
+      return { ok: false, error: 'Ya existe un centro con ese código.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -65,7 +65,7 @@ export async function crearCentro(fd: FormData): Promise<ActionResult> {
 /** Registra una asignacion manual en UN solo centro. */
 export async function asignarCosto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'cost-centers', 'cost-centers.allocation.create')
   if (!permiso.ok) return permiso
 
@@ -109,7 +109,7 @@ export async function asignarCosto(fd: FormData): Promise<ActionResult> {
  */
 export async function prorratearCosto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'cost-centers', 'cost-centers.allocation.create')
   if (!permiso.ok) return permiso
 

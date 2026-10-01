@@ -31,7 +31,7 @@ export default defineModule({
 
   permissions: ['resources.view', 'resources.manage'],
 
-  routes: [{ path: '/recursos', label: 'Planificacion de recursos', perm: 'resources.view' }],
+  routes: [{ path: '/recursos', label: 'Planificación de recursos', perm: 'resources.view' }],
 
   dashboardWidgets: ['resources-overloaded'],
   reports: [],

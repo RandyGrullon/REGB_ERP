@@ -35,7 +35,7 @@ export default defineModule({
   permissions: ['quality.view', 'quality.inspect', 'quality.manage'],
 
   routes: [
-    { path: '/calidad', label: 'Control de calidad', perm: 'quality.view' },
+    { path: '/calidad', label: 'Resumen', perm: 'quality.view' },
     { path: '/calidad/planes', label: 'Planes de inspección', perm: 'quality.manage' },
     { path: '/calidad/planes/:id', label: 'Detalle del plan', perm: 'quality.manage', hidden: true },
     { path: '/calidad/inspecciones/nueva', label: 'Nueva inspección', perm: 'quality.inspect', hidden: true },

@@ -17,6 +17,9 @@ interface NcHead {
   status: EstadoNoConformidad
   detected_at: string
   inspection_id: string | null
+  detectada_por: string | null
+  plan_name: string | null
+  product_name: string | null
 }
 
 interface CapaRow {
@@ -36,9 +39,11 @@ const badgeSeveridad = (s: string): 'neutral' | 'warning' | 'danger' => {
 }
 
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
 
 /** Detalle de una no conformidad (modulo 58): su maquina de estados y su CAPA. */
 export default async function NoConformidadDetallePage({
@@ -54,9 +59,15 @@ export default async function NoConformidadDetallePage({
 
   const { head, capa } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<NcHead[]>`
-      select id, description, severity, status, detected_at::text, inspection_id
-      from public.non_conformances
-      where id = ${id} and tenant_id = ${ctx.tenantId}`
+      select nc.id, nc.description, nc.severity, nc.status, nc.detected_at::text, nc.inspection_id,
+             up.display_name as detectada_por, ip.name as plan_name, pr.name as product_name
+      from public.non_conformances nc
+      left join public.user_profiles up
+        on up.tenant_id = nc.tenant_id and up.user_id = nc.detected_by
+      left join public.inspections insp on insp.id = nc.inspection_id
+      left join public.inspection_plans ip on ip.id = insp.plan_id
+      left join public.products pr on pr.id = insp.product_id
+      where nc.id = ${id} and nc.tenant_id = ${ctx.tenantId}`
     if (!h) return { head: null, capa: null }
 
     const [c] = await tx<CapaRow[]>`
@@ -82,39 +93,72 @@ export default async function NoConformidadDetallePage({
   )
 
   return (
-    <Shell {...shell} activePath="/calidad">
+    <Shell {...shell} activePath="/calidad/no-conformidades">
       <div className="space-y-5">
         <PageHeader
           icon="report"
           title={head.description}
+          description={[
+            `Detectada el ${fecha(head.detected_at)}`,
+            head.detectada_por ? `por ${head.detectada_por}` : null,
+            head.plan_name
+              ? `en la inspección «${head.plan_name}»${head.product_name ? ` de ${head.product_name}` : ''}`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(' ')}
           crumbs={[
             { label: 'Control de calidad', href: `/calidad${qs}` },
             { label: 'No conformidades', href: `/calidad/no-conformidades${qs}` },
             { label: 'Detalle' },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone={badgeSeveridad(head.severity)}>
                 {SEVERIDAD_NC[head.severity] ?? head.severity}
               </Badge>
-              <Badge tone="neutral">{ESTADO_NC[head.status] ?? head.status}</Badge>
+              <Badge
+                tone={
+                  head.status === 'closed'
+                    ? 'success'
+                    : head.status === 'dismissed'
+                      ? 'neutral'
+                      : head.status === 'capa_created'
+                        ? 'info'
+                        : 'warning'
+                }
+              >
+                {ESTADO_NC[head.status] ?? head.status}
+              </Badge>
             </div>
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard
-            label="Dias abierta"
+            label="Días abierta"
             value={String(diasAbierto(new Date(head.detected_at), new Date()))}
+            hint={`desde el ${fecha(head.detected_at)}`}
           />
-          {head.inspection_id && <StatCard label="Origen" value="Ver inspeccion" />}
+          <StatCard
+            label="Acción correctiva"
+            value={capa ? (ESTADO_CAPA[capa.status] ?? capa.status) : 'Sin crear'}
+            hint={
+              capa?.due_date
+                ? `vence el ${new Date(capa.due_date).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', timeZone: 'UTC' })}`
+                : capa
+                  ? 'sin fecha límite'
+                  : 'se crea al investigar'
+            }
+          />
         </section>
         {head.inspection_id && (
           <a
             href={`/calidad/inspecciones/${head.inspection_id}${qs}`}
-            className="text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline"
+            className="inline-flex items-center gap-1 text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline"
           >
-            Ver la inspección que la origino
+            <Icon name="fact_check" size={14} />
+            Ver la inspección que la originó
           </a>
         )}
 
@@ -132,7 +176,7 @@ export default async function NoConformidadDetallePage({
               {campos}
               <input type="hidden" name="siguiente" value="dismissed" />
               <BotonEnvio className={botonSecundarioClase}>
-                Descartar -no es un defecto real-
+                Descartar: no es un defecto real
               </BotonEnvio>
             </form>
           </div>
@@ -145,19 +189,19 @@ export default async function NoConformidadDetallePage({
                 {campos}
                 <input type="hidden" name="siguiente" value="dismissed" />
                 <BotonEnvio className={botonSecundarioClase}>
-                  Descartar -investigado, no era un defecto real-
+                  Descartar: se investigó y no era un defecto real
                 </BotonEnvio>
               </form>
             </div>
             <Card>
               <CardHeader>
-                <CardTitle>Crear CAPA</CardTitle>
+                <CardTitle>Acción correctiva y preventiva</CardTitle>
               </CardHeader>
               <CardBody>
                 <form action={crearCapaForm} className="space-y-3">
                   {campos}
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Causa raiz
+                    Causa raíz
                     <textarea
                       name="rootCause"
                       required
@@ -175,7 +219,7 @@ export default async function NoConformidadDetallePage({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Accion preventiva (opcional)
+                    Acción preventiva (opcional)
                     <textarea
                       name="preventiveAction"
                       rows={2}
@@ -183,7 +227,7 @@ export default async function NoConformidadDetallePage({
                     />
                   </label>
                   <label className="flex w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Fecha limite (opcional)
+                    Fecha límite (opcional)
                     <input
                       type="date"
                       name="dueDate"
@@ -192,7 +236,7 @@ export default async function NoConformidadDetallePage({
                   </label>
                   <BotonEnvio className={botonClase}>
                     <Icon name="add_task" size={14} />
-                    Crear CAPA
+                    Crear acción correctiva
                   </BotonEnvio>
                 </form>
               </CardBody>
@@ -204,7 +248,7 @@ export default async function NoConformidadDetallePage({
           <Card>
             <CardHeader>
               <CardTitle>
-                CAPA{' '}
+                Acción correctiva{' '}
                 <Badge tone={capa.status === 'closed' ? 'success' : 'warning'}>
                   {ESTADO_CAPA[capa.status]}
                 </Badge>
@@ -212,7 +256,7 @@ export default async function NoConformidadDetallePage({
             </CardHeader>
             <CardBody className="space-y-3">
               <div>
-                <p className="text-xs font-semibold text-[var(--color-text-muted)]">Causa raiz</p>
+                <p className="text-xs font-semibold text-[var(--color-text-muted)]">Causa raíz</p>
                 <p className="text-sm text-[var(--color-text-primary)]">{capa.root_cause}</p>
               </div>
               <div>
@@ -233,7 +277,13 @@ export default async function NoConformidadDetallePage({
               )}
               {capa.due_date && (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Fecha limite: {new Date(capa.due_date).toLocaleDateString('es-DO')}
+                  Fecha límite:{' '}
+                  {new Date(capa.due_date).toLocaleDateString('es-DO', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    timeZone: 'UTC',
+                  })}
                 </p>
               )}
 
@@ -255,8 +305,8 @@ export default async function NoConformidadDetallePage({
                   <BotonEnvio className={botonClase}>
                     <Icon name="arrow_forward" size={14} />
                     {capa.status === 'open' && 'Marcar en progreso'}
-                    {capa.status === 'in_progress' && 'Marcar verificado'}
-                    {capa.status === 'verified' && 'Cerrar CAPA'}
+                    {capa.status === 'in_progress' && 'Marcar verificada'}
+                    {capa.status === 'verified' && 'Cerrar acción correctiva'}
                   </BotonEnvio>
                 </form>
               )}

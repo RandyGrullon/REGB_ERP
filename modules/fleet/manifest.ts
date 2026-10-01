@@ -13,7 +13,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'fleet',
-  name: 'Flota & Vehículos',
+  name: 'Flota de vehículos',
   description: 'Vehículos, combustible, mantenimiento, licencias y multas.',
   icon: 'local_shipping',
   category: 'standard',
@@ -33,7 +33,7 @@ export default defineModule({
   permissions: ['fleet.view', 'fleet.manage', 'fleet.fines.manage'],
 
   routes: [
-    { path: '/flota', label: 'Flota', perm: 'fleet.view' },
+    { path: '/flota', label: 'Flota de vehículos', perm: 'fleet.view' },
     { path: '/flota/:id', label: 'Detalle', perm: 'fleet.view', hidden: true },
   ],
 

@@ -170,7 +170,7 @@ describe('Lo enviado no se cambia', () => {
     )
     expect(mas.ok).toBe(false)
     if (mas.ok) return
-    expect(mas.error).toMatch(/version nueva/)
+    expect(mas.error).toMatch(/versión nueva/)
 
     const [l] = await db()<
       { id: string }[]

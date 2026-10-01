@@ -6,7 +6,6 @@ import {
   CardTitle,
   EmptyState,
   Icon,
-  Mono,
   PageHeader,
   StatCard,
   TBody,
@@ -20,6 +19,8 @@ import { ACCIONES_AUTOMATIZACION } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { nombreEvento } from '@/lib/eventos'
+import { eventosDisponibles } from '@/lib/eventos-disponibles'
 import { alternarReglaForm, crearReglaForm, procesarEventosPendientesForm } from './actions'
 import { ACCION_LABEL, ESTADO_REGLA, OPERADOR_CONDICION } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
@@ -79,6 +80,7 @@ export default async function AutomatizacionesPage({
   const activas = reglas.filter((r) => r.status === 'active').length
   const puedeGestionar = exigir(ctx, 'automations', 'automations.manage').ok
   const qs = ctx.demoQs
+  const eventos = eventosDisponibles(shell.data.activeModules)
 
   return (
     <Shell {...shell} activePath="/automatizaciones">
@@ -86,7 +88,7 @@ export default async function AutomatizacionesPage({
         <PageHeader
           icon="bolt"
           title="Automatizaciones"
-          description="Reglas si-esto-entonces-aquello sobre el mismo rastro de eventos que ya usa todo el proyecto -sin tocar el despachador real-."
+          description="Reglas de «cuando pase esto, haz aquello»: cuando se resuelve un ticket o se confirma un pedido, REGB le deja un aviso a tu equipo sin que nadie tenga que acordarse."
           actions={
             puedeGestionar && (
               <form action={procesarEventosPendientesForm}>
@@ -115,8 +117,8 @@ export default async function AutomatizacionesPage({
             {reglas.length === 0 ? (
               <EmptyState
                 icon="bolt"
-                title="Todavia no hay ninguna regla"
-                description="Crea la primera abajo."
+                title="Todavía no hay ninguna regla"
+                description="Crea la primera abajo: elige cuándo se dispara, si hace falta una condición, y el aviso que le llega al equipo."
               />
             ) : (
               <Table>
@@ -124,7 +126,7 @@ export default async function AutomatizacionesPage({
                   <TR>
                     <TH>Regla</TH>
                     <TH>Cuando</TH>
-                    <TH>Condicion</TH>
+                    <TH>Condición</TH>
                     <TH>Acción</TH>
                     <TH>Estado</TH>
                     <TH>
@@ -137,7 +139,9 @@ export default async function AutomatizacionesPage({
                     <TR key={r.id}>
                       <TD className="text-[var(--color-text-primary)]">{r.name}</TD>
                       <TD className="text-[var(--color-text-muted)]">
-                        <Mono>{r.trigger_event_type}</Mono>
+                        <span title={r.trigger_event_type}>
+                          {nombreEvento(r.trigger_event_type)}
+                        </span>
                       </TD>
                       <TD className="text-[var(--color-text-muted)]">
                         {r.condition_field
@@ -188,16 +192,29 @@ export default async function AutomatizacionesPage({
                   />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Cuando (modulo.entidad.accion)
-                  <input
+                  Cuando
+                  <select
                     name="triggerEventType"
                     required
-                    placeholder="helpdesk.ticket.resolved"
+                    defaultValue=""
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                  />
+                  >
+                    <option value="" disabled>
+                      Elige qué tiene que pasar…
+                    </option>
+                    {eventos.map((g) => (
+                      <optgroup key={g.modulo} label={g.modulo}>
+                        {g.eventos.map((ev) => (
+                          <option key={ev.tipo} value={ev.tipo}>
+                            {ev.nombre}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Campo (opcional)
+                  Si el dato (opcional)
                   <input
                     name="conditionField"
                     placeholder="priority"
@@ -227,7 +244,7 @@ export default async function AutomatizacionesPage({
                   />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Accion
+                  Acción
                   <select
                     name="actionType"
                     defaultValue={ACCIONES_AUTOMATIZACION[0]}
@@ -241,7 +258,7 @@ export default async function AutomatizacionesPage({
                   </select>
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Titulo de la notificacion
+                  Título de la notificación
                   <input
                     name="title"
                     required
@@ -280,12 +297,18 @@ export default async function AutomatizacionesPage({
                     <div>
                       <p className="text-sm text-[var(--color-text-primary)]">{e.rule_name}</p>
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        <Mono>{e.event_type}</Mono> ·{' '}
-                        {new Date(e.executed_at).toLocaleString('es-DO')}
+                        <span title={e.event_type}>{nombreEvento(e.event_type)}</span> ·{' '}
+                        {new Date(e.executed_at).toLocaleString('es-DO', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          timeZone: 'America/Santo_Domingo',
+                        })}
                       </p>
                     </div>
                     <Badge tone={e.matched ? 'success' : 'neutral'}>
-                      {e.matched ? 'Ejecutada' : 'No cumplio la condicion'}
+                      {e.matched ? 'Ejecutada' : 'No cumplió la condición'}
                     </Badge>
                   </li>
                 ))}
@@ -300,10 +323,9 @@ export default async function AutomatizacionesPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              No corre en segundo plano automaticamente -hay que pedirle que procese los eventos
-              pendientes desde este boton, no hay un despachador automático conectado-. Tampoco
-              ejecuta codigo arbitrario: la unica accion disponible hoy es crear una notificacion
-              real.
+              Todavía no corre sola en segundo plano: las reglas se aplican cuando alguien toca
+              «Procesar eventos pendientes». Y por ahora lo único que hace es dejar un aviso en
+              Notificaciones; no manda correos ni cambia datos por su cuenta.
             </p>
           </CardBody>
         </Card>

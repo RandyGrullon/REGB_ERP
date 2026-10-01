@@ -35,7 +35,7 @@ const num = (raw: string): number | null => {
 
 export async function crearOportunidad(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pipeline', 'pipeline.manage')
   if (!permiso.ok) return permiso
 
@@ -45,7 +45,7 @@ export async function crearOportunidad(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Ponle un nombre a la oportunidad.' }
   if (amount === null || amount < 0)
-    return { ok: false, error: 'El monto debe ser un numero valido.' }
+    return { ok: false, error: 'El monto debe ser un número válido.' }
 
   await asUser(
     ctx.userId,
@@ -62,7 +62,7 @@ export async function crearOportunidad(fd: FormData): Promise<ActionResult> {
 /** Avanza una oportunidad a la siguiente etapa -o a perdida, desde cualquier etapa no terminal-. */
 export async function transicionarEtapa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pipeline', 'pipeline.manage')
   if (!permiso.ok) return permiso
 
@@ -74,7 +74,7 @@ export async function transicionarEtapa(fd: FormData): Promise<ActionResult> {
     const [op] = await tx<{ stage: EstadoOportunidad }[]>`
       select stage from public.opportunities where id = ${oportunidadId} and tenant_id = ${ctx.tenantId} for update`
     if (!op) return 'no-existe'
-    if (!transicionValidaEtapa(op.stage, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaEtapa(op.stage, siguiente)) return 'Esa transición no está permitida.'
     if (siguiente === 'lost' && !lostReason) return 'Explica el motivo de la perdida.'
 
     await tx`

@@ -41,11 +41,11 @@ function resumen(nuevos: number, yaExistian: number, rechazadas: number): string
   const partes = [
     nuevos > 0
       ? `Importamos ${nuevos} ${plural(nuevos, 'producto nuevo', 'productos nuevos')}.`
-      : 'No entro ningun producto nuevo.',
+      : 'No entró ningún producto nuevo.',
   ]
   if (yaExistian > 0) {
     partes.push(
-      `${yaExistian} ${plural(yaExistian, 'ya existia y lo dejamos como estaba', 'ya existian y los dejamos como estaban')}.`,
+      `${yaExistian} ${plural(yaExistian, 'ya existía y lo dejamos como estaba', 'ya existían y los dejamos como estaban')}.`,
     )
   }
   if (rechazadas > 0) {
@@ -64,7 +64,7 @@ function resumen(nuevos: number, yaExistian: number, rechazadas: number): string
  */
 async function importar(formData: FormData): Promise<Resultado> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'imports', 'imports.create')
   if (!permiso.ok) return permiso
   // Importar productos exige poder crear productos: el permiso del modulo
@@ -95,7 +95,7 @@ async function importar(formData: FormData): Promise<Resultado> {
       values (${ctx.tenantId}, 'products', ${file.name}, ${datos.length},
               0, ${rejectedRows}, '[]'::jsonb, ${ctx.userId})
       returning id`
-    if (!batch) throw new Error('No se pudo registrar la importacion.')
+    if (!batch) throw new Error('No se pudo registrar la importación.')
 
     let nuevos = 0
     const yaExistian: ImportError[] = []
@@ -118,7 +118,7 @@ async function importar(formData: FormData): Promise<Resultado> {
             rechazadasEnBase.push({
               row: p.line,
               column: 'barcode',
-              message: `El codigo de barras "${p.barcode}" ya lo tiene el producto ${dueno.sku}: un codigo de barras identifica un solo producto.`,
+              message: `El código de barras "${p.barcode}" ya lo tiene el producto ${dueno.sku}: un código de barras identifica un solo producto.`,
             })
             continue
           }
@@ -144,7 +144,7 @@ async function importar(formData: FormData): Promise<Resultado> {
         yaExistian.push({
           row: p.line,
           column: 'sku',
-          message: `El codigo "${p.sku}" ya existia: lo dejamos como estaba.`,
+          message: `El código "${p.sku}" ya existía: lo dejamos como estaba.`,
           kind: 'skipped',
         })
     }
@@ -192,15 +192,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 async function deshacer(formData: FormData): Promise<Resultado> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const pImp = exigir(ctx, 'imports', 'imports.edit')
   if (!pImp.ok) return pImp
   const pDel = exigir(ctx, 'products', 'products.delete')
   if (!pDel.ok) return pDel
 
   const batchId = String(formData.get('batchId') ?? '')
-  if (!batchId) return { ok: false, error: 'Falta la importacion.' }
-  if (!UUID.test(batchId)) return { ok: false, error: 'Esa importacion no existe.' }
+  if (!batchId) return { ok: false, error: 'Falta la importación.' }
+  if (!UUID.test(batchId)) return { ok: false, error: 'Esa importación no existe.' }
 
   let r:
     | { estado: 'no-existe' }
@@ -248,18 +248,18 @@ async function deshacer(formData: FormData): Promise<Resultado> {
       return {
         ok: false,
         error:
-          'No se puede deshacer: algunos productos de esta importacion ya se usaron (ventas, inventario, compras...). Desactivalos desde Productos en vez de borrarlos.',
+          'No se puede deshacer: algunos productos de esta importación ya se usaron (ventas, inventario, compras...). Desactivalos desde Productos en vez de borrarlos.',
       }
     }
     throw e
   }
 
-  if (r.estado === 'no-existe') return { ok: false, error: 'Esa importacion no existe.' }
-  if (r.estado === 'ya-deshecha') return { ok: false, error: 'Esa importacion ya estaba deshecha.' }
+  if (r.estado === 'no-existe') return { ok: false, error: 'Esa importación no existe.' }
+  if (r.estado === 'ya-deshecha') return { ok: false, error: 'Esa importación ya estaba deshecha.' }
   if (r.estado === 'otro-tipo') {
     return {
       ok: false,
-      error: 'Esa importacion es de existencias: se deshace con su propio boton.',
+      error: 'Esa importación es de existencias: se deshace con su propio botón.',
     }
   }
 
@@ -267,7 +267,7 @@ async function deshacer(formData: FormData): Promise<Resultado> {
   revalidatePath('/products')
   return {
     ok: true,
-    texto: `Deshicimos la importacion: borramos ${r.borrados} ${plural(r.borrados, 'producto', 'productos')}.`,
+    texto: `Deshicimos la importación: borramos ${r.borrados} ${plural(r.borrados, 'producto', 'productos')}.`,
   }
 }
 
@@ -294,7 +294,7 @@ function resumenExistencias(cargadas: number, yaTenian: number, rechazadas: numb
   ]
   if (yaTenian > 0) {
     partes.push(
-      `${yaTenian} ${plural(yaTenian, 'ya tenia existencia en ese almacen y la dejamos como estaba', 'ya tenian existencia en su almacen y las dejamos como estaban')}.`,
+      `${yaTenian} ${plural(yaTenian, 'ya tenía existencia en ese almacén y la dejamos como estaba', 'ya tenían existencia en su almacén y las dejamos como estaban')}.`,
     )
   }
   if (rechazadas > 0) {
@@ -309,7 +309,7 @@ const sinAcentos = (s: string) => s.trim().toLowerCase().normalize('NFD').replac
 
 async function importarStock(formData: FormData): Promise<Resultado> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'imports', 'imports.create')
   if (!permiso.ok) return permiso
   // El permiso del DESTINO manda: cargar existencias es ajustar inventario.
@@ -345,7 +345,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
       values (${ctx.tenantId}, 'stock', ${file.name}, ${datos.length},
               0, ${rejectedRows}, '[]'::jsonb, ${ctx.userId})
       returning id`
-    if (!batch) throw new Error('No se pudo registrar la importacion.')
+    if (!batch) throw new Error('No se pudo registrar la importación.')
 
     let cargadas = 0
     const yaTenian: ImportError[] = []
@@ -368,7 +368,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
           rechazar(
             f.line,
             'warehouse',
-            `El almacen "${f.warehouse}" no existe o esta inactivo. Usa el nombre o el codigo de uno de estos: ${almacenes.map((w) => w.code ?? w.name).join(', ')}.`,
+            `El almacén "${f.warehouse}" no existe o está inactivo. Usa el nombre o el código de uno de estos: ${almacenes.map((w) => w.code ?? w.name).join(', ')}.`,
           )
           continue
         }
@@ -376,7 +376,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
         rechazar(
           f.line,
           'warehouse',
-          `Falta el almacen: hay ${almacenes.length} y ninguno es el predeterminado. Escribe su nombre o su codigo.`,
+          `Falta el almacén: hay ${almacenes.length} y ninguno es el predeterminado. Escribe su nombre o su código.`,
         )
         continue
       }
@@ -393,7 +393,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
         rechazar(
           f.line,
           'sku',
-          `El codigo "${f.sku}" no existe en el catalogo: importalo primero en Productos.`,
+          `El código "${f.sku}" no existe en el catálogo: impórtalo primero en Productos.`,
         )
         continue
       }
@@ -412,7 +412,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
         rechazar(
           f.line,
           'warehouse',
-          `${p.sku} ya se carga en ${almacen.name} en la linea ${previa}: una sola linea por producto y almacen.`,
+          `${p.sku} ya se carga en ${almacen.name} en la línea ${previa}: una sola línea por producto y almacén.`,
         )
         continue
       }
@@ -423,14 +423,14 @@ async function importarStock(formData: FormData): Promise<Resultado> {
         rechazar(
           f.line,
           'unitCost',
-          `Falta el costo unitario y ${p.sku} no tiene costo en el catalogo: sin costo la valorizacion nace mal.`,
+          `Falta el costo unitario y ${p.sku} no tiene costo en el catálogo: sin costo la valorización nace mal.`,
         )
         continue
       }
       // Mismo candado que el ajuste manual: el max_amount del rol.
       const monto = exigir(ctx, 'inventory', 'inventory.adjust', f.qty * costo)
       if (!monto.ok) {
-        rechazar(f.line, 'qty', `${monto.error} Esta linea vale ${(f.qty * costo).toFixed(2)}.`)
+        rechazar(f.line, 'qty', `${monto.error} Esta línea vale ${(f.qty * costo).toFixed(2)}.`)
         continue
       }
 
@@ -487,7 +487,7 @@ async function importarStock(formData: FormData): Promise<Resultado> {
     return {
       ok: false,
       error:
-        'Todavia no hay ningun almacen activo. Crea uno en Existencias > Almacenes y vuelve a subir el archivo.',
+        'Todavía no hay ningún almacén activo. Crea uno en Existencias > Almacenes y vuelve a subir el archivo.',
     }
   }
 
@@ -504,15 +504,15 @@ class ExistenciasYaMovidas extends Error {}
 
 async function deshacerStock(formData: FormData): Promise<Resultado> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const pImp = exigir(ctx, 'imports', 'imports.edit')
   if (!pImp.ok) return pImp
   const pInv = exigir(ctx, 'inventory', 'inventory.adjust')
   if (!pInv.ok) return pInv
 
   const batchId = String(formData.get('batchId') ?? '')
-  if (!batchId) return { ok: false, error: 'Falta la importacion.' }
-  if (!UUID.test(batchId)) return { ok: false, error: 'Esa importacion no existe.' }
+  if (!batchId) return { ok: false, error: 'Falta la importación.' }
+  if (!UUID.test(batchId)) return { ok: false, error: 'Esa importación no existe.' }
 
   let r: { estado: 'no-existe' } | { estado: 'ya-deshecha' } | { estado: 'ok'; revertidas: number }
   try {
@@ -572,14 +572,14 @@ async function deshacerStock(formData: FormData): Promise<Resultado> {
       return {
         ok: false,
         error:
-          'No se puede deshacer: algunas de estas existencias ya se movieron despues de cargarlas (ventas, ajustes, traslados...). Corrigelas con un ajuste en Existencias.',
+          'No se puede deshacer: algunas de estas existencias ya se movieron después de cargarlas (ventas, ajustes, traslados...). Corrigelas con un ajuste en Existencias.',
       }
     }
     throw e
   }
 
-  if (r.estado === 'no-existe') return { ok: false, error: 'Esa importacion no existe.' }
-  if (r.estado === 'ya-deshecha') return { ok: false, error: 'Esa importacion ya estaba deshecha.' }
+  if (r.estado === 'no-existe') return { ok: false, error: 'Esa importación no existe.' }
+  if (r.estado === 'ya-deshecha') return { ok: false, error: 'Esa importación ya estaba deshecha.' }
 
   revalidatePath('/importar')
   revalidatePath('/inventory')

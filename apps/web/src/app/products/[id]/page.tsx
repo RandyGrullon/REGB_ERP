@@ -1,10 +1,25 @@
 import { notFound } from 'next/navigation'
-import { Badge, Card, CardBody, CardHeader, CardTitle, Mono } from '@regb/ui'
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  CardTitle,
+  Mono,
+  PageHeader,
+  Table,
+  TBody,
+  TD,
+  TH,
+  THead,
+  TR,
+} from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { editarProductoForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, pesos } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +54,9 @@ export default async function ProductDetailPage({
   const { id } = await params
   const { ctx, shell } = await modulePage(sp, 'products')
 
-  const [product, categories] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const veExistencia = ctx.licensedModules.has('inventory')
+
+  const [product, categories, existencias] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [p] = await tx<ProductDetail[]>`
       select id, sku, name, unit, price::text, cost::text, barcode, category_id,
              tax_rate::text, reorder_point::text, track_stock, active, created_at::text
@@ -48,7 +65,16 @@ export default async function ProductDetailPage({
     const c = await tx<{ id: string; name: string }[]>`
       select id, name from public.product_categories
       where tenant_id = ${ctx.tenantId} order by name`
-    return [p, c] as const
+    const e = veExistencia
+      ? await tx<{ almacen: string; disponible: string; reservado: string }[]>`
+          select w.name as almacen, sl.qty_on_hand::text as disponible,
+                 sl.qty_reserved::text as reservado
+          from public.stock_levels sl
+          join public.warehouses w on w.id = sl.warehouse_id
+          where sl.product_id = ${id} and sl.tenant_id = ${ctx.tenantId}
+          order by w.is_default desc, w.name`
+      : []
+    return [p, c, e] as const
   })
 
   if (!product) notFound()
@@ -61,20 +87,75 @@ export default async function ProductDetailPage({
   return (
     <Shell {...shell} activePath="/products">
       <div className="max-w-3xl space-y-5">
-        <div>
-          <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
-            <a href={`/products${qs}`} className="text-[var(--color-text-link)] hover:underline">
-              Catalogo
-            </a>{' '}
-            › {product.name}
-          </nav>
-          <div className="mt-1 flex flex-wrap items-center gap-3">
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{product.name}</h1>
-            <Mono>{product.sku}</Mono>
-            {!product.active && <Badge tone="neutral">Archivado</Badge>}
-            {Number(product.tax_rate) === 0 && <Badge tone="info">Exento de ITBIS</Badge>}
-          </div>
-        </div>
+        <PageHeader
+          icon={product.track_stock ? 'inventory_2' : 'home_repair_service'}
+          title={product.name}
+          description={
+            product.track_stock
+              ? `Se vende por ${product.unit}. Dado de alta el ${new Date(product.created_at).toLocaleDateString('es-DO', { day: 'numeric', month: 'long', year: 'numeric' })}.`
+              : 'Servicio: se cobra y se factura, pero no lleva existencias.'
+          }
+          crumbs={[{ label: 'Catálogo', href: `/products${qs}` }, { label: product.sku }]}
+          meta={
+            <div className="flex flex-wrap items-center gap-2">
+              <Mono>{product.sku}</Mono>
+              {!product.active && <Badge tone="neutral">Archivado</Badge>}
+              {Number(product.tax_rate) === 0 ? (
+                <Badge tone="info">Exento de ITBIS</Badge>
+              ) : (
+                <Badge tone="neutral" dot={false}>
+                  ITBIS {Math.round(Number(product.tax_rate) * 100)} %
+                </Badge>
+              )}
+              {vePrecio && (
+                <Badge tone="neutral" dot={false}>
+                  Precio {pesos(product.price)}
+                </Badge>
+              )}
+            </div>
+          }
+        />
+
+        {veExistencia && product.track_stock && (
+          <Card>
+            <CardHeader className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle>Existencias</CardTitle>
+              <a
+                href={`/inventory/movements${qs}${qs ? '&' : '?'}producto=${product.id}`}
+                className="text-xs text-[var(--color-text-link)] hover:underline"
+              >
+                Ver sus movimientos en el kardex
+              </a>
+            </CardHeader>
+            {existencias.length === 0 ? (
+              <CardBody>
+                <p className="text-sm text-[var(--color-text-muted)]">
+                  Todavía no hay existencias de este producto en ningún almacén. Entran con una
+                  recepción de compra o con un ajuste en Existencias.
+                </p>
+              </CardBody>
+            ) : (
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Almacén</TH>
+                    <TH numeric>En existencia</TH>
+                    <TH numeric>Apartado para pedidos</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {existencias.map((e) => (
+                    <TR key={e.almacen}>
+                      <TD className="text-[var(--color-text-primary)]">{e.almacen}</TD>
+                      <TD numeric>{cantidad(e.disponible, product.unit)}</TD>
+                      <TD numeric>{cantidad(e.reservado)}</TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            )}
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -99,7 +180,7 @@ export default async function ProductDetailPage({
                   />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Categoria
+                  Categoría
                   <select
                     name="categoryId"
                     defaultValue={product.category_id ?? ''}
@@ -167,7 +248,9 @@ export default async function ProductDetailPage({
                   Avisar cuando baje de
                   <input
                     name="reorderPoint"
-                    defaultValue={product.reorder_point ?? ''}
+                    defaultValue={
+                      product.reorder_point !== null ? String(Number(product.reorder_point)) : ''
+                    }
                     inputMode="decimal"
                     disabled={!puedeEditar}
                     placeholder="sin aviso"

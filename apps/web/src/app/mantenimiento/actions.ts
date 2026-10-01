@@ -30,7 +30,7 @@ const num = (raw: string): number | null => {
 
 export async function crearEquipo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'maintenance', 'maintenance.manage')
   if (!permiso.ok) return permiso
 
@@ -40,7 +40,7 @@ export async function crearEquipo(fd: FormData): Promise<ActionResult> {
   const intervaloUso = num(String(fd.get('maintenanceIntervalUsage') ?? ''))
   const intervaloDias = num(String(fd.get('maintenanceIntervalDays') ?? ''))
 
-  if (!code || !name) return { ok: false, error: 'Ponle codigo y nombre al equipo.' }
+  if (!code || !name) return { ok: false, error: 'Ponle código y nombre al equipo.' }
 
   await asUser(
     ctx.userId,
@@ -57,14 +57,14 @@ export async function crearEquipo(fd: FormData): Promise<ActionResult> {
 /** Registra un servicio: pone al dia el uso y la fecha del ultimo mantenimiento. */
 export async function registrarServicio(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'maintenance', 'maintenance.work')
   if (!permiso.ok) return permiso
 
   const equipmentId = String(fd.get('equipmentId') ?? '')
   const usageAtService = num(String(fd.get('usageAtService') ?? ''))
   if (usageAtService === null || usageAtService < 0) {
-    return { ok: false, error: 'La lectura de uso debe ser un numero valido.' }
+    return { ok: false, error: 'La lectura de uso debe ser un número válido.' }
   }
 
   await asUser(
@@ -83,7 +83,7 @@ export async function registrarServicio(fd: FormData): Promise<ActionResult> {
 
 export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'maintenance', 'maintenance.work')
   if (!permiso.ok) return permiso
 
@@ -94,7 +94,7 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
 
   if (!equipmentId) return { ok: false, error: 'Elige el equipo.' }
   if (!['preventive', 'corrective'].includes(type))
-    return { ok: false, error: 'Elige un tipo valido.' }
+    return { ok: false, error: 'Elige un tipo válido.' }
   if (!description) return { ok: false, error: 'Describe el problema o el trabajo a hacer.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -115,7 +115,7 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de una orden de trabajo. */
 export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'maintenance', 'maintenance.work')
   if (!permiso.ok) return permiso
 
@@ -128,7 +128,7 @@ export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
       where id = ${ordenId} and tenant_id = ${ctx.tenantId} for update`
     if (!orden) return 'no-existe'
     if (!transicionValidaOrdenTrabajo(orden.status, siguiente)) {
-      return 'Esa transicion no esta permitida.'
+      return 'Esa transición no está permitida.'
     }
 
     const completando = siguiente === 'completed'
@@ -158,7 +158,7 @@ export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
 /** Registra un repuesto usado en la orden -no descuenta inventario, solo queda registrado-. */
 export async function agregarParte(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'maintenance', 'maintenance.work')
   if (!permiso.ok) return permiso
 

@@ -31,9 +31,10 @@ import {
 } from './actions'
 import { ESTADO_1ON1, ESTADO_OBJETIVO, ESTADO_PLAN_MEJORA, TIPO_EVALUACION } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Desempeno · REGB ERP' }
+export const metadata = { title: 'Desempeño · REGB ERP' }
 
 interface EmpleadoOption {
   id: string
@@ -177,7 +178,7 @@ export default async function DesempenoPage({
       <div className="space-y-5">
         <PageHeader
           icon="trending_up"
-          title="Desempeno"
+          title="Desempeño"
           description="Objetivos, reuniones 1:1, evaluaciones y planes de mejora. El avance de cada objetivo sale de su valor actual contra la meta."
         />
 
@@ -195,7 +196,11 @@ export default async function DesempenoPage({
           </CardHeader>
           <CardBody className="space-y-4">
             {objetivos.length === 0 ? (
-              <EmptyState icon="flag" title="Todavia no hay ningun objetivo" description="" />
+              <EmptyState
+                icon="flag"
+                title="Todavía no hay ningún objetivo"
+                description="Un objetivo es lo que alguien (o toda la empresa) quiere lograr en el trimestre, con resultados que se miden. Crea el primero abajo y agrégale sus resultados clave."
+              />
             ) : (
               objetivos.map((o) => {
                 const krs = resultadosPorObjetivo.get(o.id) ?? []
@@ -231,14 +236,15 @@ export default async function DesempenoPage({
                         {krs.map((k) => (
                           <li
                             key={k.id}
-                            className="flex items-center justify-between gap-2 text-xs"
+                            className="flex flex-wrap items-center justify-between gap-2 text-xs"
                           >
                             <span className="text-[var(--color-text-secondary)]">
                               {k.description}
                             </span>
                             <span className="flex items-center gap-2">
                               <span className="tabular text-[var(--color-text-muted)]">
-                                {k.current_value} / {k.target_value} {k.unit ?? ''}
+                                {Number(k.current_value).toLocaleString('es-DO')} /{' '}
+                                {Number(k.target_value).toLocaleString('es-DO')} {k.unit ?? ''}
                               </span>
                               <span className="tabular text-[var(--color-text-primary)]">
                                 {progresoResultadoClave(
@@ -262,7 +268,7 @@ export default async function DesempenoPage({
                                   <input
                                     name="currentValue"
                                     aria-label={`Valor actual de ${k.description}`}
-                                    defaultValue={k.current_value}
+                                    defaultValue={String(Number(k.current_value))}
                                     inputMode="decimal"
                                     className={`tabular w-16 ${claseInput}`}
                                   />
@@ -328,11 +334,11 @@ export default async function DesempenoPage({
                   </select>
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Titulo
+                  Título
                   <input name="title" required className={claseInput} />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Periodo
+                  Período
                   <input name="period" placeholder="2026-Q3" required className={claseInput} />
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
@@ -350,7 +356,11 @@ export default async function DesempenoPage({
           </CardHeader>
           <CardBody className="space-y-3">
             {unoAUnos.length === 0 ? (
-              <EmptyState icon="forum" title="Todavia no hay ningun 1:1 agendado" description="" />
+              <EmptyState
+                icon="forum"
+                title="Todavía no hay ningún 1:1 agendado"
+                description="Un 1:1 es la conversación a solas entre un jefe y su empleado: cómo va, qué le traba, qué sigue. Agenda el primero abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -370,14 +380,7 @@ export default async function DesempenoPage({
                   {unoAUnos.map((u) => (
                     <TR key={u.id}>
                       <TD className="text-[var(--color-text-primary)]">{u.employee_name}</TD>
-                      <TD>
-                        {new Date(u.scheduled_at).toLocaleString('es-DO', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </TD>
+                      <TD>{fechaHoraRD(u.scheduled_at)}</TD>
                       <TD>
                         <Badge tone={badgeTono(u.status)}>
                           {ESTADO_1ON1[u.status] ?? u.status}
@@ -439,7 +442,11 @@ export default async function DesempenoPage({
           </CardHeader>
           <CardBody className="space-y-3">
             {evaluaciones.length === 0 ? (
-              <EmptyState icon="star" title="Todavia no hay ninguna evaluacion" description="" />
+              <EmptyState
+                icon="star"
+                title="Todavía no hay ninguna evaluación"
+                description="Las evaluaciones 360 juntan la autoevaluación, la del jefe y la de los compañeros en un mismo ciclo. Registra la primera abajo."
+              />
             ) : (
               <Table>
                 <THead>
@@ -447,7 +454,7 @@ export default async function DesempenoPage({
                     <TH>Empleado</TH>
                     <TH>Ciclo</TH>
                     <TH>Quien evaluo</TH>
-                    <TH numeric>Calificacion</TH>
+                    <TH numeric>Calificación</TH>
                     <TH numeric>Promedio del ciclo</TH>
                   </TR>
                 </THead>
@@ -502,7 +509,7 @@ export default async function DesempenoPage({
                   </select>
                 </label>
                 <label className="flex w-20 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Calificacion (1-5)
+                  Calificación (1-5)
                   <input
                     name="rating"
                     inputMode="numeric"
@@ -531,8 +538,8 @@ export default async function DesempenoPage({
             {planes.length === 0 ? (
               <EmptyState
                 icon="assignment"
-                title="Todavia no hay ningun plan de mejora"
-                description=""
+                title="Todavía no hay ningún plan de mejora"
+                description="Un plan de mejora deja por escrito qué tiene que cambiar un empleado, cómo se mide y hasta cuándo. Ojalá esta lista siga vacía."
               />
             ) : (
               <Table>

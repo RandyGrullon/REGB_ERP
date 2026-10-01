@@ -48,7 +48,7 @@ export function CrearLlaveForm({ tenant, rol }: { tenant: string; rol: string })
           </div>
         </fieldset>
         <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-          Limite por minuto
+          Límite por minuto
           <input
             name="rateLimit"
             type="number"

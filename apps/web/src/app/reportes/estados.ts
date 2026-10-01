@@ -1,4 +1,4 @@
-/** Etiquetas de frecuencia y estado de un export programado. */
+/** Etiquetas de frecuencia y estado de un envío programado. */
 export const FRECUENCIA_EXPORT: Record<string, string> = {
   daily: 'Diaria',
   weekly: 'Semanal',
@@ -13,5 +13,5 @@ export const ESTADO_EXPORT: Record<string, string> = {
 export const TIPO_GRAFICO: Record<string, string> = {
   table: 'Tabla',
   bar: 'Barras',
-  line: 'Linea',
+  line: 'Línea',
 }

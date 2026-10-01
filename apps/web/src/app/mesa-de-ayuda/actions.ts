@@ -25,7 +25,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearTicket(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'helpdesk', 'helpdesk.manage')
   if (!permiso.ok) return permiso
 
@@ -35,9 +35,9 @@ export async function crearTicket(fd: FormData): Promise<ActionResult> {
   const customerId = String(fd.get('customerId') ?? '') || null
 
   if (!subject) return { ok: false, error: 'Falta el asunto.' }
-  if (!description) return { ok: false, error: 'Falta la descripcion.' }
+  if (!description) return { ok: false, error: 'Falta la descripción.' }
   const horas = SLA_HORAS_POR_PRIORIDAD[priority]
-  if (horas === undefined) return { ok: false, error: 'Elige una prioridad valida.' }
+  if (horas === undefined) return { ok: false, error: 'Elige una prioridad válida.' }
 
   await asUser(
     ctx.userId,
@@ -54,7 +54,7 @@ export async function crearTicket(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado del ticket -resuelto SI se puede reabrir, cerrado no-. */
 export async function transicionarTicket(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'helpdesk', 'helpdesk.manage')
   if (!permiso.ok) return permiso
 
@@ -67,9 +67,9 @@ export async function transicionarTicket(fd: FormData): Promise<ActionResult> {
     const [t] = await tx<{ status: EstadoTicket }[]>`
       select status from public.tickets where id = ${ticketId} and tenant_id = ${ctx.tenantId} for update`
     if (!t) return 'no-existe'
-    if (!transicionValidaTicket(t.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaTicket(t.status, siguiente)) return 'Esa transición no está permitida.'
     if (satisfaction !== null && (satisfaction < 1 || satisfaction > 5))
-      return 'La satisfaccion debe ser de 1 a 5.'
+      return 'La satisfacción debe ser de 1 a 5.'
 
     const resolviendo = siguiente === 'resolved'
     const cerrando = siguiente === 'closed'
@@ -104,7 +104,7 @@ export async function transicionarTicket(fd: FormData): Promise<ActionResult> {
 
 export async function agregarMensaje(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'helpdesk', 'helpdesk.manage')
   if (!permiso.ok) return permiso
 

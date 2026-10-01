@@ -34,7 +34,7 @@ const FECHA = /^\d{4}-\d{2}-\d{2}$/
  */
 export async function crearPeriodo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payroll', 'payroll.run')
   if (!permiso.ok) return permiso
 
@@ -43,7 +43,7 @@ export async function crearPeriodo(fd: FormData): Promise<ActionResult> {
   const payDate = String(fd.get('payDate') ?? '').trim()
 
   if (!periodStart || !periodEnd || !payDate)
-    return { ok: false, error: 'Faltan las fechas del periodo.' }
+    return { ok: false, error: 'Faltan las fechas del período.' }
   if (![periodStart, periodEnd, payDate].every((f) => FECHA.test(f))) {
     return { ok: false, error: 'Las fechas no son validas.' }
   }
@@ -71,13 +71,13 @@ export async function crearPeriodo(fd: FormData): Promise<ActionResult> {
     if (choque) {
       return {
         ok: false,
-        error: `Ese periodo se cruza con el del ${choque.desde} al ${choque.hasta}: cada empleado cobraria dos veces esos dias.`,
+        error: `Ese período se cruza con el del ${choque.desde} al ${choque.hasta}: cada empleado cobraría dos veces esos días.`,
       }
     }
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya existe un periodo con esas mismas fechas.' }
+      return { ok: false, error: 'Ya existe un período con esas mismas fechas.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -94,12 +94,12 @@ export async function crearPeriodo(fd: FormData): Promise<ActionResult> {
  */
 export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payroll', 'payroll.run')
   if (!permiso.ok) return permiso
 
   const periodId = String(fd.get('periodId') ?? '')
-  if (!periodId) return { ok: false, error: 'Falta el periodo.' }
+  if (!periodId) return { ok: false, error: 'Falta el período.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -111,8 +111,8 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
         from public.payroll_periods
         where id = ${periodId} and tenant_id = ${ctx.tenantId}
         for update`
-      if (!periodo) throw new ErrorNomina('Ese periodo no existe.')
-      if (periodo.status !== 'draft') throw new ErrorNomina('Ese periodo ya fue procesado.')
+      if (!periodo) throw new ErrorNomina('Ese período no existe.')
+      if (periodo.status !== 'draft') throw new ErrorNomina('Ese período ya fue procesado.')
 
       const calculo = await calcularNomina(tx, ctx.tenantId, periodo)
       // Un periodo procesado no se reabre: procesarlo vacio lo congela sin
@@ -120,7 +120,7 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
       // rol no ve los expedientes (la RLS de employees pide employees.view).
       if (calculo.lineas.length === 0) {
         throw new ErrorNomina(
-          'No hay a quien pagarle en este periodo: nadie estuvo contratado esos dias, o tu rol no ve los expedientes de empleados.',
+          'No hay a quién pagarle en este período: nadie estuvo contratado esos días, o tu rol no ve los expedientes de empleados.',
         )
       }
 
@@ -171,7 +171,7 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          'Un empleado ya cobro dias de este periodo en otra nomina. Un dia se paga una sola vez: corrige las fechas.',
+          'Un empleado ya cobró días de este período en otra nómina. Un día se paga una sola vez: corrige las fechas.',
       }
     }
     const msg = e instanceof Error ? e.message : 'Error inesperado'
@@ -196,12 +196,12 @@ export async function procesarPeriodo(fd: FormData): Promise<ActionResult> {
  */
 export async function eliminarPeriodo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payroll', 'payroll.run')
   if (!permiso.ok) return permiso
 
   const periodId = String(fd.get('periodId') ?? '')
-  if (!periodId) return { ok: false, error: 'Falta el periodo.' }
+  if (!periodId) return { ok: false, error: 'Falta el período.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -209,10 +209,10 @@ export async function eliminarPeriodo(fd: FormData): Promise<ActionResult> {
         select status from public.payroll_periods
         where id = ${periodId} and tenant_id = ${ctx.tenantId}
         for update`
-      if (!p) throw new ErrorNomina('Ese periodo no existe.')
+      if (!p) throw new ErrorNomina('Ese período no existe.')
       if (p.status !== 'draft') {
         throw new ErrorNomina(
-          'Ese periodo ya se procesó: queda fijo y se corrige con el siguiente.',
+          'Ese período ya se procesó: queda fijo y se corrige con el siguiente.',
         )
       }
 
@@ -224,7 +224,7 @@ export async function eliminarPeriodo(fd: FormData): Promise<ActionResult> {
             where tenant_id = ${ctx.tenantId} and payroll_period_id = ${periodId})::int as pagos`
       if (uso && (uso.gastos > 0 || uso.pagos > 0)) {
         throw new ErrorNomina(
-          'Este borrador ya tiene reembolsos de gastos o pagos de préstamo asignados: procésalo, o crea el periodo correcto antes de borrarlo.',
+          'Este borrador ya tiene reembolsos de gastos o pagos de préstamo asignados: procésalo, o crea el período correcto antes de borrarlo.',
         )
       }
 

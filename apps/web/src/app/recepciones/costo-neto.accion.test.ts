@@ -152,7 +152,7 @@ describe('Ficha de la orden: recibir sin Recepciones', () => {
     const r = await recibirLinea(
       c.fd({ orderId: a.orden, lineId: b.linea, qty: '1', unitCost: '' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Esa linea no existe.' })
+    expect(r).toEqual({ ok: false, error: 'Esa línea no existe.' })
   })
 
   it('una orden recibida completa ya no se cancela', async () => {

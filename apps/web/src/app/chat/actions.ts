@@ -23,7 +23,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearCanal(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'chat', 'chat.manage')
   if (!permiso.ok) return permiso
 
@@ -33,7 +33,7 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre del canal.' }
   if (!['module', 'project', 'branch', 'general'].includes(scopeType))
-    return { ok: false, error: 'Elige un ambito valido.' }
+    return { ok: false, error: 'Elige un ámbito válido.' }
 
   await asUser(
     ctx.userId,
@@ -49,7 +49,7 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
 
 export async function enviarMensaje(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'chat', 'chat.manage')
   if (!permiso.ok) return permiso
 

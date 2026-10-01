@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'logistics',
-  name: 'Logística & Rutas',
+  name: 'Rutas de reparto',
   description: 'Planificacion de rutas, seguimiento GPS y prueba de entrega.',
   icon: 'route',
   category: 'advanced',
@@ -35,7 +35,7 @@ export default defineModule({
   permissions: ['logistics.view', 'logistics.manage', 'logistics.deliver'],
 
   routes: [
-    { path: '/rutas', label: 'Rutas', perm: 'logistics.view' },
+    { path: '/rutas', label: 'Rutas de reparto', perm: 'logistics.view' },
     { path: '/rutas/:id', label: 'Detalle', perm: 'logistics.view', hidden: true },
   ],
 

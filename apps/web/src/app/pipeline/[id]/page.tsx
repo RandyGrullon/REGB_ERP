@@ -23,9 +23,9 @@ interface OportunidadHead {
 
 const money = (n: number) => n.toLocaleString('es-DO', { minimumFractionDigits: 2 })
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const badgeEtapa = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
   if (s === 'won') return 'success'
   if (s === 'lost') return 'danger'
@@ -94,7 +94,7 @@ export default async function OportunidadDetallePage({
             label="Probabilidad"
             value={`${(Number(head.probability) * 100).toFixed(0)}%`}
           />
-          <StatCard label="Lead de origen" value={head.lead_name ?? '—'} />
+          <StatCard label="Prospecto de origen" value={head.lead_name ?? '—'} />
         </section>
 
         {head.lost_reason && (
@@ -130,13 +130,13 @@ export default async function OportunidadDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>Cómo se mueve una oportunidad</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              La probabilidad se actualiza sola al valor por defecto de cada etapa al avanzar -no
-              queda un número viejo de la etapa anterior olvidado en el forecast-. Una oportunidad
-              no se puede marcar perdida sin explicar el motivo.
+              Al avanzar de etapa, la probabilidad toma sola el valor de la etapa nueva, así el
+              pronóstico no arrastra un número viejo. Para marcarla perdida hay que escribir el
+              motivo: es lo que enseña por qué se escapan las ventas.
             </p>
           </CardBody>
         </Card>

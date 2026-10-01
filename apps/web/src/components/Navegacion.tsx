@@ -29,8 +29,8 @@ export function Navegacion() {
       <button
         type="button"
         onClick={() => router.back()}
-        aria-label="Volver atras"
-        title="Atras"
+        aria-label="Volver atrás"
+        title="Atrás"
         className={clase}
       >
         <Icon name="arrow_back" size={18} />

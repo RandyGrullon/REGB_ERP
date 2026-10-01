@@ -175,7 +175,7 @@ describe('facturarPedido: el credito tambien se mira al facturar', () => {
     const r = await facturarPedido(c.fd({ orderId: ped }, 'Cobrador'))
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/96 dias/)
+    expect(r.error).toMatch(/96 días/)
     expect(await facturaDelPedido(ped)).toBeUndefined()
 
     // El dueno autoriza al facturar: pasa y queda escrito en esa etapa.
@@ -453,7 +453,7 @@ describe('La factura guarda sus lineas y factura lo ENTREGADO', () => {
     // Facturar otra vez sin entregar mas: no hay nada nuevo.
     const otra = await facturarPedido(c.fd({ orderId: ped, ncfType: 'B02' }, 'Cobrador'))
     expect(otra.ok).toBe(false)
-    if (!otra.ok) expect(otra.error).toMatch(/ya esta facturado/)
+    if (!otra.ok) expect(otra.error).toMatch(/ya está facturado/)
 
     // Salen las otras 6: segunda factura por 6.
     await db()`update public.sales_order_lines set qty_delivered = 10 where order_id = ${ped}`
@@ -637,7 +637,7 @@ describe('Nota de credito B04', () => {
         ),
       )
       expect(r.ok).toBe(false)
-      if (!r.ok) expect(r.error).toMatch(/inventario no esta activo/)
+      if (!r.ok) expect(r.error).toMatch(/inventario no está activo/)
     } finally {
       await c.modulo('inventory', true)
     }

@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'ecommerce',
-  name: 'E-commerce sync',
+  name: 'Tienda en línea',
   description: 'Shopify/WooCommerce/Tiendanube: catálogo, stock y pedidos bidireccional.',
   icon: 'storefront',
   category: 'advanced',
@@ -34,7 +34,7 @@ export default defineModule({
   permissions: ['ecommerce.view', 'ecommerce.manage'],
 
   routes: [
-    { path: '/ecommerce', label: 'E-commerce sync', perm: 'ecommerce.view' },
+    { path: '/ecommerce', label: 'Tienda en línea', perm: 'ecommerce.view' },
     { path: '/ecommerce/:id', label: 'Detalle del pedido', perm: 'ecommerce.view', hidden: true },
   ],
 

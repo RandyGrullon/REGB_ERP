@@ -15,6 +15,7 @@ import { Shell } from '@/components/Shell'
 import { procesarPeriodoForm } from '../actions'
 import { calcularNomina, ErrorNomina, type NominaCalculada } from '../calculo'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaCorta } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Procesar nómina · REGB ERP' }
@@ -84,22 +85,22 @@ export default async function ProcesarNominaPage({
         <PageHeader
           icon="calculate"
           title="Procesar nómina"
-          description="Lo que le toca a cada empleado en el periodo: su parte del mes, TSS, ISR, préstamos y reembolsos. Revísalo y confírmalo; después de procesar, el periodo queda fijo."
+          description="Lo que le toca a cada empleado en el período: su parte del mes, TSS, ISR, préstamos y reembolsos. Revísalo y confírmalo; después de procesar, el período queda fijo."
           crumbs={[{ label: 'Nómina', href: `/payroll${qs}` }, { label: 'Procesar' }]}
         />
 
         {!periodo ? (
           <EmptyState
             icon="calculate"
-            title="No hay ningún periodo en borrador"
+            title="No hay ningún período en borrador"
             description="Crea uno desde la pantalla de Nómina antes de procesar."
           />
         ) : (
           <>
             <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
               <StatCard
-                label="Periodo"
-                value={`${fecha(periodo.period_start)} – ${fecha(periodo.period_end)}`}
+                label="Período"
+                value={`${fechaCorta(periodo.period_start)} – ${fechaCorta(periodo.period_end, true)}`}
               />
               <StatCard label="Parte del mes" value={calculo ? fraccionEnPalabras(calculo) : '—'} />
               <StatCard label="Empleados" value={String(lineas.length)} />
@@ -125,8 +126,8 @@ export default async function ProcesarNominaPage({
             ) : lineas.length === 0 ? (
               <EmptyState
                 icon="check_circle"
-                title="No hay a quien pagarle en este periodo"
-                description="Nadie estuvo contratado esos dias, o todos ya tienen su linea."
+                title="No hay a quién pagarle en este período"
+                description="Nadie estuvo contratado esos días, o todos ya tienen su línea."
               />
             ) : (
               <Card>
@@ -196,7 +197,7 @@ export default async function ProcesarNominaPage({
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="periodId" value={periodo.id} />
                       <BotonEnvio
-                        title="Calcula y guarda estas lineas. El periodo queda fijo despues de procesar."
+                        title="Calcula y guarda estas líneas. El período queda fijo después de procesar."
                         className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
                         <Icon name="check" size={18} />

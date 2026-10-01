@@ -31,7 +31,7 @@ const num = (raw: string): number | null => {
 /** Crea un presupuesto vacio para un ano fiscal. */
 export async function crearPresupuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'budgets', 'budgets.budget.create')
   if (!permiso.ok) return permiso
 
@@ -40,7 +40,7 @@ export async function crearPresupuesto(fd: FormData): Promise<ActionResult> {
 
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre del presupuesto.' }
   if (!Number.isInteger(fiscalYear) || fiscalYear < 2020 || fiscalYear > 2100) {
-    return { ok: false, error: 'El ano fiscal no es valido.' }
+    return { ok: false, error: 'El año fiscal no es válido.' }
   }
 
   try {
@@ -56,7 +56,7 @@ export async function crearPresupuesto(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya existe un presupuesto con ese nombre para ese ano.' }
+      return { ok: false, error: 'Ya existe un presupuesto con ese nombre para ese año.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -68,7 +68,7 @@ export async function crearPresupuesto(fd: FormData): Promise<ActionResult> {
 /** Pone o cambia el monto planeado de una cuenta en un mes. */
 export async function ponerLineaPresupuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'budgets', 'budgets.line.set')
   if (!permiso.ok) return permiso
 
@@ -79,7 +79,7 @@ export async function ponerLineaPresupuesto(fd: FormData): Promise<ActionResult>
 
   if (!budgetId || !accountId) return { ok: false, error: 'Faltan datos.' }
   if (!Number.isInteger(month) || month < 1 || month > 12) {
-    return { ok: false, error: 'El mes no es valido.' }
+    return { ok: false, error: 'El mes no es válido.' }
   }
   if (amount === null || amount < 0) return { ok: false, error: 'El monto no puede ser negativo.' }
 
@@ -96,7 +96,7 @@ export async function ponerLineaPresupuesto(fd: FormData): Promise<ActionResult>
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('no se edita')) {
-      return { ok: false, error: 'Este presupuesto esta cerrado: no se puede editar.' }
+      return { ok: false, error: 'Este presupuesto está cerrado: no se puede editar.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -108,7 +108,7 @@ export async function ponerLineaPresupuesto(fd: FormData): Promise<ActionResult>
 /** Cierra el presupuesto: de aqui en adelante queda congelado. */
 export async function cerrarPresupuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'budgets', 'budgets.budget.close')
   if (!permiso.ok) return permiso
 
@@ -132,7 +132,7 @@ export async function cerrarPresupuesto(fd: FormData): Promise<ActionResult> {
 /** Activa un presupuesto en borrador. */
 export async function activarPresupuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'budgets', 'budgets.budget.create')
   if (!permiso.ok) return permiso
 

@@ -85,7 +85,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
   const puedeFijarPolitica = exigir(ctx, 'ar', 'ar.credit.manage').ok
 
   const qs = ctx.demoQs
-  // "A quien llamar" sin el telefono obligaba a salir a buscarlo.
+  // "A quién llamar" sin el telefono obligaba a salir a buscarlo.
   const telefonos = new Map(abiertas.map((f) => [f.customer_id, f.customer_phone]))
   const enlaceCls =
     'text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
@@ -96,14 +96,14 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
       <div className="space-y-5">
         <PageHeader
           icon="monitoring"
-          title="Cartera por antiguedad"
-          description="Cuanto te deben y desde hace cuanto. Lo de mas de 90 dias es lo que rara vez se cobra: llamalo hoy."
+          title="Cartera por antigüedad"
+          description="Cuánto te deben y desde hace cuánto. Lo de más de 90 días es lo que rara vez se cobra: llámalo hoy."
           crumbs={[{ label: 'Por cobrar', href: `/cobrar${qs}` }, { label: 'Cartera' }]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Total" value={`RD$ ${money(aging.total)}`} hint="por cobrar" />
-          <StatCard label="Vencido" value={`RD$ ${money(aging.overdue)}`} hint="paso su fecha" />
+          <StatCard label="Vencido" value={`RD$ ${money(aging.overdue)}`} hint="pasó su fecha" />
           <StatCard
             label="Clientes"
             value={String(aging.byCustomer.length)}
@@ -112,17 +112,17 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
         </section>
 
         <section
-          aria-label="Politica de credito"
+          aria-label="Política de crédito"
           className="flex flex-wrap items-center gap-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
         >
           <div className="min-w-0 flex-1 space-y-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              Politica de crédito
+              Política de crédito
             </h2>
             <p className="text-xs text-[var(--color-text-muted)]">
               {politica === null
-                ? 'No se bloquea por facturas vencidas: solo por el limite de cada cliente.'
-                : `Un cliente con una factura vencida hace más de ${politica} días no recibe pedidos ni facturas a crédito nuevas sin una excepcion autorizada.`}
+                ? 'No se bloquea por facturas vencidas: solo por el límite de cada cliente.'
+                : `Un cliente con una factura vencida hace más de ${politica} días no recibe pedidos ni facturas a crédito nuevas sin una excepción autorizada.`}
             </p>
           </div>
           {puedeFijarPolitica && (
@@ -139,13 +139,13 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                   aria-describedby="politica-ayuda"
                   className="tabular h-9 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-right text-sm text-[var(--color-text-primary)]"
                 />
-                dias
+                días
               </label>
               <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                 Guardar
               </BotonEnvio>
               <span id="politica-ayuda" className="sr-only">
-                De 1 a 365 días. Vacio para no bloquear por vencidas.
+                De 1 a 365 días. Vacío para no bloquear por vencidas.
               </span>
             </form>
           )}
@@ -155,13 +155,13 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
           <EmptyState
             icon="check_circle"
             title="Nadie te debe nada"
-            description="Toda la cartera esta cobrada. Cuando emitas facturas a credito apareceran aqui repartidas por antiguedad."
+            description="Toda la cartera está cobrada. Cuando emitas facturas a crédito aparecerán aquí repartidas por antigüedad."
           />
         ) : (
           <>
             {/* Barras por tramo: la forma de la cartera de un vistazo. */}
             <section
-              aria-label="Antiguedad"
+              aria-label="Antigüedad"
               className="space-y-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4"
             >
               {TRAMOS.map((t) => {
@@ -191,7 +191,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
 
             <section aria-label="Por cliente">
               <h2 className="mb-2 text-sm font-semibold text-[var(--color-text-primary)]">
-                A quien llamar
+                A quién llamar
               </h2>
               <Table>
                 <THead>
@@ -241,7 +241,7 @@ export default async function CarteraPage({ searchParams }: { searchParams: Prom
                           {vencido === 0 ? (
                             <Badge tone="success">al día</Badge>
                           ) : c.buckets.d90_plus > 0 ? (
-                            <Badge tone="danger">critico</Badge>
+                            <Badge tone="danger">crítico</Badge>
                           ) : (
                             <Badge tone="warning">atrasado</Badge>
                           )}

@@ -17,6 +17,7 @@ import {
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { yaVencio } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import {
   cancelarLinkForm,
@@ -124,14 +125,14 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
         <PageHeader
           icon="payments"
           title="Cobros"
-          description="Links de cobro y cobro recurrente. Sin pasarela real conectada: confirmar el pago es siempre una decision manual, igual que un cobro de cuentas por cobrar."
+          description="Enlaces de cobro y cobros recurrentes. Todavía no hay una pasarela conectada: cuando el cliente paga, lo confirmas tú a mano, igual que un cobro en Por cobrar."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard
             label="Pendiente"
             value={`RD$ ${money(totalPendiente)}`}
-            hint={`${pendientes.length} links`}
+            hint={`${pendientes.length} ${pendientes.length === 1 ? 'enlace pendiente' : 'enlaces pendientes'}`}
           />
           <StatCard label="Pagado" value={`RD$ ${money(totalPagado)}`} />
           <StatCard
@@ -143,8 +144,8 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
         {links.length === 0 ? (
           <EmptyState
             icon="payments"
-            title="Todavia no se ha generado ningun link de cobro"
-            description="Genera el primero abajo, con su monto y su descripcion."
+            title="Todavía no se ha generado ningún enlace de cobro"
+            description="Genera el primero abajo, con su monto y su descripción."
           />
         ) : (
           <Table>
@@ -177,7 +178,16 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
                     <TD>
                       <Badge tone={e.tone}>{e.label}</Badge>
                     </TD>
-                    <TD>{l.expires_at ? fecha(l.expires_at) : '—'}</TD>
+                    <TD className="whitespace-nowrap">
+                      {l.expires_at ? fecha(l.expires_at) : '—'}
+                      {/* Pendiente y con la fecha pasada: hay que llamar o
+                          cancelarlo, no seguir esperando. */}
+                      {l.status === 'pending' && l.expires_at && yaVencio(l.expires_at) && (
+                        <span className="block text-[10px] text-[var(--color-semantic-text-danger)]">
+                          ya venció
+                        </span>
+                      )}
+                    </TD>
                     {puedeConfirmar && (
                       <TD>
                         {l.status === 'pending' && (
@@ -194,7 +204,7 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
                               />
                               <BotonEnvio
                                 aria-label={`Confirmar pago de ${l.description}`}
-                                title="Confirma que el pago ya llego -manual, sin pasarela real conectada-"
+                                title="Confirma que el pago ya llegó: no hay pasarela conectada que lo avise sola"
                                 className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
                               >
                                 <Icon name="check_circle" size={18} />
@@ -224,7 +234,7 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
         {puedeCrear && (
           <Card>
             <CardHeader>
-              <CardTitle>Generar link de cobro</CardTitle>
+              <CardTitle>Generar enlace de cobro</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearLinkForm} className="flex flex-wrap items-end gap-3">
@@ -241,7 +251,7 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
                   </select>
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
@@ -312,7 +322,7 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
               <form action={correrRecurrentesForm} className="mt-3">
                 {campos}
                 <BotonEnvio
-                  title="Genera un link por cada cobro recurrente ya vencido"
+                  title="Genera un enlace por cada cobro recurrente ya vencido"
                   className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]"
                 >
                   <Icon name="event_repeat" size={16} />
@@ -342,7 +352,7 @@ export default async function CobrosPage({ searchParams }: { searchParams: Promi
                   </select>
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required

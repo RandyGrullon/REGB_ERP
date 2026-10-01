@@ -1,6 +1,6 @@
-/** Etiquetas del estado de un RFQ. */
+/** Etiquetas del estado de una solicitud de cotización (RFQ). */
 export const ESTADO_RFQ: Record<string, string> = {
-  open: 'Abierto',
-  awarded: 'Adjudicado',
-  cancelled: 'Cancelado',
+  open: 'Abierta',
+  awarded: 'Adjudicada',
+  cancelled: 'Cancelada',
 }

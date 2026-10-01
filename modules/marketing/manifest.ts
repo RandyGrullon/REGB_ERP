@@ -13,7 +13,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'marketing',
-  name: 'Marketing & Campañas',
+  name: 'Marketing y campañas',
   description: 'Segmentos, email/WhatsApp masivo, landing, UTM y atribucion.',
   icon: 'campaign',
   category: 'advanced',
@@ -34,7 +34,7 @@ export default defineModule({
 
   routes: [
     { path: '/marketing', label: 'Marketing & Campañas', perm: 'marketing.view' },
-    { path: '/marketing/:id', label: 'Detalle de campana', perm: 'marketing.view', hidden: true },
+    { path: '/marketing/:id', label: 'Detalle de campaña', perm: 'marketing.view', hidden: true },
   ],
 
   dashboardWidgets: ['marketing-campaigns-in-progress'],

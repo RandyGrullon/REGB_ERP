@@ -104,7 +104,7 @@ describe('Al dia o en mora temprana', () => {
     await estado('active')
     tarro.delete(COOKIE_AVISO)
     await marcarTodasLeidas(c.fd())
-    expect(textoAviso()).toBe('Listo, marcamos todas como leidas.')
+    expect(textoAviso()).toBe('Listo, marcamos todas como leídas.')
     expect(await sinLeer()).toBe(0)
   })
 })

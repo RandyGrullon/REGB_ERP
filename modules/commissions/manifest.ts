@@ -31,11 +31,14 @@ export default defineModule({
   requires: ['sales-orders'],
   recommends: ['payroll'],
 
-  permissions: ['commissions.view', 'commissions.manage'],
+  // `commissions.view.own`: lo trae el Vendedor de fábrica (0006) para ver
+  // solo lo suyo en /comisiones/mias.
+  permissions: ['commissions.view', 'commissions.view.own', 'commissions.manage'],
 
   routes: [
     { path: '/comisiones', label: 'Comisiones', perm: 'commissions.view' },
-    { path: '/comisiones/planes', label: 'Planes de comision', perm: 'commissions.manage' },
+    { path: '/comisiones/mias', label: 'Mis comisiones', perm: 'commissions.view.own' },
+    { path: '/comisiones/planes', label: 'Planes de comisión', perm: 'commissions.manage' },
   ],
 
   dashboardWidgets: ['commissions-pending-approval'],

@@ -45,7 +45,7 @@ function isoLocal(d: Date): string {
  */
 export async function registrarInformativo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.filing.close')
   if (!permiso.ok) return permiso
 
@@ -53,12 +53,12 @@ export async function registrarInformativo(fd: FormData): Promise<ActionResult> 
   const period = String(fd.get('period') ?? '').trim()
 
   if (!INFORMATIVOS.includes(form)) {
-    return { ok: false, error: 'El IT-1 se cierra en la pantalla de liquidacion, no aqui.' }
+    return { ok: false, error: 'El IT-1 se cierra en la pantalla de liquidación, no aquí.' }
   }
-  if (!/^[0-9]{6}$/.test(period)) return { ok: false, error: 'El periodo va como AAAAMM.' }
+  if (!/^[0-9]{6}$/.test(period)) return { ok: false, error: 'El período va como AAAAMM.' }
 
   const vence = calendarioFiscal(period, new Date()).find((o) => o.form === form)?.vence
-  if (!vence) return { ok: false, error: 'No se pudo calcular el vencimiento de ese periodo.' }
+  if (!vence) return { ok: false, error: 'No se pudo calcular el vencimiento de ese período.' }
 
   try {
     await asUser(

@@ -36,7 +36,7 @@ const num = (raw: string): number | null => {
 /** Registra un lote nuevo -o le suma cantidad a uno que ya existe- con su existencia inicial. */
 export async function registrarLote(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'lots-serials', 'lots-serials.manage')
   if (!permiso.ok) return permiso
 
@@ -53,8 +53,8 @@ export async function registrarLote(fd: FormData): Promise<ActionResult> {
   const origen = String(fd.get('origen') ?? 'entrada') === 'existente' ? 'existente' : 'entrada'
 
   if (!productId) return { ok: false, error: 'Elige el producto.' }
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
-  if (!lotNumber) return { ok: false, error: 'Escribe el numero de lote o de serie.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén.' }
+  if (!lotNumber) return { ok: false, error: 'Escribe el número de lote o de serie.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
   if (origen === 'entrada' && (unitCost === null || unitCost < 0)) {
     return { ok: false, error: 'Escribe el costo unitario de lo que entra.' }
@@ -76,7 +76,7 @@ export async function registrarLote(fd: FormData): Promise<ActionResult> {
                  (select sku from public.products where id = ${productId} and tenant_id = ${ctx.tenantId}) as sku`
         const libre = Number(c!.hay) - Number(c!.con_lote)
         if (qty > libre) {
-          return `De ${c!.sku ?? 'ese producto'} hay ${Number(c!.hay)} en ese almacen y ${Number(c!.con_lote)} ya tienen lote: solo le puedes poner lote a ${Math.max(0, libre)}.`
+          return `De ${c!.sku ?? 'ese producto'} hay ${Number(c!.hay)} en ese almacén y ${Number(c!.con_lote)} ya tienen lote: solo le puedes poner lote a ${Math.max(0, libre)}.`
         }
       }
 
@@ -121,7 +121,7 @@ export async function registrarLote(fd: FormData): Promise<ActionResult> {
 /** Consume cantidad de un producto en un almacen, eligiendo los lotes por FEFO. */
 export async function consumirFefo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'lots-serials', 'lots-serials.manage')
   if (!permiso.ok) return permiso
 
@@ -131,7 +131,7 @@ export async function consumirFefo(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
 
   if (!productId) return { ok: false, error: 'Elige el producto.' }
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -181,7 +181,7 @@ export async function consumirFefo(fd: FormData): Promise<ActionResult> {
 /** Abre un recall sobre un producto entero o un lote especifico. */
 export async function abrirRecall(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'lots-serials', 'lots-serials.recall')
   if (!permiso.ok) return permiso
 
@@ -189,7 +189,7 @@ export async function abrirRecall(fd: FormData): Promise<ActionResult> {
   const lotId = String(fd.get('lotId') ?? '') || null
   const reason = String(fd.get('reason') ?? '').trim()
   if (!productId) return { ok: false, error: 'Elige el producto.' }
-  if (!reason) return { ok: false, error: 'Escribe la razon del recall.' }
+  if (!reason) return { ok: false, error: 'Escribe por qué se retira el lote.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -214,12 +214,12 @@ export async function abrirRecall(fd: FormData): Promise<ActionResult> {
 /** Cierra un recall abierto. */
 export async function cerrarRecall(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'lots-serials', 'lots-serials.recall')
   if (!permiso.ok) return permiso
 
   const recallId = String(fd.get('recallId') ?? '')
-  if (!recallId) return { ok: false, error: 'Falta el recall.' }
+  if (!recallId) return { ok: false, error: 'Falta el retiro.' }
 
   try {
     await asUser(

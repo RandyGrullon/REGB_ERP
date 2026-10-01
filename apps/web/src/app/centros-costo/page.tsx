@@ -14,6 +14,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
+import { fechaFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -72,7 +73,7 @@ export default async function CentrosCostoPage({
         <PageHeader
           icon="call_split"
           title="Centros de costo"
-          description="A que sucursal, departamento o proyecto se le atribuye cada gasto. El prorrateo reparte un monto entre varios centros y siempre cuadra exacto."
+          description="A qué sucursal, departamento o proyecto se le atribuye cada gasto. El prorrateo reparte un monto entre varios centros y siempre cuadra exacto."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -87,11 +88,11 @@ export default async function CentrosCostoPage({
         {centros.length === 0 ? (
           <EmptyState
             icon="call_split"
-            title="Todavia no hay ningun centro de costo"
-            description="Registra el primero abajo -una sucursal, un departamento, un proyecto- y despues asignale gasto."
+            title="Todavía no hay ningún centro de costo"
+            description="Registra el primero abajo (una sucursal, un departamento, un proyecto) y después asígnale gastos."
           />
         ) : (
-          <Table>
+          <Table className="min-w-[480px]">
             <THead>
               <TR>
                 <TH>Centro</TH>
@@ -134,7 +135,7 @@ export default async function CentrosCostoPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Descripcion
+                    Descripción
                     <input
                       name="description"
                       required
@@ -155,7 +156,12 @@ export default async function CentrosCostoPage({
                   </label>
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Fecha
-                    <input name="allocationDate" type="date" className={claseInput} />
+                    <input
+                    name="allocationDate"
+                    type="date"
+                    defaultValue={fechaFiscal(new Date())}
+                    className={claseInput}
+                  />
                   </label>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -165,14 +171,14 @@ export default async function CentrosCostoPage({
                       className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]"
                     >
                       <input type="hidden" name="weightCenterId" value={c.id} />
-                      <span className="w-32 shrink-0 truncate text-[var(--color-text-primary)]">
+                      <span className="min-w-0 flex-1 text-[var(--color-text-primary)]">
                         {c.name}
                       </span>
                       <input
                         name="weight"
                         inputMode="decimal"
                         placeholder="0"
-                        title={`Peso relativo para ${c.name} -no hace falta que sumen 100-`}
+                        title={`Peso relativo para ${c.name}: no hace falta que sumen 100`}
                         className={`tabular w-20 text-right ${claseInput}`}
                       />
                     </label>
@@ -183,8 +189,8 @@ export default async function CentrosCostoPage({
                   Prorratear
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Los pesos no necesitan sumar 100 -se normalizan solos-. Deja en cero el centro que
-                  no participa de este gasto.
+                  Los pesos no necesitan sumar 100: se ajustan solos. Deja en cero el centro que no
+                  participa de este gasto.
                 </p>
               </form>
             </CardBody>
@@ -211,12 +217,12 @@ export default async function CentrosCostoPage({
                   </select>
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
                     minLength={3}
-                    placeholder="Reparacion del aire"
+                    placeholder="Reparación del aire acondicionado"
                     className={claseInput}
                   />
                 </label>
@@ -232,7 +238,12 @@ export default async function CentrosCostoPage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
-                  <input name="allocationDate" type="date" className={claseInput} />
+                  <input
+                    name="allocationDate"
+                    type="date"
+                    defaultValue={fechaFiscal(new Date())}
+                    className={claseInput}
+                  />
                 </label>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="add" size={18} />
@@ -253,7 +264,7 @@ export default async function CentrosCostoPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input name="code" required placeholder="SUC-01" className={claseInput} />
                 </label>
                 <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">

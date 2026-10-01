@@ -44,7 +44,7 @@ function tasaElegida(fd: FormData): number | null {
 
 export async function crearProducto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'products', 'products.create')
   if (!permiso.ok) return permiso
@@ -62,11 +62,11 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
   // Un concepto vendible sin existencias: envio, instalacion, mano de obra.
   const sinStock = fd.get('sinStock') === 'on'
 
-  if (sku.length < 1) return { ok: false, error: 'El codigo es obligatorio.' }
+  if (sku.length < 1) return { ok: false, error: 'El código es obligatorio.' }
   if (name.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
-  if (price === undefined) return { ok: false, error: 'El precio no es un numero valido.' }
-  if (cost === undefined) return { ok: false, error: 'El costo no es un numero valido.' }
-  if (reorder === undefined) return { ok: false, error: 'El punto de reorden no es valido.' }
+  if (price === undefined) return { ok: false, error: 'El precio no es un número válido.' }
+  if (cost === undefined) return { ok: false, error: 'El costo no es un número válido.' }
+  if (reorder === undefined) return { ok: false, error: 'El punto de reorden no es válido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -102,10 +102,10 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = String(e)
     if (msg.includes('products_tenant_id_sku_key')) {
-      return { ok: false, error: `Ya existe un producto con el codigo "${sku}".` }
+      return { ok: false, error: `Ya existe un producto con el código "${sku}".` }
     }
     if (msg.includes('products_barcode_idx')) {
-      return { ok: false, error: `Ese codigo de barras ya lo usa otro producto.` }
+      return { ok: false, error: `Ese código de barras ya lo usa otro producto.` }
     }
     throw e
   }
@@ -116,7 +116,7 @@ export async function crearProducto(fd: FormData): Promise<ActionResult> {
 
 export async function editarProducto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'products', 'products.edit')
   if (!permiso.ok) return permiso
@@ -131,7 +131,7 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
   const tasaNueva = tasaElegida(fd)
 
   if (!id || name.length < 2) return { ok: false, error: 'Datos incompletos.' }
-  if (reorder === undefined) return { ok: false, error: 'El punto de reorden no es valido.' }
+  if (reorder === undefined) return { ok: false, error: 'El punto de reorden no es válido.' }
 
   // El precio solo se toca con su propio permiso. Si el rol no lo tiene, la
   // columna se deja como esta en vez de rechazar la edicion entera.
@@ -141,7 +141,7 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
     const price = numeroOpcional(String(fd.get('price') ?? ''))
     const cost = numeroOpcional(String(fd.get('cost') ?? ''))
     if (price === undefined || cost === undefined) {
-      return { ok: false, error: 'El precio o el costo no son numeros validos.' }
+      return { ok: false, error: 'El precio o el costo no son números válidos.' }
     }
     precios = { price: price ?? 0, cost }
   }
@@ -209,7 +209,7 @@ export async function editarProducto(fd: FormData): Promise<ActionResult> {
 /** Nunca se borra un producto: se archiva. Puede estar en ventas historicas. */
 export async function alternarProducto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'products', 'products.edit')
   if (!permiso.ok) return permiso
@@ -229,7 +229,7 @@ export async function alternarProducto(fd: FormData): Promise<ActionResult> {
 
 export async function crearCategoria(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'products', 'products.categories.manage')
   if (!permiso.ok) return permiso

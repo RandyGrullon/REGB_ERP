@@ -13,7 +13,7 @@ import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
 
 /**
- * Acciones de Proyectos & Tareas (modulo 71, F10/S67).
+ * Acciones de Proyectos y tareas (modulo 71, F10/S67).
  *
  * `transicionarTarea()` comprueba `puedeAvanzarPorDependencias()`
  * ANTES de intentar el update -la misma regla que ya aplica el
@@ -33,7 +33,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearProyecto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -58,7 +58,7 @@ export async function crearProyecto(fd: FormData): Promise<ActionResult> {
 
 export async function transicionarProyecto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -69,7 +69,7 @@ export async function transicionarProyecto(fd: FormData): Promise<ActionResult> 
     const [p] = await tx<{ status: EstadoProyecto }[]>`
       select status from public.projects where id = ${projectId} and tenant_id = ${ctx.tenantId} for update`
     if (!p) return 'no-existe'
-    if (!transicionValidaProyecto(p.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaProyecto(p.status, siguiente)) return 'Esa transición no está permitida.'
 
     await tx`update public.projects set status = ${siguiente}, updated_at = now() where id = ${projectId} and tenant_id = ${ctx.tenantId}`
     return 'ok'
@@ -85,7 +85,7 @@ export async function transicionarProyecto(fd: FormData): Promise<ActionResult> 
 
 export async function crearTarea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -110,7 +110,7 @@ export async function crearTarea(fd: FormData): Promise<ActionResult> {
 /** Puede fallar de verdad si la tarea tiene dependencias sin terminar -el trigger lo impide, no solo esta accion-. */
 export async function transicionarTarea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -122,7 +122,7 @@ export async function transicionarTarea(fd: FormData): Promise<ActionResult> {
     const [t] = await tx<{ status: EstadoTarea }[]>`
       select status from public.project_tasks where id = ${taskId} and tenant_id = ${ctx.tenantId} for update`
     if (!t) return 'no-existe'
-    if (!transicionValidaTarea(t.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaTarea(t.status, siguiente)) return 'Esa transición no está permitida.'
 
     const dependencias = await tx<{ status: EstadoTarea }[]>`
       select pt.status from public.task_dependencies td
@@ -150,7 +150,7 @@ export async function transicionarTarea(fd: FormData): Promise<ActionResult> {
 
 export async function agregarDependencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -177,7 +177,7 @@ export async function agregarDependencia(fd: FormData): Promise<ActionResult> {
 
 export async function crearHito(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 
@@ -202,7 +202,7 @@ export async function crearHito(fd: FormData): Promise<ActionResult> {
 
 export async function completarHito(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'projects', 'projects.manage')
   if (!permiso.ok) return permiso
 

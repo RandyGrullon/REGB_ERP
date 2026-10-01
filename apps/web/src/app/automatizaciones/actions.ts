@@ -30,7 +30,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearRegla(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'automations', 'automations.manage')
   if (!permiso.ok) return permiso
 
@@ -45,14 +45,14 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre de la regla.' }
   if (!tipoEventoValido(triggerEventType))
-    return { ok: false, error: 'El tipo de evento debe seguir modulo.entidad.accion.' }
-  if (!accionValida(actionType)) return { ok: false, error: 'Elige una accion valida.' }
-  if (!title) return { ok: false, error: 'Falta el titulo de la notificacion.' }
+    return { ok: false, error: 'Elige de la lista cuándo se dispara la regla.' }
+  if (!accionValida(actionType)) return { ok: false, error: 'Elige una acción válida.' }
+  if (!title) return { ok: false, error: 'Falta el título de la notificación.' }
   if ((conditionField && !conditionOperator) || (!conditionField && conditionOperator)) {
-    return { ok: false, error: 'La condicion necesita campo, operador y valor juntos.' }
+    return { ok: false, error: 'La condición necesita campo, operador y valor juntos.' }
   }
   if (conditionField && !conditionValue)
-    return { ok: false, error: 'Falta el valor de la condicion.' }
+    return { ok: false, error: 'Falta el valor de la condición.' }
 
   const actionParams = { title, body }
 
@@ -72,13 +72,13 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
 
 export async function alternarRegla(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'automations', 'automations.manage')
   if (!permiso.ok) return permiso
 
   const ruleId = String(fd.get('ruleId') ?? '')
   const siguiente = String(fd.get('siguiente') ?? '')
-  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado invalido.' }
+  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado inválido.' }
 
   await asUser(
     ctx.userId,
@@ -110,7 +110,7 @@ interface EventoPendiente {
 /** Procesa eventos pendientes contra las reglas activas -sin tocar el despachador real-. */
 export async function procesarEventosPendientes(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'automations', 'automations.manage')
   if (!permiso.ok) return permiso
 

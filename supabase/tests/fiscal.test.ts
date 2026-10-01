@@ -187,7 +187,11 @@ describe('assign_ncf: un numero no se entrega dos veces', () => {
     await sql`
       insert into public.ncf_sequences
         (tenant_id, ncf_type, range_from, range_to, next_number, expires_on)
-      values (${tenantA}, 'B04', 1, 5000, 1, current_date - 1)`
+      values (${tenantA}, 'B04', 1, 5000, 1, public.hoy_fiscal() - 1)`
+    // `hoy_fiscal()` y no `current_date`: assign_ncf decide con la fecha de
+    // RD. Entre las 8 p. m. y medianoche, `current_date` (UTC) ya es mañana y
+    // "ayer en UTC" es HOY en RD: la secuencia seguía vigente y la prueba
+    // fallaba solo a esa hora.
     await expect(
       as(
         userA,

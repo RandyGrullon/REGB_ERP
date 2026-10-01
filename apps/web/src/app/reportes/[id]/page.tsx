@@ -32,6 +32,81 @@ interface ReporteHead {
 const num = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: Number.isInteger(n) ? 0 : 2 })
 
+/**
+ * El gráfico que el reporte dice tener. Antes decía "Gráfico: Barras" y
+ * enseñaba solo la tabla. Barras horizontales o una línea, sobre la
+ * primera columna numérica; sin librería, con los colores del sistema.
+ */
+function Grafico({
+  tipo,
+  filas,
+  etiqueta,
+  valor,
+}: {
+  tipo: string
+  filas: { etiqueta: string; valor: number }[]
+  etiqueta: string
+  valor: string
+}) {
+  const max = Math.max(...filas.map((f) => f.valor), 0)
+  if (max <= 0) return null
+  if (tipo === 'line' && filas.length > 1) {
+    const ancho = 600
+    const alto = 160
+    const puntos = filas
+      .map((f, i) => {
+        const x = (i / (filas.length - 1)) * ancho
+        const y = alto - (f.valor / max) * (alto - 8) - 4
+        return `${x.toFixed(1)},${y.toFixed(1)}`
+      })
+      .join(' ')
+    return (
+      <figure className="space-y-2">
+        <svg
+          viewBox={`0 0 ${ancho} ${alto}`}
+          className="h-40 w-full"
+          role="img"
+          aria-label={`${valor} por ${etiqueta.toLowerCase()}`}
+          preserveAspectRatio="none"
+        >
+          <polyline
+            points={puntos}
+            fill="none"
+            stroke="var(--color-brand)"
+            strokeWidth="2.5"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        <figcaption className="flex justify-between text-xs text-[var(--color-text-muted)]">
+          <span>{filas[0]!.etiqueta}</span>
+          <span>{filas[filas.length - 1]!.etiqueta}</span>
+        </figcaption>
+      </figure>
+    )
+  }
+  return (
+    <ul className="space-y-2" aria-label={`${valor} por ${etiqueta.toLowerCase()}`}>
+      {filas.map((f) => (
+        <li
+          key={f.etiqueta}
+          className="grid grid-cols-[minmax(0,8rem)_1fr_auto] items-center gap-3"
+        >
+          <span className="truncate text-sm text-[var(--color-text-primary)]">{f.etiqueta}</span>
+          <span className="h-3 overflow-hidden rounded-full bg-[var(--color-surface-raised)]">
+            <span
+              className="block h-full rounded-full bg-[var(--color-brand)]"
+              style={{ width: `${Math.max((f.valor / max) * 100, 2)}%` }}
+            />
+          </span>
+          <span className="tabular text-sm font-semibold text-[var(--color-text-primary)]">
+            {num(f.valor)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 /** Detalle de un reporte (modulo 87): ejecuta su fuente fija y muestra el resultado tal cual. */
 export default async function ReporteDetallePage({
   params,
@@ -56,6 +131,10 @@ export default async function ReporteDetallePage({
   if (!head || !resultado) notFound()
 
   const qs = ctx.demoQs
+  const colEtiqueta = resultado.columnas.find((c) => !c.numeric)
+  const colValor = resultado.columnas.find((c) => c.numeric)
+  const conGrafico =
+    head.chart_type !== 'table' && colEtiqueta && colValor && resultado.filas.length > 0
 
   return (
     <Shell {...shell} activePath="/reportes">
@@ -68,8 +147,34 @@ export default async function ReporteDetallePage({
 
         <p className="text-xs text-[var(--color-text-muted)]">
           Fuente: {FUENTE_LABEL[head.source_key as keyof typeof FUENTE_LABEL] ?? head.source_key} ·
-          Grafico: {TIPO_GRAFICO[head.chart_type] ?? head.chart_type}
+          Gráfico: {TIPO_GRAFICO[head.chart_type] ?? head.chart_type} · Datos al{' '}
+          {new Date().toLocaleString('es-DO', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'America/Santo_Domingo',
+          })}
         </p>
+
+        {conGrafico && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Gráfico</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Grafico
+                tipo={head.chart_type}
+                etiqueta={colEtiqueta.label}
+                valor={colValor.label}
+                filas={resultado.filas.map((f) => ({
+                  etiqueta: String(f[colEtiqueta.key]),
+                  valor: Number(f[colValor.key]),
+                }))}
+              />
+            </CardBody>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
@@ -79,8 +184,8 @@ export default async function ReporteDetallePage({
             {resultado.filas.length === 0 ? (
               <EmptyState
                 icon="bar_chart"
-                title="Sin datos todavia"
-                description="Esta fuente no tiene filas que mostrar por ahora."
+                title="Sin datos todavía"
+                description="Esta fuente no tiene nada que mostrar por ahora. Cuando haya movimiento en el módulo del que sale, aparece aquí solo."
               />
             ) : (
               <Table>

@@ -11,7 +11,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'performance',
   name: 'Desempeño',
-  description: 'OKR y KPI, evaluacion 360, reuniones 1:1 y planes de mejora.',
+  description: 'OKR y KPI, evaluación 360, reuniones 1:1 y planes de mejora.',
   icon: 'trending_up',
   category: 'advanced',
   version: '0.1.0',
@@ -35,7 +35,7 @@ export default defineModule({
     'performance.manage-improvement-plans',
   ],
 
-  routes: [{ path: '/desempeno', label: 'Desempeno', perm: 'performance.view' }],
+  routes: [{ path: '/desempeno', label: 'Desempeño', perm: 'performance.view' }],
 
   dashboardWidgets: ['objectives-progress', 'improvement-plans-active'],
   reports: ['okr-progress', 'review-summary'],

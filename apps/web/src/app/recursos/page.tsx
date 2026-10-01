@@ -21,9 +21,10 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { asignarForm, fijarCapacidadForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaCorta, horasCortas } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Planificacion de recursos · REGB ERP' }
+export const metadata = { title: 'Planificación de recursos · REGB ERP' }
 
 interface FilaSemana {
   user_id: string
@@ -56,10 +57,10 @@ interface TareaOption {
 const inputClase =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
 const pct = (n: number | null) => (n === null ? '—' : `${(n * 100).toFixed(0)}%`)
 
-/** Planificacion de recursos (modulo 75): la sobrecarga se deriva, nunca se guarda como bandera. */
+/** Planificación de recursos (modulo 75): la sobrecarga se deriva, nunca se guarda como bandera. */
 export default async function RecursosPage({
   searchParams,
 }: {
@@ -122,13 +123,21 @@ export default async function RecursosPage({
       <div className="space-y-5">
         <PageHeader
           icon="calendar_month"
-          title="Planificacion de recursos"
-          description="Asignar exactamente la capacidad NO es sobrecarga -es una semana llena, que es distinto de una imposible-."
+          title="Planificación de recursos"
+          description="Cuántas horas tiene cada persona por semana y cuántas ya le asignaste en tareas de proyectos. Una semana llena está bien; pasarse de su capacidad es sobrecarga."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Semanas planificadas" value={String(semanas.length)} />
-          <StatCard label="Sobrecargados" value={String(sobrecargados)} />
+          <StatCard
+            label="Semanas con sobrecarga"
+            value={String(sobrecargados)}
+            hint={
+              sobrecargados > 0
+                ? 'alguien tiene más horas que su capacidad'
+                : 'nadie pasa de su capacidad'
+            }
+          />
         </section>
 
         <Card>
@@ -139,8 +148,8 @@ export default async function RecursosPage({
             {semanas.length === 0 ? (
               <EmptyState
                 icon="calendar_month"
-                title="Todavia no hay capacidad fijada"
-                description="Fija la primera abajo."
+                title="Todavía no hay capacidad fijada"
+                description="Primero dile al sistema cuántas horas tiene cada persona esa semana (40 es lo normal). Después, asígnale tareas y verás si se pasa."
               />
             ) : (
               <Table>
@@ -151,7 +160,7 @@ export default async function RecursosPage({
                     <TH numeric>Capacidad</TH>
                     <TH numeric>Asignadas</TH>
                     <TH numeric>Disponible</TH>
-                    <TH>Utilizacion</TH>
+                    <TH>Utilización</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -164,21 +173,29 @@ export default async function RecursosPage({
                         <TD className="text-[var(--color-text-primary)]">
                           {s.display_name ?? 'Usuario'}
                         </TD>
-                        <TD className="text-[var(--color-text-muted)]">
-                          {new Date(s.week_start).toLocaleDateString('es-DO')}
+                        <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                          Del {fechaCorta(s.week_start, true)}
                         </TD>
                         <TD numeric>
-                          <span className="tabular">{cap}</span>
+                          <span className="tabular">{horasCortas(cap)} h</span>
                         </TD>
                         <TD numeric>
-                          <span className="tabular">{asig}</span>
+                          <span className="tabular">{horasCortas(asig)} h</span>
                         </TD>
                         <TD numeric>
-                          <span className="tabular">{capacidadDisponible(cap, asig)}</span>
+                          <span
+                            className={`tabular ${sobre ? 'font-semibold text-[var(--color-semantic-text-danger)]' : ''}`}
+                          >
+                            {sobre
+                              ? `${horasCortas(asig - cap)} h de más`
+                              : `${horasCortas(capacidadDisponible(cap, asig))} h`}
+                          </span>
                         </TD>
                         <TD>
                           <Badge tone={sobre ? 'danger' : 'success'}>
-                            {sobre ? 'Sobrecargado' : pct(porcentajeUtilizacion(asig, cap))}
+                            {sobre
+                              ? `Sobrecargado (${pct(porcentajeUtilizacion(asig, cap))})`
+                              : pct(porcentajeUtilizacion(asig, cap))}
                           </Badge>
                         </TD>
                       </TR>
@@ -202,7 +219,7 @@ export default async function RecursosPage({
                   </select>
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Semana (cualquier dia)
+                  Semana (cualquier día)
                   <input type="date" name="weekStart" required className={inputClase} />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -232,7 +249,7 @@ export default async function RecursosPage({
             <ul className="divide-y divide-[var(--color-border)]">
               {asignaciones.length === 0 && (
                 <li className="py-2 text-xs text-[var(--color-text-muted)]">
-                  Todavía no hay asignaciones.
+                  Todavía no hay asignaciones. Elige una tarea, una persona y la semana abajo.
                 </li>
               )}
               {asignaciones.map((a) => (
@@ -242,12 +259,11 @@ export default async function RecursosPage({
                       {a.display_name ?? 'Usuario'} · {a.task_name}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {a.project_name} · semana del{' '}
-                      {new Date(a.week_start).toLocaleDateString('es-DO')}
+                      {a.project_name} · semana del {fechaCorta(a.week_start, true)}
                     </p>
                   </div>
-                  <span className="tabular text-sm text-[var(--color-text-primary)]">
-                    {a.hours} h
+                  <span className="tabular whitespace-nowrap text-sm text-[var(--color-text-primary)]">
+                    {horasCortas(Number(a.hours))} h
                   </span>
                 </li>
               ))}
@@ -277,7 +293,7 @@ export default async function RecursosPage({
                   </select>
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Semana (cualquier dia)
+                  Semana (cualquier día)
                   <input type="date" name="weekStart" required className={inputClase} />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">

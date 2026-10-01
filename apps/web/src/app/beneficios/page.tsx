@@ -24,7 +24,7 @@ import { ESTADO_PRESTAMO, TIPO_PRESTAMO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Préstamos & Adelantos · REGB ERP' }
+export const metadata = { title: 'Préstamos y adelantos · REGB ERP' }
 
 interface EmpleadoOption {
   id: string
@@ -52,7 +52,7 @@ const badgeTono = (estado: string): 'success' | 'warning' | 'danger' | 'neutral'
   return 'neutral'
 }
 
-/** Prestamos & Adelantos (modulo 69): cuota calculada, saldo siempre derivado. */
+/** Préstamos y adelantos (modulo 69): cuota calculada, saldo siempre derivado. */
 export default async function BeneficiosPage({
   searchParams,
 }: {
@@ -123,7 +123,7 @@ export default async function BeneficiosPage({
       <div className="space-y-5">
         <PageHeader
           icon="volunteer_activism"
-          title="Prestamos & Adelantos"
+          title="Préstamos y adelantos"
           description="La cuota se descuenta sola en cada nómina que se procesa. Si el empleado paga por su cuenta, regístralo aquí: el saldo sale siempre de los pagos."
           actions={
             <a
@@ -131,21 +131,21 @@ export default async function BeneficiosPage({
               className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="health_and_safety" size={18} />
-              Planes & Inscripciones
+              Planes e inscripciones
             </a>
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Prestamos activos" value={String(activos.length)} />
+          <StatCard label="Préstamos activos" value={String(activos.length)} />
           <StatCard label="Saldo pendiente total" value={`RD$ ${money(totalPendiente)}`} />
         </section>
 
         {prestamosConSaldo.length === 0 ? (
           <EmptyState
             icon="volunteer_activism"
-            title="Todavia no hay ningun prestamo"
-            description="Registra el primero abajo."
+            title="Todavía no hay ningún préstamo"
+            description="Un préstamo o un adelanto al empleado se cobra solo, en cuotas, en cada nómina que se procesa. Registra el primero abajo."
           />
         ) : (
           <Table>
@@ -236,7 +236,7 @@ export default async function BeneficiosPage({
         {puedeGestionar && empleados.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Nuevo prestamo o adelanto</CardTitle>
+              <CardTitle>Nuevo préstamo o adelanto</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearPrestamoForm} className="flex flex-wrap items-end gap-3">

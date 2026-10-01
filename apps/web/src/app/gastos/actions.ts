@@ -38,7 +38,7 @@ const num = (raw: string): number | null => {
 /** Reporta un gasto -queda en `submitted` hasta que alguien lo resuelva-. */
 export async function reportarGasto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'expenses', 'expenses.submit')
   if (!permiso.ok) return permiso
 
@@ -55,7 +55,7 @@ export async function reportarGasto(fd: FormData): Promise<ActionResult> {
   const receiptNote = String(fd.get('receiptNote') ?? '').trim() || null
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
-  if (!CATEGORIAS.includes(category)) return { ok: false, error: 'Elige una categoria valida.' }
+  if (!CATEGORIAS.includes(category)) return { ok: false, error: 'Elige una categoría válida.' }
   if (!expenseDate) return { ok: false, error: 'Elige la fecha del gasto.' }
   // La misma regla que reportar_gasto() en la app movil (0132).
   if (expenseDate > fechaDeHoyEnRD()) {
@@ -88,7 +88,7 @@ export async function reportarGasto(fd: FormData): Promise<ActionResult> {
 /** Aprueba o rechaza un gasto reportado. */
 export async function resolverGasto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'expenses', 'expenses.approve')
   if (!permiso.ok) return permiso
 
@@ -134,7 +134,7 @@ export async function resolverGasto(fd: FormData): Promise<ActionResult> {
  */
 export async function reembolsarGasto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'expenses', 'expenses.reimburse')
   if (!permiso.ok) return permiso
 

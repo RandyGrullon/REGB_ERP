@@ -170,16 +170,16 @@ afterAll(async () => {
 describe('Pantallas de venta a credito', () => {
   it('el pedido bloqueado dice por que y ofrece la excepcion al dueno, no el boton de confirmar', async () => {
     const html = await pintar(import('../pedidos/[id]/page'), { id: pedidoBloqueado })
-    expect(html).toContain('Credito bloqueado')
-    expect(html).toContain('96 dias')
-    expect(html).toContain('Confirmar con excepcion')
+    expect(html).toContain('Crédito bloqueado')
+    expect(html).toContain('96 días')
+    expect(html).toContain('Confirmar con excepción')
     expect(html).not.toContain('Confirmar y apartar')
   })
 
   it('al vendedor no le ofrece la excepcion: le dice quien puede', async () => {
     const html = await pintar(import('../pedidos/[id]/page'), { id: pedidoBloqueado }, 'Vendedor')
-    expect(html).toContain('Credito bloqueado')
-    expect(html).not.toContain('Confirmar con excepcion')
+    expect(html).toContain('Crédito bloqueado')
+    expect(html).not.toContain('Confirmar con excepción')
     expect(html).toContain('quien autoriza crédito')
     // Cliente misterioso: el nombre interno del permiso no es para el vendedor.
     expect(html).not.toContain('ar.credit.override')
@@ -201,7 +201,7 @@ describe('Pantallas de venta a credito', () => {
 
   it('el contador abre la ficha y fija el limite, sin el formulario de datos', async () => {
     const html = await pintar(import('../pedidos/clientes/[id]/page'), { id: martillo }, 'Contador')
-    expect(html).toContain('Guardar limite')
+    expect(html).toContain('Guardar límite')
     expect(html).toContain('name="creditLimit"')
     expect(html).not.toContain('Guardar cambios')
     expect(html).not.toContain('name="taxId"')
@@ -220,8 +220,8 @@ describe('Pantallas de venta a credito', () => {
 
   it('la ficha del cliente: RNC invalido, limite, saldo y el formulario para corregirlo', async () => {
     const html = await pintar(import('../pedidos/clientes/[id]/page'), { id: martillo })
-    expect(html).toContain('RNC invalido')
-    expect(html).toContain('Limite de credito')
+    expect(html).toContain('RNC inválido')
+    expect(html).toContain('Límite de crédito')
     expect(html).toContain('FAC-DEMO-0003')
     expect(html).toContain('Guardar cambios')
   })
@@ -237,7 +237,7 @@ describe('Pantallas de venta a credito', () => {
     expect(html).toContain('Pedidos entregados sin facturar')
     expect(html).toContain('Consumo (B02)')
     expect(html).toContain('131-22334-5')
-    expect(html).toContain('Facturar con excepcion')
+    expect(html).toContain('Facturar con excepción')
   })
 
   it('la factura: lineas, cobro reversado tachado con su motivo, notas y enlace para imprimir', async () => {
@@ -245,7 +245,7 @@ describe('Pantallas de venta a credito', () => {
     expect(html).toContain('Producto TV-65')
     expect(html).toContain('Se registro dos veces')
     expect(html).toContain('line-through')
-    expect(html).toContain('Notas de credito')
+    expect(html).toContain('Notas de crédito')
     expect(html).toContain(`/cobrar/${facturaId}/imprimir`)
   })
 
@@ -253,14 +253,14 @@ describe('Pantallas de venta a credito', () => {
     const html = await pintar(import('./[id]/imprimir/page'), { id: facturaId })
     expect(html).toMatch(/NCF: B02\d{8}/)
     expect(html).toContain('Factura de consumo')
-    expect(html).toContain('Valida hasta')
+    expect(html).toContain('Válida hasta')
     expect(html).toContain('Producto TV-65')
     expect(html).toContain('Crédito a 30 días')
   })
 
   it('la cartera muestra la politica y deja cambiarla al dueno', async () => {
     const html = await pintar(import('./cartera/page'))
-    expect(html).toContain('Politica de credito')
+    expect(html).toContain('Política de crédito')
     expect(html).toContain('más de 30 días')
     expect(html).toContain('name="overdueDays"')
   })

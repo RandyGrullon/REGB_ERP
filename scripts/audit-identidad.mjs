@@ -34,6 +34,7 @@ const ROOT = process.cwd()
 const RAICES = ['apps', 'packages', join('supabase', 'functions')]
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.turbo', 'dist', '.next', 'out'])
+const esCompilacion = (d) => d.startsWith('.next-') // .next-prod y demás compilaciones aparte
 const SCAN_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/
 /** Las pruebas abren conexiones propias, fuera del pooler. */
 const ES_PRUEBA = /\.test\.(ts|tsx|js|mjs)$|[\\/]test[\\/]/
@@ -66,7 +67,8 @@ async function* recorrer(dir) {
     return
   }
   for (const e of entradas) {
-    if (SKIP_DIRS.has(e.name)) continue
+    // `.next-prod` y demás compilaciones aparte (REGB_NEXT_DIST_DIR): código generado.
+    if (SKIP_DIRS.has(e.name) || e.name.startsWith('.next-')) continue
     const ruta = join(dir, e.name)
     if (e.isDirectory()) yield* recorrer(ruta)
     else if (SCAN_EXT.test(e.name)) yield ruta

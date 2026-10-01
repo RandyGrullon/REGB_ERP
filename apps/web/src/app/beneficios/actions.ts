@@ -40,7 +40,7 @@ const num = (raw: string): number | null => {
 /** Crea un prestamo o adelanto -la cuota se calcula aqui, no se pide al usuario-. */
 export async function crearPrestamo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'benefits', 'benefits.manage-loans')
   if (!permiso.ok) return permiso
 
@@ -57,7 +57,7 @@ export async function crearPrestamo(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim() || null
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
-  if (!TIPOS_PRESTAMO.includes(loanType)) return { ok: false, error: 'Elige un tipo valido.' }
+  if (!TIPOS_PRESTAMO.includes(loanType)) return { ok: false, error: 'Elige un tipo válido.' }
   if (principal === null || principal <= 0)
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (!Number.isInteger(installments) || installments <= 0) {
@@ -95,7 +95,7 @@ export async function crearPrestamo(fd: FormData): Promise<ActionResult> {
 /** Registra un pago contra un prestamo -si el saldo llega a cero, el prestamo queda saldado-. */
 export async function registrarPago(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'benefits', 'benefits.record-payment')
   if (!permiso.ok) return permiso
 
@@ -104,11 +104,11 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
   const source = String(fd.get('source') ?? '')
   const payrollPeriodId = String(fd.get('payrollPeriodId') ?? '') || null
 
-  if (!loanId) return { ok: false, error: 'Falta el prestamo.' }
+  if (!loanId) return { ok: false, error: 'Falta el préstamo.' }
   if (amount === null || amount <= 0)
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (!FUENTES_PAGO.includes(source))
-    return { ok: false, error: 'Elige una fuente de pago valida.' }
+    return { ok: false, error: 'Elige una fuente de pago válida.' }
   // "Por nomina" sin nomina bajaba el saldo sin que nadie pagara (0138).
   const porNomina = source === 'payroll' // registry:allow — forma de pago de la cuota, no el modulo
   if (porNomina && !payrollPeriodId) {
@@ -130,8 +130,8 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
         from public.benefit_loans
         where id = ${loanId} and tenant_id = ${ctx.tenantId}
         for update`
-      if (!loan) throw new Error('Ese prestamo no existe.')
-      if (loan.status !== 'active') throw new Error('Ese prestamo ya no esta activo.')
+      if (!loan) throw new Error('Ese préstamo no existe.')
+      if (loan.status !== 'active') throw new Error('Ese préstamo ya no está activo.')
 
       const total = totalAPagarPrestamo(
         Number(loan.principal),
@@ -186,7 +186,7 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
 /** Inscribe a un empleado en un plan de beneficios. */
 export async function crearInscripcion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'benefits', 'benefits.manage-enrollments')
   if (!permiso.ok) return permiso
 
@@ -224,19 +224,19 @@ export async function crearInscripcion(fd: FormData): Promise<ActionResult> {
 /** Cancela una inscripcion activa. */
 export async function cancelarInscripcion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'benefits', 'benefits.manage-enrollments')
   if (!permiso.ok) return permiso
 
   const recordId = String(fd.get('recordId') ?? '')
-  if (!recordId) return { ok: false, error: 'Falta la inscripcion.' }
+  if (!recordId) return { ok: false, error: 'Falta la inscripción.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [row] = await tx<{ status: string }[]>`
         select status from public.benefit_enrollments where id = ${recordId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa inscripcion no existe.')
-      if (row.status === 'cancelled') throw new Error('Esa inscripcion ya estaba cancelada.')
+      if (!row) throw new Error('Esa inscripción no existe.')
+      if (row.status === 'cancelled') throw new Error('Esa inscripción ya estaba cancelada.')
 
       await tx`
         update public.benefit_enrollments set status = 'cancelled', updated_at = now()

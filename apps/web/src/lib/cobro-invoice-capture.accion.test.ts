@@ -70,7 +70,7 @@ describe('Marketplace', () => {
     const r = await solicitarActivacion(
       c.fd({ modulos: JSON.stringify(['invoice-capture']), mensual: '45', instalacion: '400' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Ninguno de esos modulos esta disponible todavia.' })
+    expect(r).toEqual({ ok: false, error: 'Ninguno de esos módulos está disponible todavía.' })
 
     const [n] = await db()<{ n: string }[]>`
       select count(*)::text as n from regb.activation_requests where tenant_id = ${c.tenantId}`

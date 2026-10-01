@@ -36,7 +36,7 @@ export default defineModule({
     { path: '/products', label: 'Catálogo', perm: 'products.view' },
     {
       path: '/products/categories',
-      label: 'Categorias',
+      label: 'Categorías',
       perm: 'products.categories.manage',
     },
     { path: '/products/:id', label: 'Detalle', perm: 'products.view', hidden: true },

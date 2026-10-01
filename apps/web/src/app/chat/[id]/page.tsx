@@ -32,7 +32,7 @@ interface UsuarioOption {
 }
 
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 
 /** Canal de chat (modulo 92): sus mensajes tal cual se enviaron, con hilos reales. */
 export default async function CanalChatPage({
@@ -87,21 +87,31 @@ export default async function CanalChatPage({
     </>
   )
 
+  // Un <div>, no un <li>: la burbuja va DENTRO del <li> del hilo, y un
+  // <li> dentro de otro <li> el navegador lo cierra solo. El DOM dejaba de
+  // coincidir con lo que pintó el servidor y React fallaba al hidratar
+  // (error #418) en cada canal con mensajes.
   const burbuja = (m: Mensaje) => (
-    <li key={m.id} className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5">
-      <p className="text-xs font-medium text-[var(--color-text-primary)]">
+    <div className="rounded-[var(--radius-md)] border border-[var(--color-border)] p-2.5">
+      <p className="text-xs font-semibold text-[var(--color-text-primary)]">
         {m.author_name}
-        <span className="ml-2 font-normal text-[var(--color-text-muted)]">
-          {new Date(m.created_at).toLocaleString('es-DO')}
-        </span>
+        <time dateTime={m.created_at} className="ml-2 font-normal text-[var(--color-text-muted)]">
+          {new Date(m.created_at).toLocaleString('es-DO', {
+            day: 'numeric',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'America/Santo_Domingo',
+          })}
+        </time>
       </p>
-      <p className="mt-1 text-xs text-[var(--color-text-muted)]">{m.body}</p>
+      <p className="mt-1 whitespace-pre-line text-sm text-[var(--color-text-primary)]">{m.body}</p>
       {m.mentioned_names.length > 0 && (
         <p className="mt-1 text-xs text-[var(--color-text-link)]">
           {m.mentioned_names.map((n) => formatearMencion(n)).join(' ')}
         </p>
       )}
-    </li>
+    </div>
   )
 
   return (
@@ -128,7 +138,9 @@ export default async function CanalChatPage({
                   {burbuja(m)}
                   {respuestasDe(m.id).length > 0 && (
                     <ul className="ml-4 space-y-2 border-l border-[var(--color-border)] pl-3">
-                      {respuestasDe(m.id).map((r) => burbuja(r))}
+                      {respuestasDe(m.id).map((r) => (
+                        <li key={r.id}>{burbuja(r)}</li>
+                      ))}
                     </ul>
                   )}
                   {puedeGestionar && (
@@ -141,9 +153,11 @@ export default async function CanalChatPage({
                         <input
                           name="body"
                           required
-                          className="h-9 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                          aria-label={`Respuesta a ${m.author_name}`}
+                          placeholder="Escribe tu respuesta…"
+                          className="h-9 min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                         />
-                        <BotonEnvio className={botonClase}>
+                        <BotonEnvio aria-label="Enviar respuesta" className={botonClase}>
                           <Icon name="send" size={14} />
                         </BotonEnvio>
                       </form>
@@ -164,7 +178,8 @@ export default async function CanalChatPage({
                   <input
                     name="body"
                     required
-                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                    placeholder="Escribe un mensaje para el canal…"
+                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
                 <fieldset className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">

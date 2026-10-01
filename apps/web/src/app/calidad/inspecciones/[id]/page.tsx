@@ -31,6 +31,7 @@ interface InspeccionHead {
   result: string
   performed_at: string
   notes: string | null
+  inspector: string | null
 }
 
 interface ResultadoRow {
@@ -72,10 +73,12 @@ export default async function InspeccionDetallePage({
     async (tx) => {
       const [h] = await tx<InspeccionHead[]>`
       select insp.id, ip.name as plan_name, pr.name as product_name, insp.result,
-             insp.performed_at::text, insp.notes
+             insp.performed_at::text, insp.notes, up.display_name as inspector
       from public.inspections insp
       join public.inspection_plans ip on ip.id = insp.plan_id
       left join public.products pr on pr.id = insp.product_id
+      left join public.user_profiles up
+        on up.tenant_id = insp.tenant_id and up.user_id = insp.performed_by
       where insp.id = ${id} and insp.tenant_id = ${ctx.tenantId}`
       if (!h) return { head: null, resultados: [], noConformidades: [] }
 
@@ -104,7 +107,14 @@ export default async function InspeccionDetallePage({
         <PageHeader
           icon="fact_check"
           title={head.plan_name}
-          crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'Inspeccion' }]}
+          description={[
+            head.product_name ?? 'Sin producto específico',
+            `inspeccionada el ${fecha(head.performed_at)}`,
+            head.inspector ? `por ${head.inspector}` : null,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'Inspección' }]}
           actions={
             <Badge tone={badgeResultado(head.result)}>
               {RESULTADO_INSPECCION[head.result] ?? head.result}
@@ -113,8 +123,16 @@ export default async function InspeccionDetallePage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Producto" value={head.product_name ?? '—'} />
-          <StatCard label="Fecha" value={fecha(head.performed_at)} />
+          <StatCard label="Criterios revisados" value={String(resultados.length)} />
+          <StatCard
+            label="Fallaron"
+            value={String(resultados.filter((r) => !r.passed).length)}
+            hint={
+              resultados.some((r) => !r.passed && r.is_critical)
+                ? 'al menos uno crítico'
+                : 'ninguno crítico'
+            }
+          />
         </section>
 
         {head.notes && (
@@ -137,7 +155,7 @@ export default async function InspeccionDetallePage({
                 <TD className="text-[var(--color-text-primary)]">{r.criterion}</TD>
                 <TD>
                   <Badge tone={r.is_critical ? 'danger' : 'neutral'}>
-                    {r.is_critical ? 'Critico' : 'Menor'}
+                    {r.is_critical ? 'Crítico' : 'Menor'}
                   </Badge>
                 </TD>
                 <TD>
@@ -153,7 +171,7 @@ export default async function InspeccionDetallePage({
         {noConformidades.length > 0 && (
           <div className="space-y-1">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-              No conformidades abiertas de aquí
+              No conformidades que salieron de esta inspección
             </h2>
             {noConformidades.map((nc) => (
               <p key={nc.id} className="text-xs">
@@ -179,7 +197,7 @@ export default async function InspeccionDetallePage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="inspectionId" value={head.id} />
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
@@ -195,7 +213,7 @@ export default async function InspeccionDetallePage({
                   >
                     <option value="minor">Menor</option>
                     <option value="major">Mayor</option>
-                    <option value="critical">Critica</option>
+                    <option value="critical">Crítica</option>
                   </select>
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">

@@ -1,0 +1,32 @@
+<!--
+  Plantilla "Magic link" de Supabase Auth (REGB ERP).
+
+  En local la carga supabase/config.toml ([auth.email.template.magic_link]).
+  En el proyecto real se pega en
+  Authentication → Emails → Templates → Magic link (docs/SUPABASE.md).
+
+  `ConfirmationURL` pasa por Supabase y vuelve a /auth/callback?code=...,
+  donde el servidor canjea el codigo por la sesion. Hay que abrirlo en el
+  mismo navegador donde se pidio: ahi quedo la otra mitad del codigo.
+-->
+<h2>Tu enlace para entrar a REGB ERP</h2>
+<p>Toca el botón para entrar. Sirve una sola vez y caduca en una hora.</p>
+<p>
+  <a
+    href="{{ .ConfirmationURL }}"
+    style="
+      display: inline-block;
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: #0071e3;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+    "
+    >Entrar a REGB ERP</a
+  >
+</p>
+<p>
+  Ábrelo en el mismo teléfono o computadora donde lo pediste. Si no lo pediste tú, ignora este
+  correo: nadie entra sin tocar el enlace.
+</p>

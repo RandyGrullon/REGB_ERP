@@ -37,6 +37,12 @@ export async function filasBalanza(
    * cierra un mes: antes solo existia la de hoy.
    */
   hasta?: string | null,
+  /**
+   * Solo los asientos de esta empresa del cliente. Un asiento sin empresa
+   * es de la principal, igual que en la consolidación (0117). Sin empresa,
+   * todo el cliente junto.
+   */
+  empresa?: string | null,
 ): Promise<FilaBalanza[]> {
   const filas = await tx<
     {
@@ -58,6 +64,11 @@ export async function filasBalanza(
     join public.journal_entries e on e.id = l.entry_id and e.status = 'posted'
     where a.tenant_id = ${tenantId}
       and (${hasta ?? null}::date is null or e.entry_date <= ${hasta ?? null}::date)
+      and (${empresa ?? null}::uuid is null
+           or coalesce(e.company_id,
+                       (select c.id from public.companies c
+                         where c.tenant_id = a.tenant_id and c.is_default and c.deleted_at is null
+                         limit 1)) = ${empresa ?? null}::uuid)
     group by a.id, a.code, a.name, a.type, a.is_active
     order by a.code`
 
@@ -70,4 +81,25 @@ export async function filasBalanza(
     totalDebit: Number(f.total_debit),
     totalCredit: Number(f.total_credit),
   }))
+}
+
+export interface EmpresaContable {
+  id: string
+  nombre: string
+  principal: boolean
+}
+
+/**
+ * Las empresas del cliente, la principal primero. Con una sola, las
+ * pantallas de contabilidad no enseñan selector: todo es de ella.
+ */
+export async function empresasContables(
+  tx: postgres.TransactionSql,
+  tenantId: string,
+): Promise<EmpresaContable[]> {
+  return tx<EmpresaContable[]>`
+    select id, coalesce(trade_name, legal_name) as nombre, is_default as principal
+    from public.companies
+    where tenant_id = ${tenantId} and deleted_at is null
+    order by is_default desc, coalesce(trade_name, legal_name)`
 }

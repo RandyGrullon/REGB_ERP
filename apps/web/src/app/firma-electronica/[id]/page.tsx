@@ -29,6 +29,7 @@ export const dynamic = 'force-dynamic'
 interface SolicitudHead {
   id: string
   document_type: string
+  document_id: string
   document_label: string
   signer_name: string
   signer_email: string
@@ -47,11 +48,15 @@ interface EventoRow {
 }
 
 const fecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+  new Date(iso).toLocaleString('es-DO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Santo_Domingo',
+  })
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
@@ -83,7 +88,7 @@ export default async function SolicitudDetallePage({
 
   const { head, eventos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<SolicitudHead[]>`
-      select id, document_type, document_label, signer_name, signer_email, status,
+      select id, document_type, document_id, document_label, signer_name, signer_email, status,
              declined_reason, ip_address, signed_hash, signed_at::text
       from public.signature_requests
       where id = ${id} and tenant_id = ${ctx.tenantId}`
@@ -117,7 +122,7 @@ export default async function SolicitudDetallePage({
           icon="draw"
           title={head.document_label}
           crumbs={[
-            { label: 'Firma electronica', href: `/firma-electronica${qs}` },
+            { label: 'Firma electrónica', href: `/firma-electronica${qs}` },
             { label: 'Detalle' },
           ]}
           actions={
@@ -127,14 +132,28 @@ export default async function SolicitudDetallePage({
           }
         />
 
-        <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* El correo va como pista del firmante: en su propia tarjeta, uno
+            largo se salía del recuadro. */}
+        <section
+          aria-label="Resumen"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
+        >
           <StatCard
             label="Tipo"
             value={TIPO_DOCUMENTO_FIRMA[head.document_type] ?? head.document_type}
           />
-          <StatCard label="Firmante" value={head.signer_name} />
-          <StatCard label="Correo" value={head.signer_email} />
+          <StatCard label="Firmante" value={head.signer_name} hint={head.signer_email} />
         </section>
+
+        {head.document_type === 'quote' && (
+          <a
+            href={`/cotizaciones-venta/${head.document_id}${qs}`}
+            className="inline-flex items-center gap-1 text-sm text-[var(--color-text-link)] hover:underline"
+          >
+            <Icon name="description" size={16} />
+            Ver la cotización firmada
+          </a>
+        )}
 
         {head.declined_reason && (
           <p className="text-xs text-[var(--color-semantic-text-danger)]">
@@ -156,8 +175,8 @@ export default async function SolicitudDetallePage({
                 Huella del documento firmado: <Mono>{head.signed_hash}</Mono>
               </p>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Esto es trazabilidad real -quien, cuando, desde donde-, no una firma certificada con
-                PKI.
+                Queda constancia de quién firmó, cuándo y desde dónde. No es una firma digital
+                certificada.
               </p>
             </CardBody>
           </Card>

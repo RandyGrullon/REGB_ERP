@@ -5,9 +5,188 @@
 > entre los agentes especializados del proyecto (`.claude/agents/`) y lo
 > integra con la puerta `gate:f0` en verde.
 >
+> - [Ronda 4 — 30 de septiembre de 2026](#ronda-4--30-de-septiembre-de-2026): listo para Supabase (probado con inicio de sesión real) y las 180 pantallas revisadas una por una; logo, carga animada y cero emojis.
 > - [Ronda 3 — 23 y 24 de septiembre de 2026](#ronda-3--23-y-24-de-septiembre-de-2026): el cliente misterioso — la app usada de punta a punta por cada rol, en el navegador, y lo que un cliente habría notado.
 > - [Ronda 2 — 23 de septiembre de 2026](#ronda-2--23-de-septiembre-de-2026): lo que quedó pendiente de la ronda 1, lo que salió de usar la app como cliente y de analizar el flujo de punta a punta.
 > - [Ronda 1 — 22 de septiembre de 2026](#ronda-1--22-de-septiembre-de-2026)
+
+---
+
+## Ronda 4 — 30 de septiembre de 2026
+
+### En una línea
+
+**El repo quedó listo para conectarse a Supabase —probado con inicio de
+sesión real contra Supabase en local— y se revisaron las 180 pantallas, una
+por una, con fotos en oscuro, claro y 375 px.** De paso apareció lo más
+grave de todas las rondas: 18 funciones de la base devolvían o escribían
+datos de **otro cliente** por la API de Supabase, incluso sin sesión. Quedó
+cerrado antes de conectar el primer proyecto real.
+
+### Lo que pidió el dueño del producto
+
+1. Conectar el ERP a Supabase y decir exactamente qué hace falta y de dónde sale.
+2. Probar cada pantalla: que no falle nada, que esté bien estilada, que tenga
+   toda la información y que nada salga vacío o sin sentido.
+3. Cero emojis: íconos.
+4. Una barra de carga y, al abrir o recargar, la animación de un logo nuevo.
+
+### Cómo se dividió
+
+| Agente | Trabajo | Migraciones |
+|---|---|---|
+| `regb-db` + `regb-security` + `regb-web` | Supabase: migraciones, inicio de sesión, invitaciones, aislamiento con tokens reales, guía | 0143–0146 |
+| `regb-web` + `regb-design` + `regb-module-builder` | Ventas y clientes (44 pantallas) | — |
+| `regb-web` + `regb-design` + `regb-module-builder` | Inventario, compras y operación (50 pantallas) | 0155 |
+| `regb-web` + `regb-design` + `regb-billing` | Finanzas (30 pantallas) | 0160–0161 |
+| `regb-web` + `regb-design` + `regb-module-builder` | Personas y proyectos (26 pantallas) | — |
+| `regb-web` + `regb-design` + `regb-security` | Plataforma y REGB Control (28 pantallas) y lo compartido | 0170–0173 |
+| `regb-design` + `regb-web` | Logo, barra de carga, animación al abrir y cero emojis | 0175 |
+
+La 0147 es del líder (el Vendedor ve sus comisiones y oportunidades). Cada
+área sembró su propia demo en `supabase/seed/demo-<área>.sql`, que
+`seed.mjs` aplica después de `demo.sql`: así nadie chocó en el mismo archivo.
+
+### Supabase
+
+- **Crítico — 0145.** 18 funciones `SECURITY DEFINER` de `public`
+  (`invoice_balance`, `bank_account_balance`, `pos_expected_cash`,
+  `mark_overdue_invoices`…) no comprobaban de qué cliente era el id, y en
+  Supabase cada una es `/rest/v1/rpc/…`: con el id de otro cliente
+  devolvían sus saldos, incluso sin sesión, y `mark_overdue_*` **escribía**
+  en sus facturas. Ahora pasan por `rls.puede_operar_en(tenant)`.
+- **0144.** Supabase da `TRUNCATE`, `REFERENCES`, `TRIGGER` y `MAINTAIN` a
+  `anon` y `authenticated` en todas las tablas (`TRUNCATE` se salta la RLS).
+  Revocados, también por defecto. El libro de migraciones queda con RLS.
+- **0143.** El dueño que sale del alta no podía entrar (sin cuenta y con el
+  registro cerrado): «Mandarme el correo» desde su enlace de invitación.
+- El middleware mandaba al login las rutas de cron: en producción el
+  despachador de eventos nunca habría corrido. Bucle infinito login ⇄ inicio
+  para el proveedor y para clientes suspendidos. Redirección abierta en
+  `/login?siguiente=//…`. Todo arreglado.
+- `config.toml` para la CLI 2.x (hook del token, correo local, plantillas
+  en español), claves nuevas `sb_publishable_` / `sb_secret_`, `vercel.json`
+  con los crons y la región junto a la base.
+- **Probado de punta a punta** contra Supabase en local: alta del proveedor,
+  inicio de sesión, alta de un cliente, correo al dueño, invitación a un
+  cajero, venta en la caja, cierre de sesión. Aislamiento con tokens reales
+  por PostgREST: el cliente A no lee ni escribe nada del B.
+- **El proyecto de prueba del usuario** (us-west-2) responde
+  por HTTPS, pero la red de la oficina corta el puerto de Postgres: las
+  migraciones van por el SQL Editor del panel, en bloques
+  (`pnpm db:sql-para-editor`). Guía completa: [`SUPABASE.md`](SUPABASE.md).
+
+### Herramientas nuevas
+
+- `scripts/revision-pantallas.mjs`: abre cada `page.tsx` (180) con datos
+  reales —las de detalle, con un enlace sacado de su lista— en oscuro, claro
+  y 375 px; saca foto y marca error, `undefined`/`NaN`, uuid, nombres
+  internos, inglés, palabras sin tilde, pantalla vacía, desborde, imágenes
+  rotas y errores de consola.
+- `sonda-rutas.mjs` lee los `digest` de error del HTML: con la pantalla de
+  carga la respuesta se transmite y una pantalla rota ya no da 500.
+- `pnpm db:sql-para-editor`: las migraciones en bloques para el SQL Editor,
+  con el mismo libro (y el mismo hash) que `db:migrar`.
+- `apps/web/scripts/servir-produccion.mjs` y `REGB_NEXT_DIST_DIR`: la
+  compilación de producción en su carpeta, al lado de `next dev`.
+
+### Logo, carga y cero emojis
+
+- Logo «la R que brota»: una R de cuatro piezas que encajan (los módulos),
+  la holgura forma la cruz de la bandera y el lazo es una hoja. Se lee a
+  16 px. En la barra superior, el login, la 404, `sin-acceso` y el ícono.
+- Al abrir o recargar, el logo se arma (~1 s) y desaparece en cuanto llega
+  la pantalla; al navegar, solo una barra fina arriba. Respeta movimiento
+  reducido. Costo aceptado: las pantallas con `notFound()` responden 200
+  (con `noindex`) en vez de 404, porque la respuesta se transmite.
+- Cero emojis: los de la web pasan a `Icon`, `EmptyState` solo acepta
+  nombres de ícono y la 0175 quita los 34 de los esquemas del catálogo.
+
+### Lo que encontraron las áreas (lo principal)
+
+- **Ventas:** la caja de la distribuidora no tenía un solo turno; fechas un
+  día antes (se leían en UTC) en seis pantallas; el portal del cliente
+  sumaba totales en vez de saldos; el Vendedor no podía ver «Mis comisiones».
+- **Operación:** el técnico veía 404 en sus órdenes y podía trabajar las
+  ajenas; el almacenista veía costos y precios sin permiso; la eficiencia
+  de planta salía 1 % (era 60 %); «15.000» se leía quince mil.
+- **Finanzas:** presupuestos comparaba Caja y Bancos contra el presupuesto
+  y marcaba en rojo las ventas que superaban la meta; el Contador, el
+  Auditor y el Gerente General veían 404 en pantallas de su propio menú;
+  la balanza mezclaba empresas.
+- **Personas:** el portal del empleado decía «Tu cuenta no está vinculada»;
+  fechas de proyectos un día antes; un «margen 76.8 %» engañoso a mitad de
+  proyecto.
+- **Plataforma:** el Inicio tardaba ~11 s (100 consultas en serie) y un
+  widget roto lo tumbaba entero: ahora cada bloque llega por su cuenta;
+  REGB Control enseñaba `null`, uuid y JSON crudo; error de hidratación en
+  el chat; 29 nombres de módulo cortos y en castellano.
+- En todas: miles de textos sin tilde, jerga en inglés y pantallas vacías
+  que ahora tienen datos demo creíbles de RD.
+
+### Lo que hizo el líder al integrar
+
+- **Un error de la ronda 3 que había llegado a la rama:** el barrido de
+  tildes le puso tilde a un nombre dentro de una consulta SQL (`from
+  líneas`) y **el Inicio daba 500**. Ninguna prueba abría el Inicio. Ahora
+  `widgets.accion.test.ts` corre las 92 consultas de los widgets.
+- 770 avisos en cada compilación: el generador de tokens convertía los
+  comentarios del JSON en variables CSS inválidas.
+- Los íconos se salían de su caja mientras cargaba la fuente (47 px de
+  scroll horizontal en la caja).
+- La semilla: nombres con tilde en todos los archivos a la vez, fechas
+  coherentes en requisiciones, y no era idempotente (tomaba «una empresa
+  cualquiera» del cliente; con dos empresas, a veces la equivocada).
+- La región de Vercel junto a la base (`pdx1`), y la clave secreta fuera de
+  todo archivo local: nada la usa.
+
+### Lo que queda pendiente
+
+| Pendiente | Por qué importa | Quién |
+|---|---|---|
+| Pegar los bloques en el SQL Editor y hacer los ajustes del panel (hook, URLs, correo) | Sin eso el proyecto real no tiene esquema ni inicio de sesión | El usuario, con [`SUPABASE.md`](SUPABASE.md) |
+| Rotar la contraseña de la base y la `sb_secret_` | Se pegaron en el chat | El usuario |
+| Dominio + Resend (SMTP) | Sin eso las invitaciones no salen de verdad | El usuario |
+| Vercel Pro o un cron externo | El plan gratis solo permite crons diarios; el despachador corre cada minuto | El usuario |
+| e-CF | Obligatorio desde el **15 nov 2026** | Certificado DGII |
+| Un formulario que da error se vacía (React 19) | El usuario pierde lo que escribió | Siguiente ronda |
+| Horarios por empleado, feriados, SUIR, IR-3, aporte de beneficios en nómina | La nómina aún no reemplaza la del cliente | Siguiente ronda |
+| Cierre de período; pagos a proveedor sin retiro en tesorería | Contabilidad incompleta | Siguiente ronda |
+
+### Resultado
+
+| | 24 sep (ronda 3) | 30 sep (ronda 4) |
+|---|---:|---:|
+| Migraciones | 141 | **154** (0143–0175; la 0126 no existe) |
+| Pruebas de base de datos | 1,343 | **1,344** en 96 archivos |
+| Pruebas de la web (acciones reales y estáticas) | 411 en 51 archivos | **493** en 65 archivos |
+| Pruebas de lógica pura (paquetes) | 1,669 | **1,669** |
+| Pantallas web | 180 | **182** |
+| Rutas registradas | 160 | **161**, sin colisión |
+
+**La revisión de pantallas, antes y después.** Las 180 pantallas de la
+distribuidora como dueño, en oscuro, claro y 375 px (540 vistas), sobre la
+compilación de producción:
+
+| Hallazgo | Al empezar | Al cerrar |
+|---|---:|---:|
+| Error a la vista (500, pantalla de error) | 6 | **0** |
+| Errores en la consola | 6 | **0** |
+| `null`, `NaN`, uuid, nombres internos | 18 | **0** reales |
+| Palabras sin tilde | 333 | **12**, todas legítimas (registros históricos de la bitácora y las rutas `recepcion`/`aprobacion` que exige la DGII) |
+| Pantallas vacías | 63 | **12**, todas con su explicación y su acción (no hay respaldos ni importaciones todavía) |
+
+Además, el dueño del colmado y seis roles (Cajero, Vendedor, Contador,
+Almacenista, RRHH, Empleado): cero errores; los 404 son pantallas de
+módulos que ese rol o ese negocio no tiene, que es lo correcto.
+
+Puerta `gate:f0` en verde con todo integrado: typecheck y lint en los 184
+paquetes, las **3,506 pruebas** y las 4 auditorías. `pnpm sonda:rutas`
+sobre producción: las 119 rutas abren con los 3 roles. Las 154
+migraciones y la semilla completa (`demo.sql` y los cinco `demo-*.sql`)
+aplican desde una base vacía, y la semilla es idempotente (dos corridas, los
+mismos conteos). Los 7 bloques del SQL Editor y `demo-opcional.sql` se
+probaron igual, sobre una base vacía, sin transacción externa.
 
 ---
 

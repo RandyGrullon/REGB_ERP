@@ -68,7 +68,7 @@ export default async function AnunciosPage({
         <PageHeader
           icon="campaign"
           title="Anuncios"
-          description="Lo que publicas aqui, todo el equipo lo ve en su portal."
+          description="Lo que publicas aquí, todo el equipo lo ve en su portal."
           crumbs={[{ label: 'Mi portal', href: `/portal${qs}` }, { label: 'Anuncios' }]}
         />
 
@@ -81,14 +81,14 @@ export default async function AnunciosPage({
               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
               <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                Titulo
+                Título
                 <input name="title" required className={claseInput} />
               </label>
               <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                 Contenido
                 <textarea name="body" required rows={3} className={`${claseInput} h-auto py-2`} />
               </label>
-              <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+              <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                 <Icon name="campaign" size={18} />
                 Publicar
               </BotonEnvio>
@@ -99,24 +99,25 @@ export default async function AnunciosPage({
         {anuncios.length === 0 ? (
           <EmptyState
             icon="campaign"
-            title="Todavia no has publicado ningun anuncio"
-            description=""
+            title="Todavía no has publicado ningún anuncio"
+            description="Un anuncio le llega a todo el equipo en Mi portal: un horario especial, un día libre, una política nueva. Escríbelo arriba y publícalo."
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Titulo</TH>
-                <TH>Contenido</TH>
+                <TH>Anuncio</TH>
                 <TH>Publicado</TH>
               </TR>
             </THead>
             <TBody>
               {anuncios.map((a) => (
                 <TR key={a.id}>
-                  <TD className="text-[var(--color-text-primary)]">{a.title}</TD>
-                  <TD className="max-w-96 truncate">{a.body}</TD>
-                  <TD>{fechaHora(a.published_at)}</TD>
+                  <TD className="py-3">
+                    <p className="font-semibold text-[var(--color-text-primary)]">{a.title}</p>
+                    <p className="mt-0.5 text-[var(--color-text-secondary)]">{a.body}</p>
+                  </TD>
+                  <TD className="whitespace-nowrap align-top py-3">{fechaHora(a.published_at)}</TD>
                 </TR>
               ))}
             </TBody>

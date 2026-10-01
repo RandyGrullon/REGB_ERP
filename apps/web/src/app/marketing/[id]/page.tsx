@@ -29,11 +29,11 @@ interface Destinatario {
 }
 
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const botonChicoClase =
-  'flex h-7 items-center rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
   if (s === 'sent') return 'success'
   if (s === 'cancelled') return 'danger'
@@ -198,13 +198,13 @@ export default async function CampanaDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>Antes de enviar</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Enviar no manda ningún correo ni WhatsApp de verdad -no hay integracion con un
-              proveedor externo todavia-: toma la foto real de los leads que hoy cumplen el segmento
-              y crea un destinatario por cada uno.
+              Enviar todavía no manda ningún correo ni WhatsApp: no hay un proveedor de mensajes
+              conectado. Lo que hace es registrar como destinatario a cada prospecto que hoy cumple
+              el segmento, para medir después aperturas y clics.
             </p>
           </CardBody>
         </Card>

@@ -23,7 +23,7 @@ import { CANAL_CAMPANA, ESTADO_CAMPANA, ESTADO_LEAD_FILTRO, FUENTE_LEAD_FILTRO }
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Marketing & Campañas · REGB ERP' }
+export const metadata = { title: 'Marketing y campañas · REGB ERP' }
 
 interface CampanaFila {
   id: string
@@ -69,26 +69,26 @@ export default async function MarketingPage({
       <div className="space-y-5">
         <PageHeader
           icon="campaign"
-          title="Marketing & Campanas"
-          description="Enviar toma la foto real de los leads que hoy cumplen el segmento -no manda ningun correo de verdad todavia-."
+          title="Marketing y campañas"
+          description="Campañas por correo o WhatsApp a tus prospectos. Enviar registra a quiénes les toca hoy según el segmento; todavía no sale ningún mensaje de verdad."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Campanas" value={String(campanas.length)} />
+          <StatCard label="Campañas" value={String(campanas.length)} />
           <StatCard label="En curso" value={String(enCurso)} />
         </section>
 
         {campanas.length === 0 ? (
           <EmptyState
             icon="campaign"
-            title="Todavia no hay ninguna campana"
+            title="Todavía no hay ninguna campaña"
             description="Crea la primera abajo."
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Campana</TH>
+                <TH>Campaña</TH>
                 <TH>Canal</TH>
                 <TH numeric>Destinatarios</TH>
                 <TH>Estado</TH>
@@ -125,7 +125,7 @@ export default async function MarketingPage({
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva campana</CardTitle>
+              <CardTitle>Nueva campaña</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearCampanaForm} className="flex flex-wrap items-end gap-3">
@@ -196,7 +196,7 @@ export default async function MarketingPage({
                   </select>
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  UTM campaign
+                  Etiqueta de campaña (UTM)
                   <input
                     name="utmCampaign"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"

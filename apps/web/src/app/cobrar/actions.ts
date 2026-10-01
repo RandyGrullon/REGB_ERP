@@ -139,7 +139,7 @@ interface LineaPorFacturar {
 export async function facturarPedido(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('facturarPedido', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.invoice.create')
     if (!permiso.ok) return permiso
 
@@ -147,7 +147,7 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
     if (!orderId) return { ok: false, error: 'Faltan datos.' }
     const pedidoNcf = String(fd.get('ncfType') ?? '') || 'auto'
     if (!['auto', 'B01', 'B02'].includes(pedidoNcf)) {
-      return { ok: false, error: 'Tipo de comprobante no valido: automatico, B01 o B02.' }
+      return { ok: false, error: 'Tipo de comprobante no válido: automático, B01 o B02.' }
     }
     const excepcion = {
       pedida: String(fd.get('creditOverride') ?? '') === '1',
@@ -181,7 +181,7 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
         where i.tenant_id = ${ctx.tenantId} and i.source_type = 'sales_order'
           and i.source_id = ${orderId} and i.status <> 'void'
           and not exists (select 1 from public.customer_invoice_lines il where il.invoice_id = i.id)`
-      if (vieja) return { ok: false, error: `Ese pedido ya se facturo con ${vieja.number}.` }
+      if (vieja) return { ok: false, error: `Ese pedido ya se facturó con ${vieja.number}.` }
 
       const lineas = await tx<LineaPorFacturar[]>`
         select l.id, l.product_id, p.name, p.unit, l.qty_delivered::text,
@@ -203,8 +203,8 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
         return {
           ok: false,
           error: algoEntregado
-            ? `Todo lo entregado del pedido ${order.number} ya esta facturado.`
-            : 'Entrega la mercancia antes de facturar: se factura lo entregado, no lo pedido.',
+            ? `Todo lo entregado del pedido ${order.number} ya está facturado.`
+            : 'Entrega la mercancía antes de facturar: se factura lo entregado, no lo pedido.',
         }
       }
 
@@ -287,7 +287,7 @@ export async function facturarPedido(fd: FormData): Promise<ActionResult> {
 export async function registrarCobro(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('registrarCobro', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.payment.record')
     if (!permiso.ok) return permiso
 
@@ -299,7 +299,7 @@ export async function registrarCobro(fd: FormData): Promise<ActionResult> {
     if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
     if (monto === null || monto <= 0) return { ok: false, error: 'El monto debe ser positivo.' }
     if (!['cash', 'card', 'transfer', 'check'].includes(metodo)) {
-      return { ok: false, error: 'Forma de pago no valida.' }
+      return { ok: false, error: 'Forma de pago no válida.' }
     }
 
     const res = await asUser(ctx.userId, ctx.tenantId, async (tx): Promise<ActionResult> => {
@@ -307,7 +307,7 @@ export async function registrarCobro(fd: FormData): Promise<ActionResult> {
         select status from public.customer_invoices
         where id = ${invoiceId} and tenant_id = ${ctx.tenantId} for update`
       if (!inv) return { ok: false, error: 'Esa factura no existe.' }
-      if (inv.status === 'void') return { ok: false, error: 'Esa factura esta anulada.' }
+      if (inv.status === 'void') return { ok: false, error: 'Esa factura está anulada.' }
 
       const [s] = await tx<{ saldo: string; mora: string }[]>`
         select public.invoice_balance(${invoiceId})::text as saldo,
@@ -322,7 +322,7 @@ export async function registrarCobro(fd: FormData): Promise<ActionResult> {
           error:
             `Solo quedan ${rd(saldo)} por cobrar` +
             (mora > 0 ? ` (incluye ${rd(mora)} de mora)` : '') +
-            `; se intento cobrar ${rd(monto)}.`,
+            `; se intentó cobrar ${rd(monto)}.`,
         }
       }
 
@@ -357,7 +357,7 @@ export async function registrarCobro(fd: FormData): Promise<ActionResult> {
 export async function reversarCobro(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('reversarCobro', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.payment.reverse')
     if (!permiso.ok) return permiso
 
@@ -367,7 +367,7 @@ export async function reversarCobro(fd: FormData): Promise<ActionResult> {
     if (motivo.length < 4) {
       return {
         ok: false,
-        error: 'Escribe por que se reversa el cobro: queda en la ficha y en la bitacora.',
+        error: 'Escribe por que se reversa el cobro: queda en la ficha y en la bitácora.',
       }
     }
 
@@ -423,7 +423,7 @@ export async function reversarCobro(fd: FormData): Promise<ActionResult> {
 export async function aplicarCargoPorMora(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('aplicarCargoPorMora', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.latefee.apply')
     if (!permiso.ok) return permiso
 
@@ -461,7 +461,7 @@ export async function aplicarCargoPorMora(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          'Este cliente esta exento de mora, la factura esta anulada, o no tiene dias de atraso.',
+          'Este cliente está exento de mora, la factura está anulada, o no tiene días de atraso.',
       }
     }
 
@@ -484,7 +484,7 @@ export async function aplicarCargoPorMora(fd: FormData): Promise<ActionResult> {
 export async function anularFactura(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('anularFactura', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.invoice.void')
     if (!permiso.ok) return permiso
 
@@ -493,7 +493,7 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
     // El codigo se declara en el 608; el texto explica. Los dos.
     const codigo = String(fd.get('voidType') ?? '').trim()
     if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
-    if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulacion.' }
+    if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulación.' }
     if (!esMotivoDgii(codigo)) {
       return {
         ok: false,
@@ -528,14 +528,14 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          'Esta factura tiene cobros. Si fueron un error, reversalos primero; si no, lo que ' +
-          'corresponde es una nota de credito.',
+          'Esta factura tiene cobros. Si fueron un error, revérsalos primero; si no, lo que ' +
+          'corresponde es una nota de crédito.',
       }
     }
     if (res === 'con-notas') {
       return {
         ok: false,
-        error: 'Esta factura ya tiene notas de credito: la DGII la ve modificada, no se anula.',
+        error: 'Esta factura ya tiene notas de crédito: la DGII la ve modificada, no se anula.',
       }
     }
 
@@ -564,7 +564,7 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
 export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('emitirNotaDeCredito', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.creditnote.create')
     if (!permiso.ok) return permiso
 
@@ -574,9 +574,9 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
     const reponer = String(fd.get('restock') ?? '') === '1'
     if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
     if (kind !== 'return' && kind !== 'adjustment') {
-      return { ok: false, error: 'Elige si es devolucion de mercancia o rebaja de monto.' }
+      return { ok: false, error: 'Elige si es devolución de mercancía o rebaja de monto.' }
     }
-    if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la nota de credito.' }
+    if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la nota de crédito.' }
 
     const res = await asUser(ctx.userId, ctx.tenantId, async (tx): Promise<ActionResult> => {
       const [inv] = await tx<
@@ -598,7 +598,7 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
         where id = ${invoiceId} and tenant_id = ${ctx.tenantId} for update`
       if (!inv) return { ok: false, error: 'Esa factura no existe.' }
       if (inv.status === 'void') {
-        return { ok: false, error: 'La factura esta anulada: no lleva nota de credito.' }
+        return { ok: false, error: 'La factura está anulada: no lleva nota de crédito.' }
       }
 
       const [s] = await tx<{ saldo: string; notas: string }[]>`
@@ -649,7 +649,7 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
           return {
             ok: false,
             error:
-              'Esta factura no tiene lineas (es anterior a las lineas): usa una rebaja de monto.',
+              'Esta factura no tiene líneas (es anterior a las líneas): usa una rebaja de monto.',
           }
         }
 
@@ -660,7 +660,7 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
           if (q < 0 || q > quedan) {
             return {
               ok: false,
-              error: `De "${l.description}" se pueden devolver hasta ${quedan}; se indico ${q}.`,
+              error: `De "${l.description}" se pueden devolver hasta ${quedan}; se indicó ${q}.`,
             }
           }
           lineasNota.push({
@@ -675,7 +675,7 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
           })
         }
         if (lineasNota.length === 0) {
-          return { ok: false, error: 'Indica cuanto se devuelve de al menos una linea.' }
+          return { ok: false, error: 'Indica cuánto se devuelve de al menos una línea.' }
         }
         const t = documentTotals(
           lineasNota.map((l) => ({
@@ -710,8 +710,8 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
           ok: false,
           error:
             `La nota (${rd(total)}) pasa del saldo pendiente (${rd(saldo)}). Si el cliente ya ` +
-            'pago, devolverle dinero es un reembolso y todavia no esta en el sistema; si el ' +
-            'cobro fue un error, reversalo primero.',
+            'pago, devolverle dinero es un reembolso y todavía no está en el sistema; si el ' +
+            'cobro fue un error, revérsalo primero.',
         }
       }
 
@@ -726,7 +726,7 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
           warehouseId = o?.warehouse_id ?? null
         }
         if (!warehouseId) {
-          return { ok: false, error: 'No se sabe de que almacen salio: no se puede reponer.' }
+          return { ok: false, error: 'No se sabe de que almacén salió: no se puede reponer.' }
         }
       }
 
@@ -779,13 +779,13 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
                 (tenant_id, warehouse_id, product_id, movement_type, qty, reason,
                  reference_type, reference_id, created_by)
               values (${ctx.tenantId}, ${warehouseId}, ${l.productId}, 'adjustment_in', ${l.qty},
-                      ${`Devolucion de cliente ${n!.next_credit_note_number}`},
+                      ${`Devolución de cliente ${n!.next_credit_note_number}`},
                       'customer_credit_note', ${nota!.id}, ${ctx.userId})`
           } catch (e) {
             if ((e as { code?: unknown }).code === '42501') {
               throw new ErrorDeNegocio(
-                'No se pudo reponer el inventario: el modulo de inventario no esta activo. ' +
-                  'Emite la nota sin marcar "Reponer inventario", o activalo primero.',
+                'No se pudo reponer el inventario: el módulo de inventario no está activo. ' +
+                  'Emite la nota sin marcar "Reponer inventario", o actívalo primero.',
               )
             }
             throw e
@@ -818,14 +818,14 @@ export async function emitirNotaDeCredito(fd: FormData): Promise<ActionResult> {
 export async function guardarPoliticaDeCredito(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('guardarPoliticaDeCredito', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.credit.manage')
     if (!permiso.ok) return permiso
 
     const raw = num(String(fd.get('overdueDays') ?? ''))
     const dias = raw === null || raw === 0 ? null : raw
     if (dias !== null && (!Number.isInteger(dias) || dias < 1 || dias > 365)) {
-      return { ok: false, error: 'Los dias van de 1 a 365; vacio para no bloquear por vencidas.' }
+      return { ok: false, error: 'Los días van de 1 a 365; vacío para no bloquear por vencidas.' }
     }
 
     await asUser(
@@ -853,7 +853,7 @@ export async function guardarPoliticaDeCredito(fd: FormData): Promise<ActionResu
 export async function alternarExentoMora(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('alternarExentoMora', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.latefee.apply')
     if (!permiso.ok) return permiso
 
@@ -876,7 +876,7 @@ export async function alternarExentoMora(fd: FormData): Promise<ActionResult> {
 export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('marcarVencidas', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'ar', 'ar.view')
     if (!permiso.ok) return permiso
 
@@ -900,7 +900,7 @@ export async function facturarPedidoForm(fd: FormData): Promise<void> {
     r,
     'facturarPedido',
     (conExcepcion
-      ? 'Facturado con excepcion de credito. Quedo escrita con tu nombre y el motivo.'
+      ? 'Facturado con excepción de crédito. Quedó escrita con tu nombre y el motivo.'
       : 'Listo, factura emitida.') +
       (emitida ? ` ${emitida.number}${emitida.ncf ? ` · ${emitida.ncf}` : ''}.` : ''),
     emitida
@@ -949,7 +949,7 @@ export async function emitirNotaDeCreditoForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await emitirNotaDeCredito(fd),
     'emitirNotaDeCredito',
-    'Nota de credito emitida.',
+    'Nota de crédito emitida.',
   )
 }
 export async function aplicarCargoPorMoraForm(fd: FormData): Promise<void> {

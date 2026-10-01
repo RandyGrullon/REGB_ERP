@@ -145,23 +145,23 @@ export async function SecuenciasNcf({
       <PageHeader
         icon="verified"
         title="Comprobantes fiscales (NCF)"
-        description="Los rangos que te autorizo la DGII. Sin una secuencia vigente no puedes emitir una factura ni un ticket con comprobante valido."
+        description="Los rangos que te autorizó la DGII. Sin una secuencia vigente no puedes emitir una factura ni un ticket con comprobante válido."
         crumbs={crumbs}
       />
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard
-          label="Secuencias utiles"
+          label="Secuencias útiles"
           value={String(utiles.length)}
-          hint="vigentes y con numeros"
+          hint="vigentes y con números"
         />
         <StatCard
           label="NCF disponibles"
           value={String(utiles.reduce((a, s) => a + s.h.restantes, 0))}
-          hint="antes de pedir mas"
+          hint="antes de pedir más"
         />
         <StatCard
-          label="Requieren atencion"
+          label="Requieren atención"
           value={String(enRiesgo.length)}
           hint="agotadas, vencidas o por agotarse"
         />
@@ -179,9 +179,9 @@ export async function SecuenciasNcf({
             className="shrink-0 text-[var(--color-semantic-text-warning)]"
           />
           <p className="text-[var(--color-text-secondary)]">
-            Hay {enRiesgo.length} secuencia{enRiesgo.length === 1 ? '' : 's'} que necesita atencion.
-            Pedirle a la DGII una autorizacion nueva toma dias:{' '}
-            <strong className="text-[var(--color-text-primary)]">gestionala ahora</strong>, no
+            Hay {enRiesgo.length} secuencia{enRiesgo.length === 1 ? '' : 's'} que necesita atención.
+            Pedirle a la DGII una autorización nueva toma días:{' '}
+            <strong className="text-[var(--color-text-primary)]">gestiónala ahora</strong>, no
             cuando se acabe. Quedarte sin NCF significa no poder facturar.
           </p>
         </div>
@@ -190,7 +190,7 @@ export async function SecuenciasNcf({
       {secuencias.length === 0 ? (
         <EmptyState
           icon="verified"
-          title="Todavia no has cargado ninguna autorizacion"
+          title="Todavía no has cargado ninguna autorización"
           description="Registra abajo el rango que te dio la DGII. Es lo primero: sin esto no se puede emitir factura."
         />
       ) : (
@@ -202,7 +202,7 @@ export async function SecuenciasNcf({
               <TH numeric>Próximo</TH>
               <TH numeric>Quedan</TH>
               <TH>Vence</TH>
-              <TH>Autorizacion</TH>
+              <TH>Autorización</TH>
               <TH>Estado</TH>
             </TR>
           </THead>
@@ -279,7 +279,7 @@ export async function SecuenciasNcf({
                                 required
                                 minLength={4}
                                 placeholder="Motivo"
-                                aria-label="Motivo de la correccion"
+                                aria-label="Motivo de la corrección"
                                 className={`w-36 ${inputChico}`}
                               />
                               <BotonEnvio className="h-8 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
@@ -302,7 +302,7 @@ export async function SecuenciasNcf({
                                 className={`w-44 ${inputChico}`}
                               />
                               <BotonEnvio
-                                title="Deja de emitir con ella. Los numeros ya emitidos no cambian."
+                                title="Deja de emitir con ella. Los números ya emitidos no cambian."
                                 className="h-8 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
                               >
                                 Desactivar
@@ -323,7 +323,7 @@ export async function SecuenciasNcf({
       {puedeGestionar && (
         <Card data-tour="ncf-autorizacion">
           <CardHeader>
-            <CardTitle>Registrar autorizacion de la DGII</CardTitle>
+            <CardTitle>Registrar autorización de la DGII</CardTitle>
           </CardHeader>
           <CardBody>
             <form action={registrarSecuenciaForm} className="flex flex-wrap items-end gap-3">
@@ -363,7 +363,7 @@ export async function SecuenciasNcf({
                 <input name="expiresOn" required type="date" className={inputCls} />
               </label>
               <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                No. de autorizacion
+                No. de autorización
                 <input name="authRef" placeholder="AUT-2026-001" className={inputCls} />
               </label>
               <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">

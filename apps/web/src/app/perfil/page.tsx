@@ -5,7 +5,6 @@ import {
   CardHeader,
   CardTitle,
   Icon,
-  Mono,
   PageHeader,
   TBody,
   TD,
@@ -14,6 +13,8 @@ import {
   TR,
   Table,
 } from '@regb/ui'
+import { etiquetaPermiso } from '@/lib/etiqueta-permiso'
+import { nombreDeModulo } from '@/lib/nombre-modulo'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -49,7 +50,7 @@ const fecha = (iso: string | null) =>
 
 /** `pos.discount.max: 10` se lee mucho mejor como "hasta 10". */
 function valorLegible(v: unknown): { texto: string; tono: 'success' | 'danger' | 'warning' } {
-  if (v === true) return { texto: 'Si', tono: 'success' }
+  if (v === true) return { texto: 'Sí', tono: 'success' }
   if (v === false) return { texto: 'No', tono: 'danger' }
   if (typeof v === 'number') return { texto: `hasta ${v}`, tono: 'warning' }
   if (Array.isArray(v)) return { texto: v.join(', '), tono: 'warning' }
@@ -89,7 +90,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
   // eso, sin explicarlo, parece un error del sistema.
   const alcance = Object.entries(ctx.role.scope ?? {}).filter(([, v]) => v !== undefined)
   const ALCANCE_TEXTO: Record<string, (v: unknown) => string> = {
-    own_only: () => 'Solo ves lo que tu creaste, no lo de tus companeros.',
+    own_only: () => 'Solo ves lo que tú creaste, no lo de tus compañeros.',
     read_only: () => 'Puedes mirarlo todo pero no cambiar nada.',
     max_amount: (v) => `No puedes aprobar ni crear montos sobre ${v}.`,
     branches: (v) => `Limitado a ${Array.isArray(v) ? v.length : 0} sucursal(es).`,
@@ -179,10 +180,10 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                     className="mt-0.5 shrink-0 text-[var(--color-text-muted)]"
                   />
                   <span>
-                    <strong className="text-[var(--color-text-primary)]">Tu clave es tuya.</strong>{' '}
-                    Nunca la compartas, ni con un companero ni con soporte. Dos personas en el mismo
-                    usuario dejan la bitacora inservible: cuando algo falla, nadie puede saber quien
-                    fue.
+                    <strong className="text-[var(--color-text-primary)]">Tu acceso es tuyo.</strong>{' '}
+                    Entras con el enlace que te llega a tu correo: no lo reenvíes ni se lo pases a
+                    nadie, ni a un compañero ni a soporte. Dos personas en el mismo usuario dejan la
+                    bitácora inservible: cuando algo falla, nadie puede saber quién fue.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -196,7 +197,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                       Soporte puede entrar a tu empresa
                     </strong>{' '}
                     para ayudarte, pero solo dejando escrito el motivo y con la sesión registrada.
-                    Si ves el aviso de acompanamiento en la barra, es eso.
+                    Si ves el aviso de acompañamiento en la barra, es eso.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
@@ -209,14 +210,15 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                     <strong className="text-[var(--color-text-primary)]">
                       Todo queda grabado.
                     </strong>{' '}
-                    Cada creacion, edicion y borrado guarda quien, cuando y que cambio. No es
+                    Cada creación, edición y borrado guarda quién, cuándo y qué cambió. No es
                     vigilancia: es lo que permite deshacer un error sin discutir de memoria.
                   </span>
                 </li>
               </ul>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-                Cambiar la contraseña y activar la verificacion en dos pasos se hacen desde el
-                proveedor de identidad. Llegan cuando se conecte el inicio de sesión real.
+                Para entrar no necesitas contraseña: en la pantalla de entrada pide el enlace
+                («Mandarme un enlace») y te llega al correo con el que te invitaron. Si cambias de
+                correo, pídele a quien administra los usuarios que te invite con el nuevo.
               </p>
             </CardBody>
           </Card>
@@ -224,7 +226,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Que puedes hacer</CardTitle>
+            <CardTitle className="text-sm">Qué puedes hacer</CardTitle>
           </CardHeader>
           <CardBody>
             {esTodopoderoso ? (
@@ -238,7 +240,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                 <span className="text-[var(--color-text-secondary)]">
                   Tu rol{' '}
                   <strong className="text-[var(--color-text-primary)]">{ctx.roleName}</strong> tiene
-                  acceso completo: todos los modulos y todas las acciones de tu empresa.
+                  acceso completo: todos los módulos y todas las acciones de tu empresa.
                 </span>
               </p>
             ) : porModulo.size === 0 ? (
@@ -248,8 +250,8 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
             ) : (
               <>
                 <p className="mb-3 text-sm text-[var(--color-text-secondary)]">
-                  Si una pantalla no te aparece o un boton no te deja, la razón esta aquí. Enseñale
-                  esta lista a quien administra los usuarios y sabra exactamente que activarte.
+                  Si una pantalla no te aparece o un botón no te deja, la razón esta aquí. Enseñale
+                  está lista a quien administra los usuarios y sabrá exactamente que activarte.
                 </p>
                 <Table>
                   <THead>
@@ -268,14 +270,16 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
                             <TD>
                               {i === 0 ? (
                                 <span className="font-medium text-[var(--color-text-primary)]">
-                                  {modulo}
+                                  {nombreDeModulo(modulo)}
                                 </span>
                               ) : (
                                 ''
                               )}
                             </TD>
+                            {/* Lo que puede hacer, en palabras; la clave técnica
+                                queda en el `title` para soporte. */}
                             <TD>
-                              <Mono>{clave}</Mono>
+                              <span title={clave}>{etiquetaPermiso(clave)}</span>
                             </TD>
                             <TD>
                               <Badge tone={v.tono} dot={false}>
@@ -294,7 +298,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Promi
               <div className="mt-4 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3">
                 <p className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-[var(--color-text-primary)]">
                   <Icon name="tune" size={18} className="text-[var(--color-text-muted)]" />
-                  Ademas, tu rol tiene limites de alcance
+                  Además, tu rol tiene límites de alcance
                 </p>
                 <ul className="space-y-1 text-sm text-[var(--color-text-secondary)]">
                   {alcance.map(([clave, valor]) => (

@@ -7,7 +7,7 @@ export const ESTADO_OBJETIVO: Record<string, string> = {
 
 /** Etiquetas del tipo de evaluacion 360. */
 export const TIPO_EVALUACION: Record<string, string> = {
-  self: 'Auto-evaluacion',
+  self: 'Autoevaluación',
   manager: 'Jefe',
   peer: 'Par',
   direct_report: 'Reporte directo',

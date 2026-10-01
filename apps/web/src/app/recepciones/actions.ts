@@ -109,7 +109,7 @@ function lineasDeFormulario(fd: FormData): LineaEntrada[] {
 /** Registra una recepcion completa: una o varias lineas, una sola transaccion. */
 export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'receipts', 'receipts.receive')
   if (!permiso.ok) return permiso
 
@@ -124,7 +124,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
   const veCosto = puedeVerCostoDeCompra(ctx)
   const lineas = lineasDeFormulario(fd).map((l) => (veCosto ? l : { ...l, unitCost: null }))
   if (lineas.length === 0) {
-    return { ok: false, error: 'Escribe una cantidad recibida en al menos una linea.' }
+    return { ok: false, error: 'Escribe una cantidad recibida en al menos una línea.' }
   }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -173,7 +173,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
         join public.products p on p.id = l.product_id
         where l.id = ${l.lineId} and l.order_id = ${orderId} and l.tenant_id = ${ctx.tenantId}
         for update of l`
-      if (!line) return 'Esa linea no pertenece a esta orden.'
+      if (!line) return 'Esa línea no pertenece a esta orden.'
 
       const estado: PurchaseLineState = {
         qtyOrdered: Number(line.qty_ordered),
@@ -186,7 +186,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
       if (!checkInspeccion.ok) return `${line.name}: ${checkInspeccion.error}`
 
       if (l.qtyRejected > 0 && !l.rejectionReason) {
-        return `${line.name}: escribe la razon del rechazo cuando hay unidades rechazadas.`
+        return `${line.name}: escribe la razón del rechazo cuando hay unidades rechazadas.`
       }
       if (l.unitCost !== null && l.unitCost < 0) {
         return `${line.name}: el costo no puede ser negativo.`
@@ -261,7 +261,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'sin-confirmar') return { ok: false, error: 'Confirma la orden primero.' }
-  if (resultado === 'cancelada') return { ok: false, error: 'La orden esta cancelada.' }
+  if (resultado === 'cancelada') return { ok: false, error: 'La orden está cancelada.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/recepciones/${orderId}`)
@@ -283,7 +283,7 @@ export async function registrarRecepcion(fd: FormData): Promise<ActionResult> {
  */
 export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'receipts', 'receipts.return')
   if (!permiso.ok) return permiso
 
@@ -291,9 +291,9 @@ export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
   const qty = num(String(fd.get('qty') ?? ''))
   const reason = String(fd.get('reason') ?? '').trim()
   const origenRaw = String(fd.get('origin') ?? '').trim() || 'rejected'
-  if (!lineaId) return { ok: false, error: 'Falta la linea de recepcion.' }
+  if (!lineaId) return { ok: false, error: 'Falta la línea de recepción.' }
   if (qty === null || qty <= 0) return { ok: false, error: 'La cantidad debe ser mayor que cero.' }
-  if (!reason) return { ok: false, error: 'Escribe la razon de la devolucion.' }
+  if (!reason) return { ok: false, error: 'Escribe la razón de la devolución.' }
   if (origenRaw !== 'rejected' && origenRaw !== 'accepted') {
     return { ok: false, error: 'Elige si devuelves lo rechazado o algo ya aceptado.' }
   }
@@ -331,7 +331,7 @@ export async function registrarDevolucion(fd: FormData): Promise<ActionResult> {
     return 'ok'
   }).catch(errorLegible)
 
-  if (resultado === 'sin-linea') return { ok: false, error: 'Esa linea de recepcion no existe.' }
+  if (resultado === 'sin-linea') return { ok: false, error: 'Esa línea de recepción no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath('/recepciones')
@@ -343,12 +343,12 @@ async function resolverDevolucion(
   siguiente: EstadoDevolucion,
 ): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'receipts', 'receipts.return')
   if (!permiso.ok) return permiso
 
   const devolucionId = String(fd.get('devolucionId') ?? '')
-  if (!devolucionId) return { ok: false, error: 'Falta la devolucion.' }
+  if (!devolucionId) return { ok: false, error: 'Falta la devolución.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [d] = await tx<
@@ -358,7 +358,7 @@ async function resolverDevolucion(
       where id = ${devolucionId} and tenant_id = ${ctx.tenantId} for update`
     if (!d) return 'no-existe'
     if (!transicionValidaDevolucion(d.status as EstadoDevolucion, siguiente)) {
-      return 'Esa devolucion ya fue resuelta.'
+      return 'Esa devolución ya fue resuelta.'
     }
 
     if (siguiente === 'sent') {
@@ -372,7 +372,7 @@ async function resolverDevolucion(
           from public.goods_receipt_lines grl
           join public.goods_receipts gr on gr.id = grl.receipt_id
           where grl.id = ${d.goods_receipt_line_id} and grl.tenant_id = ${ctx.tenantId}`
-        if (!linea) return 'Esa devolucion no tiene su linea de recepcion.'
+        if (!linea) return 'Esa devolución no tiene su línea de recepción.'
         await tx`
           insert into public.inventory_movements
             (tenant_id, warehouse_id, product_id, movement_type, qty, unit_cost,
@@ -396,7 +396,7 @@ async function resolverDevolucion(
     return 'ok'
   }).catch(errorLegible)
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Esa devolucion no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa devolución no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath('/recepciones')

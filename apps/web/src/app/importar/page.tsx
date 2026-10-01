@@ -31,20 +31,32 @@ import { BotonEnvio } from '@/components/BotonEnvio'
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Importar · REGB ERP' }
 
+/**
+ * Los nombres de columna que se aceptan, como se enseñan: sin la gemela
+ * sin tilde ("codigo" junto a "código": el lector ignora las tildes, así
+ * que es la misma) ni las claves con guion bajo.
+ */
+const sinTildes = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '')
+const alias = (lista: string[]) =>
+  lista.filter((a) => !a.includes('_') && !lista.some((b) => b !== a && sinTildes(b) === a))
+
 /** Lo que dice la pantalla de cada columna: la clave interna no le sirve a nadie. */
 const ETIQUETA_COLUMNA: Record<string, string> = {
-  sku: 'codigo',
+  sku: 'código',
   name: 'nombre',
-  category: 'categoria',
+  category: 'categoría',
   unit: 'unidad',
   price: 'precio',
   cost: 'costo',
   barcode: 'código de barras',
   taxRate: 'tasa de ITBIS',
   exempt: 'exento',
-  warehouse: 'almacen',
+  warehouse: 'almacén',
   qty: 'cantidad',
   unitCost: 'costo unitario',
+  // Las mismas claves como las guarda la base en el detalle de errores.
+  tax_rate: 'tasa de ITBIS',
+  unit_cost: 'costo unitario',
 }
 
 /**
@@ -168,11 +180,11 @@ export default async function ImportarPage({
                 value={String(
                   deExistencias.filter((b) => !b.undone_at).reduce((a, b) => a + b.inserted, 0),
                 )}
-                hint="lineas con costo"
+                hint="líneas con costo"
               />
             )}
             <StatCard
-              label="Ya existian"
+              label="Ya existían"
               value={String(batches.reduce((a, b) => a + yaExistian(b).length, 0))}
               hint="no se tocaron"
             />
@@ -227,7 +239,8 @@ export default async function ImportarPage({
                 <ul className="space-y-0.5">
                   {(Object.keys(PRODUCT_COLUMNS) as (keyof typeof PRODUCT_COLUMNS)[]).map((k) => (
                     <li key={k}>
-                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> — {PRODUCT_COLUMNS[k].join(' · ')}
+                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> —{' '}
+                      {alias(PRODUCT_COLUMNS[k]).join(' · ')}
                       {(k === 'sku' || k === 'name') && (
                         <Badge tone="warning" dot={false} className="ml-2">
                           obligatoria
@@ -237,7 +250,7 @@ export default async function ImportarPage({
                   ))}
                 </ul>
                 <p className="mt-3 max-w-prose">
-                  <span className="font-semibold text-[var(--color-text-primary)]">Numeros:</span>{' '}
+                  <span className="font-semibold text-[var(--color-text-primary)]">Números:</span>{' '}
                   <Mono>1,234.56</Mono> y <Mono>1.234,56</Mono> se leen igual; <Mono>RD$</Mono>,
                   espacios y negativos también. Si un número se puede leer de dos maneras —
                   <Mono>1.234</Mono> puede ser mil o uno con decimales— la fila se rechaza y te
@@ -245,16 +258,16 @@ export default async function ImportarPage({
                 </p>
                 <p className="mt-2 max-w-prose">
                   <span className="font-semibold text-[var(--color-text-primary)]">ITBIS:</span>{' '}
-                  <Mono>18%</Mono>, <Mono>16%</Mono>, <Mono>0</Mono> o <Mono>exento</Mono> (tambien
-                  una columna <Mono>exento</Mono> con si/no). Vacio = la tasa por defecto de tu
+                  <Mono>18%</Mono>, <Mono>16%</Mono>, <Mono>0</Mono> o <Mono>exento</Mono> (también
+                  una columna <Mono>exento</Mono> con si/no). Vacío = la tasa por defecto de tu
                   empresa.
                 </p>
                 <p className="mt-2 max-w-prose">
                   <span className="font-semibold text-[var(--color-text-primary)]">
-                    Codigo de barras:
+                    Código de barras:
                   </span>{' '}
                   formatea esa columna como <em>Texto</em> en Excel antes de exportar; si no, un
-                  codigo largo se vuelve <Mono>7.46E+12</Mono> y pierde digitos (lo rechazamos). Un
+                  código largo se vuelve <Mono>7.46E+12</Mono> y pierde dígitos (lo rechazamos). Un
                   código que ya tiene otro producto también se rechaza, en su fila.
                 </p>
               </div>
@@ -295,7 +308,8 @@ export default async function ImportarPage({
                 <ul className="space-y-0.5">
                   {(Object.keys(STOCK_COLUMNS) as (keyof typeof STOCK_COLUMNS)[]).map((k) => (
                     <li key={k}>
-                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> — {STOCK_COLUMNS[k].join(' · ')}
+                      <Mono>{ETIQUETA_COLUMNA[k] ?? k}</Mono> —{' '}
+                      {alias(STOCK_COLUMNS[k]).join(' · ')}
                       {(k === 'sku' || k === 'qty') && (
                         <Badge tone="warning" dot={false} className="ml-2">
                           obligatoria
@@ -306,16 +320,16 @@ export default async function ImportarPage({
                 </ul>
                 <p className="mt-3 max-w-prose">
                   El código puede ser el SKU o el código de barras. Sin almacén va al
-                  predeterminado. Sin costo se usa el del catalogo, y si tampoco hay, la fila se
+                  predeterminado. Sin costo se usa el del catálogo, y si tampoco hay, la fila se
                   rechaza:{' '}
                   <strong className="text-[var(--color-text-primary)]">
                     sin costo la valorización nace mal
                   </strong>
-                  . Un producto que ya tiene existencia en ese almacen no se toca (corrigelo con un
-                  ajuste). Los numeros siguen la misma regla de arriba.
+                  . Un producto que ya tiene existencia en ese almacén no se toca (corrígelo con un
+                  ajuste). Los números siguen la misma regla de arriba.
                 </p>
                 <p className="mt-2 max-w-prose">
-                  Cargalo antes de vender -de noche o un domingo-: deshacer vuelve cada linea a cero
+                  Cárgalo antes de vender -de noche o un domingo-: deshacer vuelve cada línea a cero
                   con su movimiento contrario, pero solo si nada la movió después.
                 </p>
               </div>
@@ -330,8 +344,8 @@ export default async function ImportarPage({
           {batches.length === 0 ? (
             <EmptyState
               icon="upload_file"
-              title="Todavia no has importado nada"
-              description="Cuando subas un CSV veras aqui cuantas filas entraron, cuales fallaron y por que — con la opcion de deshacerlo todo."
+              title="Todavía no has importado nada"
+              description="Cuando subas un CSV verás aquí cuántas filas entraron, cuáles fallaron y por qué, con la opción de deshacerlo todo."
             />
           ) : (
             <Table>
@@ -340,10 +354,10 @@ export default async function ImportarPage({
                   <TH>Archivo</TH>
                   <TH>Tipo</TH>
                   <TH>Cuando</TH>
-                  <TH>Quien</TH>
+                  <TH>Quién</TH>
                   <TH numeric>Filas</TH>
                   <TH numeric>Nuevos</TH>
-                  <TH numeric>Ya existian</TH>
+                  <TH numeric>Ya existían</TH>
                   <TH numeric>Rechazadas</TH>
                   <TH>
                     <span className="sr-only">Acciones</span>
@@ -435,7 +449,7 @@ export default async function ImportarPage({
                   const partes = [
                     b.rejected > 0 && plural(b.rejected, 'fila rechazada', 'filas rechazadas'),
                     existian.length > 0 &&
-                      plural(existian.length, 'que ya existia', 'que ya existian'),
+                      plural(existian.length, 'que ya existía', 'que ya existían'),
                   ].filter(Boolean)
                   return (
                     <details
@@ -454,20 +468,20 @@ export default async function ImportarPage({
                             <ul className="space-y-1">
                               {malas.slice(0, 20).map((e, i) => (
                                 <li key={i}>
-                                  {e.row > 0 ? `Linea ${e.row}` : 'Encabezado'} ·{' '}
-                                  <Mono>{e.column}</Mono> — {e.message}
+                                  {e.row > 0 ? `Línea ${e.row}` : 'Encabezado'} ·{' '}
+                                  {ETIQUETA_COLUMNA[e.column] ?? e.column} — {e.message}
                                 </li>
                               ))}
                             </ul>
                             {malas.length > 20 && (
-                              <p className="mt-1">y {malas.length - 20} mas.</p>
+                              <p className="mt-1">y {malas.length - 20} más.</p>
                             )}
                           </section>
                         )}
                         {existian.length > 0 && (
-                          <section aria-label={`Codigos que ya existian en ${b.file_name}`}>
+                          <section aria-label={`Códigos que ya existían en ${b.file_name}`}>
                             <h3 className="mb-1 font-semibold text-[var(--color-text-primary)]">
-                              Ya existian: los dejamos como estaban
+                              Ya existían: los dejamos como estaban
                             </h3>
                             <p className="mb-1">
                               Si querias cambiarlos, editalos en Productos: importar no sobrescribe.
@@ -475,12 +489,13 @@ export default async function ImportarPage({
                             <ul className="space-y-1">
                               {existian.slice(0, 20).map((e, i) => (
                                 <li key={i}>
-                                  Linea {e.row} · <Mono>{e.column}</Mono> — {e.message}
+                                  Línea {e.row} · {ETIQUETA_COLUMNA[e.column] ?? e.column} —{' '}
+                                  {e.message}
                                 </li>
                               ))}
                             </ul>
                             {existian.length > 20 && (
-                              <p className="mt-1">y {existian.length - 20} mas.</p>
+                              <p className="mt-1">y {existian.length - 20} más.</p>
                             )}
                           </section>
                         )}

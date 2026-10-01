@@ -23,5 +23,5 @@ export const FUENTE_LEAD_FILTRO: Record<string, string> = {
   referral: 'Referido',
   event: 'Evento',
   web: 'Web',
-  cold: 'Frio',
+  cold: 'Frío',
 }

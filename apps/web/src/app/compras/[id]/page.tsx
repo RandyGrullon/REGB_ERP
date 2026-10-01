@@ -29,6 +29,7 @@ import {
   recibirLineaForm,
 } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,6 +40,10 @@ interface OrderHead {
   order_date: string
   supplier_name: string
   supplier_terms: number
+  supplier_phone: string | null
+  supplier_ncf: string | null
+  notes: string | null
+  confirmed_at: string | null
   warehouse_id: string
   warehouse_name: string
   subtotal: string
@@ -83,6 +88,7 @@ export default async function OrdenDetallePage({
     const [h] = await tx<OrderHead[]>`
       select po.id, po.number, po.status, po.order_date::text,
              s.name as supplier_name, s.payment_terms as supplier_terms,
+             s.phone as supplier_phone, po.supplier_ncf, po.notes, po.confirmed_at::text,
              po.warehouse_id, w.name as warehouse_name,
              po.subtotal::text, po.discount::text, po.tax::text, po.total::text
       from public.purchase_orders po
@@ -143,6 +149,10 @@ export default async function OrdenDetallePage({
   const recibirEnRecepciones = exigir(ctx, 'receipts', 'receipts.receive').ok
   const recibida = head.status === 'received'
   const qs = ctx.demoQs
+  const fechaOrden = new Date(`${head.order_date.slice(0, 10)}T12:00:00`).toLocaleDateString(
+    'es-DO',
+    { day: 'numeric', month: 'long', year: 'numeric' },
+  )
 
   const campos = (
     <>
@@ -158,8 +168,13 @@ export default async function OrdenDetallePage({
         <PageHeader
           icon="local_shipping"
           title={head.number}
-          description={`${head.supplier_name} · recibe en ${head.warehouse_name}`}
-          crumbs={[{ label: 'Compras', href: `/compras${qs}` }, { label: head.number }]}
+          description={[
+            `${head.supplier_name} · recibe en ${head.warehouse_name} · del ${fechaOrden}`,
+            head.notes,
+          ]
+            .filter(Boolean)
+            .join('. ')}
+          crumbs={[{ label: 'Órdenes de compra', href: `/compras${qs}` }, { label: head.number }]}
           meta={
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={e.tone}>{e.label}</Badge>
@@ -168,6 +183,20 @@ export default async function OrdenDetallePage({
                   ? 'Proveedor de contado'
                   : `${head.supplier_terms} días de crédito del proveedor`}
               </span>
+              {head.supplier_phone && (
+                <a
+                  href={`tel:${head.supplier_phone}`}
+                  className="inline-flex items-center gap-1 text-xs text-[var(--color-text-link)] hover:underline"
+                >
+                  <Icon name="call" size={14} />
+                  {head.supplier_phone}
+                </a>
+              )}
+              {head.supplier_ncf && (
+                <span className="text-xs text-[var(--color-text-muted)]">
+                  NCF del proveedor <Mono>{head.supplier_ncf}</Mono>
+                </span>
+              )}
             </div>
           }
           actions={
@@ -258,25 +287,29 @@ export default async function OrdenDetallePage({
                       <span className="font-medium text-[var(--color-text-primary)]">{l.name}</span>
                       {pendiente > 0 && !enBorrador && !cancelado && (
                         <Badge tone="info" dot={false} className="ml-2">
-                          faltan {pendiente}
+                          Faltan {cantidad(pendiente)}
                         </Badge>
                       )}
                     </TD>
                     <TD numeric>
-                      <span className="tabular">
-                        {estado.qtyOrdered} {l.unit}
-                      </span>
+                      <span className="tabular">{cantidad(estado.qtyOrdered, l.unit)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular text-[var(--color-semantic-text-success)]">
-                        {estado.qtyReceived}
+                      <span
+                        className={`tabular ${
+                          estado.qtyReceived > 0
+                            ? 'text-[var(--color-semantic-text-success)]'
+                            : 'text-[var(--color-text-muted)]'
+                        }`}
+                      >
+                        {cantidad(estado.qtyReceived)}
                       </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular">{money(Number(l.unit_cost))}</span>
                       {Number(l.discount_pct) > 0 && (
                         <span className="block text-[10px] text-[var(--color-semantic-text-warning)]">
-                          -{l.discount_pct}%
+                          -{Number(l.discount_pct)} %
                         </span>
                       )}
                       {variacion && Math.abs(variacion.porcentaje) >= 0.001 && (
@@ -339,7 +372,7 @@ export default async function OrdenDetallePage({
                             <input
                               name="unitCost"
                               placeholder={String(neto)}
-                              title="Costo real de esta entrega. Vacio = el cotizado menos el descuento."
+                              title="Costo real de esta entrega. Vacío = el cotizado menos el descuento."
                               inputMode="decimal"
                               aria-label={`Costo real de ${l.name}`}
                               className="h-8 w-20 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
@@ -374,7 +407,7 @@ export default async function OrdenDetallePage({
                   >
                     {products.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.sku} — {p.name} (ultimo costo RD$ {money(Number(p.cost))})
+                        {p.sku} — {p.name} (último costo RD$ {money(Number(p.cost))})
                       </option>
                     ))}
                   </select>
@@ -414,9 +447,9 @@ export default async function OrdenDetallePage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                El costo lo escribes tu: es lo que este proveedor te esta cobrando ahora, no lo que
-                dice el catálogo. Al recibir puedes declarar un costo distinto si llego a otro
-                precio — el promedio del inventario usa el real de entrada, no el cotizado.
+                El costo lo escribes tú: es lo que este proveedor te está cobrando ahora, no lo que
+                dice el catálogo. Al recibir puedes declarar un costo distinto si llegó a otro
+                precio: el promedio del inventario usa el real de entrada, no el cotizado.
               </p>
             </CardBody>
           </Card>

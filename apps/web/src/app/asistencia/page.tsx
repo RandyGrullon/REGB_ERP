@@ -22,6 +22,7 @@ import { Shell } from '@/components/Shell'
 import { marcarEntradaForm, marcarSalidaForm } from './actions'
 import { METODO_MARCAJE } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { diaRD, fechaHoraRD, horasEnTexto, hoyRD } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Asistencia · REGB ERP' }
@@ -45,7 +46,10 @@ interface SucursalOption {
   name: string
 }
 
-const HORA_ESPERADA = 8 // 8:00 a.m., referencia fija para el calculo de tardanza de la demo
+// 8:00 a. m. para todos: todavía no hay horarios por empleado (limitación
+// conocida de la ronda 3). La pantalla lo dice, para que nadie lea una
+// "tardanza" de quien entra a las 9:00 por turno.
+const HORA_ESPERADA = 8
 
 /** Asistencia (modulo 63): marcaje con geocerca, horas extra y tardanza calculadas. */
 export default async function AsistenciaPage({
@@ -79,20 +83,16 @@ export default async function AsistenciaPage({
   const abiertos = marcajes.filter((m) => !m.check_out)
   // Hoy en RD: antes el recuadro contaba los ultimos 50 marcajes de
   // cualquier dia y decia que eran de hoy.
-  const diaRD = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Santo_Domingo' })
-  const hoyRD = diaRD(new Date())
-  const deHoy = marcajes.filter((m) => diaRD(new Date(m.check_in)) === hoyRD)
+  const hoy = hoyRD()
+  const deHoy = marcajes.filter((m) => diaRD(m.check_in) === hoy)
+  // Una entrada de OTRO día sin salida no es "abierta": alguien olvidó marcar.
+  const olvidados = abiertos.filter((m) => diaRD(m.check_in) !== hoy)
+  const tardanzasHoy = deHoy.filter(
+    (m) =>
+      lateMinutes(new Date(m.check_in), horaEsperadaEnRD(new Date(m.check_in), HORA_ESPERADA)) > 0,
+  ).length
   const puedeMarcar = exigir(ctx, 'attendance', 'attendance.check-in').ok
   const qs = ctx.demoQs
-
-  const fechaHora = (iso: string) =>
-    new Date(iso).toLocaleString('es-DO', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'America/Santo_Domingo',
-    })
 
   const claseInput =
     'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
@@ -103,7 +103,7 @@ export default async function AsistenciaPage({
         <PageHeader
           icon="fingerprint"
           title="Asistencia"
-          description="Marcaje de entrada y salida. Horas extra y tardanza se calculan siempre de la hora real, nunca se escriben a mano."
+          description="Quién entró, a qué hora y cuándo salió. Las horas, la hora extra y la tardanza salen de la hora real del marcaje, nunca se escriben a mano."
           actions={
             <a
               href={`/asistencia/geocercas${qs}`}
@@ -117,18 +117,37 @@ export default async function AsistenciaPage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard
-            label="Marcajes abiertos"
-            value={String(abiertos.length)}
-            hint="sin salida todavia"
+            label="Adentro ahora"
+            value={String(abiertos.length - olvidados.length)}
+            hint="entraron hoy y no han salido"
           />
-          <StatCard label="Marcajes hoy" value={String(deHoy.length)} />
+          <StatCard
+            label="Entradas de hoy"
+            value={String(deHoy.length)}
+            hint={
+              tardanzasHoy > 0
+                ? `${tardanzasHoy} después de las 8:10 a. m.`
+                : 'ninguna después de las 8:10 a. m.'
+            }
+          />
+          <StatCard
+            label="Salidas sin marcar"
+            value={String(olvidados.length)}
+            hint={
+              olvidados.length === 0
+                ? 'todo cerrado'
+                : puedeMarcar
+                  ? 'de días anteriores: ciérralas con «Salida»'
+                  : 'de días anteriores, todavía abiertas'
+            }
+          />
         </section>
 
         {marcajes.length === 0 ? (
           <EmptyState
             icon="fingerprint"
-            title="Todavia no hay ningun marcaje"
-            description="Registra la primera entrada abajo."
+            title="Todavía no hay ningún marcaje"
+            description="Aquí sale cada entrada y salida del equipo. Los empleados marcan desde la app del teléfono; también puedes registrar una entrada abajo."
           />
         ) : (
           <Table>
@@ -138,9 +157,13 @@ export default async function AsistenciaPage({
                 <TH>Entrada</TH>
                 <TH>Salida</TH>
                 <TH numeric>Horas</TH>
-                <TH numeric>Extra</TH>
-                <TH numeric>Tardanza</TH>
-                <TH>Método</TH>
+                <TH numeric>
+                  <span title="Lo que pasa de 8 horas entre la entrada y la salida">Extra*</span>
+                </TH>
+                <TH numeric>
+                  <span title="Minutos después de las 8:10 a. m., igual para todos">Tardanza*</span>
+                </TH>
+                <TH className="hidden sm:table-cell">Método</TH>
                 {puedeMarcar && (
                   <TH>
                     <span className="sr-only">Acción</span>
@@ -156,21 +179,30 @@ export default async function AsistenciaPage({
                 const extra = horas !== null ? overtimeHours(horas) : null
                 const esperado = horaEsperadaEnRD(entrada, HORA_ESPERADA)
                 const tardanza = lateMinutes(entrada, esperado)
+                const olvidado = !m.check_out && diaRD(m.check_in) !== hoy
                 return (
                   <TR key={m.id}>
                     <TD className="text-[var(--color-text-primary)]">{m.employee_name}</TD>
-                    <TD>{fechaHora(m.check_in)}</TD>
-                    <TD>
-                      {m.check_out ? fechaHora(m.check_out) : <Badge tone="warning">Abierto</Badge>}
+                    <TD className="whitespace-nowrap">{fechaHoraRD(m.check_in)}</TD>
+                    <TD className="whitespace-nowrap">
+                      {m.check_out ? (
+                        fechaHoraRD(m.check_out)
+                      ) : olvidado ? (
+                        <Badge tone="danger">Sin salida</Badge>
+                      ) : (
+                        <Badge tone="warning">Adentro</Badge>
+                      )}
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{horas ?? '—'}</span>
+                      <span className="tabular whitespace-nowrap">
+                        {horas === null ? '—' : horasEnTexto(horas)}
+                      </span>
                     </TD>
                     <TD numeric>
                       <span
-                        className={`tabular ${extra ? 'text-[var(--color-semantic-text-warning)]' : ''}`}
+                        className={`tabular whitespace-nowrap ${extra ? 'text-[var(--color-semantic-text-warning)]' : ''}`}
                       >
-                        {extra ?? '—'}
+                        {extra ? horasEnTexto(extra) : '—'}
                       </span>
                     </TD>
                     <TD numeric>
@@ -180,11 +212,11 @@ export default async function AsistenciaPage({
                         {tardanza > 0 ? `${tardanza} min` : '—'}
                       </span>
                     </TD>
-                    <TD>
+                    <TD className="hidden sm:table-cell">
                       {METODO_MARCAJE[m.check_in_method] ?? m.check_in_method}
                       {m.within_geofence === false && (
-                        <span className="ml-1 text-[10px] text-[var(--color-semantic-text-danger)]">
-                          fuera de radio
+                        <span className="ml-1 text-xs font-semibold text-[var(--color-semantic-text-danger)]">
+                          fuera del radio
                         </span>
                       )}
                     </TD>
@@ -195,7 +227,7 @@ export default async function AsistenciaPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="recordId" value={m.id} />
-                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                               <Icon name="logout" size={14} />
                               Salida
                             </BotonEnvio>
@@ -208,6 +240,14 @@ export default async function AsistenciaPage({
               })}
             </TBody>
           </Table>
+        )}
+        {marcajes.length > 0 && (
+          <p className="-mt-2 text-xs text-[var(--color-text-muted)]">
+            * Todavía no hay horarios por empleado: la tardanza son los minutos después de las 8:10
+            a. m. (8:00 con 10 minutos de gracia) y la hora extra es lo que pasa de 8 horas entre la
+            entrada y la salida, sin descontar el almuerzo. Igual para todos: quien tenga otro
+            horario puede salir con tardanza o con extra sin tenerla.
+          </p>
         )}
 
         {puedeMarcar && empleados.length > 0 && (
@@ -264,8 +304,8 @@ export default async function AsistenciaPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Latitud/longitud son opcionales -sin ellas, el marcaje queda manual-. La app móvil
-                las completa sola con el GPS del teléfono.
+                La latitud y la longitud son opcionales: sin ellas, el marcaje queda como manual. La
+                app del teléfono las completa sola con el GPS.
               </p>
             </CardBody>
           </Card>

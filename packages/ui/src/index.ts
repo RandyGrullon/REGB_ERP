@@ -1,6 +1,7 @@
 export { cn } from './utils'
 
 export { Icon, type IconProps, type IconWeight } from './components/Icon'
+export { Logo, LOGO_TRAZOS, type LogoProps } from './components/Logo'
 export { Button, type ButtonProps } from './components/Button'
 export { Badge, type BadgeProps } from './components/Badge'
 export {

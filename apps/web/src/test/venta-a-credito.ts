@@ -102,7 +102,9 @@ export async function factura(
       (tenant_id, number, customer_id, source_type, issue_date, due_date,
        subtotal, tax, total, status, ncf, ncf_type)
     values (${tenantId}, ${f.numero}, ${customerId}, 'manual',
-            current_date - ${f.diasVencida + plazo}::int, current_date - ${f.diasVencida}::int,
+            -- La fecha de RD, como la app: con current_date (UTC), entre las
+            -- 8 p. m. y medianoche "hace 96 días" daba 95 y la prueba fallaba.
+            public.hoy_fiscal() - ${f.diasVencida + plazo}::int, public.hoy_fiscal() - ${f.diasVencida}::int,
             ${subtotal}, ${tax}, ${f.total},
             ${f.diasVencida > 0 ? 'overdue' : 'open'},
             ${f.ncf ?? null}, ${f.ncf ? f.ncf.slice(0, 3) : null})

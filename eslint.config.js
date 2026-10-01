@@ -8,7 +8,7 @@ import tseslint from 'typescript-eslint'
  * Si una de estas falla, no es un detalle de formato: es un principio roto.
  */
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/.next/**', '**/node_modules/**', '**/.turbo/**', '**/*.d.ts'] },
+  { ignores: ['**/dist/**', '**/.next/**', '**/.next-*/**', '**/node_modules/**', '**/.turbo/**', '**/*.d.ts'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,

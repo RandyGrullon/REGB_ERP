@@ -15,7 +15,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { buildDepreciationSchedule, type DepreciationMethod } from '@regb/operations'
+import { buildDepreciationSchedule, fechaFiscal, type DepreciationMethod } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -109,6 +109,16 @@ export default async function ActivoFijoDetallePage({
     head.useful_life_months,
   )
   const mesesTranscurridos = depreciaciones.length
+  // El mes 1 del calendario es el primer cierre ya depreciado; sin
+  // historial todavía, el mes de la compra.
+  const primerMes = new Date(
+    `${(depreciaciones[depreciaciones.length - 1]?.period_date ?? head.acquisition_date).slice(0, 7)}-01T12:00:00`,
+  )
+  const mesDelCalendario = (n: number) => {
+    const d = new Date(primerMes)
+    d.setMonth(d.getMonth() + n - 1)
+    return d.toLocaleDateString('es-DO', { month: 'short', year: 'numeric' })
+  }
 
   const e = ESTADO_ACTIVO[head.status] ?? { label: head.status, tone: 'neutral' as const }
   const puedeRevaluar = exigir(ctx, 'fixed-assets', 'fixed-assets.asset.revalue').ok
@@ -155,17 +165,17 @@ export default async function ActivoFijoDetallePage({
           <StatCard
             label="Base actual"
             value={`RD$ ${money(Number(head.current_basis))}`}
-            hint="costo o ultimo revaluo"
+            hint="costo o último revalúo"
           />
           <StatCard
-            label="Depreciacion acumulada"
+            label="Depreciación acumulada"
             value={`RD$ ${money(Number(head.accumulated))}`}
           />
           <StatCard label="Valor en libros" value={`RD$ ${money(Number(head.book_value))}`} />
           <StatCard
-            label="Vida util"
+            label="Vida útil"
             value={`${mesesTranscurridos} / ${head.useful_life_months} meses`}
-            hint="periodos depreciados"
+            hint="períodos depreciados"
           />
         </section>
 
@@ -206,7 +216,7 @@ export default async function ActivoFijoDetallePage({
                         name="reason"
                         required
                         minLength={4}
-                        placeholder="Avaluo de perito"
+                        placeholder="Avalúo de perito"
                         className={claseInput}
                       />
                     </label>
@@ -229,7 +239,12 @@ export default async function ActivoFijoDetallePage({
                     {campos}
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Fecha
-                      <input name="disposedAt" type="date" className={claseInput} />
+                      <input
+                        name="disposedAt"
+                        type="date"
+                        defaultValue={fechaFiscal(new Date())}
+                        className={claseInput}
+                      />
                     </label>
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                       Monto recibido
@@ -251,7 +266,8 @@ export default async function ActivoFijoDetallePage({
                       />
                     </label>
                     <BotonEnvio
-                      title="No se puede deshacer: un activo dado de baja queda historico"
+                      title="No se puede deshacer: un activo dado de baja queda como histórico"
+
                       className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]"
                     >
                       <Icon name="remove_circle" size={18} />
@@ -290,7 +306,12 @@ export default async function ActivoFijoDetallePage({
                         key={p.period}
                         className={p.period <= mesesTranscurridos ? '' : 'opacity-60'}
                       >
-                        <TD>{p.period}</TD>
+                        <TD className="whitespace-nowrap">
+                          <span className="tabular">{p.period}</span>
+                          <span className="ml-2 text-xs text-[var(--color-text-muted)]">
+                            {mesDelCalendario(p.period)}
+                          </span>
+                        </TD>
                         <TD numeric>
                           <span className="tabular">{money(p.depreciation)}</span>
                         </TD>
@@ -307,8 +328,9 @@ export default async function ActivoFijoDetallePage({
               </div>
             )}
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              Proyectado desde la base actual -si hubo un revalúo, ya lo incluye-. Los meses ya
-              corridos (con fondo normal) coinciden con el historial de abajo.
+              Proyectado desde la base actual (si hubo un revalúo, ya lo incluye). Los meses ya
+              depreciados salen resaltados y coinciden con el historial de abajo; los atenuados
+              están por venir.
             </p>
           </CardBody>
         </Card>
@@ -344,7 +366,7 @@ export default async function ActivoFijoDetallePage({
         {revaluos.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Historial de revaluos</CardTitle>
+              <CardTitle>Historial de revalúos</CardTitle>
             </CardHeader>
             <CardBody>
               <Table>
@@ -352,7 +374,7 @@ export default async function ActivoFijoDetallePage({
                   <TR>
                     <TH>Fecha</TH>
                     <TH numeric>Antes</TH>
-                    <TH numeric>Despues</TH>
+                    <TH numeric>Después</TH>
                     <TH>Motivo</TH>
                   </TR>
                 </THead>

@@ -307,20 +307,20 @@ export function creditBlockMessage(customerName: string, blocks: CreditBlock[]):
       const lista =
         b.invoices.length <= 3
           ? b.invoices.join(', ')
-          : `${b.invoices.slice(0, 3).join(', ')} y ${b.invoices.length - 3} mas`
+          : `${b.invoices.slice(0, 3).join(', ')} y ${b.invoices.length - 3} más`
       partes.push(
-        `tiene facturas vencidas hace ${b.days} dias (${lista}) y el maximo que se tolera es ${b.maxDays}`,
+        `tiene facturas vencidas hace ${b.days} días (${lista}) y el máximo que se tolera es ${b.maxDays}`,
       )
     } else {
       partes.push(
-        `su saldo pendiente (${rd(b.exposure)}) mas este documento (${rd(b.documentTotal)}) ` +
-          `pasa su limite de credito de ${rd(b.limit)} por ${rd(b.excess)}`,
+        `su saldo pendiente (${rd(b.exposure)}) más este documento (${rd(b.documentTotal)}) ` +
+          `pasa su límite de crédito de ${rd(b.limit)} por ${rd(b.excess)}`,
       )
     }
   }
   return (
-    `Credito bloqueado para ${customerName}: ${partes.join('; y ')}. ` +
-    'Cobra primero, o que alguien con permiso autorice la excepcion escribiendo el motivo.'
+    `Crédito bloqueado para ${customerName}: ${partes.join('; y ')}. ` +
+    'Cobra primero, o que alguien con permiso autorice la excepción escribiendo el motivo.'
   )
 }
 

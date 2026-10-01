@@ -90,7 +90,7 @@ export default async function MapaContablePage({
         <PageHeader
           icon="alt_route"
           title="Mapa de cuentas"
-          description="A que cuenta de tu catalogo va cada parte de los asientos que se generan solos: ventas de caja, facturas a credito, cobros, compras y pagos."
+          description="A que cuenta de tu catálogo va cada parte de los asientos que se generan solos: ventas de caja, facturas a crédito, cobros, compras y pagos."
           crumbs={[
             { label: 'Contabilidad', href: `/contabilidad${qs}` },
             { label: 'Mapa de cuentas' },
@@ -102,7 +102,7 @@ export default async function MapaContablePage({
             label="Usos asignados"
             value={`${PROPOSITOS_CONTABLES.length - faltan} de ${PROPOSITOS_CONTABLES.length}`}
           />
-          <StatCard label="Asientos automaticos" value={String(automaticos)} />
+          <StatCard label="Asientos automáticos" value={String(automaticos)} />
         </section>
 
         {faltan > 0 && (
@@ -112,7 +112,7 @@ export default async function MapaContablePage({
           >
             <Icon name="info" size={18} />
             {faltan} uso(s) sin cuenta. Con la primera venta, cobro o compra se crean solas las
-            cuentas del catalogo minimo; si prefieres verlas antes, crealas ahora.
+            cuentas del catálogo mínimo; si prefieres verlas antes, créalas ahora.
           </p>
         )}
 
@@ -201,7 +201,7 @@ export default async function MapaContablePage({
               >
                 {ocultos}
                 <p className="flex-1 text-sm text-[var(--color-text-secondary)]">
-                  Crea las cuentas que falten con los codigos por defecto y asigna los usos vacios.
+                  Crea las cuentas que falten con los códigos por defecto y asigna los usos vacíos.
                   No toca ninguna asignación que ya hayas hecho.
                 </p>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">

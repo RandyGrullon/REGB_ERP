@@ -171,7 +171,7 @@ describe('Ventas sin NCF entran en el ITBIS cobrado', () => {
   it('el mismo periodo no se cierra dos veces', async () => {
     const r = await cerrarLiquidacion(c.fd({ period: '202403' }))
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/ya esta cerrado/)
+    if (!r.ok) expect(r.error).toMatch(/ya está cerrado/)
   })
 })
 
@@ -311,7 +311,7 @@ describe('Guardas de la accion', () => {
     try {
       const r = await cerrarLiquidacion(c.fd({ period: '202406' }))
       expect(r.ok).toBe(false)
-      if (!r.ok) expect(r.error).toMatch(/modulo que esta apagado \(Cuentas por cobrar\)/)
+      if (!r.ok) expect(r.error).toMatch(/módulo que está apagado \(Cuentas por cobrar\)/)
       expect(await declaracion(c.tenantId, '202406')).toBeUndefined()
     } finally {
       await c.modulo('ar', true)
@@ -341,7 +341,7 @@ describe('Guardas de la accion', () => {
   it('un tenant que no existe no pasa de actionCtx', async () => {
     const f = c.fd({ period: '202406' })
     f.set('tenant', 'no-existe-00000000')
-    expect(await cerrarLiquidacion(f)).toEqual({ ok: false, error: 'Sesion no valida.' })
+    expect(await cerrarLiquidacion(f)).toEqual({ ok: false, error: 'Sesión no válida.' })
   })
 
   it('la version de formulario deja el aviso en la cookie', async () => {
@@ -351,6 +351,6 @@ describe('Guardas de la accion', () => {
       tipo?: string
       texto?: string
     }
-    expect(aviso).toEqual({ tipo: 'error', texto: 'El periodo va como AAAAMM.' })
+    expect(aviso).toEqual({ tipo: 'error', texto: 'El período va como AAAAMM.' })
   })
 })

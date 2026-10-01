@@ -29,7 +29,7 @@ async function guardar(
   cambio: (actual: number, total: number) => { step: number; completed: boolean; skipped: boolean },
 ): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'tour', 'tour.edit')
   if (!permiso.ok) return permiso
 

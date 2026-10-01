@@ -71,7 +71,7 @@ export default async function PresupuestosPage({
         <PageHeader
           icon="savings"
           title="Presupuestos"
-          description="El plan de gasto e ingreso por cuenta y por mes, comparado contra lo que de verdad se contabilizo."
+          description="El plan de ingresos y gastos por cuenta y por mes, comparado contra lo que de verdad se contabilizó."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -89,15 +89,15 @@ export default async function PresupuestosPage({
         {presupuestos.length === 0 ? (
           <EmptyState
             icon="savings"
-            title="Todavia no hay ningun presupuesto"
-            description="Crea el primero abajo con su ano fiscal, y desde su ficha pon el monto planeado por cuenta y por mes."
+            title="Todavía no hay ningún presupuesto"
+            description="Crea el primero abajo con su año fiscal, y desde su ficha pon el monto planeado por cuenta y por mes."
           />
         ) : (
-          <Table>
+          <Table className="min-w-[560px]">
             <THead>
               <TR>
                 <TH>Presupuesto</TH>
-                <TH>Ano</TH>
+                <TH>Año</TH>
                 <TH numeric>Líneas</TH>
                 <TH numeric>Total planeado</TH>
                 <TH>Estado</TH>
@@ -155,7 +155,7 @@ export default async function PresupuestosPage({
                   />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Ano fiscal
+                  Año fiscal
                   <input
                     name="fiscalYear"
                     required

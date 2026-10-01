@@ -253,14 +253,14 @@ export default async function CorridaConsolidacionPage({
           title={head.group_name}
           description={`${fecha(head.period_start)} — ${fecha(head.period_end)} · presenta en ${head.presentation_currency}`}
           crumbs={[
-            { label: 'Consolidacion', href: `/consolidacion${qs}` },
+            { label: 'Consolidación', href: `/consolidacion${qs}` },
             { label: head.group_name },
           ]}
         />
 
         <p className="text-xs text-[var(--color-text-muted)]">
           La foto de esta corrida es el ACUMULADO de todo lo contabilizado hasta el{' '}
-          {fecha(head.period_end)}, no solo el movimiento entre las dos fechas. Es a proposito: una
+          {fecha(head.period_end)}, no solo el movimiento entre las dos fechas. Es a propósito: una
           cuenta por cobrar entre dos empresas del grupo nacida antes valdria cero si la foto solo
           mirara el período, y no habria nada que eliminar. Mientras el sistema no tenga cierre
           anual, ingresos y gastos también salen acumulados.
@@ -278,7 +278,7 @@ export default async function CorridaConsolidacionPage({
             hint="lo que una le debe a la otra"
           />
           <StatCard
-            label="Total debito consolidado"
+            label="Total débito consolidado"
             value={`${head.presentation_currency} ${money(hoja.totals.totalDebit)}`}
             hint={
               hoja.totals.balanced
@@ -303,7 +303,7 @@ export default async function CorridaConsolidacionPage({
             className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-semantic-danger)] bg-[color-mix(in_srgb,var(--color-semantic-danger)_10%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-danger)]"
           >
             <Icon name="error" size={18} />
-            La hoja consolidada no cuadra: debito {money(hoja.totals.totalDebit)} contra credito{' '}
+            La hoja consolidada no cuadra: débito {money(hoja.totals.totalDebit)} contra crédito{' '}
             {money(hoja.totals.totalCredit)}. Si cada asiento cuadro al contabilizarse, esto no
             debería pasar nunca.
           </p>
@@ -330,22 +330,21 @@ export default async function CorridaConsolidacionPage({
           <CardBody>
             {hoja.rows.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Esta corrida no encontro ningún asiento contabilizado en el período. Revisa las
-                fechas, o que los asientos esten contabilizados y no en borrador.
+                Esta corrida no encontró ningún asiento contabilizado en el período. Revisa las
+                fechas, o que los asientos estén contabilizados y no en borrador.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[860px]">
                 <THead>
                   <TR>
                     <TH>Cuenta</TH>
-                    <TH>Tipo</TH>
                     {miembros.map((m) => (
                       <TH key={m.company_id} numeric>
                         {m.nombre}
                       </TH>
                     ))}
                     <TH numeric>Combinado</TH>
-                    <TH numeric>Elim. debito</TH>
+                    <TH numeric>Elim. débito</TH>
                     <TH numeric>Elim. crédito</TH>
                     <TH numeric>Consolidado</TH>
                   </TR>
@@ -355,8 +354,10 @@ export default async function CorridaConsolidacionPage({
                     <TR key={r.accountId}>
                       <TD>
                         <Mono>{r.accountCode}</Mono> {r.accountName}
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {TIPO_CUENTA[r.type] ?? r.type}
+                        </span>
                       </TD>
-                      <TD>{TIPO_CUENTA[r.type] ?? r.type}</TD>
                       {miembros.map((m) => (
                         <TD key={m.company_id} numeric>
                           <span className="tabular">{money(r.porEmpresa[m.company_id] ?? 0)}</span>
@@ -394,10 +395,10 @@ export default async function CorridaConsolidacionPage({
             {eliminaciones.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
                 Todavía no se ha eliminado nada. Sin eliminaciones, la columna consolidada es la
-                simple suma de las empresas -y el grupo se declara más grande de lo que es-.
+                simple suma de las empresas, y el grupo se ve más grande de lo que es.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[720px]">
                 <THead>
                   <TR>
                     <TH>Descripción</TH>
@@ -413,7 +414,12 @@ export default async function CorridaConsolidacionPage({
                     <TR key={e.id}>
                       <TD className="text-[var(--color-text-primary)]">{e.description}</TD>
                       <TD>
-                        {e.from_nombre} → {e.to_nombre}
+                        <span className="inline-flex items-center gap-1">
+                          {e.from_nombre}
+                          <Icon name="arrow_forward" size={14} />
+                          <span className="sr-only">a</span>
+                          {e.to_nombre}
+                        </span>
                       </TD>
                       <TD>{TIPO_ELIMINACION[e.kind] ?? e.kind}</TD>
                       <TD>
@@ -430,7 +436,7 @@ export default async function CorridaConsolidacionPage({
                             <input type="hidden" name="runId" value={head.id} />
                             <input type="hidden" name="eliminationId" value={e.id} />
                             <BotonEnvio
-                              aria-label={`Quitar la eliminacion ${e.description}`}
+                              aria-label={`Quitar la eliminación ${e.description}`}
                               className="flex items-center text-[var(--color-text-muted)] hover:text-[var(--color-semantic-text-danger)]"
                             >
                               <Icon name="close" size={16} />
@@ -449,7 +455,7 @@ export default async function CorridaConsolidacionPage({
         {puedeEliminar && miembros.length >= 2 && cuentasActivas.length >= 2 && (
           <Card>
             <CardHeader>
-              <CardTitle>Eliminar una operacion entre empresas</CardTitle>
+              <CardTitle>Eliminar una operación entre empresas</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={capturarEliminacionForm} className="space-y-3">
@@ -472,7 +478,12 @@ export default async function CorridaConsolidacionPage({
                   </label>
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Hacia
-                    <select name="toCompanyId" required className={claseInput}>
+                    <select
+                      name="toCompanyId"
+                      required
+                      defaultValue={miembros[1]?.company_id}
+                      className={claseInput}
+                    >
                       {miembros.map((m) => (
                         <option key={m.company_id} value={m.company_id}>
                           {m.nombre}
@@ -492,7 +503,7 @@ export default async function CorridaConsolidacionPage({
                 </div>
                 <div className="flex flex-wrap items-end gap-3">
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Cuenta al debito
+                    Cuenta al débito
                     <select name="debitAccountId" required className={claseInput}>
                       {cuentasActivas.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -523,12 +534,12 @@ export default async function CorridaConsolidacionPage({
                   </label>
                 </div>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
                     minLength={3}
-                    placeholder="Venta de mercancia de la matriz a la filial"
+                    placeholder="Venta de mercancía de la matriz a la filial"
                     className={claseInput}
                   />
                 </label>
@@ -537,9 +548,10 @@ export default async function CorridaConsolidacionPage({
                   Eliminar del grupo
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Es un par: un mismo monto al debito de una cuenta y al credito de otra, asi la
+                  Es un par: un mismo monto al débito de una cuenta y al crédito de otra, así la
                   consolidación no se puede descuadrar. Un caso de tres patas se captura como dos
                   eliminaciones.
+
                 </p>
               </form>
             </CardBody>
@@ -561,8 +573,8 @@ export default async function CorridaConsolidacionPage({
                   Cerrar corrida
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Una vez cerrada no se edita ni se borra -ni ella, ni su foto de saldos, ni sus
-                  eliminaciones-. Si hay que corregir, se genera otra corrida y quedan las dos.
+                  Una vez cerrada no se edita ni se borra (ni ella, ni su foto de saldos, ni sus
+                  eliminaciones). Si hay que corregir, se genera otra corrida y quedan las dos.
                 </p>
               </form>
             </CardBody>
@@ -572,7 +584,7 @@ export default async function CorridaConsolidacionPage({
         {!abierta && (
           <p className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
             <Badge tone="success">Cerrada</Badge>
-            Este consolidado ya se entrego. Igual que un asiento contabilizado, no se corrige por
+            Este consolidado ya se entregó. Igual que un asiento contabilizado, no se corrige por
             encima: se hace otra corrida.
           </p>
         )}

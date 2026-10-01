@@ -36,6 +36,7 @@ interface OrdenRow {
   qty_completed: string
   qty_scrapped: string
   ideal_cycle_hours: string | null
+  qty_planned: string
 }
 
 const badgeEstado = (s: string): 'success' | 'warning' | 'neutral' => {
@@ -53,11 +54,12 @@ export default async function PisoDePlantaPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'shopfloor')
 
-  const { ordenes, paros } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const { ordenes, paros, sesiones } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const o = await tx<OrdenRow[]>`
       select po.id, p.sku, p.name as product_name, po.status,
              po.released_at::text, po.completed_at::text,
-             po.qty_completed::text, po.qty_scrapped::text, po.ideal_cycle_hours::text
+             po.qty_completed::text, po.qty_scrapped::text, po.ideal_cycle_hours::text,
+             po.qty_planned::text
       from public.production_orders po
       join public.bill_of_materials bm on bm.id = po.bom_id
       join public.products p on p.id = bm.product_id
@@ -73,18 +75,43 @@ export default async function PisoDePlantaPage({
             from public.shopfloor_downtime
             where tenant_id = ${ctx.tenantId} and production_order_id in ${tx(ids)}`
         : []
+    const s =
+      ids.length > 0
+        ? await tx<
+            { production_order_id: string; clocked_in_at: string; clocked_out_at: string | null }[]
+          >`
+            select production_order_id, clocked_in_at::text, clocked_out_at::text
+            from public.shopfloor_sessions
+            where tenant_id = ${ctx.tenantId} and production_order_id in ${tx(ids)}`
+        : []
 
-    return { ordenes: o, paros: d }
+    return { ordenes: o, paros: d, sesiones: s }
   })
 
   const qs = ctx.demoQs
 
   const filas = ordenes.map((o) => {
+    // El tiempo que la planta estuvo trabajando esa orden: las sesiones
+    // marcadas en la terminal. Sin sesiones, desde que se liberó.
+    const sesionesDeOrden = sesiones.filter((s) => s.production_order_id === o.id)
     const inicio = o.released_at ? new Date(o.released_at) : null
     const fin = o.completed_at ? new Date(o.completed_at) : new Date()
-    const horasPlanificadas = inicio
-      ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000)
-      : 0
+    const horasPlanificadas =
+      sesionesDeOrden.length > 0
+        ? sesionesDeOrden.reduce(
+            (a, s) =>
+              a +
+              Math.max(
+                0,
+                ((s.clocked_out_at ? new Date(s.clocked_out_at) : new Date()).getTime() -
+                  new Date(s.clocked_in_at).getTime()) /
+                  3_600_000,
+              ),
+            0,
+          )
+        : inicio
+          ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000)
+          : 0
 
     const paroDeOrden = paros
       .filter((p) => p.production_order_id === o.id)
@@ -106,7 +133,7 @@ export default async function PisoDePlantaPage({
     const cal = calidadOee(Number(o.qty_scrapped), Number(o.qty_completed))
     const oee = rend !== null ? calcularOee(disp, rend, cal) : null
 
-    return { ...o, oee }
+    return { ...o, oee, horasPlanificadas, horasInactivo }
   })
 
   const promedioOee =
@@ -120,17 +147,26 @@ export default async function PisoDePlantaPage({
         <PageHeader
           icon="precision_manufacturing"
           title="Piso de planta"
-          description="OEE = disponibilidad x rendimiento x calidad, calculado de sesiones y paros reales -no una estimacion de memoria-."
+          description="Cómo va cada orden en la planta. La eficiencia (OEE) multiplica tres cosas: el tiempo que se trabajó sin paros, lo rápido que se produjo contra el ritmo ideal y lo que salió bueno. Se calcula con las entradas, salidas y paros marcados en la terminal."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard
-            label="Ordenes activas"
+            label="Órdenes activas"
             value={String(ordenes.filter((o) => o.status !== 'completed').length)}
+            hint="liberadas o en progreso"
           />
           <StatCard
-            label="OEE promedio"
+            label="Eficiencia (OEE)"
             value={promedioOee === null ? '—' : `${(promedioOee * 100).toFixed(0)}%`}
+            hint="promedio; 85 % es de primera"
+          />
+          <StatCard
+            label="Horas de paro"
+            value={filas
+              .reduce((a, f) => a + f.horasInactivo, 0)
+              .toLocaleString('es-DO', { maximumFractionDigits: 1 })}
+            hint="en estas órdenes"
           />
         </section>
 
@@ -138,7 +174,7 @@ export default async function PisoDePlantaPage({
           <EmptyState
             icon="precision_manufacturing"
             title="No hay ninguna orden liberada"
-            description="Libera una orden en Ordenes de produccion para verla aqui."
+            description="Libera una orden en Órdenes de producción para verla aquí."
           />
         ) : (
           <Table>
@@ -146,7 +182,9 @@ export default async function PisoDePlantaPage({
               <TR>
                 <TH>Orden</TH>
                 <TH>Estado</TH>
-                <TH numeric>OEE</TH>
+                <TH numeric>Avance</TH>
+                <TH numeric>Horas trabajadas</TH>
+                <TH numeric>Eficiencia (OEE)</TH>
               </TR>
             </THead>
             <TBody>
@@ -166,8 +204,19 @@ export default async function PisoDePlantaPage({
                     </Badge>
                   </TD>
                   <TD numeric>
+                    <span className="tabular">
+                      {Number(o.qty_completed).toLocaleString('es-DO')} de{' '}
+                      {Number(o.qty_planned).toLocaleString('es-DO')}
+                    </span>
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular">
+                      {o.horasPlanificadas.toLocaleString('es-DO', { maximumFractionDigits: 1 })} h
+                    </span>
+                  </TD>
+                  <TD numeric>
                     {o.oee === null ? (
-                      <span className="text-[var(--color-text-muted)]">Sin ciclo ideal</span>
+                      <span className="text-[var(--color-text-muted)]">Falta el ritmo ideal</span>
                     ) : (
                       <span className="tabular font-semibold">{(o.oee * 100).toFixed(0)}%</span>
                     )}

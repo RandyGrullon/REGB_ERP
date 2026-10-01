@@ -193,18 +193,18 @@ describe('creditBlockMessage', () => {
       { code: 'limit', limit: 50000, exposure: 40000, documentTotal: 11800, excess: 1800 },
     ])
     expect(msg).toMatch(/Ferreteria El Martillo SRL/)
-    expect(msg).toMatch(/96 dias \(FAC-DEMO-0003\)/)
-    expect(msg).toMatch(/maximo que se tolera es 30/)
+    expect(msg).toMatch(/96 días \(FAC-DEMO-0003\)/)
+    expect(msg).toMatch(/máximo que se tolera es 30/)
     expect(msg).toMatch(/RD\$ 40,000\.00/)
-    expect(msg).toMatch(/limite de credito de RD\$ 50,000\.00 por RD\$ 1,800\.00/)
-    expect(msg).toMatch(/autorice la excepcion/)
+    expect(msg).toMatch(/límite de crédito de RD\$ 50,000\.00 por RD\$ 1,800\.00/)
+    expect(msg).toMatch(/autorice la excepción/)
   })
 
   it('con muchas facturas no las lista todas', () => {
     const msg = creditBlockMessage('X', [
       { code: 'overdue', days: 60, maxDays: 30, invoices: ['A', 'B', 'C', 'D', 'E'] },
     ])
-    expect(msg).toMatch(/A, B, C y 2 mas/)
+    expect(msg).toMatch(/A, B, C y 2 más/)
   })
 })
 

@@ -190,7 +190,7 @@ export default async function RespaldosPage({
         {referencia && indice ? (
           <QueTrae
             indice={indice.payload}
-            titulo={`Que trae el respaldo del ${fecha(referencia.created_at)}`}
+            titulo={`Qué trae el respaldo del ${fecha(referencia.created_at)}`}
             subtitulo={
               referencia.downloaded_at
                 ? 'Es el último que salió de aquí: lo que no esté en él, lo perderías.'
@@ -200,20 +200,35 @@ export default async function RespaldosPage({
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Que trae un respaldo</CardTitle>
+              <CardTitle>Qué trae un respaldo</CardTitle>
             </CardHeader>
             <CardBody className="space-y-2 text-sm text-[var(--color-text-secondary)]">
               {alcance.bloqueo ? (
                 <p>{alcance.bloqueo}</p>
               ) : (
                 <>
+                  {/* La lista completa se pliega: con 80 módulos era un párrafo de
+                      diez líneas que nadie leía. */}
                   <p>
-                    Todas las tablas de los modulos que tienes activos y que tu rol ve completos:{' '}
-                    {alcance.modulos.map(nombreDeModulo).join(', ')}.
+                    Todas las tablas de los {alcance.modulos.length} módulos que tienes activos y
+                    que tu rol ve completos: tus ventas, tu inventario, tus clientes, tu
+                    contabilidad y todo lo demás.
                   </p>
+                  <details>
+                    <summary className="cursor-pointer text-[var(--color-text-link)]">
+                      Ver la lista de módulos
+                    </summary>
+                    <p className="mt-2">
+                      {alcance.modulos
+                        .map(nombreDeModulo)
+                        .sort((a, b) => a.localeCompare(b, 'es'))
+                        .join(', ')}
+                      .
+                    </p>
+                  </details>
                   {alcance.fuera.length > 0 && (
                     <p className="text-[var(--color-semantic-text-warning)]">
-                      No traeria: {alcance.fuera.map((f) => `${f.nombre} (${f.motivo})`).join(', ')}
+                      No traería: {alcance.fuera.map((f) => `${f.nombre} (${f.motivo})`).join(', ')}
                       .
                     </p>
                   )}
@@ -229,8 +244,8 @@ export default async function RespaldosPage({
         {backups.length === 0 ? (
           <EmptyState
             icon="backup"
-            title="Todavia no hay respaldos"
-            description='Pulsa "Crear respaldo ahora" y descargalo. No se generan solos: si nadie lo hace, no hay.'
+            title="Todavía no hay respaldos"
+            description='Pulsa "Crear respaldo ahora" y descárgalo. No se generan solos: si nadie lo hace, no hay.'
           />
         ) : (
           <Table>
@@ -238,7 +253,7 @@ export default async function RespaldosPage({
               <TR>
                 <TH>Fecha</TH>
                 <TH>Contenido</TH>
-                <TH numeric>Tamano</TH>
+                <TH numeric>Tamaño</TH>
                 <TH>Creado por</TH>
                 <TH>Fuera de aquí</TH>
                 <TH>
@@ -352,7 +367,7 @@ function QueTrae({
           <ul className="mt-1 list-disc space-y-1 pl-5 text-[var(--color-text-secondary)]">
             {apagados.length > 0 && (
               <li className="text-[var(--color-semantic-text-warning)]">
-                {apagados.map(nombreDeModulo).join(', ')}: el modulo esta apagado. Tus datos siguen
+                {apagados.map(nombreDeModulo).join(', ')}: el módulo está apagado. Tus datos siguen
                 en la base, pero no salen en el respaldo hasta que lo enciendas.
               </li>
             )}
@@ -364,7 +379,7 @@ function QueTrae({
             )}
             {sinModulo.length > 0 && (
               <li className="text-[var(--color-semantic-text-warning)]">
-                {sinModulo.join(', ')}: tablas sin modulo conocido. Avisale a soporte.
+                {sinModulo.join(', ')}: tablas sin módulo conocido. Avísale a soporte.
               </li>
             )}
             {indice.personales.length > 0 && (

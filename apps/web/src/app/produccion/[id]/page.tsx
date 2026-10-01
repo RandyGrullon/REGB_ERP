@@ -23,6 +23,7 @@ import { Shell } from '@/components/Shell'
 import { cancelarOrdenForm, liberarOrdenForm, reportarAvanceForm } from '../actions'
 import { ESTADO_ORDEN } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, unirFrases } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,16 +32,22 @@ interface OrdenHead {
   status: string
   sku: string
   product_name: string
+  unit: string
   warehouse_name: string
   qty_planned: string
   qty_completed: string
   qty_scrapped: string
+  created_at: string
+  released_at: string | null
+  completed_at: string | null
+  notes: string | null
 }
 
 interface LineaRow {
   id: string
   sku: string
   name: string
+  unit: string
   qty_required: string
   qty_consumed: string
 }
@@ -51,10 +58,16 @@ interface ReporteRow {
   qty_scrapped_delta: string
   reported_at: string
   notes: string | null
+  quien: string | null
 }
 
-const money = (n: number) =>
-  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 3 })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 
 /** Detalle de una orden de produccion (modulo 56): liberar, reportar avance y mermas. */
 export default async function OrdenDetallePage({
@@ -70,8 +83,9 @@ export default async function OrdenDetallePage({
 
   const { head, lineas, reportes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<OrdenHead[]>`
-      select po.id, po.status, p.sku, p.name as product_name, w.name as warehouse_name,
-             po.qty_planned::text, po.qty_completed::text, po.qty_scrapped::text
+      select po.id, po.status, p.sku, p.name as product_name, p.unit, w.name as warehouse_name,
+             po.qty_planned::text, po.qty_completed::text, po.qty_scrapped::text,
+             po.created_at::text, po.released_at::text, po.completed_at::text, po.notes
       from public.production_orders po
       join public.bill_of_materials bm on bm.id = po.bom_id
       join public.products p on p.id = bm.product_id
@@ -80,17 +94,19 @@ export default async function OrdenDetallePage({
     if (!h) return { head: null, lineas: [], reportes: [] }
 
     const l = await tx<LineaRow[]>`
-      select l.id, p.sku, p.name, l.qty_required::text, l.qty_consumed::text
+      select l.id, p.sku, p.name, p.unit, l.qty_required::text, l.qty_consumed::text
       from public.production_order_lines l
       join public.products p on p.id = l.component_product_id
       where l.order_id = ${id} and l.tenant_id = ${ctx.tenantId}
       order by p.name`
 
     const r = await tx<ReporteRow[]>`
-      select id, qty_completed_delta::text, qty_scrapped_delta::text, reported_at::text, notes
-      from public.production_reports
-      where order_id = ${id} and tenant_id = ${ctx.tenantId}
-      order by reported_at desc`
+      select r.id, r.qty_completed_delta::text, r.qty_scrapped_delta::text, r.reported_at::text,
+             r.notes, up.display_name as quien
+      from public.production_reports r
+      left join public.user_profiles up on up.tenant_id = r.tenant_id and up.user_id = r.reported_by
+      where r.order_id = ${id} and r.tenant_id = ${ctx.tenantId}
+      order by r.reported_at desc`
 
     return { head: h, lineas: l, reportes: r }
   })
@@ -119,13 +135,23 @@ export default async function OrdenDetallePage({
         <PageHeader
           icon="precision_manufacturing"
           title={`${head.sku} · ${head.product_name}`}
-          description={`Almacén: ${head.warehouse_name}`}
+          description={unirFrases([
+            [
+              `Se fabrica en ${head.warehouse_name}`,
+              `creada el ${fecha(head.created_at)}`,
+              head.released_at ? `liberada el ${fecha(head.released_at)}` : null,
+              head.completed_at ? `completada el ${fecha(head.completed_at)}` : null,
+            ]
+              .filter(Boolean)
+              .join(' · '),
+            head.notes,
+          ])}
           crumbs={[
-            { label: 'Ordenes de produccion', href: `/produccion${qs}` },
+            { label: 'Órdenes de producción', href: `/produccion${qs}` },
             { label: head.sku },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge
                 tone={
                   head.status === 'completed'
@@ -160,9 +186,17 @@ export default async function OrdenDetallePage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Planificado" value={head.qty_planned} />
-          <StatCard label="Completado" value={head.qty_completed} />
-          <StatCard label="Merma" value={head.qty_scrapped} />
+          <StatCard label="Planificado" value={cantidad(head.qty_planned, head.unit)} />
+          <StatCard
+            label="Completado"
+            value={cantidad(head.qty_completed)}
+            hint="ya entró al almacén"
+          />
+          <StatCard
+            label="Merma"
+            value={cantidad(head.qty_scrapped)}
+            hint="se dañó en el proceso"
+          />
           <StatCard
             label="Avance"
             value={`${progreso}%`}
@@ -191,10 +225,10 @@ export default async function OrdenDetallePage({
                         <Mono>{l.sku}</Mono> {l.name}
                       </TD>
                       <TD numeric>
-                        <span className="tabular">{money(Number(l.qty_required))}</span>
+                        <span className="tabular">{cantidad(l.qty_required, l.unit)}</span>
                       </TD>
                       <TD numeric>
-                        <span className="tabular">{money(Number(l.qty_consumed))}</span>
+                        <span className="tabular">{cantidad(l.qty_consumed, l.unit)}</span>
                       </TD>
                     </TR>
                   ))}
@@ -211,7 +245,9 @@ export default async function OrdenDetallePage({
           <CardBody className="p-0">
             {reportes.length === 0 ? (
               <p className="p-4 text-sm text-[var(--color-text-muted)]">
-                Todavía no hay ningún reporte.
+                {puedeReportarAhora
+                  ? 'Todavía no hay ningún reporte. Cada vez que la planta termine una tanda, anótala abajo: lo completado entra al almacén.'
+                  : 'Esta orden no tiene reportes de avance.'}
               </p>
             ) : (
               <Table>
@@ -220,24 +256,28 @@ export default async function OrdenDetallePage({
                     <TH>Fecha</TH>
                     <TH numeric>Completado</TH>
                     <TH numeric>Merma</TH>
+                    <TH>Quién</TH>
                     <TH>Notas</TH>
                   </TR>
                 </THead>
                 <TBody>
                   {reportes.map((r) => (
                     <TR key={r.id}>
-                      <TD>{new Date(r.reported_at).toLocaleString('es-DO')}</TD>
+                      <TD className="whitespace-nowrap">{fecha(r.reported_at)}</TD>
                       <TD numeric>
                         <span className="tabular text-[var(--color-semantic-text-success)]">
-                          {r.qty_completed_delta}
+                          {cantidad(r.qty_completed_delta)}
                         </span>
                       </TD>
                       <TD numeric>
                         <span className="tabular text-[var(--color-semantic-text-danger)]">
-                          {r.qty_scrapped_delta}
+                          {cantidad(r.qty_scrapped_delta)}
                         </span>
                       </TD>
-                      <TD className="max-w-48 truncate">{r.notes ?? '—'}</TD>
+                      <TD>{r.quien ?? '—'}</TD>
+                      <TD className="max-w-72">
+                        <span className="line-clamp-2">{r.notes ?? '—'}</span>
+                      </TD>
                     </TR>
                   ))}
                 </TBody>

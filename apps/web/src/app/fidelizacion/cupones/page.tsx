@@ -18,6 +18,7 @@ import {
 import { cuponVigente } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { diaRD, fechaCorta } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { crearCuponForm, transicionarCuponForm } from '../actions'
 import { ESTADO_CUPON } from '../estados'
@@ -73,13 +74,13 @@ export default async function CuponesPage({ searchParams }: { searchParams: Prom
         <PageHeader
           icon="confirmation_number"
           title="Cupones"
-          crumbs={[{ label: 'Fidelizacion', href: `/fidelizacion${qs}` }, { label: 'Cupones' }]}
+          crumbs={[{ label: 'Fidelización', href: `/fidelizacion${qs}` }, { label: 'Cupones' }]}
         />
 
         {cupones.length === 0 ? (
           <EmptyState
             icon="confirmation_number"
-            title="Todavia no hay ningun cupon"
+            title="Todavía no hay ningún cupón"
             description="Crea el primero abajo."
           />
         ) : (
@@ -117,9 +118,7 @@ export default async function CuponesPage({ searchParams }: { searchParams: Prom
                       </span>
                     </TD>
                     <TD className="text-[var(--color-text-muted)]">
-                      {c.expires_at
-                        ? new Date(c.expires_at).toLocaleDateString('es-DO')
-                        : 'Sin vencimiento'}
+                      {c.expires_at ? fechaCorta(diaRD(c.expires_at), true) : 'Sin vencimiento'}
                     </TD>
                     <TD>
                       <Badge tone={badgeEstado(vencido ? 'expired' : c.status)}>
@@ -151,14 +150,14 @@ export default async function CuponesPage({ searchParams }: { searchParams: Prom
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Nuevo cupon</CardTitle>
+              <CardTitle>Nuevo cupón</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearCuponForm} className="flex flex-wrap items-end gap-3">
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input
                     name="code"
                     required

@@ -21,6 +21,7 @@ import {
 } from '../actions'
 import { ESTADO_VACANTE, ETAPA_APLICACION, RESULTADO_ENTREVISTA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { diaRD, fechaCorta, fechaHoraRD } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,7 @@ interface VacanteHead {
 
 interface AplicacionRow {
   id: string
+  candidate_id: string
   candidate_name: string
   stage: EtapaAplicacion
   applied_at: string
@@ -89,7 +91,8 @@ export default async function VacanteDetallePage({
       if (!head) return { vacante: null, aplicaciones: [], entrevistas: [], candidatos: [] }
 
       const a = await tx<AplicacionRow[]>`
-        select ra.id, c.first_name || ' ' || c.last_name as candidate_name, ra.stage, ra.applied_at::text
+        select ra.id, ra.candidate_id, c.first_name || ' ' || c.last_name as candidate_name,
+               ra.stage, ra.applied_at::text
         from public.recruiting_applications ra
         join public.recruiting_candidates c on c.id = ra.candidate_id
         where ra.tenant_id = ${ctx.tenantId} and ra.position_id = ${id}
@@ -119,6 +122,11 @@ export default async function VacanteDetallePage({
     entrevistasPorAplicacion.set(en.application_id, lista)
   }
 
+  const yaEnLaVacante = new Set(aplicaciones.map((a) => a.candidate_id))
+  const libres = candidatos.filter((c) => !yaEnLaVacante.has(c.id))
+  const abierta = vacante.status === 'open'
+  const enProceso = aplicaciones.filter((a) => a.stage !== 'hired' && a.stage !== 'rejected')
+  const contratados = aplicaciones.filter((a) => a.stage === 'hired').length
   const puedeGestionar = exigir(ctx, 'recruiting', 'recruiting.manage-pipeline').ok
   const puedeVacante = exigir(ctx, 'recruiting', 'recruiting.manage-positions').ok
   const qs = ctx.demoQs
@@ -133,7 +141,18 @@ export default async function VacanteDetallePage({
         <PageHeader
           icon="work"
           title={vacante.title}
-          description={vacante.description ?? vacante.department ?? ''}
+          description={
+            [vacante.department, vacante.description].filter(Boolean).join(' · ') || undefined
+          }
+          meta={
+            aplicaciones.length > 0 ? (
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {aplicaciones.length} candidato{aplicaciones.length === 1 ? '' : 's'} ·{' '}
+                {enProceso.length} en proceso · {contratados} contratado
+                {contratados === 1 ? '' : 's'}
+              </p>
+            ) : undefined
+          }
           crumbs={[
             { label: 'Reclutamiento', href: `/reclutamiento${qs}` },
             { label: vacante.title },
@@ -151,9 +170,9 @@ export default async function VacanteDetallePage({
                     </option>
                   ))}
                 </select>
-                <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="save" size={14} />
-                  Guardar
+                  Guardar estado
                 </BotonEnvio>
               </form>
             ) : (
@@ -165,8 +184,12 @@ export default async function VacanteDetallePage({
         {aplicaciones.length === 0 ? (
           <EmptyState
             icon="groups"
-            title="Todavia no hay ningun candidato aplicado"
-            description=""
+            title="Todavía no hay candidatos en esta vacante"
+            description={
+              abierta
+                ? 'Agrega abajo a alguien de tu lista de candidatos y llévalo por las etapas: filtro, entrevista, oferta y contratación.'
+                : 'Esta vacante no está abierta. Cámbiala a «Abierta» arriba para empezar a recibir candidatos.'
+            }
           />
         ) : (
           <div className="space-y-3">
@@ -178,11 +201,14 @@ export default async function VacanteDetallePage({
                   <CardBody className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <div>
-                        <p className="font-medium text-[var(--color-text-primary)]">
+                        <p className="font-semibold text-[var(--color-text-primary)]">
                           {a.candidate_name}
                         </p>
                         <p className="text-xs text-[var(--color-text-muted)]">
-                          {diasEnPipeline(new Date(a.applied_at), hoy)} dias en el pipeline
+                          Se postuló el {fechaCorta(diaRD(a.applied_at), true)}
+                          {esTerminal
+                            ? ''
+                            : ` · ${diasEnPipeline(new Date(a.applied_at), hoy)} días en proceso`}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -202,7 +228,7 @@ export default async function VacanteDetallePage({
                                 <input type="hidden" name="applicationId" value={a.id} />
                                 <input type="hidden" name="positionId" value={vacante.id} />
                                 <input type="hidden" name="stage" value={siguiente} />
-                                <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                                <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                                   Avanzar a {ETAPA_APLICACION[siguiente]}
                                 </BotonEnvio>
                               </form>
@@ -213,8 +239,8 @@ export default async function VacanteDetallePage({
                               <input type="hidden" name="applicationId" value={a.id} />
                               <input type="hidden" name="positionId" value={vacante.id} />
                               <input type="hidden" name="stage" value="rejected" />
-                              <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                                Rechazar
+                              <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                                Descartar
                               </BotonEnvio>
                             </form>
                           </div>
@@ -230,13 +256,8 @@ export default async function VacanteDetallePage({
                             className="flex justify-between text-xs text-[var(--color-text-secondary)]"
                           >
                             <span>
-                              {new Date(en.scheduled_at).toLocaleString('es-DO', {
-                                day: 'numeric',
-                                month: 'short',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                              {en.interviewer_name ? ` · ${en.interviewer_name}` : ''}
+                              Entrevista: {fechaHoraRD(en.scheduled_at)}
+                              {en.interviewer_name ? ` · con ${en.interviewer_name}` : ''}
                             </span>
                             <span>{RESULTADO_ENTREVISTA[en.outcome] ?? en.outcome}</span>
                           </li>
@@ -266,9 +287,9 @@ export default async function VacanteDetallePage({
                           Con
                           <input name="interviewerName" className={claseInput} />
                         </label>
-                        <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                        <BotonEnvio className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                           <Icon name="event" size={14} />
-                          Agendar
+                          Agendar entrevista
                         </BotonEnvio>
                       </form>
                     )}
@@ -279,10 +300,22 @@ export default async function VacanteDetallePage({
           </div>
         )}
 
-        {puedeGestionar && candidatos.length > 0 && (
+        {puedeGestionar && abierta && libres.length === 0 && candidatos.length > 0 && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Todos tus candidatos ya están en esta vacante. Registra uno nuevo en{' '}
+            <a
+              href={`/reclutamiento${qs}`}
+              className="text-[var(--color-text-link)] hover:underline"
+            >
+              Reclutamiento
+            </a>
+            .
+          </p>
+        )}
+        {puedeGestionar && abierta && libres.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Aplicar candidato</CardTitle>
+              <CardTitle>Agregar candidato a esta vacante</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearAplicacionForm} className="flex flex-wrap items-end gap-3">
@@ -292,7 +325,7 @@ export default async function VacanteDetallePage({
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Candidato
                   <select name="candidateId" required className={claseInput}>
-                    {candidatos.map((c) => (
+                    {libres.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
@@ -303,9 +336,9 @@ export default async function VacanteDetallePage({
                   Nota
                   <input name="notes" className={claseInput} />
                 </label>
-                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                  <Icon name="send" size={14} />
-                  Aplicar
+                <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <Icon name="person_add" size={14} />
+                  Agregar
                 </BotonEnvio>
               </form>
             </CardBody>

@@ -14,7 +14,7 @@ export type OrderStatusTone = 'neutral' | 'info' | 'warning' | 'success' | 'dang
 export const ESTADOS: Record<string, { label: string; tone: OrderStatusTone }> = {
   draft: { label: 'Borrador', tone: 'neutral' },
   confirmed: { label: 'Confirmada', tone: 'info' },
-  partially_received: { label: 'Recepcion parcial', tone: 'warning' },
+  partially_received: { label: 'Recepción parcial', tone: 'warning' },
   received: { label: 'Recibida', tone: 'success' },
   cancelled: { label: 'Cancelada', tone: 'danger' },
 }

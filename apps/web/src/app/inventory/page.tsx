@@ -6,6 +6,7 @@ import {
   CardTitle,
   EmptyState,
   Mono,
+  PageHeader,
   StatCard,
   Table,
   THead,
@@ -20,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { ajustarInventarioForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Existencias · REGB ERP' }
@@ -89,6 +91,8 @@ export default async function InventoryPage({
 
   const puedeAjustar = exigir(ctx, 'inventory', 'inventory.adjust').ok
   const veCosto = exigir(ctx, 'inventory', 'inventory.cost.view').ok
+  // Con un solo almacén (un colmado) la columna repite lo mismo en cada fila.
+  const variosAlmacenes = warehouses.length > 1
   // La carga masiva vive en /importar y pide ademas imports.create.
   const puedeImportarExistencias = puedeAjustar && exigir(ctx, 'imports', 'imports.create').ok
 
@@ -102,41 +106,46 @@ export default async function InventoryPage({
   return (
     <Shell {...shell} activePath="/inventory">
       <div className="space-y-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Existencias</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Lo que hay ahora mismo, por almacén.
-            </p>
-          </div>
-          <form method="get" className="flex items-end gap-2">
-            {qs && (
-              <>
-                <input type="hidden" name="tenant" value={ctx.tenantSlug} />
-                <input type="hidden" name="rol" value={ctx.roleName} />
-              </>
-            )}
-            <select
-              name="almacen"
-              aria-label="Filtrar por almacen"
-              defaultValue={almacenFiltro}
-              className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-            >
-              <option value="">Todos los almacenes</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-            <BotonEnvio className="h-10 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
-              Filtrar
-            </BotonEnvio>
-          </form>
-        </div>
+        <PageHeader
+          icon="inventory"
+          title="Existencias"
+          description="Lo que hay ahora mismo en cada almacén, lo apartado para pedidos y lo que ya está por debajo de su punto de reorden."
+          actions={
+            variosAlmacenes && (
+              <form method="get" className="flex items-end gap-2">
+                {qs && (
+                  <>
+                    <input type="hidden" name="tenant" value={ctx.tenantSlug} />
+                    <input type="hidden" name="rol" value={ctx.roleName} />
+                  </>
+                )}
+                <select
+                  name="almacen"
+                  aria-label="Filtrar por almacén"
+                  defaultValue={almacenFiltro}
+                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                >
+                  <option value="">Todos los almacenes</option>
+                  {warehouses.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+                <BotonEnvio className="h-10 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                  Filtrar
+                </BotonEnvio>
+              </form>
+            )
+          }
+        />
 
         <section aria-label="Indicadores" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="SKUs" value={String(rows.length)} hint="lineas de existencia" />
+          <StatCard
+            label="Líneas"
+            value={String(rows.length)}
+            hint={variosAlmacenes ? 'producto por almacén' : 'productos con existencia'}
+          />
           {veCosto && (
             <StatCard label="Valor" value={`RD$ ${money(valorTotal)}`} hint="al costo promedio" />
           )}
@@ -147,7 +156,7 @@ export default async function InventoryPage({
         {rows.length === 0 ? (
           <EmptyState
             icon="inventory_2"
-            title="Sin existencias todavia"
+            title="Sin existencias todavía"
             description={
               puedeImportarExistencias
                 ? 'Carga las existencias iniciales de todo el catálogo con un CSV (código, almacén, cantidad y costo), o producto por producto con el ajuste de abajo.'
@@ -170,7 +179,7 @@ export default async function InventoryPage({
               <TR>
                 <TH>Código</TH>
                 <TH>Producto</TH>
-                <TH>Almacén</TH>
+                {variosAlmacenes && <TH>Almacén</TH>}
                 <TH numeric>Disponible</TH>
                 <TH numeric>Reservado</TH>
                 {veCosto && <TH numeric>Costo</TH>}
@@ -187,18 +196,26 @@ export default async function InventoryPage({
                 const bajo = isLowStock(onHand, r.reorder_point ? Number(r.reorder_point) : null)
                 return (
                   <TR key={`${r.product_id}-${r.warehouse_id}`}>
-                    <TD>
+                    <TD className="whitespace-nowrap">
                       <Mono>{r.sku}</Mono>
                     </TD>
-                    <TD className="font-medium text-[var(--color-text-primary)]">{r.name}</TD>
-                    <TD>{r.warehouse_name}</TD>
+                    <TD className="font-medium text-[var(--color-text-primary)]">
+                      <a
+                        href={`/inventory/movements${qs}${qs ? '&' : '?'}producto=${r.product_id}`}
+                        className="hover:underline"
+                        title="Ver sus movimientos en el kardex"
+                      >
+                        {r.name}
+                      </a>
+                    </TD>
+                    {variosAlmacenes && <TD>{r.warehouse_name}</TD>}
                     <TD numeric>
-                      <span className="tabular">
-                        {onHand - reservado} {r.unit}
-                      </span>
+                      <span className="tabular">{cantidad(onHand - reservado, r.unit)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular text-[var(--color-text-muted)]">{reservado}</span>
+                      <span className="tabular text-[var(--color-text-muted)]">
+                        {cantidad(reservado)}
+                      </span>
                     </TD>
                     {veCosto && (
                       <TD numeric>
@@ -213,13 +230,16 @@ export default async function InventoryPage({
                     <TD>
                       <span className="flex flex-wrap gap-1">
                         {bajo && (
-                          <Badge tone="warning" title={`Punto de reorden: ${r.reorder_point}`}>
-                            bajo
+                          <Badge
+                            tone="warning"
+                            title={`Punto de reorden: ${cantidad(r.reorder_point)}`}
+                          >
+                            Bajo
                           </Badge>
                         )}
                         {onHand < 0 && (
-                          <Badge tone="danger" title="Se vendio mas de lo que habia registrado">
-                            negativo
+                          <Badge tone="danger" title="Se vendió más de lo que había registrado">
+                            Negativo
                           </Badge>
                         )}
                         {/* Comprometido por encima de lo que hay: un pedido
@@ -227,9 +247,9 @@ export default async function InventoryPage({
                         {reservado > onHand && (
                           <Badge
                             tone="danger"
-                            title={`Hay ${reservado} apartadas para pedidos pero solo quedan ${onHand} en existencia. Algun pedido confirmado no se podrá despachar.`}
+                            title={`Hay ${cantidad(reservado)} apartadas para pedidos pero solo quedan ${cantidad(onHand)} en existencia. Algún pedido confirmado no se podrá despachar.`}
                           >
-                            sobre-apartado
+                            Sobreapartado
                           </Badge>
                         )}
                       </span>
@@ -251,7 +271,7 @@ export default async function InventoryPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen
+                  Almacén
                   <select
                     name="warehouseId"
                     required
@@ -274,7 +294,7 @@ export default async function InventoryPage({
                     required
                     list="productos-ajuste"
                     autoComplete="off"
-                    placeholder="Nombre, codigo o codigo de barras"
+                    placeholder="Nombre o código"
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                   <datalist id="productos-ajuste">
@@ -320,7 +340,7 @@ export default async function InventoryPage({
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Cantidad positiva = entra. Negativa = sale. Una entrada sin costo toma el del
-                catalogo. Un ajuste grande puede pedir aprobacion segun tu rol; queda registrado en
+                catálogo. Un ajuste grande puede pedir aprobación según tu rol; queda registrado en
                 el kardex y no se puede editar después, solo corregir con otro ajuste.
                 {puedeImportarExistencias && (
                   <>
@@ -330,7 +350,7 @@ export default async function InventoryPage({
                       href={`/importar${qs}#existencias`}
                       className="text-[var(--color-text-link)] underline hover:no-underline"
                     >
-                      subelas en un CSV
+                      súbelas en un CSV
                     </a>
                     .
                   </>

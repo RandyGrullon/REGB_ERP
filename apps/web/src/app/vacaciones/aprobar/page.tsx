@@ -92,12 +92,12 @@ export default async function AprobarVacacionesPage({
             <THead>
               <TR>
                 <TH>Empleado</TH>
-                <TH>Tipo</TH>
-                <TH>Desde</TH>
-                <TH>Hasta</TH>
+                <TH className="hidden sm:table-cell">Tipo</TH>
+                <TH className="hidden sm:table-cell">Desde</TH>
+                <TH className="hidden sm:table-cell">Hasta</TH>
                 <TH numeric>Días</TH>
                 <TH numeric>Saldo</TH>
-                <TH>Motivo</TH>
+                <TH className="hidden md:table-cell">Motivo</TH>
                 <TH>
                   <span className="sr-only">Acción</span>
                 </TH>
@@ -106,10 +106,28 @@ export default async function AprobarVacacionesPage({
             <TBody>
               {pendientes.map((s) => (
                 <TR key={s.id}>
-                  <TD className="text-[var(--color-text-primary)]">{s.employee_name}</TD>
-                  <TD>{TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}</TD>
-                  <TD>{fechaCorta(s.start_date)}</TD>
-                  <TD>{fechaCorta(s.end_date)}</TD>
+                  <TD className="text-[var(--color-text-primary)]">
+                    {s.employee_name}
+                    {/* En el teléfono, qué pide y cuándo van aquí: sus columnas se esconden. */}
+                    <span className="block text-xs text-[var(--color-text-muted)] sm:hidden">
+                      {TIPO_AUSENCIA[s.leave_type] ?? s.leave_type} · {fechaCorta(s.start_date)}
+                      {s.end_date !== s.start_date && ` – ${fechaCorta(s.end_date)}`}
+                    </span>
+                    {s.reason && (
+                      <span className="block text-xs text-[var(--color-text-muted)] md:hidden">
+                        «{s.reason}»
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="hidden sm:table-cell">
+                    {TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}
+                  </TD>
+                  <TD className="hidden whitespace-nowrap sm:table-cell">
+                    {fechaCorta(s.start_date)}
+                  </TD>
+                  <TD className="hidden whitespace-nowrap sm:table-cell">
+                    {fechaCorta(s.end_date)}
+                  </TD>
                   <TD numeric>
                     <span className="tabular">{s.business_days}</span>
                   </TD>
@@ -129,9 +147,9 @@ export default async function AprobarVacacionesPage({
                       <span className="text-[var(--color-text-muted)]">—</span>
                     )}
                   </TD>
-                  <TD className="max-w-56 truncate">{s.reason ?? '—'}</TD>
+                  <TD className="hidden max-w-56 truncate md:table-cell">{s.reason ?? '—'}</TD>
                   <TD>
-                    <div className="flex gap-1.5">
+                    <div className="flex flex-col gap-1.5 sm:flex-row">
                       <form action={resolverSolicitudForm}>
                         <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                         <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />

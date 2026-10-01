@@ -41,14 +41,19 @@ begin
   -- `companies` solo tiene PK(id) -un uuid nuevo cada vez-, asi que un
   -- "on conflict do nothing" aqui nunca dispara: cada corrida duplicaria
   -- la empresa. Se comprueba a mano, igual que el resto de este archivo.
-  select id into v_c1 from public.companies where tenant_id = v_pyme limit 1;
+  -- La PRINCIPAL, no "una cualquiera": con dos empresas (demo-finanzas agrega
+  -- Transportes Caribe) `limit 1` tomaba a veces la otra, y la segunda corrida
+  -- intentaba crear de nuevo las sucursales.
+  select id into v_c1 from public.companies where tenant_id = v_pyme
+  order by is_default desc, created_at limit 1;
   if v_c1 is null then
     insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
     values (v_pyme, 'Colmado La Esperanza SRL', '130-11111-1', 'DOP', true)
     returning id into v_c1;
   end if;
 
-  select id into v_c2 from public.companies where tenant_id = v_med limit 1;
+  select id into v_c2 from public.companies where tenant_id = v_med
+  order by is_default desc, created_at limit 1;
   if v_c2 is null then
     insert into public.companies (tenant_id, legal_name, tax_id, currency, is_default)
     values (v_med, 'Distribuidora Caribe SRL', '131-45678-2', 'DOP', true)
@@ -75,12 +80,12 @@ begin
   --    (tenant_id, code), asi que `on conflict` aqui es seguro -al reves
   --    de companies/branches, que no la tenian-.
   insert into public.warehouses (tenant_id, branch_id, name, code, is_default)
-  select v_pyme, b.id, 'Almacen Villa Consuelo', 'ALM-VC', true
+  select v_pyme, b.id, 'Almacén Villa Consuelo', 'ALM-VC', true
   from public.branches b where b.tenant_id = v_pyme and b.code = 'VC'
   on conflict (tenant_id, code) do nothing;
 
   insert into public.warehouses (tenant_id, branch_id, name, code, is_default)
-  select v_med, b.id, 'Almacen Santo Domingo', 'ALM-SD', true
+  select v_med, b.id, 'Almacén Santo Domingo', 'ALM-SD', true
   from public.branches b where b.tenant_id = v_med and b.code = 'SD'
   on conflict (tenant_id, code) do nothing;
 
@@ -94,9 +99,9 @@ begin
   --    que nada los hubiera creado nunca -enmascarado por inserts
   --    manuales de sesiones pasadas hasta el primer reset completo de la
   --    base en esta sesion-.
-  if not exists (select 1 from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL') then
+  if not exists (select 1 from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL') then
     insert into public.customers (tenant_id, name, tax_id, payment_terms)
-    values (v_med, 'Ferreteria El Martillo SRL', '131-22334-5', 30);
+    values (v_med, 'Ferretería El Martillo SRL', '131-22334-5', 30);
   end if;
 
   if not exists (select 1 from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL') then
@@ -209,8 +214,8 @@ begin
 
   insert into public.user_profiles (tenant_id, user_id, display_name, email, phone, job_title)
   values
-    (v_pyme, v_maria, 'Maria Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Propietaria'),
-    (v_med,  v_maria, 'Maria Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Gerente General')
+    (v_pyme, v_maria, 'María Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Propietaria'),
+    (v_med,  v_maria, 'María Rosario', 'maria.rosario@demo.do', '809-555-0101', 'Gerente General')
   on conflict do nothing;
 
   insert into public.tenant_settings (tenant_id, trade_name, currency)
@@ -230,7 +235,7 @@ begin
     (v_pyme, 'HAB-003', 'Habichuelas rojas 1 lb',    'Viveres',  'libra',    85.00,  64.00),
     (v_med,  'CEM-100', 'Cemento gris 42.5 kg',      'Ferreteria','saco',    465.00, 401.00),
     (v_med,  'VAR-200', 'Varilla 3/8 x 20 pies',     'Ferreteria','unidad',  285.00, 240.00),
-    (v_med,  'PIN-300', 'Pintura blanca acrilica gl','Pinturas', 'galon',  1150.00, 890.00)
+    (v_med,  'PIN-300', 'Pintura blanca acrílica gl','Pinturas', 'galon',  1150.00, 890.00)
   on conflict do nothing;
 
   -- Conceptos vendibles SIN existencias (0100): se facturan como
@@ -240,8 +245,8 @@ begin
   -- numeros negativos creciendo para siempre.
   insert into public.products (tenant_id, sku, name, category, unit, price, tracks_stock)
   values
-    (v_med,  'ENVIO',  'Envio a domicilio',        'Servicios', 'servicio',  350.00, false),
-    (v_med,  'INST',   'Instalacion en sitio',     'Servicios', 'servicio',  900.00, false),
+    (v_med,  'ENVIO',  'Envío a domicilio',        'Servicios', 'servicio',  350.00, false),
+    (v_med,  'INST',   'Instalación en sitio',     'Servicios', 'servicio',  900.00, false),
     (v_pyme, 'DELIV',  'Delivery del colmado',     'Servicios', 'servicio',   80.00, false)
   on conflict (tenant_id, sku) do nothing;
 end $$;
@@ -289,7 +294,7 @@ begin
   if v_med is null or v_pyme is null then return; end if;
 
   select id into v_martillo from public.customers
-    where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+    where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   select id into v_duarte from public.customers
     where tenant_id = v_med and name = 'Constructora Duarte SRL';
   if v_martillo is null or v_duarte is null then return; end if;
@@ -341,7 +346,7 @@ begin
   ) then
     insert into public.invoice_late_fees
       (tenant_id, invoice_id, amount, days_late_at_charge, notes, applied_at)
-    values (v_med, v_inv, 500.00, 80, 'Cargo por atraso, acordado por telefono',
+    values (v_med, v_inv, 500.00, 80, 'Cargo por atraso, acordado por teléfono',
             now() - interval '15 days');
   end if;
 
@@ -359,14 +364,14 @@ begin
   -- este turno de demostracion en concreto.
   if v_alm is not null and not exists (
     select 1 from public.pos_shifts
-    where warehouse_id = v_alm and notes = 'Faltante, se revisara manana'
+    where warehouse_id = v_alm and notes = 'Faltante, se revisará mañana'
   ) then
     insert into public.pos_shifts
       (tenant_id, warehouse_id, cashier_id, opening_float, counted_cash,
        expected_cash, variance, status, opened_at, closed_at, notes)
     values (v_pyme, v_alm, v_maria, 2000.00, 20380.00, 20420.00, -40.00,
             'closed', now() - interval '2 days' - interval '8 hours',
-            now() - interval '2 days', 'Faltante, se revisara manana')
+            now() - interval '2 days', 'Faltante, se revisará mañana')
     returning id into v_turno;
   end if;
 end $$;
@@ -640,12 +645,15 @@ begin
   select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
   if v_alm_sd is null or v_cemento is null then return; end if;
 
-  select id into v_alm_stgo from public.warehouses where tenant_id = v_med and name = 'Almacen Santiago';
+  select id into v_alm_stgo from public.warehouses where tenant_id = v_med and name = 'Almacén Santiago';
   if v_alm_stgo is null then
-    insert into public.warehouses (tenant_id, name, is_default, is_active)
-    values (v_med, 'Almacen Santiago', false, true)
+    insert into public.warehouses (tenant_id, name, code, is_default, is_active)
+    values (v_med, 'Almacén Santiago', 'ALM-STI', false, true)
     returning id into v_alm_stgo;
   end if;
+  -- Era el único almacén sin código (los otros: ALM-SD, ALM-VC).
+  update public.warehouses set code = 'ALM-STI'
+  where id = v_alm_stgo and code is null;
 
   -- En transito: despachada, esperando confirmar recepcion en Santiago.
   insert into public.transfer_orders
@@ -848,7 +856,7 @@ begin
   if v_med is null then return; end if;
 
   select id into v_conductor from public.employees where tenant_id = v_med and first_name = 'Anthony';
-  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   select id into v_duarte from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
   if v_conductor is null then return; end if;
 
@@ -914,7 +922,7 @@ begin
   end if;
 
   insert into public.products (tenant_id, sku, name, category, unit, price, cost)
-  values (v_med, 'KIT-100', 'Kit basico de reparacion', 'Construccion', 'kit', 1400.00, 0)
+  values (v_med, 'KIT-100', 'Kit básico de reparación', 'Construccion', 'kit', 1400.00, 0)
   on conflict (tenant_id, sku) do nothing
   returning id into v_kit;
   if v_kit is null then
@@ -950,7 +958,7 @@ end $$;
 
 -- ═══════════════════════════════════════════════════════════════════════
 --  Ordenes de produccion (modulo 56): una orden en borrador sobre el
---  BOM activo del kit basico de reparacion -para liberar en vivo y ver
+--  BOM activo del kit básico de reparación -para liberar en vivo y ver
 --  la explosion de materiales consumir el inventario de verdad-.
 -- ═══════════════════════════════════════════════════════════════════════
 do $$
@@ -1017,7 +1025,7 @@ begin
 
   if not exists (select 1 from public.mrp_runs where tenant_id = v_med and target_product_id = v_kit) then
     insert into public.mrp_runs (tenant_id, target_product_id, target_qty, notes)
-    values (v_med, v_kit, 10, 'Reponer el kit basico de reparacion para el trimestre')
+    values (v_med, v_kit, 10, 'Reponer el kit básico de reparación para el trimestre')
     returning id into v_run;
 
     insert into public.mrp_suggestions (run_id, tenant_id, product_id, action, qty_suggested)
@@ -1052,9 +1060,9 @@ begin
   select id into v_cemento from public.products where tenant_id = v_med and sku = 'CEM-100';
   if v_cemento is null then return; end if;
 
-  if not exists (select 1 from public.inspection_plans where tenant_id = v_med and name = 'Recepcion de cemento') then
+  if not exists (select 1 from public.inspection_plans where tenant_id = v_med and name = 'Recepción de cemento') then
     insert into public.inspection_plans (tenant_id, name, scope, product_id)
-    values (v_med, 'Recepcion de cemento', 'receiving', v_cemento)
+    values (v_med, 'Recepción de cemento', 'receiving', v_cemento)
     returning id into v_plan;
 
     insert into public.inspection_plan_criteria (plan_id, tenant_id, criterion, is_critical, sort_order)
@@ -1101,16 +1109,16 @@ begin
       (tenant_id, code, name, location, usage_hours, last_service_at, last_service_usage,
        maintenance_interval_usage, maintenance_interval_days)
     values
-      (v_med, 'CMP-01', 'Compresor de aire', 'Almacen Santo Domingo', 1200,
+      (v_med, 'CMP-01', 'Compresor de aire', 'Almacén Santo Domingo', 1200,
        current_date - 90, 100, 1000, 180)
     returning id into v_equipo;
 
     insert into public.work_orders
       (tenant_id, equipment_id, type, status, priority, description, opened_at, completed_at)
     values
-      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Correa floja -tensada-',
+      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Correa floja (tensada)',
        now() - interval '75 days', now() - interval '75 days' + interval '2 hours'),
-      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Filtro de aire obstruido -reemplazado-',
+      (v_med, v_equipo, 'corrective', 'completed', 'normal', 'Filtro de aire obstruido (reemplazado)',
        now() - interval '30 days', now() - interval '30 days' + interval '1 hour');
 
     insert into public.work_orders (tenant_id, equipment_id, type, priority, description)
@@ -1181,9 +1189,9 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferreteria El Progreso') then
+  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferretería El Progreso') then
     insert into public.leads (tenant_id, name, company, email, phone, source, score, status)
-    values (v_med, 'Ferreteria El Progreso', 'Ferreteria El Progreso SRL', 'compras@elprogreso.do', '809-555-0230', 'referral', 100, 'new')
+    values (v_med, 'Ferretería El Progreso', 'Ferretería El Progreso SRL', 'compras@elprogreso.do', '809-555-0230', 'referral', 100, 'new')
     returning id into v_lead1;
   end if;
 
@@ -1195,7 +1203,7 @@ begin
     insert into public.lead_activities (tenant_id, lead_id, type, notes, created_by)
     values
       (v_med, v_lead2, 'call', 'Primera llamada -interesados en material para la torre residencial-', v_maria),
-      (v_med, v_lead2, 'meeting', 'Reunion en sitio, revisaron cantidades preliminares', v_maria);
+      (v_med, v_lead2, 'meeting', 'Reunión en sitio, revisaron cantidades preliminares', v_maria);
 
     insert into public.opportunities (tenant_id, lead_id, name, amount, stage, probability, expected_close_date)
     values (v_med, v_lead2, 'Suministro de materiales - Torre Vega Real', 850000, 'negotiation', 0.75, current_date + 15)
@@ -1279,7 +1287,7 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   if v_martillo is null then return; end if;
 
   if not exists (select 1 from public.contracts where tenant_id = v_med and contract_number = 'CTR-0001') then
@@ -1350,7 +1358,7 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   if v_martillo is null then return; end if;
 
   if not exists (select 1 from public.portal_invites where tenant_id = v_med and customer_id = v_martillo) then
@@ -1372,18 +1380,18 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   if v_martillo is null then return; end if;
 
-  if not exists (select 1 from public.tickets where tenant_id = v_med and subject = 'El pedido llego con una caja de tornillos danada') then
+  if not exists (select 1 from public.tickets where tenant_id = v_med and subject = 'El pedido llegó con una caja de tornillos dañada') then
     insert into public.tickets (tenant_id, customer_id, subject, description, priority, status, sla_due_at)
-    values (v_med, v_martillo, 'El pedido llego con una caja de tornillos danada',
-            'La caja de tornillos de 3 pulgadas llego mojada y varias unidades tienen oxido. Piden reposicion.',
+    values (v_med, v_martillo, 'El pedido llegó con una caja de tornillos dañada',
+            'La caja de tornillos de 3 pulgadas llegó mojada y varias unidades tienen óxido. Piden reposición.',
             'high', 'open', now() + interval '4 hours')
     returning id into v_ticket;
 
     insert into public.ticket_messages (tenant_id, ticket_id, author_type, body)
-    values (v_med, v_ticket, 'customer', 'Buenas, la caja llego mojada y como el 20% de los tornillos tienen oxido. Necesitamos reposicion antes del viernes.');
+    values (v_med, v_ticket, 'customer', 'Buenas, la caja llegó mojada y como el 20 % de los tornillos tienen óxido. Necesitamos reposición antes del viernes.');
   end if;
 end $$;
 
@@ -1402,7 +1410,7 @@ begin
   if v_med is null then return; end if;
 
   select id into v_duarte   from public.customers where tenant_id = v_med and name = 'Constructora Duarte SRL';
-  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  select id into v_martillo from public.customers where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   if v_duarte is null or v_martillo is null then return; end if;
 
   if not exists (select 1 from public.loyalty_transactions where tenant_id = v_med and customer_id = v_duarte) then
@@ -1410,7 +1418,7 @@ begin
     values
       (v_med, v_duarte, 300, 'Compra FAC-DEMO-0002', 'purchase'),
       (v_med, v_duarte, 250, 'Compra de material adicional', 'purchase'),
-      (v_med, v_duarte, -100, 'Redimio descuento en caja', 'redemption');
+      (v_med, v_duarte, -100, 'Redimió descuento en caja', 'redemption');
   end if;
 
   if not exists (select 1 from public.loyalty_transactions where tenant_id = v_med and customer_id = v_martillo) then
@@ -1432,7 +1440,7 @@ end $$;
 -- ═══════════════════════════════════════════════════════════════════════
 --  Marketing & Campanas (modulo 37): una campana real en BORRADOR
 --  segmentada por fuente 'referral' -que hoy solo cumple el lead
---  Ferreteria El Progreso-, lista para enviarse en vivo.
+--  Ferretería El Progreso-, lista para enviarse en vivo.
 -- ═══════════════════════════════════════════════════════════════════════
 do $$
 declare
@@ -1441,7 +1449,7 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferreteria El Progreso') then
+  if not exists (select 1 from public.leads where tenant_id = v_med and name = 'Ferretería El Progreso') then
     return;
   end if;
 
@@ -1604,7 +1612,7 @@ begin
     returning id into v_canal;
 
     insert into public.chat_messages (tenant_id, channel_id, author_id, body)
-    values (v_med, v_canal, v_maria, 'Buenos dias equipo, recuerden confirmar el inventario de fin de mes.')
+    values (v_med, v_canal, v_maria, 'Buenos días, equipo: recuerden confirmar el inventario de fin de mes.')
     returning id into v_msg;
 
     insert into public.chat_messages (tenant_id, channel_id, author_id, body, parent_message_id)
@@ -1632,9 +1640,9 @@ begin
   select id into v_med from regb.tenants where slug = 'distribuidora-caribe';
   if v_med is null then return; end if;
 
-  if not exists (select 1 from public.projects where tenant_id = v_med and name = 'Renovacion bodega principal') then
+  if not exists (select 1 from public.projects where tenant_id = v_med and name = 'Renovación bodega principal') then
     insert into public.projects (tenant_id, name, description, status, start_date, end_date, created_by)
-    values (v_med, 'Renovacion bodega principal', 'Vaciar, pintar e instalar estanteria nueva en la bodega de Bella Vista.',
+    values (v_med, 'Renovación bodega principal', 'Vaciar, pintar e instalar estanteria nueva en la bodega de Bella Vista.',
             'active', current_date - interval '10 days', current_date + interval '20 days', v_maria)
     returning id into v_proy;
 
@@ -1733,7 +1741,7 @@ begin
     where tenant_id = v_med and number = 'AS-DEMO-0001';
   if v_asiento is null then
     insert into public.journal_entries (tenant_id, number, entry_date, description)
-    values (v_med, 'AS-DEMO-0001', current_date - 3, 'Venta de contado del dia')
+    values (v_med, 'AS-DEMO-0001', current_date - 3, 'Venta de contado del día')
     returning id into v_asiento;
 
     insert into public.journal_entry_lines (entry_id, tenant_id, account_id, debit, credit) values
@@ -1872,7 +1880,7 @@ begin
   if v_reserva is null then
     insert into public.bank_accounts
       (tenant_id, bank_name, account_name, account_number, account_type, opening_balance)
-    values (v_med, 'Banreservas', 'Reserva de nomina', '960-88214-3', 'savings', 60000.00)
+    values (v_med, 'Banreservas', 'Reserva de nómina', '960-88214-3', 'savings', 60000.00)
     returning id into v_reserva;
   end if;
 
@@ -1880,7 +1888,7 @@ begin
     insert into public.bank_transactions
       (tenant_id, bank_account_id, type, amount, description, reference, transaction_date)
     values
-      (v_med, v_operativa, 'deposit', 42500.00, 'Deposito de cobros de la semana',
+      (v_med, v_operativa, 'deposit', 42500.00, 'Depósito de cobros de la semana',
        'DEP-8841', current_date - 6),
       (v_med, v_operativa, 'withdrawal', 18700.00, 'Pago a Materiales Del Este SRL',
        'TRF-PROV-4471', current_date - 4),
@@ -1891,7 +1899,7 @@ begin
     insert into public.bank_transfers
       (tenant_id, from_account_id, to_account_id, amount, transfer_date, description)
     values (v_med, v_operativa, v_reserva, 75000.00, current_date - 1,
-            'Aparte para la nomina de la quincena');
+            'Aparte para la nómina de la quincena');
   end if;
 end $$;
 
@@ -2141,7 +2149,7 @@ begin
   if v_med is null then return; end if;
 
   select id into v_martillo from public.customers
-    where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+    where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   select id into v_duarte from public.customers
     where tenant_id = v_med and name = 'Constructora Duarte SRL';
   if v_martillo is null or v_duarte is null then return; end if;
@@ -2153,7 +2161,7 @@ begin
     values (v_med, v_martillo, 5000.00, 'Anticipo de pedido especial', current_date + 5);
 
     insert into public.payment_links (tenant_id, customer_id, amount, description)
-    values (v_med, v_martillo, 2500.00, 'Servicio de instalacion') returning id into v_pagado;
+    values (v_med, v_martillo, 2500.00, 'Servicio de instalación') returning id into v_pagado;
 
     perform set_config('request.jwt.claims',
       json_build_object('sub', gen_random_uuid(), 'app_metadata',
@@ -2190,7 +2198,7 @@ begin
     insert into public.employees
       (tenant_id, code, first_name, last_name, national_id, hire_date, position, department, salary)
     values (v_med, 'E-001', 'Rafael', 'Encarnacion', '001-8823456-1',
-            current_date - interval '3 years', 'Gerente General', 'Direccion', 85000.00)
+            current_date - interval '3 years', 'Gerente General', 'Dirección', 85000.00)
     returning id into v_gerente;
 
     insert into public.employee_contracts
@@ -2489,7 +2497,7 @@ end $$;
 --
 --  Hasta 0132 este bloque le ponia a Rafael el correo del usuario demo
 --  (maria.rosario@demo.do) para que /portal "encontrara" un expediente: el
---  portal emparejaba por correo y Maria Rosario terminaba viendo el
+--  portal emparejaba por correo y María Rosario terminaba viendo el
 --  salario y el volante de Rafael. Ese era el hallazgo, no una demo.
 --  Ahora el portal lee SOLO por el vinculo explicito (employees.user_id)
 --  que asigna RRHH desde /empleados/:id, y el seed no vincula a nadie: la
@@ -2667,7 +2675,7 @@ begin
 
     insert into public.performance_reviews (tenant_id, employee_id, cycle, review_type, reviewer_name, rating, comments)
     values (v_med, v_encargada, '2026-Q3', 'self', 'Rafael Encarnacion', 4, 'Buen trimestre, mejorando la atencion.'),
-           (v_med, v_encargada, '2026-Q3', 'manager', 'Maria Rosario', 5, 'Excelente liderazgo del equipo de ventas.');
+           (v_med, v_encargada, '2026-Q3', 'manager', 'María Rosario', 5, 'Excelente liderazgo del equipo de ventas.');
 
     insert into public.performance_improvement_plans (tenant_id, employee_id, reason, goals, start_date, end_date)
     values (v_med, v_cajera, 'Llegadas tarde recurrentes', 'Llegar a tiempo las proximas 4 semanas', current_date - 5, current_date + 25);
@@ -2840,19 +2848,23 @@ begin
 
   if not exists (select 1 from public.purchase_requisitions where tenant_id = v_med) then
     insert into public.purchase_requisitions (tenant_id, employee_id, department, description, estimated_amount, status)
-    values (v_med, v_cajera, 'Ventas', 'Papeleria y utiles de oficina para el mes', 3500, 'pending');
+    values (v_med, v_cajera, 'Ventas', 'Papelería y útiles de oficina para el mes', 3500, 'pending');
 
     insert into public.purchase_requisitions
       (tenant_id, employee_id, department, description, estimated_amount, status,
-       approved_by, approved_at, po_reference)
-    values (v_med, v_encargada, 'Operaciones', 'Reposicion de cemento y varillas', 45000, 'converted',
-            v_encargada, now() - interval '5 days', 'OC-2026-00012');
+       approved_by, approved_at, po_reference, created_at)
+    values (v_med, v_encargada, 'Operaciones', 'Reposición de cemento y varillas', 45000, 'converted',
+            v_encargada, now() - interval '5 days', 'OC-2026-00012',
+            -- Pedida antes de aprobada: con `now()` la lista decía que se
+            -- pidió DESPUÉS de que la aprobaran.
+            now() - interval '7 days');
 
     insert into public.purchase_requisitions
       (tenant_id, employee_id, department, description, estimated_amount, status,
-       approved_by, approved_at, decision_note)
+       approved_by, approved_at, decision_note, created_at)
     values (v_med, v_cajera, 'Ventas', 'Cambiar el aire acondicionado de la sucursal', 85000, 'rejected',
-            v_encargada, now() - interval '8 days', 'Se pospone para el proximo trimestre, no es urgente.');
+            v_encargada, now() - interval '8 days', 'Se pospone para el próximo trimestre; no es urgente.',
+            now() - interval '10 days');
   end if;
 end $$;
 
@@ -2877,11 +2889,11 @@ begin
 
   if not exists (select 1 from public.rfqs where tenant_id = v_med) then
     insert into public.suppliers (tenant_id, code, name, tax_id)
-    values (v_med, 'PROV-002', 'Ferreteria Central Import SRL', '101-99887-3')
+    values (v_med, 'PROV-002', 'Ferretería Central Import SRL', '101-99887-3')
     returning id into v_prov2;
 
     insert into public.rfqs (tenant_id, title, description, deadline)
-    values (v_med, 'Cotizacion de cemento y varillas', 'Reposicion de inventario para el proximo trimestre', current_date + 10)
+    values (v_med, 'Cotización de cemento y varillas', 'Reposición de inventario para el próximo trimestre', current_date + 10)
     returning id into v_rfq_abierto;
 
     insert into public.rfq_invitations (tenant_id, rfq_id, supplier_id)
@@ -2892,7 +2904,7 @@ begin
            (v_med, v_rfq_abierto, v_prov2, 43000, 15, 'Precio mas bajo pero entrega mas lenta');
 
     insert into public.rfqs (tenant_id, title, status, awarded_supplier_id, awarded_at)
-    values (v_med, 'Cotizacion de pintura para el segundo trimestre', 'awarded', v_prov1, now() - interval '20 days')
+    values (v_med, 'Cotización de pintura para el segundo trimestre', 'awarded', v_prov1, now() - interval '20 days')
     returning id into v_rfq_cerrado;
 
     insert into public.rfq_quotes (tenant_id, rfq_id, supplier_id, total_amount, lead_time_days)
@@ -2921,7 +2933,7 @@ begin
   if exists (select 1 from public.service_orders where tenant_id = v_med) then return; end if;
 
   select id into v_cliente from public.customers
-  where tenant_id = v_med and name = 'Ferreteria El Martillo SRL';
+  where tenant_id = v_med and name = 'Ferretería El Martillo SRL';
   if v_cliente is null then return; end if;
 
   select user_id into v_maria from public.user_profiles

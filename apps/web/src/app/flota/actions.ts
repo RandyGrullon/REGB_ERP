@@ -25,7 +25,7 @@ const num = (raw: string): number | null => {
 /** Registra un vehiculo nuevo. */
 export async function crearVehiculo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.manage')
   if (!permiso.ok) return permiso
 
@@ -61,16 +61,16 @@ export async function crearVehiculo(fd: FormData): Promise<ActionResult> {
 /** Registra un documento del vehiculo -licencia, seguro o inspeccion-. */
 export async function registrarDocumento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.manage')
   if (!permiso.ok) return permiso
 
   const vehicleId = String(fd.get('vehicleId') ?? '')
   const docType = String(fd.get('docType') ?? '')
   const expiryDate = String(fd.get('expiryDate') ?? '')
-  if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
+  if (!vehicleId) return { ok: false, error: 'Falta el vehículo.' }
   if (!['license', 'insurance', 'inspection'].includes(docType)) {
-    return { ok: false, error: 'Tipo de documento invalido.' }
+    return { ok: false, error: 'Tipo de documento inválido.' }
   }
   if (!expiryDate) return { ok: false, error: 'Escribe la fecha de vencimiento.' }
 
@@ -94,7 +94,7 @@ export async function registrarDocumento(fd: FormData): Promise<ActionResult> {
 /** Registra una carga de combustible -actualiza el kilometraje del vehiculo-. */
 export async function registrarCombustible(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.manage')
   if (!permiso.ok) return permiso
 
@@ -104,12 +104,12 @@ export async function registrarCombustible(fd: FormData): Promise<ActionResult> 
   const cost = num(String(fd.get('cost') ?? ''))
   const odometerKm = num(String(fd.get('odometerKm') ?? ''))
 
-  if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
+  if (!vehicleId) return { ok: false, error: 'Falta el vehículo.' }
   if (liters === null || liters <= 0)
-    return { ok: false, error: 'Los litros deben ser mayor que cero.' }
-  if (cost === null || cost < 0) return { ok: false, error: 'El costo no es valido.' }
+    return { ok: false, error: 'Los litros deben ser mayores que cero.' }
+  if (cost === null || cost < 0) return { ok: false, error: 'El costo no es válido.' }
   if (odometerKm === null || odometerKm < 0)
-    return { ok: false, error: 'El kilometraje no es valido.' }
+    return { ok: false, error: 'El kilometraje no es válido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -133,7 +133,7 @@ export async function registrarCombustible(fd: FormData): Promise<ActionResult> 
 /** Registra un mantenimiento -actualiza el kilometraje del vehiculo-. */
 export async function registrarMantenimiento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.manage')
   if (!permiso.ok) return permiso
 
@@ -144,11 +144,11 @@ export async function registrarMantenimiento(fd: FormData): Promise<ActionResult
   const odometerKm = num(String(fd.get('odometerKm') ?? ''))
   const nextDueKm = num(String(fd.get('nextDueKm') ?? ''))
 
-  if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
-  if (!['preventive', 'corrective'].includes(type)) return { ok: false, error: 'Tipo invalido.' }
+  if (!vehicleId) return { ok: false, error: 'Falta el vehículo.' }
+  if (!['preventive', 'corrective'].includes(type)) return { ok: false, error: 'Tipo inválido.' }
   if (!description) return { ok: false, error: 'Describe el mantenimiento.' }
   if (odometerKm === null || odometerKm < 0)
-    return { ok: false, error: 'El kilometraje no es valido.' }
+    return { ok: false, error: 'El kilometraje no es válido.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -179,7 +179,7 @@ export async function registrarMantenimiento(fd: FormData): Promise<ActionResult
 /** Registra una multa. */
 export async function registrarMulta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.fines.manage')
   if (!permiso.ok) return permiso
 
@@ -188,10 +188,10 @@ export async function registrarMulta(fd: FormData): Promise<ActionResult> {
   const amount = num(String(fd.get('amount') ?? ''))
   const reason = String(fd.get('reason') ?? '').trim()
 
-  if (!vehicleId) return { ok: false, error: 'Falta el vehiculo.' }
+  if (!vehicleId) return { ok: false, error: 'Falta el vehículo.' }
   if (amount === null || amount <= 0)
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
-  if (!reason) return { ok: false, error: 'Escribe la razon de la multa.' }
+  if (!reason) return { ok: false, error: 'Escribe la razón de la multa.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -216,7 +216,7 @@ export async function registrarMulta(fd: FormData): Promise<ActionResult> {
 /** Cambia el estado de una multa -pending/disputed son editables, paid/dismissed son terminales-. */
 export async function resolverMulta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fleet', 'fleet.fines.manage')
   if (!permiso.ok) return permiso
 
@@ -230,7 +230,7 @@ export async function resolverMulta(fd: FormData): Promise<ActionResult> {
       select status from public.traffic_fines where id = ${fineId} and tenant_id = ${ctx.tenantId}`
     if (!multa) return 'no-existe'
     if (!transicionValidaMulta(multa.status as EstadoMulta, siguiente)) {
-      return 'Esa transicion no es valida desde el estado actual.'
+      return 'Esa transición no es válida desde el estado actual.'
     }
 
     await tx`

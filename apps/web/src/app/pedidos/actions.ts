@@ -78,15 +78,15 @@ function leerCliente(fd: FormData): DatosCliente | { error: string } {
 
   if (name.length < 2) return { error: 'El nombre necesita al menos 2 letras.' }
   if (!Number.isInteger(terms) || terms < 0 || terms > 365) {
-    return { error: 'Los dias de credito van de 0 (contado) a 365.' }
+    return { error: 'Los días de crédito van de 0 (contado) a 365.' }
   }
 
   const taxId = taxIdRaw === '' ? null : normalizeTaxId(taxIdRaw)
   if (taxId !== null && !isValidTaxId(taxId)) {
     return {
       error:
-        `"${taxIdRaw}" no es un RNC ni una cedula valida: el digito verificador no cuadra. ` +
-        'Revisalo con el cliente — un RNC malo hace rebotar el 607 completo.',
+        `"${taxIdRaw}" no es un RNC ni una cédula válida: el dígito verificador no cuadra. ` +
+        'Revísalo con el cliente — un RNC malo hace rebotar el 607 completo.',
     }
   }
   return { name, taxId, phone, email, address, terms }
@@ -110,15 +110,15 @@ function leerLimite(
   if (!permiso.ok) {
     return {
       error:
-        'Tu rol no puede fijar limites de credito: eso lo decide quien lleva la cartera. ' +
-        'Pideselo al dueno o al contador.',
+        'Tu rol no puede fijar límites de crédito: eso lo decide quien lleva la cartera. ' +
+        'Pídeselo al dueño o al contador.',
     }
   }
   if (raw === '') return { presente: true, valor: null }
   const valor = num(raw)
   if (valor === null || valor < 0) {
     return {
-      error: 'El limite de credito es un monto de 0 en adelante, o vacio para no tener limite.',
+      error: 'El límite de crédito es un monto de 0 en adelante, o vacío para no tener límite.',
     }
   }
   return { presente: true, valor: Math.round(valor * 100) / 100 }
@@ -127,7 +127,7 @@ function leerLimite(
 export async function crearCliente(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('crearCliente', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage')
     if (!permiso.ok) return permiso
 
@@ -159,7 +159,7 @@ export async function crearCliente(fd: FormData): Promise<ActionResult> {
 export async function editarCliente(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('editarCliente', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage')
 
     const id = String(fd.get('id') ?? '')
@@ -213,7 +213,7 @@ async function fijarSoloLimite(
 ): Promise<ActionResult> {
   const limite = leerLimite(fd, ctx)
   if ('error' in limite) return { ok: false, error: limite.error }
-  if (!limite.presente) return { ok: false, error: 'Indica el limite de credito.' }
+  if (!limite.presente) return { ok: false, error: 'Indica el límite de crédito.' }
 
   const filas = await asUser(
     ctx.userId,
@@ -235,7 +235,7 @@ async function fijarSoloLimite(
 export async function alternarCliente(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('alternarCliente', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.customers.manage')
     if (!permiso.ok) return permiso
 
@@ -263,13 +263,13 @@ export async function crearPedido(fd: FormData): Promise<PedidoCreado> {
   const salida: { orderId?: string; number?: string } = {}
   const r = await sinExcepciones('crearPedido', async (): Promise<ActionResult> => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.create')
     if (!permiso.ok) return permiso
 
     const customerId = String(fd.get('customerId') ?? '')
     const warehouseId = String(fd.get('warehouseId') ?? '')
-    if (!customerId || !warehouseId) return { ok: false, error: 'Elige cliente y almacen.' }
+    if (!customerId || !warehouseId) return { ok: false, error: 'Elige cliente y almacén.' }
 
     const creado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [n] = await tx<{ next_sales_order_number: string }[]>`
@@ -324,7 +324,7 @@ async function recalcular(
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('agregarLinea', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.edit')
     if (!permiso.ok) return permiso
 
@@ -384,7 +384,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 
     if (resultado === 'no-existe') return { ok: false, error: 'Ese pedido no existe.' }
     if (resultado === 'no-borrador') {
-      return { ok: false, error: 'Solo se pueden agregar lineas a un pedido en borrador.' }
+      return { ok: false, error: 'Solo se pueden agregar líneas a un pedido en borrador.' }
     }
     if (resultado === 'sin-producto') return { ok: false, error: 'Ese producto no existe.' }
 
@@ -396,7 +396,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('quitarLinea', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.edit')
     if (!permiso.ok) return permiso
 
@@ -416,7 +416,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
       return 'ok'
     })
     if (r === 'no-borrador') {
-      return { ok: false, error: 'Solo se quitan lineas de un pedido en borrador.' }
+      return { ok: false, error: 'Solo se quitan líneas de un pedido en borrador.' }
     }
 
     revalidatePath(`/pedidos/${orderId}`)
@@ -440,7 +440,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
 export async function confirmarPedido(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('confirmarPedido', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.confirm')
     if (!permiso.ok) return permiso
 
@@ -470,7 +470,7 @@ export async function confirmarPedido(fd: FormData): Promise<ActionResult> {
         join public.products p on p.id = sol.product_id
         where sol.order_id = ${orderId} and sol.tenant_id = ${ctx.tenantId}`
       if (lines.length === 0) {
-        return { ok: false as const, error: 'Agrega al menos una linea antes de confirmar.' }
+        return { ok: false as const, error: 'Agrega al menos una línea antes de confirmar.' }
       }
 
       const credito = await exigirCredito(tx, ctx, {
@@ -549,7 +549,7 @@ export async function confirmarPedido(fd: FormData): Promise<ActionResult> {
 export async function entregarLinea(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('entregarLinea', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.deliver')
     if (!permiso.ok) return permiso
 
@@ -557,7 +557,7 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
     const lineId = String(fd.get('lineId') ?? '')
     const qty = num(String(fd.get('qty') ?? ''))
     if (!orderId || !lineId) return { ok: false, error: 'Faltan datos.' }
-    if (qty === null) return { ok: false, error: 'Cantidad no valida.' }
+    if (qty === null) return { ok: false, error: 'Cantidad no válida.' }
 
     const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [order] = await tx<{ status: string; warehouse_id: string }[]>`
@@ -608,9 +608,9 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
         const entregable = Math.round((estado.qtyReserved + libre) * 1000) / 1000
         if (qty > entregable) {
           return entregable > 0
-            ? `En el almacen solo hay ${entregable} ${line.unit} para este pedido; se intento entregar ${qty}. ` +
-                'Lo demas sigue en backorder hasta que entre mercancia.'
-            : 'No hay existencia en el almacen para entregar esta linea: sigue en backorder hasta que entre mercancia.'
+            ? `En el almacén solo hay ${entregable} ${line.unit} para este pedido; se intentó entregar ${qty}. ` +
+                'Lo demás queda pendiente hasta que entre mercancía.'
+            : 'No hay existencia en el almacén para entregar esta línea: queda pendiente hasta que entre mercancía.'
         }
       }
 
@@ -668,8 +668,8 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
 
     if (resultado === 'no-existe') return { ok: false, error: 'Ese pedido no existe.' }
     if (resultado === 'sin-confirmar') return { ok: false, error: 'Confirma el pedido primero.' }
-    if (resultado === 'cancelado') return { ok: false, error: 'El pedido esta cancelado.' }
-    if (resultado === 'sin-linea') return { ok: false, error: 'Esa linea no existe.' }
+    if (resultado === 'cancelado') return { ok: false, error: 'El pedido está cancelado.' }
+    if (resultado === 'sin-linea') return { ok: false, error: 'Esa línea no existe.' }
     if (resultado !== 'ok') return { ok: false, error: resultado }
 
     revalidatePath(`/pedidos/${orderId}`)
@@ -693,7 +693,7 @@ export async function entregarLinea(fd: FormData): Promise<ActionResult> {
 export async function cancelarPedido(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('cancelarPedido', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'sales-orders', 'sales-orders.cancel')
     if (!permiso.ok) return permiso
 
@@ -756,8 +756,8 @@ export async function cancelarPedido(fd: FormData): Promise<ActionResult> {
       return {
         ok: false,
         error:
-          'Este pedido ya se entrego completo: no se cancela. Si el cliente devuelve mercancia, ' +
-          'emite una nota de credito sobre su factura.',
+          'Este pedido ya se entregó completo: no se cancela. Si el cliente devuelve mercancía, ' +
+          'emite una nota de crédito sobre su factura.',
       }
     }
 
@@ -790,7 +790,7 @@ export async function crearPedidoForm(fd: FormData): Promise<void> {
   await anotarAviso(
     r,
     'crearPedido',
-    `Pedido ${r.number} creado en borrador. Agregale los productos.`,
+    `Pedido ${r.number} creado en borrador. Agrégale los productos.`,
   )
   const { tenant, rol } = demoDe(fd)
   const qs = tenant ? `?tenant=${tenant}&rol=${encodeURIComponent(rol ?? 'Owner')}` : ''
@@ -811,7 +811,7 @@ export async function confirmarPedidoForm(fd: FormData): Promise<void> {
     r,
     'confirmarPedido',
     conExcepcion
-      ? 'Confirmado con excepcion de credito. Quedo escrita con tu nombre y el motivo.'
+      ? 'Confirmado con excepción de crédito. Quedó escrita con tu nombre y el motivo.'
       : undefined,
   )
 }

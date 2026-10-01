@@ -39,7 +39,7 @@ const limpiarError = (e: unknown): string =>
 /** Da de alta un grupo de consolidacion. */
 export async function crearGrupo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.group.manage')
   if (!permiso.ok) return permiso
 
@@ -78,7 +78,7 @@ export async function crearGrupo(fd: FormData): Promise<ActionResult> {
  */
 export async function agregarEmpresa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.group.manage')
   if (!permiso.ok) return permiso
 
@@ -118,7 +118,7 @@ export async function agregarEmpresa(fd: FormData): Promise<ActionResult> {
 /** Saca una empresa del grupo. */
 export async function quitarEmpresa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.group.manage')
   if (!permiso.ok) return permiso
 
@@ -152,7 +152,7 @@ export async function quitarEmpresa(fd: FormData): Promise<ActionResult> {
  */
 export async function generarCorrida(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.run.create')
   if (!permiso.ok) return permiso
 
@@ -163,7 +163,7 @@ export async function generarCorrida(fd: FormData): Promise<ActionResult> {
   if (!groupId) return { ok: false, error: 'Elige el grupo a consolidar.' }
   if (!periodStart || !periodEnd) return { ok: false, error: 'Dime desde cuando y hasta cuando.' }
   if (periodEnd < periodStart) {
-    return { ok: false, error: 'El periodo no puede terminar antes de empezar.' }
+    return { ok: false, error: 'El período no puede terminar antes de empezar.' }
   }
 
   let runId = ''
@@ -203,7 +203,7 @@ export async function generarCorrida(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = limpiarError(e)
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ese grupo ya tiene una corrida para ese mismo periodo.' }
+      return { ok: false, error: 'Ese grupo ya tiene una corrida para ese mismo período.' }
     }
     return { ok: false, error: msg }
   }
@@ -216,7 +216,7 @@ export async function generarCorrida(fd: FormData): Promise<ActionResult> {
 /** Captura una eliminacion inter-compania sobre una corrida en borrador. */
 export async function capturarEliminacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.elimination.create')
   if (!permiso.ok) return permiso
 
@@ -231,7 +231,7 @@ export async function capturarEliminacion(fd: FormData): Promise<ActionResult> {
   const memberIds = fd.getAll('memberId').map((v) => String(v))
 
   if (!runId) return { ok: false, error: 'No se dijo sobre que corrida.' }
-  if (description.length < 3) return { ok: false, error: 'Describe que se esta eliminando.' }
+  if (description.length < 3) return { ok: false, error: 'Describe qué se está eliminando.' }
 
   // Avisa antes de enviar. Los checks de la tabla y los triggers de la
   // 0117 son los que de verdad protegen el dato.
@@ -266,13 +266,13 @@ export async function capturarEliminacion(fd: FormData): Promise<ActionResult> {
 /** Borra una eliminacion mal capturada. La base la bloquea si la corrida ya cerro. */
 export async function quitarEliminacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.elimination.create')
   if (!permiso.ok) return permiso
 
   const runId = String(fd.get('runId') ?? '')
   const eliminationId = String(fd.get('eliminationId') ?? '')
-  if (!eliminationId) return { ok: false, error: 'No se dijo cual eliminacion quitar.' }
+  if (!eliminationId) return { ok: false, error: 'No se dijo cuál eliminación quitar.' }
 
   try {
     await asUser(
@@ -297,7 +297,7 @@ export async function quitarEliminacion(fd: FormData): Promise<ActionResult> {
  */
 export async function cerrarCorrida(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'consolidation', 'consolidation.run.close')
   if (!permiso.ok) return permiso
 

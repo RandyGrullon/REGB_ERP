@@ -23,7 +23,7 @@ import { ESTADO_LEAD, FUENTE_LEAD } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'CRM / Leads · REGB ERP' }
+export const metadata = { title: 'CRM y prospectos · REGB ERP' }
 
 interface LeadRow {
   id: string
@@ -75,8 +75,8 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
       <div className="space-y-5">
         <PageHeader
           icon="contacts"
-          title="CRM / Leads"
-          description="Un puntaje explicable -email, telefono, fuente-, no una caja negra de IA. Asignacion automatica en round-robin."
+          title="CRM y prospectos"
+          description="Los prospectos que pueden terminar en venta. El puntaje sale de los datos que dejó (correo, teléfono) y de dónde llegó; los que no tienen vendedor se reparten por turno."
           actions={
             puedeGestionar &&
             pendientes > 0 && (
@@ -93,21 +93,21 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Leads" value={String(leads.length)} />
+          <StatCard label="Prospectos" value={String(leads.length)} />
           <StatCard label="Sin asignar" value={String(pendientes)} />
         </section>
 
         {leads.length === 0 ? (
           <EmptyState
             icon="contacts"
-            title="Todavia no hay ningun lead"
+            title="Todavía no hay ningún prospecto"
             description="Crea el primero abajo."
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Lead</TH>
+                <TH>Prospecto</TH>
                 <TH>Fuente</TH>
                 <TH numeric>Puntaje</TH>
                 <TH>Estado</TH>
@@ -142,7 +142,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Nuevo lead</CardTitle>
+              <CardTitle>Nuevo prospecto</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearLeadForm} className="flex flex-wrap items-end gap-3">
@@ -172,7 +172,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                   />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Telefono (opcional)
+                  Teléfono (opcional)
                   <input
                     name="phone"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
@@ -188,7 +188,7 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
                     <option value="referral">Referido</option>
                     <option value="event">Evento</option>
                     <option value="web">Sitio web</option>
-                    <option value="cold">Frio</option>
+                    <option value="cold">Frío</option>
                   </select>
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">

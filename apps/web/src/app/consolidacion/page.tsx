@@ -134,16 +134,16 @@ export default async function ConsolidacionPage({
   const claseInput =
     'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
   const claseBotonPrimario =
-    'flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
+    'flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
   const claseBotonSecundario =
-    'flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
+    'flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]'
 
   return (
     <Shell {...shell} activePath="/consolidacion">
       <div className="space-y-5">
         <PageHeader
           icon="layers"
-          title="Consolidacion"
+          title="Consolidación"
           description="Suma tus empresas en un solo estado de grupo, quitando lo que se venden y se deben entre ellas."
         />
 
@@ -161,8 +161,8 @@ export default async function ConsolidacionPage({
         {grupos.length === 0 ? (
           <EmptyState
             icon="layers"
-            title="Todavia no hay ningun grupo de consolidacion"
-            description="Un grupo son las empresas que se reportan juntas. Registralo abajo, metele al menos dos empresas -una marcada como matriz- y despues genera la corrida del periodo."
+            title="Todavía no hay ningún grupo de consolidación"
+            description="Un grupo son las empresas que se reportan juntas. Regístralo abajo, agrégale al menos dos empresas (una marcada como matriz) y después genera la corrida del período."
           />
         ) : (
           <div className="space-y-4">
@@ -251,8 +251,8 @@ export default async function ConsolidacionPage({
                         {disponibles.length === 0 && (
                           <p className="w-full text-xs text-[var(--color-text-muted)]">
                             No queda ninguna empresa en {g.presentation_currency} fuera del grupo.
-                            Una empresa en otra moneda no entra: esta consolidacion no traduce
-                            moneda.
+                            Una empresa en otra moneda no entra: esta consolidación no convierte
+                            monedas.
                           </p>
                         )}
                       </form>
@@ -274,7 +274,7 @@ export default async function ConsolidacionPage({
                 Todavía no se ha consolidado ningún período.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[560px]">
                 <THead>
                   <TR>
                     <TH>Grupo</TH>
@@ -296,8 +296,8 @@ export default async function ConsolidacionPage({
                             {c.group_name}
                           </a>
                         </TD>
-                        <TD>
-                          {fecha(c.period_start)} — {fecha(c.period_end)}
+                        <TD className="whitespace-nowrap">
+                          {fecha(c.period_start)} – {fecha(c.period_end)}
                         </TD>
                         <TD>
                           <Badge tone={estado.tone}>{estado.label}</Badge>
@@ -347,9 +347,9 @@ export default async function ConsolidacionPage({
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
                   La corrida congela una foto de los saldos por empresa y cuenta, acumulados hasta
-                  la fecha de <strong>Hasta</strong>: <strong>Desde</strong> etiqueta el periodo que
-                  se reporta, no recorta la foto. Es a proposito -una deuda entre dos empresas del
-                  grupo nacida antes seguiria viva y hay que poder eliminarla-. Un asiento con fecha
+                  la fecha de <strong>Hasta</strong>: <strong>Desde</strong> etiqueta el período que
+                  se reporta, no recorta la foto. Es a propósito: una deuda entre dos empresas del
+                  grupo nacida antes seguiría viva y hay que poder eliminarla. Un asiento con fecha
                   atrasada que entre después no cambia un consolidado ya generado.
                 </p>
               </form>
@@ -372,7 +372,8 @@ export default async function ConsolidacionPage({
                     name="name"
                     required
                     minLength={2}
-                    placeholder="Grupo Rodriguez"
+                    placeholder="Grupo Rodríguez"
+
                     className={claseInput}
                   />
                 </label>
@@ -391,7 +392,7 @@ export default async function ConsolidacionPage({
                 </BotonEnvio>
                 <p className="w-full text-xs text-[var(--color-text-muted)]">
                   Todas las empresas del grupo tienen que llevar esta misma moneda: el consolidado
-                  no las convierte, y sumar pesos con dolares no seria un estado, seria un número.
+                  no las convierte, y sumar pesos con dólares no daría un estado financiero válido.
                 </p>
               </form>
             </CardBody>

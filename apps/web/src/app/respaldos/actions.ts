@@ -33,7 +33,7 @@ export async function crearRespaldo(formData: FormData): Promise<void> {
     rol: String(formData.get('rol') ?? '') || undefined,
   })
   if (!ctx) {
-    await anotarAviso({ ok: false, error: 'Sesion no valida.' }, 'crearRespaldo')
+    await anotarAviso({ ok: false, error: 'Sesión no válida.' }, 'crearRespaldo')
     return
   }
   const permiso = exigir(ctx, 'backup', 'backup.create')
@@ -71,7 +71,7 @@ export async function crearRespaldo(formData: FormData): Promise<void> {
     { ok: true },
     'crearRespaldo',
     faltan.length === 0
-      ? 'Listo, creamos el respaldo. Descargalo y guardalo fuera de aqui.'
+      ? 'Listo, creamos el respaldo. Descárgalo y guárdalo fuera de aquí.'
       : `Listo, creamos el respaldo, pero NO trae ${faltan.join(', ')}: tu rol no lo ve completo.`,
   )
 }

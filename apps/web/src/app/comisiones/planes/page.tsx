@@ -22,7 +22,7 @@ import { ESQUEMA_COMISION } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Planes de comision · REGB ERP' }
+export const metadata = { title: 'Planes de comisión · REGB ERP' }
 
 interface PlanRow {
   id: string
@@ -58,14 +58,15 @@ export default async function PlanesComisionPage({
       <div className="space-y-5">
         <PageHeader
           icon="percent"
-          title="Planes de comision"
+          title="Planes de comisión"
+          description="Cómo se le paga a cada vendedor: un porcentaje de lo vendido sin ITBIS, o un monto fijo por pedido. En la tasa, 0.05 es el 5 %."
           crumbs={[{ label: 'Comisiones', href: `/comisiones${qs}` }, { label: 'Planes' }]}
         />
 
         {planes.length === 0 ? (
           <EmptyState
             icon="percent"
-            title="Todavia no hay ningun plan"
+            title="Todavía no hay ningún plan"
             description="Crea el primero abajo."
           />
         ) : (
@@ -87,7 +88,7 @@ export default async function PlanesComisionPage({
                     <span className="tabular">
                       {p.basis === 'percentage'
                         ? `${(Number(p.rate) * 100).toFixed(1)}%`
-                        : `RD$ ${p.rate}`}
+                        : `RD$ ${Number(p.rate).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} por pedido`}
                     </span>
                   </TD>
                   <TD>

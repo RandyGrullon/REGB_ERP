@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'crm',
-  name: 'CRM / Leads',
+  name: 'CRM y prospectos',
   description: 'Captura, puntuación, asignación automática y línea de tiempo.',
   icon: 'contacts',
   category: 'standard',

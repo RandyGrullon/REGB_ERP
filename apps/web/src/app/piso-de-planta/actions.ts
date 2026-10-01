@@ -29,7 +29,7 @@ const num = (raw: string): number | null => {
 
 export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'shopfloor', 'shopfloor.operate')
   if (!permiso.ok) return permiso
 
@@ -50,7 +50,7 @@ export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
 
 export async function marcarSalida(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'shopfloor', 'shopfloor.operate')
   if (!permiso.ok) return permiso
 
@@ -71,13 +71,13 @@ export async function marcarSalida(fd: FormData): Promise<ActionResult> {
 
 export async function iniciarParo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'shopfloor', 'shopfloor.operate')
   if (!permiso.ok) return permiso
 
   const ordenId = String(fd.get('ordenId') ?? '')
   const reason = String(fd.get('reason') ?? '').trim()
-  if (!reason) return { ok: false, error: 'Explica la razon del paro.' }
+  if (!reason) return { ok: false, error: 'Explica la razón del paro.' }
 
   await asUser(
     ctx.userId,
@@ -93,7 +93,7 @@ export async function iniciarParo(fd: FormData): Promise<ActionResult> {
 
 export async function terminarParo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'shopfloor', 'shopfloor.operate')
   if (!permiso.ok) return permiso
 
@@ -115,7 +115,7 @@ export async function terminarParo(fd: FormData): Promise<ActionResult> {
 /** Declara el ciclo ideal -horas por unidad- que usa rendimiento() para el OEE. */
 export async function fijarCicloIdeal(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'shopfloor', 'shopfloor.operate')
   if (!permiso.ok) return permiso
 

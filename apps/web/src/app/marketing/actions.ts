@@ -24,7 +24,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearCampana(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'marketing', 'marketing.manage')
   if (!permiso.ok) return permiso
 
@@ -38,7 +38,7 @@ export async function crearCampana(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre.' }
   if (!['email', 'whatsapp'].includes(channel))
-    return { ok: false, error: 'Elige un canal valido.' }
+    return { ok: false, error: 'Elige un canal válido.' }
   if (!message) return { ok: false, error: 'Falta el mensaje.' }
 
   await asUser(
@@ -56,7 +56,7 @@ export async function crearCampana(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado sin efectos -borrador a programada, o cualquiera a cancelada-. */
 export async function transicionarCampana(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'marketing', 'marketing.manage')
   if (!permiso.ok) return permiso
 
@@ -67,13 +67,13 @@ export async function transicionarCampana(fd: FormData): Promise<ActionResult> {
     const [c] = await tx<{ status: EstadoCampana }[]>`
       select status from public.campaigns where id = ${campaignId} and tenant_id = ${ctx.tenantId} for update`
     if (!c) return 'no-existe'
-    if (!transicionValidaCampana(c.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaCampana(c.status, siguiente)) return 'Esa transición no está permitida.'
 
     await tx`update public.campaigns set status = ${siguiente}, updated_at = now() where id = ${campaignId} and tenant_id = ${ctx.tenantId}`
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Esa campana no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa campaña no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/marketing/${campaignId}`)
@@ -84,7 +84,7 @@ export async function transicionarCampana(fd: FormData): Promise<ActionResult> {
 /** Toma la foto de los leads que hoy cumplen el segmento y crea un destinatario real por cada uno. */
 export async function enviarCampana(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'marketing', 'marketing.manage')
   if (!permiso.ok) return permiso
 
@@ -98,7 +98,7 @@ export async function enviarCampana(fd: FormData): Promise<ActionResult> {
       where id = ${campaignId} and tenant_id = ${ctx.tenantId} for update`
     if (!c) return 'no-existe'
     if (!transicionValidaCampana(c.status, 'sent'))
-      return 'Esa campana no se puede enviar en su estado actual.'
+      return 'Esa campaña no se puede enviar en su estado actual.'
 
     const leads = await tx<{ id: string }[]>`
       select id from public.leads
@@ -106,7 +106,7 @@ export async function enviarCampana(fd: FormData): Promise<ActionResult> {
         and (${c.target_status}::text is null or status = ${c.target_status})
         and (${c.target_source}::text is null or source = ${c.target_source})`
 
-    if (leads.length === 0) return 'Ningun lead cumple el segmento de esta campana.'
+    if (leads.length === 0) return 'Ningún prospecto cumple el segmento de esta campaña.'
 
     for (const lead of leads) {
       await tx`
@@ -125,7 +125,7 @@ export async function enviarCampana(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Esa campana no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa campaña no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/marketing/${campaignId}`)
@@ -135,7 +135,7 @@ export async function enviarCampana(fd: FormData): Promise<ActionResult> {
 
 export async function marcarAperturaClic(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'marketing', 'marketing.manage')
   if (!permiso.ok) return permiso
 
@@ -143,7 +143,7 @@ export async function marcarAperturaClic(fd: FormData): Promise<ActionResult> {
   const tipo = String(fd.get('tipo') ?? '')
   const campaignId = String(fd.get('campaignId') ?? '')
 
-  if (!['opened', 'clicked'].includes(tipo)) return { ok: false, error: 'Tipo invalido.' }
+  if (!['opened', 'clicked'].includes(tipo)) return { ok: false, error: 'Tipo inválido.' }
 
   await asUser(ctx.userId, ctx.tenantId, (tx) =>
     tipo === 'clicked'

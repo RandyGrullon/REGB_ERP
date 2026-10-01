@@ -79,8 +79,8 @@ export default async function FirmaElectronicaPage({
       <div className="space-y-5">
         <PageHeader
           icon="draw"
-          title="Firma electronica"
-          description="Flujo de clic para firmar con rastro de auditoria real -quien, cuando, desde que IP-. No es una firma certificada con PKI."
+          title="Firma electrónica"
+          description="Envía cotizaciones y contratos para que el cliente los firme con un clic. Queda constancia de quién firmó, cuándo y desde qué IP; no es una firma digital certificada."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -91,7 +91,7 @@ export default async function FirmaElectronicaPage({
         {solicitudes.length === 0 ? (
           <EmptyState
             icon="draw"
-            title="Todavia no hay ninguna solicitud"
+            title="Todavía no hay ninguna solicitud"
             description="Crea la primera abajo."
           />
         ) : (
@@ -131,7 +131,7 @@ export default async function FirmaElectronicaPage({
             {cotizaciones.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Firmar una cotizacion</CardTitle>
+                  <CardTitle>Firmar una cotización</CardTitle>
                 </CardHeader>
                 <CardBody>
                   <form action={crearSolicitudForm} className="flex flex-wrap items-end gap-3">
@@ -139,7 +139,7 @@ export default async function FirmaElectronicaPage({
                     <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                     <input type="hidden" name="documentType" value="quote" />
                     <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                      Cotizacion
+                      Cotización
                       <select
                         name="quoteChoice"
                         required

@@ -10,11 +10,12 @@ import { Icon } from './Icon'
  */
 export interface EmptyStateProps {
   /**
-   * Nombre de un icono Material Symbols (`inventory_2`). Admite tambien un
-   * nodo suelto, pero lo normal es el nombre: si cada pantalla elige su
-   * emoji, el producto acaba sin iconografia coherente.
+   * Nombre de un icono Material Symbols (`inventory_2`). SOLO el nombre:
+   * antes admitia tambien un nodo suelto y por ahi se colaban emojis, que
+   * dejan el producto sin iconografia coherente (y cada sistema los pinta
+   * distinto).
    */
-  icon?: string | ReactNode
+  icon?: string
   title: string
   /** Con humor, en espanol dominicano. */
   description: string
@@ -38,23 +39,20 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
+      // Marca para `scripts/revision-pantallas.mjs`: cuenta que pantallas
+      // salen vacias con los datos de la demo. No cambia nada visible.
+      data-estado="vacio"
       className={cn(
         'flex flex-col items-center justify-center gap-3 px-6 py-16 text-center',
         className,
       )}
     >
-      {typeof icon === 'string' ? (
-        <span
-          aria-hidden
-          className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-surface-raised)]"
-        >
-          <Icon name={icon} size={32} className="text-[var(--color-text-muted)]" />
-        </span>
-      ) : (
-        <div className="text-5xl" aria-hidden>
-          {icon}
-        </div>
-      )}
+      <span
+        aria-hidden
+        className="grid h-16 w-16 place-items-center rounded-full bg-[var(--color-surface-raised)]"
+      >
+        <Icon name={icon} size={32} className="text-[var(--color-text-muted)]" />
+      </span>
 
       {/* h2, no h3: cuelga directamente del h1 de la pantalla. Con h3
           quedaba el salto h1 -> h3 y un lector lo anuncia como si faltara

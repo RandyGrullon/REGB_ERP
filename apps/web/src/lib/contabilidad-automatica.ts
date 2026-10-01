@@ -195,7 +195,7 @@ const ventaCajaAnulada: HandlerContable = async (e, sql) => {
     {
       sourceType: 'pos_sale_void',
       fecha: v.fecha,
-      descripcion: `Anulacion de la venta de caja ${v.number}`,
+      descripcion: `Anulación de la venta de caja ${v.number}`,
     },
   )
 }
@@ -218,7 +218,7 @@ async function contabilizarFacturaCliente(
     sourceType: 'ar_invoice',
     sourceId: invoiceId,
     fecha: f.fecha,
-    descripcion: `Factura a credito ${f.number} · ${f.cliente}`,
+    descripcion: `Factura a crédito ${f.number} · ${f.cliente}`,
     lineas: asientoFacturaCredito({ total: f.total, impuesto: f.tax }),
   })
 }
@@ -257,7 +257,7 @@ const facturaClienteAnulada: HandlerContable = async (e, sql) => {
     {
       sourceType: 'ar_invoice_void',
       fecha: hoy!.fecha,
-      descripcion: `Anulacion de la factura ${f.number}`,
+      descripcion: `Anulación de la factura ${f.number}`,
     },
   )
 }
@@ -344,7 +344,7 @@ const notaCreditoEmitida: HandlerContable = async (e, sql) => {
     sourceType: 'ar_credit_note',
     sourceId: notaId,
     fecha: n.fecha,
-    descripcion: `Nota de credito ${n.number} a la factura ${n.factura}`,
+    descripcion: `Nota de crédito ${n.number} a la factura ${n.factura}`,
     lineas: asientoNotaCredito({ total: n.total, impuesto: n.tax }),
   })
 }
@@ -444,7 +444,7 @@ const facturaProveedorAnulada: HandlerContable = async (e, sql) => {
     {
       sourceType: 'ap_invoice_void',
       fecha: hoy!.fecha,
-      descripcion: `Anulacion de la factura de proveedor ${f.numero}`,
+      descripcion: `Anulación de la factura de proveedor ${f.numero}`,
     },
   )
 }

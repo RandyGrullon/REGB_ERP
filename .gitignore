@@ -6,6 +6,7 @@ node_modules/
 dist/
 build/
 .next/
+.next-*/
 out/
 *.tsbuildinfo
 
@@ -52,3 +53,4 @@ apps/mobile/.expo/
 # subiendo porque ya estaban trackeados, pero uno nuevo en esa ruta
 # se habria ignorado en silencio.
 /respaldos/
+

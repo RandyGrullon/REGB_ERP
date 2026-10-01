@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState, Mono, StatCard } from '@regb/ui'
 import { db } from '@/lib/db'
+import { fechaCorta } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Tu portal · REGB ERP' }
@@ -21,8 +22,12 @@ interface Invoice {
   issue_date: string
   due_date: string
   total: string
+  saldo: string
   status: string
 }
+
+const money = (n: number) =>
+  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const badgeFactura = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
   if (s === 'paid') return 'success'
@@ -69,14 +74,15 @@ export default async function PortalClientePage({
   await sql`update public.portal_invites set last_accessed_at = now() where id = ${invite.id}`
 
   const facturas = await sql<Invoice[]>`
-    select id, number, issue_date::text, due_date::text, total::text, status
+    select id, number, issue_date::text, due_date::text, total::text,
+           public.invoice_balance(id)::text as saldo, status
     from public.customer_invoices
     where tenant_id = ${invite.tenant_id} and customer_id = ${invite.customer_id}
     order by issue_date desc`
 
   const pendiente = facturas
     .filter((f) => f.status === 'open' || f.status === 'partially_paid' || f.status === 'overdue')
-    .reduce((acc, f) => acc + Number(f.total), 0)
+    .reduce((acc, f) => acc + Number(f.saldo), 0)
 
   return (
     <main className="mx-auto max-w-3xl space-y-5 p-6">
@@ -92,10 +98,7 @@ export default async function PortalClientePage({
 
       <section aria-label="Resumen" className="grid grid-cols-2 gap-3">
         <StatCard label="Facturas" value={String(facturas.length)} />
-        <StatCard
-          label="Pendiente"
-          value={pendiente.toLocaleString('es-DO', { style: 'currency', currency: 'DOP' })}
-        />
+        <StatCard label="Pendiente" value={`RD$ ${money(pendiente)}`} />
       </section>
 
       <Card>
@@ -106,8 +109,8 @@ export default async function PortalClientePage({
           {facturas.length === 0 ? (
             <EmptyState
               icon="receipt_long"
-              title="Todavia no tienes facturas"
-              description="Cuando te facturen, apareceran aqui."
+              title="Todavía no tienes facturas"
+              description="Cuando te facturen, aparecerán aquí."
             />
           ) : (
             <ul className="divide-y divide-[var(--color-border)]">
@@ -118,15 +121,18 @@ export default async function PortalClientePage({
                       <Mono>{f.number}</Mono>
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      Vence {new Date(f.due_date).toLocaleDateString('es-DO')}
+                      Emitida {fechaCorta(f.issue_date, true)} · vence{' '}
+                      {fechaCorta(f.due_date, true)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-sm tabular-nums text-[var(--color-text-primary)]">
-                      {Number(f.total).toLocaleString('es-DO', {
-                        style: 'currency',
-                        currency: 'DOP',
-                      })}
+                    <span className="text-right text-sm tabular-nums text-[var(--color-text-primary)]">
+                      RD$ {money(Number(f.total))}
+                      {Number(f.saldo) > 0 && Number(f.saldo) !== Number(f.total) && (
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          debe RD$ {money(Number(f.saldo))}
+                        </span>
+                      )}
                     </span>
                     <Badge tone={badgeFactura(f.status)}>
                       {ETIQUETA_FACTURA[f.status] ?? f.status}

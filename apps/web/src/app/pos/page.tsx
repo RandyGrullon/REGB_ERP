@@ -171,6 +171,16 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
     ? { tenant: ctx.tenantSlug, rol: ctx.roleName }
     : { tenant: '', rol: '' }
 
+  // "desde las 8:00 a. m." y no "08:00 a. m..": la hora ya termina en
+  // punto, y es la de RD aunque el servidor viva en otra zona.
+  const horaTurno = turno
+    ? new Date(turno.opened_at).toLocaleTimeString('es-DO', {
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'America/Santo_Domingo',
+      })
+    : ''
+
   const items: PosProduct[] = productos.map((p) => ({
     id: p.id,
     sku: p.sku,
@@ -191,14 +201,14 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
           title="Caja"
           description={
             turno
-              ? `Turno abierto en ${turno.warehouse_name} desde las ${new Date(turno.opened_at).toLocaleTimeString('es-DO', { hour: '2-digit', minute: '2-digit' })}.`
+              ? `Turno abierto en ${turno.warehouse_name} desde las ${horaTurno}${horaTurno.endsWith('.') ? '' : '.'}`
               : 'Abre un turno para empezar a vender. Sin turno no hay arqueo al cerrar.'
           }
           actions={
             turno && (
               <a
                 href={`/pos/shifts${qs}`}
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-4 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="lock_clock" size={18} />
                 Cerrar turno
@@ -224,8 +234,8 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
               <strong className="text-[var(--color-text-primary)]">
                 No hay secuencia de NCF disponible.
               </strong>{' '}
-              Se puede seguir vendiendo, pero los tickets saldran sin comprobante fiscal y no
-              serviran para credito fiscal.{' '}
+              Se puede seguir vendiendo, pero los tickets saldrán sin comprobante fiscal y no
+              servirán para crédito fiscal.{' '}
               {/* A la pantalla que ESTE rol puede abrir: la de la caja si
                   administra comprobantes, la de Por cobrar si llega por
                   ahi. Antes enlazaba siempre a /cobrar/ncf, que para un
@@ -235,10 +245,10 @@ export default async function PosPage({ searchParams }: { searchParams: Promise<
                   href={`${rutaNcf}${qs}`}
                   className="text-[var(--color-text-link)] underline hover:no-underline"
                 >
-                  Carga la autorizacion de la DGII
+                  Carga la autorización de la DGII
                 </a>
               ) : (
-                <>Avisale al dueño que cargue la autorizacion de la DGII en Caja › Comprobantes</>
+                <>Avísale al dueño que cargue la autorización de la DGII en Caja › Comprobantes</>
               )}{' '}
               — pedirla toma días.
             </p>

@@ -404,7 +404,7 @@ describe('Un borrador de nomina con las fechas equivocadas tiene vuelta', () => 
     expect(await procesarPeriodo(c.fd({ periodId: p }))).toEqual({ ok: true })
     expect(await eliminarPeriodo(c.fd({ periodId: p }))).toEqual({
       ok: false,
-      error: 'Ese periodo ya se procesó: queda fijo y se corrige con el siguiente.',
+      error: 'Ese período ya se procesó: queda fijo y se corrige con el siguiente.',
     })
   })
 })

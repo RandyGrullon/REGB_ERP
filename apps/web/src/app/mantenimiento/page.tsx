@@ -18,9 +18,13 @@ import { Shell } from '@/components/Shell'
 import { ESTADO_ORDEN, PRIORIDAD_ORDEN, TIPO_ORDEN } from './estados'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Mantenimiento · REGB ERP' }
+export const metadata = { title: 'Mantenimiento de equipos · REGB ERP' }
 
 interface EquipoRow {
+  id: string
+  code: string
+  name: string
+  location: string | null
   usage_hours: string
   last_service_usage: string | null
   maintenance_interval_usage: string | null
@@ -39,7 +43,8 @@ interface OrdenRow {
   opened_at: string
 }
 
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-DO', { dateStyle: 'medium' })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
 
 const badgeEstado = (s: string): 'success' | 'warning' | 'neutral' => {
   if (s === 'completed') return 'success'
@@ -73,10 +78,11 @@ export default async function MantenimientoPage({
       where wo.tenant_id = ${ctx.tenantId} and wo.status in ('open', 'in_progress')
       order by wo.opened_at desc`
       const eq = await tx<EquipoRow[]>`
-      select usage_hours::text, last_service_usage::text, maintenance_interval_usage::text,
-             last_service_at::text, maintenance_interval_days, status
+      select id, code, name, location, usage_hours::text, last_service_usage::text,
+             maintenance_interval_usage::text, last_service_at::text, maintenance_interval_days, status
       from public.equipment
-      where tenant_id = ${ctx.tenantId} and status = 'active'`
+      where tenant_id = ${ctx.tenantId} and status = 'active'
+      order by name`
       const [ea] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.equipment where tenant_id = ${ctx.tenantId} and status = 'active'`
 
@@ -84,7 +90,7 @@ export default async function MantenimientoPage({
     },
   )
 
-  const vencidos = equipos.filter((e) =>
+  const listaVencidos = equipos.filter((e) =>
     equipoRequiereMantenimiento(
       Number(e.usage_hours),
       Number(e.last_service_usage ?? 0),
@@ -94,7 +100,8 @@ export default async function MantenimientoPage({
         : null,
       new Date(),
     ),
-  ).length
+  )
+  const vencidos = listaVencidos.length
 
   const qs = ctx.demoQs
 
@@ -103,8 +110,8 @@ export default async function MantenimientoPage({
       <div className="space-y-5">
         <PageHeader
           icon="build"
-          title="Mantenimiento"
-          description="Vencimiento real por uso o por fecha -la misma pregunta que ya resuelve fleet para vehiculos-, y MTBF que promedia intervalos entre fallas, no antiguedad."
+          title="Mantenimiento de equipos"
+          description="Los equipos del negocio (compresor, montacargas, planta eléctrica…), cuándo les toca servicio por horas de uso o por fecha, y las órdenes de trabajo abiertas."
           actions={
             <a
               href={`/mantenimiento/equipos${qs}`}
@@ -117,12 +124,51 @@ export default async function MantenimientoPage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Equipos activos" value={String(equiposActivos)} />
-          <StatCard label="Con mantenimiento vencido" value={String(vencidos)} />
-          <StatCard label="Ordenes abiertas" value={String(ordenesAbiertas.length)} />
+          <StatCard label="Les toca servicio" value={String(vencidos)} hint="por uso o por fecha" />
+          <StatCard
+            label="Órdenes abiertas"
+            value={String(ordenesAbiertas.length)}
+            hint="averías y servicios"
+          />
         </section>
 
+        {listaVencidos.length > 0 && (
+          <div className="space-y-2">
+            <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+              Equipos a los que les toca servicio
+            </h2>
+            <ul className="divide-y divide-[var(--color-border)] rounded-[var(--radius-lg)] border border-[var(--color-border)]">
+              {listaVencidos.map((e) => (
+                <li
+                  key={e.id}
+                  className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+                >
+                  <a
+                    href={`/mantenimiento/equipos/${e.id}${qs}`}
+                    className="text-sm text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                  >
+                    <Mono>{e.code}</Mono> {e.name}
+                    {e.location && (
+                      <span className="text-[var(--color-text-muted)]"> · {e.location}</span>
+                    )}
+                  </a>
+                  <span className="text-xs text-[var(--color-text-muted)]">
+                    {e.last_service_at
+                      ? `último servicio el ${new Date(e.last_service_at).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+                      : 'sin servicio registrado'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         {ordenesAbiertas.length === 0 ? (
-          <EmptyState icon="build" title="No hay ninguna orden de trabajo abierta" description="" />
+          <EmptyState
+            icon="build"
+            title="No hay ninguna orden de trabajo abierta"
+            description="Cuando un equipo se dañe o le toque su servicio, abre la orden desde la ficha del equipo, en Equipos."
+          />
         ) : (
           <Table>
             <THead>
@@ -147,7 +193,9 @@ export default async function MantenimientoPage({
                     </a>
                   </TD>
                   <TD>{TIPO_ORDEN[o.type] ?? o.type}</TD>
-                  <TD className="text-[var(--color-text-muted)]">{o.description}</TD>
+                  <TD className="max-w-72 text-[var(--color-text-secondary)]">
+                    <span className="line-clamp-2">{o.description}</span>
+                  </TD>
                   <TD>
                     <Badge tone={badgePrioridad(o.priority)}>
                       {PRIORIDAD_ORDEN[o.priority] ?? o.priority}
@@ -156,8 +204,8 @@ export default async function MantenimientoPage({
                   <TD>
                     <Badge tone={badgeEstado(o.status)}>{ESTADO_ORDEN[o.status] ?? o.status}</Badge>
                   </TD>
-                  <TD className="text-[var(--color-text-muted)]">
-                    <Mono>{fecha(o.opened_at)}</Mono>
+                  <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                    {fecha(o.opened_at)}
                   </TD>
                 </TR>
               ))}

@@ -1,0 +1,272 @@
+/* ────────────────────────────────────────────────────────────────
+   Carga: la barra fina de arriba y la pantalla de bienvenida.
+   Componentes: BarraDeProgreso.tsx y PantallaDeCarga.tsx.
+
+   CSS y no JavaScript porque todo esto se ve ANTES de que React
+   arranque: es lo primero que pinta la página. Solo tokens del tema
+   (el <html> ya trae `data-theme` desde el servidor): nada de hex.
+   ──────────────────────────────────────────────────────────────── */
+
+/* ── La barra ─────────────────────────────────────────────────────
+   Fija arriba, 3 px, sin recibir clics: no empuja ni tapa nada.
+   Reposo: ancho completo y transparente. Así, al terminar una carga,
+   la barra "se completa" (pasa a todo el ancho) mientras se desvanece. */
+.regb-barra {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 9999;
+  height: 3px;
+  pointer-events: none;
+  background: var(--color-brand-bright);
+  border-radius: 0 var(--radius-full) var(--radius-full) 0;
+  transform-origin: 0 50%;
+  transform: scaleX(1);
+  opacity: 0;
+  transition:
+    transform 200ms ease-out,
+    opacity 260ms ease-out 140ms;
+}
+
+/* Cargando: mientras exista la pantalla de carga del Suspense (sin JS)
+   o mientras la barra lo diga (navegaciones y acciones, con JS). Avanza
+   rápido al principio y cada vez más despacio: nunca llega sola al 100 %. */
+html:has(.regb-carga) .regb-barra,
+.regb-barra[data-estado='cargando'] {
+  opacity: 1;
+  transition: none;
+  animation: regb-barra-avanza 14s both;
+}
+
+/* Llegando desde otra pantalla: la anterior ya la dejó a un tercio. */
+html[data-carga='navegacion']:has(.regb-carga) .regb-barra {
+  animation-name: regb-barra-sigue;
+}
+
+@keyframes regb-barra-avanza {
+  0% {
+    transform: scaleX(0);
+    animation-timing-function: ease-out;
+  }
+  6% {
+    transform: scaleX(0.3);
+    animation-timing-function: ease-out;
+  }
+  20% {
+    transform: scaleX(0.55);
+    animation-timing-function: ease-out;
+  }
+  50% {
+    transform: scaleX(0.78);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+
+@keyframes regb-barra-sigue {
+  0% {
+    transform: scaleX(0.3);
+    animation-timing-function: ease-out;
+  }
+  15% {
+    transform: scaleX(0.55);
+    animation-timing-function: ease-out;
+  }
+  45% {
+    transform: scaleX(0.78);
+    animation-timing-function: ease-out;
+  }
+  100% {
+    transform: scaleX(0.92);
+  }
+}
+
+/* ── La pantalla de bienvenida ────────────────────────────────────
+   Cubre la ventana con el fondo del tema y centra el logo. Es el
+   `fallback` del Suspense: desaparece en cuanto llega la página. */
+.regb-carga {
+  --regb-demora: 160ms;
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--color-surface-base);
+}
+
+/* Navegando entre pantallas: solo la barra, sin logo. */
+html[data-carga='navegacion'] .regb-carga__marca {
+  display: none;
+}
+
+.regb-carga__marca {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  /* Entra con demora: en una carga rápida no llega a verse. */
+  animation: regb-aparece 200ms ease-out var(--regb-demora) both;
+}
+
+.regb-carga__nombre {
+  font-family: var(--font-ui);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--color-text-primary);
+  animation: regb-nombre 320ms ease-out calc(var(--regb-demora) + 600ms) both;
+}
+
+/* El logo se arma: la loseta aparece, las cuatro piezas de la R llegan
+   cada una desde su lado y encajan en la cruz, y al final brota la hoja.
+   ~1 s en total. Coordenadas en unidades del SVG (caja de 64). */
+.regb-carga [data-pieza] {
+  transform-box: fill-box;
+}
+
+.regb-carga [data-pieza='loseta'] {
+  transform-origin: center;
+  animation: regb-loseta 460ms cubic-bezier(0.2, 0.9, 0.25, 1) var(--regb-demora) both;
+}
+
+.regb-carga [data-pieza='asta'] {
+  animation: regb-asta 340ms cubic-bezier(0.2, 0.9, 0.3, 1.15) calc(var(--regb-demora) + 200ms) both;
+}
+
+.regb-carga [data-pieza='base'] {
+  animation: regb-base 340ms cubic-bezier(0.2, 0.9, 0.3, 1.15) calc(var(--regb-demora) + 270ms) both;
+}
+
+.regb-carga [data-pieza='pata'] {
+  animation: regb-pata 340ms cubic-bezier(0.2, 0.9, 0.3, 1.15) calc(var(--regb-demora) + 340ms) both;
+}
+
+/* La hoja crece desde la esquina que encaja en la cruz. Si la página
+   sigue sin llegar, respira despacio: la app no se ha colgado. */
+.regb-carga [data-pieza='hoja'] {
+  transform-origin: 0% 100%;
+  animation:
+    regb-hoja 460ms cubic-bezier(0.2, 0.9, 0.3, 1) calc(var(--regb-demora) + 460ms) both,
+    regb-respira 2400ms ease-in-out calc(var(--regb-demora) + 1400ms) infinite;
+}
+
+@keyframes regb-aparece {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes regb-loseta {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes regb-asta {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes regb-base {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes regb-pata {
+  from {
+    opacity: 0;
+    transform: translate(9px, 9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes regb-hoja {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes regb-respira {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes regb-nombre {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ── Movimiento reducido ──────────────────────────────────────────
+   El logo sale quieto, ya armado, y solo si la carga pasa de 400 ms.
+   La barra es una línea fija que aparece y desaparece, sin avanzar. */
+@media (prefers-reduced-motion: reduce) {
+  .regb-carga__marca {
+    animation: regb-aparece 1ms linear 400ms both;
+  }
+  .regb-carga [data-pieza],
+  .regb-carga__nombre {
+    animation: none;
+  }
+  .regb-barra {
+    transition: none;
+  }
+  html:has(.regb-carga) .regb-barra,
+  .regb-barra[data-estado='cargando'] {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+/* Ni la barra ni la bienvenida salen en papel. */
+@media print {
+  .regb-barra,
+  .regb-carga {
+    display: none !important;
+  }
+}

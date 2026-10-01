@@ -40,6 +40,7 @@ interface OrderRow {
   total: string
   lineas: string
   pendiente: boolean
+  avance: string | null
 }
 
 const money = (n: number) =>
@@ -68,7 +69,11 @@ export default async function ComprasPage({
                  where l.order_id = po.id)::text as lineas,
                exists (select 1 from public.purchase_order_lines l
                         where l.order_id = po.id and l.qty_received < l.qty_ordered
-                          and po.status in ('confirmed','partially_received')) as pendiente
+                          and po.status in ('confirmed','partially_received')) as pendiente,
+               (select case when sum(l.qty_ordered) > 0
+                            then round(100 * sum(l.qty_received) / sum(l.qty_ordered))
+                       end
+                  from public.purchase_order_lines l where l.order_id = po.id)::text as avance
         from public.purchase_orders po
         join public.suppliers s on s.id = po.supplier_id
         join public.warehouses w on w.id = po.warehouse_id
@@ -96,20 +101,24 @@ export default async function ComprasPage({
   const puedeCrear = exigir(ctx, 'purchase-orders', 'purchase-orders.create').ok
   const qs = ctx.demoQs
 
-  const fecha = (iso: string) =>
-    new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
+  // El año solo si no es el de hoy: la tabla es ancha y el año casi siempre sobra.
+  const esteAno = new Date().getFullYear()
+  const fecha = (iso: string) => {
+    const d = new Date(`${iso.slice(0, 10)}T12:00:00`)
+    return d.toLocaleDateString('es-DO', {
       day: 'numeric',
       month: 'short',
-      year: 'numeric',
+      ...(d.getFullYear() !== esteAno ? { year: 'numeric' } : {}),
     })
+  }
 
   return (
     <Shell {...shell} activePath="/compras">
       <div className="space-y-5">
         <PageHeader
           icon="local_shipping"
-          title="Ordenes de compra"
-          description="Confirmar es la promesa del proveedor; recibir es lo que de verdad entra al almacen, con su costo real."
+          title="Órdenes de compra"
+          description="Confirmar es la promesa del proveedor; recibir es lo que de verdad entra al almacén, con su costo real."
           actions={
             <a
               href={`/compras/proveedores${qs}`}
@@ -126,21 +135,21 @@ export default async function ComprasPage({
           <StatCard
             label="Comprometido"
             value={`RD$ ${money(Number(totales?.pendiente ?? 0))}`}
-            hint="en ordenes abiertas"
+            hint="en órdenes abiertas"
           />
           <StatCard label="Proveedores" value={String(suppliers.length)} hint="activos" />
           <StatCard
-            label="Total ordenes"
-            value={String(orders.length > 200 ? '200+' : orders.length)}
-            hint="mostradas"
+            label="Órdenes"
+            value={orders.length >= 200 ? '200+' : String(orders.length)}
+            hint={hayFiltros ? 'con los filtros' : 'todas'}
           />
         </section>
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
           <SearchField
             defaultValue={q}
-            label="Numero o proveedor"
-            placeholder="OC-2026-00001, Distribuidora…"
+            label="Número o proveedor"
+            placeholder="OC-2026-00001, Materiales…"
           />
           <FilterSelect label="Estado" name="estado" defaultValue={estado}>
             <option value="">Todos</option>
@@ -181,7 +190,7 @@ export default async function ComprasPage({
                 const e = ESTADOS[o.status] ?? { label: o.status, tone: 'neutral' as const }
                 return (
                   <TR key={o.id}>
-                    <TD>
+                    <TD className="whitespace-nowrap">
                       <a
                         href={`/compras/${o.id}${qs}`}
                         className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
@@ -193,17 +202,20 @@ export default async function ComprasPage({
                       {o.supplier_name}
                     </TD>
                     <TD>{o.warehouse_name}</TD>
-                    <TD>{fecha(o.order_date)}</TD>
+                    <TD className="whitespace-nowrap">{fecha(o.order_date)}</TD>
                     <TD numeric>
                       <span className="tabular">{o.lineas}</span>
                     </TD>
                     <TD>
                       <span className="flex flex-wrap items-center gap-1">
                         <Badge tone={e.tone}>{e.label}</Badge>
-                        {o.pendiente && (
-                          <Badge tone="info" dot={false} title="Todavia falta recibir mercancia">
-                            pendiente
-                          </Badge>
+                        {o.pendiente && o.avance !== null && Number(o.avance) > 0 && (
+                          <span
+                            className="text-xs text-[var(--color-text-muted)]"
+                            title="Lo que ya llegó al almacén de lo que se pidió"
+                          >
+                            recibido {o.avance} %
+                          </span>
                         )}
                       </span>
                     </TD>
@@ -260,7 +272,7 @@ export default async function ComprasPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Se crea en borrador. Le agregas productos y despues la confirmas: eso todavia no
+                Se crea en borrador. Le agregas productos y después la confirmas: eso todavía no
                 mueve inventario, es una promesa del proveedor. Recibir es lo que de verdad entra.
               </p>
             </CardBody>
@@ -270,7 +282,7 @@ export default async function ComprasPage({
         {suppliers.length === 0 && (
           <Card>
             <CardBody className="pt-4 text-sm text-[var(--color-text-secondary)]">
-              Necesitas al menos un proveedor para crear ordenes de compra.{' '}
+              Necesitas al menos un proveedor para crear órdenes de compra.{' '}
               <a
                 href={`/compras/proveedores${qs}`}
                 className="text-[var(--color-text-link)] hover:underline"

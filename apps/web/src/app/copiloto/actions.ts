@@ -33,12 +33,12 @@ function resumir(sourceKey: string, resultado: ResultadoReporte): string {
   if (sourceKey === 'sales_by_day') {
     if (filas.length === 0) return 'No hay ventas registradas en el rango consultado.'
     const total = filas.reduce((acc, f) => acc + Number(f.total ?? 0), 0)
-    return `Vendiste ${money(total)} en los ultimos ${filas.length} dia(s) con ventas.`
+    return `Vendiste ${money(total)} en los últimos ${filas.length} día(s) con ventas.`
   }
   if (sourceKey === 'top_products') {
     if (filas.length === 0) return 'No hay ventas de productos en el rango consultado.'
     const primero = filas[0]!
-    return `El producto mas vendido es "${primero.name}" con ${primero.unidades} unidades (${money(Number(primero.importe))}).`
+    return `El producto más vendido es "${primero.name}" con ${primero.unidades} unidades (${money(Number(primero.importe))}).`
   }
   if (sourceKey === 'overdue_invoices') {
     if (filas.length === 0) return 'No tienes ninguna factura vencida ahora mismo.'
@@ -46,11 +46,11 @@ function resumir(sourceKey: string, resultado: ResultadoReporte): string {
     return `Tienes ${filas.length} factura(s) vencida(s) por ${money(total)} en total.`
   }
   if (sourceKey === 'leads_by_status') {
-    if (filas.length === 0) return 'Todavia no tienes ningun lead registrado.'
+    if (filas.length === 0) return 'Todavía no tienes ningún prospecto registrado.'
     return filas.map((f) => `${f.n} en "${f.status}"`).join(', ')
   }
   if (sourceKey === 'tickets_by_priority') {
-    if (filas.length === 0) return 'Todavia no tienes ningun ticket registrado.'
+    if (filas.length === 0) return 'Todavía no tienes ningún ticket registrado.'
     return filas.map((f) => `${f.n} con prioridad "${f.priority}"`).join(', ')
   }
   return 'No hay datos para esa pregunta.'
@@ -58,7 +58,7 @@ function resumir(sourceKey: string, resultado: ResultadoReporte): string {
 
 export async function preguntar(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ai-copilot', 'ai-copilot.view')
   if (!permiso.ok) return permiso
 
@@ -69,7 +69,7 @@ export async function preguntar(fd: FormData): Promise<ActionResult> {
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     let resumen =
-      'No entendi esa pregunta -prueba con algo sobre ventas, productos, facturas, leads o tickets-.'
+      'No entendí esa pregunta. Prueba con algo sobre ventas, productos, facturas, prospectos o tickets.'
     let datos: ResultadoReporte | null = null
 
     if (matchedKey !== 'no_match') {

@@ -99,7 +99,7 @@ describe('las flechas de siempre', () => {
     await moverEtapa(fd({ tenantId: c.tenantId, direction: 'next' }))
     const g2 = tarro.get(COOKIE_AVISO)
     tarro.delete(COOKIE_AVISO)
-    expect(JSON.parse(g2!.value)).toEqual({ tipo: 'error', texto: 'Ya esta en la ultima etapa.' })
+    expect(JSON.parse(g2!.value)).toEqual({ tipo: 'error', texto: 'Ya está en la última etapa.' })
   })
 })
 

@@ -33,7 +33,7 @@ const limpioError = (e: unknown): string =>
 /** Asigna -o corrige- el perfil fiscal de un proveedor. */
 export async function asignarPerfil(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.profile.assign')
   if (!permiso.ok) return permiso
 
@@ -44,7 +44,7 @@ export async function asignarPerfil(fd: FormData): Promise<ActionResult> {
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (partyType !== 'fisica' && partyType !== 'juridica') {
-    return { ok: false, error: 'Di si es persona fisica o juridica.' }
+    return { ok: false, error: 'Di si es persona física o jurídica.' }
   }
 
   // Exento y con regla asignada es una contradiccion que la tabla rechaza.

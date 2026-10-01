@@ -21,9 +21,10 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { correrMrpForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Planificacion MRP · REGB ERP' }
+export const metadata = { title: 'Planificación de materiales · REGB ERP' }
 
 interface CorridaRow {
   id: string
@@ -91,24 +92,28 @@ export default async function MrpPage({ searchParams }: { searchParams: Promise<
       <div className="space-y-5">
         <PageHeader
           icon="insights"
-          title="Planificacion MRP"
-          description="Explota el BOM completo -si un componente se produce, tambien explota SUS componentes- y suma la misma materia prima entre recetas distintas antes de sugerir que comprar o producir."
+          title="Planificación de materiales"
+          description="Dices qué quieres fabricar y cuánto; el sistema baja por toda la receta (también la de los componentes que se fabrican aquí), resta lo que ya hay en existencia y te sugiere qué comprar y qué producir."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Sugerencias pendientes" value={String(pendientesTotal)} />
-          <StatCard label="Corridas" value={String(corridas.length)} />
+          <StatCard
+            label="Sugerencias pendientes"
+            value={String(pendientesTotal)}
+            hint="por aceptar o descartar"
+          />
+          <StatCard label="Planificaciones" value={String(corridas.length)} hint="las últimas 50" />
         </section>
 
         {puedeCorrer && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva corrida</CardTitle>
+              <CardTitle>Nueva planificación</CardTitle>
             </CardHeader>
             <CardBody>
               {productos.length === 0 ? (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Todavía no hay ningún BOM activo -activa uno primero en Lista de materiales-.
+                  Todavía no hay ninguna receta activa. Activa una primero en Lista de materiales.
                 </p>
               ) : (
                 <form action={correrMrpForm} className="flex flex-wrap items-end gap-3">
@@ -146,7 +151,7 @@ export default async function MrpPage({ searchParams }: { searchParams: Promise<
                   </label>
                   <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="bolt" size={14} />
-                    Correr MRP
+                    Planificar
                   </BotonEnvio>
                 </form>
               )}
@@ -157,16 +162,16 @@ export default async function MrpPage({ searchParams }: { searchParams: Promise<
         {corridas.length === 0 ? (
           <EmptyState
             icon="insights"
-            title="Todavia no has corrido MRP"
-            description="Elige un producto con BOM activo arriba y corre la primera explosion de necesidades."
+            title="Todavía no has planificado nada"
+            description="Elige arriba un producto con receta activa y la cantidad que quieres fabricar: te decimos qué hace falta comprar y qué producir."
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Producto objetivo</TH>
+                <TH>Qué se quiere fabricar</TH>
                 <TH numeric>Cantidad</TH>
-                <TH>Corrida</TH>
+                <TH>Cuándo</TH>
                 <TH numeric>Sugerencias</TH>
                 <TH numeric>Pendientes</TH>
               </TR>
@@ -180,7 +185,7 @@ export default async function MrpPage({ searchParams }: { searchParams: Promise<
                     </a>
                   </TD>
                   <TD numeric>
-                    <span className="tabular">{c.target_qty}</span>
+                    <span className="tabular">{cantidad(c.target_qty)}</span>
                   </TD>
                   <TD className="text-[var(--color-text-muted)]">
                     {fecha(c.run_at)}

@@ -139,7 +139,7 @@ describe('invitarMiembro en modo demostracion', () => {
       motivo: 'demo',
       detalle: null,
     })
-    expect(texto).toMatch(/No se envio ningun correo/)
+    expect(texto).toMatch(/No se envió ningún correo/)
     expect(texto).not.toMatch(/enviamos/i)
   })
 
@@ -185,7 +185,7 @@ describe('invitarMiembro en modo demostracion', () => {
     )
     expect(r).toEqual({
       ok: false,
-      error: 'Ya hay una invitacion pendiente para ese correo. Reenviala o revocala.',
+      error: 'Ya hay una invitación pendiente para ese correo. Reenvíala o revócala.',
     })
     expect(await invitaciones('juana@lavega.do')).toHaveLength(1)
   })
@@ -215,7 +215,7 @@ describe('Las puertas', () => {
     const [inv] = await invitaciones('juana@lavega.do')
     expect(await revocarInvitacion(otro.fd({ invitationId: inv!.id }))).toEqual({
       ok: false,
-      error: 'Esa invitacion no es de esta cuenta.',
+      error: 'Esa invitación no es de esta cuenta.',
     })
     const r = await reenviarInvitacion(null, otro.fd({ invitationId: inv!.id }))
     expect(r.ok).toBe(false)
@@ -247,7 +247,7 @@ describe('Enviado solo si salio', () => {
     )
     if (!r.ok) throw new Error(r.error)
     expect(r.enlace).toMatch(/\/auth\/invitacion\/[0-9a-f]{64}$/)
-    expect(mensajeDeEnvio(r.email, r.envio)).toMatch(/NO salio \(SMTP no configurado\)/)
+    expect(mensajeDeEnvio(r.email, r.envio)).toMatch(/NO salió \(SMTP no configurado\)/)
     const [inv] = await invitaciones('luis@lavega.do')
     expect(inv!.sent_at).toBeNull()
   })
@@ -270,7 +270,7 @@ describe('Reenviar y revocar', () => {
     await revocarInvitacionForm(c.fd({ invitationId: inv!.id }))
     expect(JSON.parse(tarro.get('regb_aviso')!.value)).toEqual({
       tipo: 'ok',
-      texto: 'Listo, revocamos la invitacion. Su enlace ya no sirve.',
+      texto: 'Listo, revocamos la invitación. Su enlace ya no sirve.',
     })
     const [despues] = await invitaciones('juana@lavega.do')
     expect(despues!.status).toBe('revoked')
@@ -280,7 +280,7 @@ describe('Reenviar y revocar', () => {
     const [inv] = await invitaciones('juana@lavega.do')
     const r = await revocarInvitacion(c.fd({ invitationId: inv!.id }))
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/ya no esta pendiente/)
+    if (!r.ok) expect(r.error).toMatch(/ya no está pendiente \(la revocaron\)/)
   })
 })
 
@@ -304,7 +304,7 @@ describe('Desactivar emite users.member.deactivated', () => {
   it('a alguien de otro cliente no lo encuentra', async () => {
     expect(await alternarActivo(otro.fd({ userId: colega }))).toEqual({
       ok: false,
-      error: 'Esa persona no esta en tu equipo.',
+      error: 'Esa persona no está en tu equipo.',
     })
   })
 })

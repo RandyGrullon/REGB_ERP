@@ -7,7 +7,7 @@ export const ESTADO_ACTIVO: Record<string, { label: string; tone: FixedAssetTone
 }
 
 export const CATEGORIA_ACTIVO: Record<string, string> = {
-  vehicle: 'Vehiculo',
+  vehicle: 'Vehículo',
   equipment: 'Equipo',
   furniture: 'Mobiliario',
   building: 'Edificio',
@@ -15,6 +15,6 @@ export const CATEGORIA_ACTIVO: Record<string, string> = {
 }
 
 export const METODO_DEPRECIACION: Record<string, string> = {
-  straight_line: 'Linea recta',
+  straight_line: 'Línea recta',
   declining_balance: 'Acelerada',
 }

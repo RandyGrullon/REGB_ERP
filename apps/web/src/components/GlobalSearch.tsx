@@ -93,9 +93,9 @@ export function GlobalSearch({ index, qs }: { index: SearchEntry[]; qs: string }
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Busqueda global"
+            aria-label="Búsqueda global"
             onClick={(e) => e.stopPropagation()}
-            className="w-full max-w-xl rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] shadow-2xl"
+            className="w-full max-w-xl rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)]"
           >
             <div className="flex items-center gap-2 border-b border-[var(--color-border)] px-4">
               <Icon name="search" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
@@ -117,7 +117,7 @@ export function GlobalSearch({ index, qs }: { index: SearchEntry[]; qs: string }
                     irA(results[cursor])
                   }
                 }}
-                placeholder="Modulos, registros, acciones, ayuda…"
+                placeholder="Módulos, registros, acciones, ayuda…"
                 className="h-12 w-full bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
               />
               <kbd className="shrink-0 rounded-[var(--radius-sm)] border border-[var(--color-border)] px-1.5 py-0.5 font-[family-name:var(--font-mono)] text-[10px] text-[var(--color-text-muted)]">
@@ -127,7 +127,7 @@ export function GlobalSearch({ index, qs }: { index: SearchEntry[]; qs: string }
             <ul className="max-h-80 overflow-y-auto p-2" role="listbox" aria-label="Resultados">
               {results.length === 0 && (
                 <li className="px-3 py-6 text-center text-sm text-[var(--color-text-muted)]">
-                  Nada con &quot;{query}&quot;. Prueba con el nombre de un modulo o un producto.
+                  Nada con &quot;{query}&quot;. Prueba con el nombre de un módulo o de un producto.
                 </li>
               )}
               {results.map((r, i) => (

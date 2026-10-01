@@ -83,7 +83,7 @@ const fecha = (iso: string) =>
     year: 'numeric',
   })
 
-const REGLA: Record<string, string> = { limit: 'limite', overdue: 'vencidas' }
+const REGLA: Record<string, string> = { limit: 'límite', overdue: 'vencidas' }
 
 /**
  * Ficha del cliente (0130): corregir sus datos -antes no se podia: un RNC
@@ -114,7 +114,7 @@ export default async function ClienteFichaPage({
              c.credit_limit::text, c.late_fee_exempt, c.is_active,
              pl.name as lista
       from public.customers c
-      -- Sin el módulo de listas de precio, la RLS la esconde y queda en null.
+      -- Sin el modulo de listas de precio, la RLS la esconde y queda en null.
       left join public.price_lists pl on pl.id = c.price_list_id
       where c.id = ${id} and c.tenant_id = ${ctx.tenantId}`
     if (!c) return null
@@ -191,9 +191,9 @@ export default async function ClienteFichaPage({
               {rncMalo && (
                 <Badge
                   tone="danger"
-                  title="El digito verificador no cuadra: no se le puede emitir B01"
+                  title="El dígito verificador no cuadra: no se le puede emitir B01"
                 >
-                  RNC invalido
+                  RNC inválido
                 </Badge>
               )}
               {c.late_fee_exempt && (
@@ -217,7 +217,7 @@ export default async function ClienteFichaPage({
                 {almacenes.length > 1 ? (
                   <select
                     name="warehouseId"
-                    aria-label="Almacen que despacha"
+                    aria-label="Almacén que despacha"
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                   >
                     {almacenes.map((w) => (
@@ -243,7 +243,7 @@ export default async function ClienteFichaPage({
         <div className="grid gap-5 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>{puedeGestionar ? 'Datos del cliente' : 'Limite de crédito'}</CardTitle>
+              <CardTitle>{puedeGestionar ? 'Datos del cliente' : 'Límite de crédito'}</CardTitle>
             </CardHeader>
             <CardBody>
               {!puedeGestionar ? (
@@ -252,27 +252,27 @@ export default async function ClienteFichaPage({
                   <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                   <input type="hidden" name="id" value={c.id} />
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Limite de credito (RD$)
+                    Límite de crédito (RD$)
                     <input
                       name="creditLimit"
                       inputMode="decimal"
                       defaultValue={c.credit_limit ?? ''}
-                      placeholder="Sin limite"
+                      placeholder="Sin límite"
                       className={inputCls}
                     />
                     <span className="text-[11px]">
-                      Vacio = sin limite. Saldo + pedido nuevo no lo puede pasar sin excepcion.
+                      Vacío = sin límite. Saldo + pedido nuevo no lo puede pasar sin excepción.
                     </span>
                   </label>
                   <div className="flex items-end">
                     <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                       <Icon name="save" size={18} />
-                      Guardar limite
+                      Guardar límite
                     </BotonEnvio>
                   </div>
                   <p className="text-xs text-[var(--color-text-muted)] sm:col-span-2">
                     {c.phone ? `Tel. ${c.phone}` : 'Sin teléfono registrado'}
-                    {c.email ? ` · ${c.email}` : ''}. Los demas datos los corrige quien gestiona
+                    {c.email ? ` · ${c.email}` : ''}. Los demás datos los corrige quien gestiona
                     clientes.
                   </p>
                 </form>
@@ -292,24 +292,24 @@ export default async function ClienteFichaPage({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    RNC / Cedula
+                    RNC / Cédula
                     <input
                       name="taxId"
                       defaultValue={c.tax_id ? formatTaxId(c.tax_id) : ''}
                       inputMode="numeric"
                       pattern="[0-9 \-]{9,13}"
-                      title="RNC de 9 digitos o cedula de 11. Opcional."
+                      title="RNC de 9 dígitos o cédula de 11. Opcional."
                       aria-invalid={rncMalo || undefined}
                       className={inputCls}
                     />
                     <span className="text-[11px]">
                       {rncMalo
-                        ? 'No es valido: corrigelo para poder emitirle crédito fiscal (B01).'
-                        : 'Se verifica el digito. Las facturas ya emitidas no cambian.'}
+                        ? 'No es válido: corrígelo para poder emitirle crédito fiscal (B01).'
+                        : 'Se verifica el dígito. Las facturas ya emitidas no cambian.'}
                     </span>
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Dias de crédito
+                    Días de crédito
                     <input
                       name="terms"
                       inputMode="numeric"
@@ -319,7 +319,7 @@ export default async function ClienteFichaPage({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Telefono
+                    Teléfono
                     <input name="phone" defaultValue={c.phone ?? ''} className={inputCls} />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -332,21 +332,21 @@ export default async function ClienteFichaPage({
                     />
                   </label>
                   <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)] sm:col-span-2">
-                    Direccion
+                    Dirección
                     <input name="address" defaultValue={c.address ?? ''} className={inputCls} />
                   </label>
                   {puedeFijarLimite && (
                     <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                      Limite de credito (RD$)
+                      Límite de crédito (RD$)
                       <input
                         name="creditLimit"
                         inputMode="decimal"
                         defaultValue={c.credit_limit ?? ''}
-                        placeholder="Sin limite"
+                        placeholder="Sin límite"
                         className={inputCls}
                       />
                       <span className="text-[11px]">
-                        Vacio = sin limite. Saldo + pedido nuevo no lo puede pasar sin excepcion.
+                        Vacío = sin límite. Saldo + pedido nuevo no lo puede pasar sin excepción.
                       </span>
                     </label>
                   )}
@@ -396,7 +396,7 @@ export default async function ClienteFichaPage({
                             {fecha(f.due_date)}
                             {dias > 0 && (
                               <span className="block text-[11px] text-[var(--color-semantic-text-danger)]">
-                                {dias} dias de atraso
+                                {dias} días de atraso
                               </span>
                             )}
                           </TD>
@@ -427,9 +427,9 @@ export default async function ClienteFichaPage({
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
-                    <TH>Quien</TH>
+                    <TH>Quién</TH>
                     <TH>Pedido</TH>
-                    <TH>Se salto</TH>
+                    <TH>Se saltó</TH>
                     <TH numeric>Monto</TH>
                     <TH>Motivo</TH>
                   </TR>
@@ -449,7 +449,7 @@ export default async function ClienteFichaPage({
                         {e.blocks.map((b) => REGLA[b] ?? b).join(' y ')}
                         {e.oldest_overdue_days !== null && e.oldest_overdue_days > 0 && (
                           <span className="block text-[11px] text-[var(--color-text-muted)]">
-                            {e.oldest_overdue_days} dias de atraso
+                            {e.oldest_overdue_days} días de atraso
                           </span>
                         )}
                       </TD>

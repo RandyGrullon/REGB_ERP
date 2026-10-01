@@ -16,7 +16,7 @@ export default defineModule({
     monthly: { pyme: 0, mediano: 0, grande: 0 },
   },
   permissions: ['settings.view', 'settings.edit', 'settings.branding.edit'],
-  routes: [{ path: '/configuracion', label: 'Configuracion', perm: 'settings.view' }],
+  routes: [{ path: '/configuracion', label: 'Configuración', perm: 'settings.view' }],
   events: { emits: ['settings.prefs.changed'], listens: [] },
   platforms: { web: true, desktop: true, mobile: false },
 })

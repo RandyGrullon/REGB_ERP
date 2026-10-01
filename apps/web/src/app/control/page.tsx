@@ -368,7 +368,7 @@ export default async function ControlOverviewPage({
 
       {byTier.length > 0 && (
         <section
-          aria-label="Reparto del MRR por tier"
+          aria-label="Reparto del ingreso mensual por plan"
           className="grid gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3 sm:grid-cols-3"
         >
           {byTier.map((g) => (
@@ -392,7 +392,7 @@ export default async function ControlOverviewPage({
           defaultValue={p.q ?? ''}
           placeholder="Nombre, marca o identificador…"
         />
-        <FilterSelect label="Tier" name="tier" defaultValue={p.tier ?? ''} className="w-32">
+        <FilterSelect label="Plan" name="tier" defaultValue={p.tier ?? ''} className="w-32">
           <option value="">Todos</option>
           {(['pyme', 'mediano', 'grande'] as const).map((t) => (
             <option key={t} value={t}>
@@ -462,7 +462,7 @@ export default async function ControlOverviewPage({
             <THead>
               <TR>
                 <TH>Cliente</TH>
-                <TH>Tier</TH>
+                <TH>Plan</TH>
                 <TH>Estado</TH>
                 <TH>Onboarding</TH>
                 <TH numeric>Salud</TH>
@@ -535,7 +535,8 @@ export default async function ControlOverviewPage({
                         className="tabular"
                         title={`${e.usuarios} usuarios, ${e.sucursales} sucursales`}
                       >
-                        {e.usuarios}u · {e.sucursales}s
+                        {e.usuarios} {e.usuarios === 1 ? 'usuario' : 'usuarios'} · {e.sucursales}{' '}
+                        {e.sucursales === 1 ? 'sucursal' : 'sucursales'}
                       </span>
                     </TD>
                     <TD numeric>

@@ -13,7 +13,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'bi',
-  name: 'BI & Reportes',
+  name: 'BI y reportes',
   description: 'Constructor visual de reportes, dashboards y export programado.',
   icon: 'bar_chart',
   category: 'advanced',

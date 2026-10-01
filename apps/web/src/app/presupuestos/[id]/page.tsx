@@ -24,7 +24,7 @@ import {
   cerrarPresupuestoForm,
   ponerLineaPresupuestoForm,
 } from '../actions'
-import { ESTADO_LINEA_PRESUPUESTO, ESTADO_PRESUPUESTO, MESES } from '../estados'
+import { ESTADO_PRESUPUESTO, MESES, estadoGasto, estadoIngreso } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -40,6 +40,7 @@ interface CuentaOption {
   id: string
   code: string
   name: string
+  type: string
 }
 
 interface FilaCombinada {
@@ -74,9 +75,12 @@ export default async function PresupuestoDetallePage({
       where id = ${id} and tenant_id = ${ctx.tenantId}`
     if (!h) return [null, [], []] as const
 
+    // Un presupuesto planea ingresos y gastos. Caja, bancos o el ITBIS por
+    // pagar no se "presupuestan": salían en rojo con cada cobro y cada pago.
     const c = await tx<CuentaOption[]>`
-      select id, code, name from public.accounts
-      where tenant_id = ${ctx.tenantId} and is_active order by code`
+      select id, code, name, type from public.accounts
+      where tenant_id = ${ctx.tenantId} and is_active and type in ('revenue', 'expense')
+      order by code`
 
     const f = await tx<FilaCombinada[]>`
       with lineas as (
@@ -97,13 +101,14 @@ export default async function PresupuestoDetallePage({
                coalesce(l.amount, 0) as budgeted,
                coalesce(r.debito, 0) as total_debit,
                coalesce(r.credito, 0) as total_credit
-        from líneas l
+        from lineas l
         full outer join real r on r.account_id = l.account_id and r.mes = l.period_month
       )
       select c.account_id, c.month, c.budgeted::text, c.total_debit::text, c.total_credit::text,
              a.code, a.name, a.type
       from combinado c
       join public.accounts a on a.id = c.account_id
+      where a.type in ('revenue', 'expense')
       order by a.code, c.month`
 
     return [h, c, f] as const
@@ -123,9 +128,36 @@ export default async function PresupuestoDetallePage({
   )
   const porFila = new Map(filas.map((f) => [`${f.account_id}-${f.month}`, f]))
 
-  const totalPresupuestado = comparativo.reduce((a, r) => a + r.budgeted, 0)
-  const totalReal = comparativo.reduce((a, r) => a + r.actual, 0)
-  const enAlerta = comparativo.filter((r) => r.status !== 'ok').length
+  // Un mes "por venir" solo existe en el año en curso: en uno pasado ya
+  // todos llegaron, y en uno futuro ninguno.
+  const hoy = new Date()
+  const mesActual =
+    head.fiscal_year === hoy.getFullYear()
+      ? hoy.getMonth() + 1
+      : head.fiscal_year < hoy.getFullYear()
+        ? 13
+        : 0
+  const filasConEstado = comparativo.map((r) => {
+    const f = porFila.get(`${r.accountId}-${r.month}`)!
+    const esIngreso = f.type === 'revenue'
+    return {
+      ...r,
+      fila: f,
+      esIngreso,
+      estado: esIngreso
+        ? estadoIngreso(r.budgeted, r.actual, r.month > mesActual)
+        : estadoGasto(r.budgeted, r.actual, r.status, r.month > mesActual),
+    }
+  })
+  const ingresos = filasConEstado.filter((r) => r.esIngreso)
+  const gastos = filasConEstado.filter((r) => !r.esIngreso)
+  const suma = (xs: typeof filasConEstado, k: 'budgeted' | 'actual') =>
+    xs.reduce((a, r) => a + r[k], 0)
+  const enAlerta = filasConEstado.filter((r) =>
+    r.esIngreso
+      ? r.estado.tone === 'warning'
+      : r.estado.tone === 'danger' || r.estado.tone === 'warning',
+  ).length
 
   const e = ESTADO_PRESUPUESTO[head.status] ?? { label: head.status, tone: 'neutral' as const }
   const puedeEditar = exigir(ctx, 'budgets', 'budgets.line.set').ok && head.status !== 'closed'
@@ -149,7 +181,7 @@ export default async function PresupuestoDetallePage({
         <PageHeader
           icon="savings"
           title={head.name}
-          description={`Ano fiscal ${head.fiscal_year}`}
+          description={`Año fiscal ${head.fiscal_year}`}
           crumbs={[{ label: 'Presupuestos', href: `/presupuestos${qs}` }, { label: head.name }]}
           meta={<Badge tone={e.tone}>{e.label}</Badge>}
           actions={
@@ -180,12 +212,20 @@ export default async function PresupuestoDetallePage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Total presupuestado" value={`RD$ ${money(totalPresupuestado)}`} />
-          <StatCard label="Total real" value={`RD$ ${money(totalReal)}`} />
           <StatCard
-            label="En alerta"
+            label="Ingresos reales"
+            value={`RD$ ${money(suma(ingresos, 'actual'))}`}
+            hint={`meta: RD$ ${money(suma(ingresos, 'budgeted'))}`}
+          />
+          <StatCard
+            label="Gastos reales"
+            value={`RD$ ${money(suma(gastos, 'actual'))}`}
+            hint={`presupuesto: RD$ ${money(suma(gastos, 'budgeted'))}`}
+          />
+          <StatCard
+            label="Para revisar"
             value={String(enAlerta)}
-            hint="cuenta-mes cerca o sobre el limite"
+            hint="gastos pasados o sin plan, ventas por debajo de la meta"
           />
         </section>
 
@@ -202,7 +242,7 @@ export default async function PresupuestoDetallePage({
                   <select name="accountId" required className={claseInput}>
                     {cuentas.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.code} · {c.name}
+                        {c.code} · {c.name} ({c.type === 'revenue' ? 'ingreso' : 'gasto'})
                       </option>
                     ))}
                   </select>
@@ -241,50 +281,63 @@ export default async function PresupuestoDetallePage({
             <CardTitle>Real contra presupuesto</CardTitle>
           </CardHeader>
           <CardBody>
-            {comparativo.length === 0 ? (
+            {filasConEstado.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
                 Todavía no hay ningún monto planeado ni movimiento contabilizado para este año.
               </p>
             ) : (
-              <Table>
+              <Table className="md:min-w-[760px]">
                 <THead>
                   <TR>
                     <TH>Cuenta</TH>
-                    <TH>Mes</TH>
-                    <TH numeric>Presupuestado</TH>
+                    <TH className="hidden md:table-cell">Mes</TH>
+                    <TH numeric className="hidden md:table-cell">
+                      Presupuestado
+                    </TH>
                     <TH numeric>Real</TH>
-                    <TH numeric>Variacion</TH>
+                    <TH numeric className="hidden md:table-cell">
+                      Diferencia
+                    </TH>
                     <TH>Estado</TH>
                   </TR>
                 </THead>
                 <TBody>
-                  {comparativo.map((r) => {
-                    const f = porFila.get(`${r.accountId}-${r.month}`)!
-                    const e2 = ESTADO_LINEA_PRESUPUESTO[r.status] ?? {
-                      label: r.status,
-                      tone: 'neutral' as const,
-                    }
+                  {filasConEstado.map((r) => {
+                    const f = r.fila
+                    const e2 = r.estado
+                    // En un ingreso, quedarse por encima de lo planeado es bueno:
+                    // la diferencia se lee al revés que en un gasto.
+                    const aFavor = r.esIngreso ? r.actual >= r.budgeted : r.variance >= 0
                     return (
                       <TR key={`${r.accountId}-${r.month}`}>
                         <TD className="text-[var(--color-text-primary)]">
                           {f.code} · {f.name}
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            {r.esIngreso ? 'Ingreso' : 'Gasto'}
+                            <span className="md:hidden"> · {MESES[r.month - 1]}</span>
+                          </span>
                         </TD>
-                        <TD>{MESES[r.month - 1]}</TD>
-                        <TD numeric>
+                        <TD className="hidden md:table-cell">{MESES[r.month - 1]}</TD>
+                        <TD numeric className="hidden md:table-cell">
                           <span className="tabular">{money(r.budgeted)}</span>
                         </TD>
                         <TD numeric>
                           <span className="tabular">{money(r.actual)}</span>
+                          <span className="block text-[11px] text-[var(--color-text-muted)] md:hidden">
+                            de {money(r.budgeted)}
+                          </span>
                         </TD>
-                        <TD numeric>
+                        <TD numeric className="hidden md:table-cell">
                           <span
-                            className={`tabular ${
-                              r.variance < 0
-                                ? 'text-[var(--color-semantic-text-danger)]'
-                                : 'text-[var(--color-semantic-text-success)]'
+                            className={`tabular whitespace-nowrap ${
+                              (r.budgeted === 0 && r.actual === 0) || e2.label === 'Por venir'
+                                ? 'text-[var(--color-text-muted)]'
+                                : aFavor
+                                  ? 'text-[var(--color-semantic-text-success)]'
+                                  : 'text-[var(--color-semantic-text-danger)]'
                             }`}
                           >
-                            {money(r.variance)}
+                            {money(r.actual - r.budgeted)}
                             {r.variancePercent !== null && (
                               <span className="ml-1 text-[10px] text-[var(--color-text-muted)]">
                                 ({r.variancePercent}%)
@@ -302,8 +355,9 @@ export default async function PresupuestoDetallePage({
               </Table>
             )}
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              El real sale de los asientos ya contabilizados de este año fiscal. Una cuenta con
-              gasto real y ningún monto planeado aparece en rojo desde el primer peso.
+              El real sale de los asientos ya contabilizados de este año fiscal. La diferencia es
+              real menos presupuestado: en un ingreso, positiva es buena noticia; en un gasto, es lo
+              que se pasó. Un gasto sin monto planeado aparece en rojo desde el primer peso.
             </p>
           </CardBody>
         </Card>

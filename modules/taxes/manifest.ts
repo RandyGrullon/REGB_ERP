@@ -64,7 +64,7 @@ export default defineModule({
     },
     {
       path: '/impuestos/liquidacion',
-      label: 'Liquidacion IT-1',
+      label: 'Liquidación IT-1',
       perm: 'taxes.view',
       icon: 'calculate',
     },

@@ -151,7 +151,7 @@ describe('recibir menos de lo pedido', () => {
 
   it('una linea de otra orden tambien es un error legible', async () => {
     const r = await recibir({ qtyReceived: '1', lineId: crypto.randomUUID() })
-    expect(r).toEqual({ ok: false, error: 'Esa linea no pertenece a esta orden.' })
+    expect(r).toEqual({ ok: false, error: 'Esa línea no pertenece a esta orden.' })
   })
 
   it('recibir 30 de 50 con 2 rechazados, sin escribir "Aceptado", es una recepcion parcial', async () => {

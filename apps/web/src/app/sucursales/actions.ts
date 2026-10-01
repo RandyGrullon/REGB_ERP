@@ -16,7 +16,7 @@ function demoDe(formData: FormData) {
 
 export async function crearSucursal(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'branches', 'branches.create')
   if (!permiso.ok) return permiso
 
@@ -53,7 +53,7 @@ export async function crearSucursal(formData: FormData): Promise<ActionResult> {
 
 export async function alternarSucursal(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'branches', 'branches.edit')
   if (!permiso.ok) return permiso
 

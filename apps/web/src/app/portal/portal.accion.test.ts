@@ -3,7 +3,7 @@ import type { TransactionSql } from 'postgres'
 import { asUser, db } from '@/lib/db'
 import { cerrarBase, sembrarCliente, type ClientePrueba } from '@/test/arnes'
 import { vincularUsuario } from '../empleados/actions'
-import { editarMiTelefono, solicitarDesdePortal } from './actions'
+import { editarMiTelefono, reportarMiGasto, solicitarDesdePortal } from './actions'
 import { misVolantes, resolverMiEmpleado } from './mi-empleado'
 
 /**
@@ -34,14 +34,15 @@ beforeAll(async () => {
   c = await sembrarCliente({
     prefijo: 'accion-portal',
     nombre: 'Distribuidora Portal SRL',
-    modulos: ['employees', 'payroll', 'hr-portal', 'time-off'],
+    modulos: ['employees', 'payroll', 'hr-portal', 'time-off', 'expenses'],
     roles: {
       Empleado: {
         'hr-portal.view': true,
         'hr-portal.edit-profile': true,
         'hr-portal.request-time-off': true,
+        'expenses.submit': true,
       },
-      RRHH: { 'employees.*': true, 'hr-portal.*': true },
+      RRHH: { 'employees.*': true, 'hr-portal.*': true, 'expenses.submit': true },
       Supervisor: { 'employees.view': true, 'hr-portal.view': true },
     },
   })
@@ -90,6 +91,7 @@ afterAll(async () => {
   await sql.unsafe('alter table public.payroll_periods disable trigger no_editar_periodo_procesado')
   try {
     await c.limpiar([
+      'public.expenses',
       'public.payroll_lines',
       'public.payroll_periods',
       'public.time_off_requests',
@@ -118,7 +120,7 @@ describe('Sin vinculo, el portal no adivina por correo', () => {
     expect(r).toEqual({
       ok: false,
       error:
-        'Tu cuenta no esta vinculada a ningun expediente. Pide a RRHH que la vincule desde Empleados.',
+        'Tu cuenta no está vinculada a ningún expediente. Pide a RRHH que la vincule desde Empleados.',
     })
     const [e] = await db()`select phone from public.employees where id = ${rafael}`
     expect(e!.phone).toBe('809-555-0000')
@@ -172,5 +174,46 @@ describe('RRHH vincula; la cuenta ve lo suyo y solo lo suyo', () => {
       ok: true,
     })
     expect(await ctxDemo((tx) => resolverMiEmpleado(tx))).toBeNull()
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════════════
+describe('Mis gastos: el empleado reporta lo suyo desde el portal', () => {
+  it('sin vínculo no se reporta a nombre de nadie', async () => {
+    const r = await reportarMiGasto(
+      c.fd({ category: 'transport', expenseDate: '2026-09-20', amount: '850' }),
+    )
+    expect(r.ok).toBe(false)
+    const n =
+      await db()`select count(*)::int as n from public.expenses where tenant_id = ${c.tenantId}`
+    expect(n[0]!.n).toBe(0)
+  })
+
+  it('vinculado, el gasto queda a nombre de SU expediente y por aprobar', async () => {
+    expect(await vincularUsuario(c.fd({ employeeId: maria, userId: DEMO }, 'RRHH'))).toEqual({
+      ok: true,
+    })
+    const r = await reportarMiGasto(
+      c.fd({
+        category: 'transport',
+        expenseDate: '2026-09-20',
+        amount: '1,250.50',
+        vendorName: 'Taxi Apolo',
+        receiptNote: 'Visita a un cliente en Naco',
+        // Aunque el formulario intente mandar otro empleado, no se usa.
+        employeeId: rafael,
+      }),
+    )
+    expect(r).toEqual({ ok: true })
+    const [g] = await db()<{ employee_id: string; amount: string; status: string }[]>`
+      select employee_id, amount::text, status from public.expenses where tenant_id = ${c.tenantId}`
+    expect(g).toMatchObject({ employee_id: maria, amount: '1250.50', status: 'submitted' })
+  })
+
+  it('un monto en cero no se reporta', async () => {
+    const r = await reportarMiGasto(
+      c.fd({ category: 'meals', expenseDate: '2026-09-20', amount: '0' }),
+    )
+    expect(r).toEqual({ ok: false, error: 'El monto debe ser mayor que cero.' })
   })
 })

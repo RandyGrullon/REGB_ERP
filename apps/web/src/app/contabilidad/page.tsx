@@ -20,6 +20,7 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
+import { fechaFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -39,6 +40,8 @@ interface EntryRow {
   source_type: string
   total_debito: string
   lineas: string
+  /** Solo cuando el asiento es de otra empresa del cliente, no de la principal. */
+  empresa: string | null
 }
 
 const money = (n: number) =>
@@ -62,8 +65,11 @@ export default async function ContabilidadPage({
              coalesce((select sum(l.debit) from public.journal_entry_lines l
                         where l.entry_id = e.id), 0)::text as total_debito,
              (select count(*) from public.journal_entry_lines l
-               where l.entry_id = e.id)::text as lineas
+               where l.entry_id = e.id)::text as lineas,
+             case when c.is_default then null
+                  else coalesce(c.trade_name, c.legal_name) end as empresa
       from public.journal_entries e
+      left join public.companies c on c.id = e.company_id
       where e.tenant_id = ${ctx.tenantId}
         and (${q} = '' or e.number ilike ${'%' + q + '%'} or e.description ilike ${'%' + q + '%'})
         and (${estado} = '' or e.status = ${estado})
@@ -92,33 +98,33 @@ export default async function ContabilidadPage({
         <PageHeader
           icon="account_balance"
           title="Asientos"
-          description="Las ventas, cobros, compras y pagos se contabilizan solos. Un asiento contabilizado es inmutable: se corrige con otro asiento, nunca editandolo."
+          description="Las ventas, cobros, compras y pagos se contabilizan solos. Un asiento contabilizado es inmutable: se corrige con otro asiento, nunca editándolo."
           actions={
             <>
               <a
                 href={`/contabilidad/cuentas${qs}`}
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="account_tree" size={18} />
                 Cuentas
               </a>
               <a
                 href={`/contabilidad/mapa${qs}`}
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="alt_route" size={18} />
                 Mapa
               </a>
               <a
                 href={`/contabilidad/mayor${qs}`}
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="menu_book" size={18} />
                 Mayor
               </a>
               <a
                 href={`/contabilidad/balanza${qs}`}
-                className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="balance" size={18} />
                 Balanza
@@ -134,11 +140,15 @@ export default async function ContabilidadPage({
             hint="sin contabilizar"
           />
           <StatCard label="Contabilizados" value={String(totales?.contabilizados ?? 0)} />
-          <StatCard label="Mostrados" value={String(asientos.length)} />
+          <StatCard
+            label={hayFiltros ? 'Coinciden' : 'Mostrados'}
+            value={String(asientos.length)}
+            hint={hayFiltros ? 'con el filtro' : 'los más recientes primero'}
+          />
         </section>
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
-          <SearchField defaultValue={q} label="Numero o descripcion" placeholder="AS-2026-00001…" />
+          <SearchField defaultValue={q} label="Número o descripción" placeholder="AS-2026-00001…" />
           <FilterSelect label="Estado" name="estado" defaultValue={estado}>
             <option value="">Todos</option>
             {Object.entries(ESTADOS).map(([k, v]) => (
@@ -161,15 +171,17 @@ export default async function ContabilidadPage({
             }
           />
         ) : (
-          <Table>
+          <Table className="md:min-w-[760px]">
             <THead>
               <TR>
                 <TH>Número</TH>
-                <TH>Fecha</TH>
+                <TH className="hidden md:table-cell">Fecha</TH>
                 <TH>Descripción</TH>
-                <TH>Origen</TH>
-                <TH numeric>Líneas</TH>
-                <TH>Estado</TH>
+                <TH className="hidden md:table-cell">Origen</TH>
+                <TH numeric className="hidden md:table-cell">
+                  Líneas
+                </TH>
+                <TH className="hidden md:table-cell">Estado</TH>
                 <TH numeric>Total</TH>
               </TR>
             </THead>
@@ -178,33 +190,51 @@ export default async function ContabilidadPage({
                 const e = ESTADOS[a.status] ?? { label: a.status, tone: 'neutral' as const }
                 return (
                   <TR key={a.id}>
-                    <TD>
+                    <TD className="whitespace-nowrap">
                       <a
                         href={`/contabilidad/${a.id}${qs}`}
                         className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
                         <Mono>{a.number}</Mono>
                       </a>
+                      <span className="block text-xs text-[var(--color-text-muted)] md:hidden">
+                        {fecha(a.entry_date)}
+                      </span>
                     </TD>
-                    <TD>{fecha(a.entry_date)}</TD>
-                    <TD className="text-[var(--color-text-primary)]">{a.description}</TD>
-                    <TD>
+                    <TD className="hidden whitespace-nowrap md:table-cell">
+                      {fecha(a.entry_date)}
+                    </TD>
+                    <TD className="text-[var(--color-text-primary)]">
+                      {a.description}
+                      {a.empresa && !a.description.startsWith(a.empresa) && (
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          {a.empresa}
+                        </span>
+                      )}
+                      {/* En el teléfono, el estado va aquí: cuatro columnas
+                          más aplastaban la descripción a una palabra por línea. */}
+                      <span className="mt-1 block md:hidden">
+                        <Badge tone={e.tone}>{e.label}</Badge>
+                      </span>
+                    </TD>
+                    <TD className="hidden md:table-cell">
                       {a.source_type === 'manual' ? (
                         <span className="text-[var(--color-text-muted)]">Manual</span>
                       ) : (
                         <Badge
                           tone="info"
                           dot={false}
-                          title="Generado solo a partir de la operacion"
+                          title="Se generó solo a partir de la operación"
+                          className="whitespace-nowrap"
                         >
                           {ORIGEN_ASIENTO[a.source_type] ?? a.source_type}
                         </Badge>
                       )}
                     </TD>
-                    <TD numeric>
+                    <TD numeric className="hidden md:table-cell">
                       <span className="tabular">{a.lineas}</span>
                     </TD>
-                    <TD>
+                    <TD className="hidden md:table-cell">
                       <Badge tone={e.tone}>{e.label}</Badge>
                     </TD>
                     <TD numeric>
@@ -231,12 +261,12 @@ export default async function ContabilidadPage({
                   <input
                     name="entryDate"
                     type="date"
-                    defaultValue={new Date().toISOString().slice(0, 10)}
+                    defaultValue={fechaFiscal(new Date())}
                     className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
@@ -251,8 +281,8 @@ export default async function ContabilidadPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Se crea en borrador. Le agregas las lineas despues; solo se contabiliza cuando
-                debito y crédito cuadran.
+                Se crea en borrador. Le agregas las líneas después; solo se contabiliza cuando el
+                débito y el crédito cuadran.
               </p>
             </CardBody>
           </Card>

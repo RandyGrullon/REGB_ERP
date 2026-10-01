@@ -3,6 +3,7 @@ import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCar
 import { slaVigente, transicionValidaTicket, type EstadoTicket } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { agregarMensajeForm, transicionarTicketForm } from '../actions'
 import { ESTADO_TICKET, PRIORIDAD_TICKET } from '../estados'
@@ -29,9 +30,9 @@ interface Mensaje {
 }
 
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
   if (s === 'closed') return 'neutral'
   if (s === 'resolved') return 'success'
@@ -102,17 +103,11 @@ export default async function TicketDetallePage({
           <StatCard label="Cliente" value={head.customer_name ?? 'Sin cliente'} />
           <StatCard label="Prioridad" value={PRIORIDAD_TICKET[head.priority] ?? head.priority} />
           <StatCard
-            label="SLA"
-            value={
-              vencido
-                ? 'Vencido'
-                : head.sla_due_at
-                  ? new Date(head.sla_due_at).toLocaleString('es-DO')
-                  : '—'
-            }
+            label="Responder antes de"
+            value={vencido ? 'Vencido' : head.sla_due_at ? fechaHoraRD(head.sla_due_at) : '—'}
           />
           <StatCard
-            label="Satisfaccion"
+            label="Satisfacción"
             value={head.satisfaction_rating ? `${head.satisfaction_rating}/5` : '—'}
           />
         </section>
@@ -143,7 +138,7 @@ export default async function TicketDetallePage({
                 {campos}
                 <input type="hidden" name="siguiente" value="resolved" />
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Satisfaccion
+                  Satisfacción
                   <select
                     name="satisfaction"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
@@ -174,7 +169,7 @@ export default async function TicketDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Conversacion</CardTitle>
+            <CardTitle>Conversación</CardTitle>
           </CardHeader>
           <CardBody>
             <ul className="space-y-3">
@@ -189,7 +184,7 @@ export default async function TicketDetallePage({
                   <p className="text-xs font-medium text-[var(--color-text-primary)]">
                     {m.author_type === 'agent' ? 'Agente' : 'Cliente'}
                     <span className="ml-2 font-normal text-[var(--color-text-muted)]">
-                      {new Date(m.created_at).toLocaleString('es-DO')}
+                      {fechaHoraRD(m.created_at)}
                     </span>
                   </p>
                   <p className="mt-1 text-xs text-[var(--color-text-muted)]">{m.body}</p>

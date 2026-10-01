@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
   Mono,
+  PageHeader,
   Table,
   THead,
   TBody,
@@ -13,10 +14,11 @@ import {
   TD,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearAlmacenForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, pesos } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Almacenes · REGB ERP' }
@@ -28,6 +30,8 @@ interface WarehouseRow {
   branch_name: string | null
   is_default: boolean
   is_active: boolean
+  productos: string
+  valor: string | null
 }
 
 /** Almacenes (S19): oculta en el sidebar, la usan quienes gestionan la operacion. */
@@ -38,10 +42,18 @@ export default async function WarehousesPage({
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'inventory')
+  const veCosto = exigir(ctx, 'inventory', 'inventory.cost.view').ok
+  // Ver la lista es de quien ve inventario; dar de alta, de quien gestiona
+  // almacenes (antes el formulario salía a cualquiera y fallaba al enviar).
+  const puedeGestionar = exigir(ctx, 'inventory', 'inventory.warehouses.manage').ok
 
   const [warehouses, branches] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const w = await tx<WarehouseRow[]>`
-      select w.id, w.name, w.code, b.name as branch_name, w.is_default, w.is_active
+      select w.id, w.name, w.code, b.name as branch_name, w.is_default, w.is_active,
+             (select count(*) from public.stock_levels sl
+               where sl.warehouse_id = w.id and sl.qty_on_hand <> 0)::text as productos,
+             (select sum(sl.qty_on_hand * sl.avg_cost) from public.existencias() sl
+               where sl.warehouse_id = w.id)::text as valor
       from public.warehouses w
       left join public.branches b on b.id = w.branch_id
       where w.tenant_id = ${ctx.tenantId}
@@ -55,17 +67,14 @@ export default async function WarehousesPage({
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/inventory">
-      <div className="max-w-2xl space-y-5">
-        <div>
-          <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
-            <a href={`/inventory${qs}`} className="text-[var(--color-text-link)] hover:underline">
-              Existencias
-            </a>{' '}
-            › Almacenes
-          </nav>
-          <h1 className="mt-1 text-xl font-bold text-[var(--color-text-primary)]">Almacenes</h1>
-        </div>
+    <Shell {...shell} activePath="/inventory/warehouses">
+      <div className="max-w-4xl space-y-5">
+        <PageHeader
+          icon="warehouse"
+          title="Almacenes"
+          description="Dónde se guarda la mercancía. Cada venta, recepción y conteo dice de qué almacén sale o a cuál entra."
+          crumbs={[{ label: 'Existencias', href: `/inventory${qs}` }, { label: 'Almacenes' }]}
+        />
 
         <Table>
           <THead>
@@ -73,71 +82,92 @@ export default async function WarehousesPage({
               <TH>Nombre</TH>
               <TH>Código</TH>
               <TH>Sucursal</TH>
+              <TH numeric>Productos</TH>
+              {veCosto && <TH numeric>Valor</TH>}
               <TH>Estado</TH>
             </TR>
           </THead>
           <TBody>
             {warehouses.map((w) => (
               <TR key={w.id}>
-                <TD className="font-medium text-[var(--color-text-primary)]">{w.name}</TD>
+                <TD className="font-medium text-[var(--color-text-primary)]">
+                  <a
+                    href={`/inventory${qs}${qs ? '&' : '?'}almacen=${w.id}`}
+                    className="hover:underline"
+                    title="Ver sus existencias"
+                  >
+                    {w.name}
+                  </a>
+                </TD>
                 <TD>{w.code ? <Mono>{w.code}</Mono> : '—'}</TD>
-                <TD>{w.branch_name ?? '—'}</TD>
+                <TD>{w.branch_name ?? 'Sin sucursal'}</TD>
+                <TD numeric>
+                  <span className="tabular">{cantidad(w.productos)}</span>
+                </TD>
+                {veCosto && (
+                  <TD numeric>
+                    <span className="tabular">{w.valor ? pesos(w.valor) : '—'}</span>
+                  </TD>
+                )}
                 <TD>
                   {w.is_default && <Badge tone="brand">Predeterminado</Badge>}
                   {!w.is_active && <Badge tone="neutral">Inactivo</Badge>}
+                  {w.is_active && !w.is_default && <Badge tone="success">Activo</Badge>}
                 </TD>
               </TR>
             ))}
           </TBody>
         </Table>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Nuevo almacén</CardTitle>
-          </CardHeader>
-          <CardBody>
-            <form action={crearAlmacenForm} className="flex flex-wrap items-end gap-3">
-              <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-              <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-              <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                Nombre
-                <input
-                  name="name"
-                  required
-                  minLength={2}
-                  placeholder="Deposito central"
-                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-                />
-              </label>
-              <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                Codigo
-                <input
-                  name="code"
-                  placeholder="DEP-1"
-                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
-                />
-              </label>
-              <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                Sucursal
-                <select
-                  name="branchId"
-                  defaultValue=""
-                  className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
-                >
-                  <option value="">Sin sucursal (depósito central)</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                Crear
-              </BotonEnvio>
-            </form>
-          </CardBody>
-        </Card>
+        {puedeGestionar && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Nuevo almacén</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <form action={crearAlmacenForm} className="flex flex-wrap items-end gap-3">
+                <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Nombre
+                  <input
+                    name="name"
+                    required
+                    minLength={2}
+                    placeholder="Depósito central"
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Código
+                  <input
+                    name="code"
+                    placeholder="DEP-1"
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
+                  />
+                </label>
+                <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Sucursal
+                  <select
+                    name="branchId"
+                    defaultValue=""
+                    className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                  >
+                    <option value="">Sin sucursal (depósito central)</option>
+                    {branches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <BotonEnvio className="h-10 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  Crear
+                </BotonEnvio>
+              </form>
+            </CardBody>
+          </Card>
+        )}
       </div>
     </Shell>
   )

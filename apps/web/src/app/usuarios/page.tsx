@@ -5,6 +5,7 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  PageHeader,
   Table,
   THead,
   TBody,
@@ -33,6 +34,8 @@ interface MemberRow {
   is_active: boolean
   invited_at: string | null
   accepted_at: string | null
+  /** Sucursales a las que su acceso está limitado. Vacío = todas. */
+  sucursales: string[] | null
 }
 
 interface InvitacionRow {
@@ -51,6 +54,10 @@ const fecha = new Intl.DateTimeFormat('es-DO', {
   year: 'numeric',
   timeZone: 'America/Santo_Domingo',
 })
+
+/** Botón de fila de tabla: píldora, 44 px en el teléfono, más bajo en escritorio. */
+const BOTON_CHICO =
+  'inline-flex h-11 shrink-0 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-50 md:h-9'
 
 const BOTON_FILA =
   'inline-flex h-11 items-center rounded-full border border-[var(--color-border)] px-4 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-50'
@@ -76,13 +83,15 @@ export default async function UsuariosPage({
     const m = await tx<MemberRow[]>`
       select p.user_id, p.display_name, p.email, p.job_title,
              ms.role_id, r.name as role_name, ms.is_active,
-             ms.invited_at::text, ms.accepted_at::text
+             ms.invited_at::text, ms.accepted_at::text,
+             (select array_agg(b.name order by b.name) from public.branches b
+               where b.tenant_id = ms.tenant_id and b.id = any(ms.branch_ids)) as sucursales
       from public.user_profiles p
       join public.memberships ms
         on ms.tenant_id = p.tenant_id and ms.user_id = p.user_id
       join public.roles r on r.id = ms.role_id
       where p.tenant_id = ${ctx.tenantId}
-      order by p.display_name`
+      order by ms.is_active desc, p.display_name`
     const r = await tx<{ id: string; name: string; visible_modules: string[] }[]>`
       select id, name, visible_modules from public.roles
       where tenant_id = ${ctx.tenantId} order by name`
@@ -104,7 +113,7 @@ export default async function UsuariosPage({
 
   // Para invitar, solo los roles que verian algo en ESTE negocio. Un
   // colmado con caja e inventario no tiene por que elegir entre "RRHH",
-  // "Tecnico de Campo" o "Cliente Externo": roles de modulos que no tiene.
+  // "Técnico de Campo" o "Cliente Externo": roles de modulos que no tiene.
   const activos = new Set(shell.data.activeModules)
   const rolesParaInvitar = roles
     .filter((r) => r.visible_modules.includes('*') || r.visible_modules.some((m) => activos.has(m)))
@@ -113,22 +122,20 @@ export default async function UsuariosPage({
   return (
     <Shell {...shell} activePath="/usuarios">
       <div className="space-y-6">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Usuarios</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {members.length} en el equipo · {members.filter((m) => m.is_active).length} con acceso
-            activo · {invitaciones.length}{' '}
-            {invitaciones.length === 1 ? 'invitación pendiente' : 'invitaciones pendientes'}
-          </p>
-        </div>
+        <PageHeader
+          icon="group"
+          title="Usuarios"
+          description={`${members.length} en el equipo · ${members.filter((m) => m.is_active).length} con acceso activo · ${invitaciones.length} ${invitaciones.length === 1 ? 'invitación pendiente' : 'invitaciones pendientes'}`}
+        />
 
+        {/* Nombre, correo y puesto en una sola columna: con cinco columnas
+            sueltas, a 800 px los nombres se partían en tres líneas y el
+            correo empujaba la tabla fuera de la pantalla. */}
         <Table>
           <caption className="sr-only">Personas del equipo</caption>
           <THead>
             <TR>
-              <TH>Nombre</TH>
-              <TH>Correo</TH>
-              <TH>Puesto</TH>
+              <TH>Persona</TH>
               <TH>Rol</TH>
               <TH>Estado</TH>
               {puedeEditar && (
@@ -139,61 +146,94 @@ export default async function UsuariosPage({
             </TR>
           </THead>
           <TBody>
-            {members.map((m) => (
-              <TR key={m.user_id}>
-                <TD className="font-semibold text-[var(--color-text-primary)]">{m.display_name}</TD>
-                <TD>{m.email}</TD>
-                <TD>{m.job_title ?? '—'}</TD>
-                <TD>
-                  {puedeEditar ? (
-                    <form action={cambiarRolMiembroForm} className="inline">
-                      <input type="hidden" name="tenant" value={tenantDemo} />
-                      <input type="hidden" name="rol" value={rolDemo} />
-                      <input type="hidden" name="userId" value={m.user_id} />
-                      <select
-                        name="roleId"
-                        defaultValue={m.role_id}
-                        aria-label={`Rol de ${m.display_name}`}
-                        className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                      >
-                        {roles.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.name}
-                          </option>
-                        ))}
-                      </select>{' '}
-                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                        Cambiar
-                      </BotonEnvio>
-                    </form>
-                  ) : (
-                    m.role_name
-                  )}
-                </TD>
-                <TD>
-                  <Badge tone={m.is_active ? 'success' : 'neutral'}>
-                    {m.is_active ? 'Activo' : 'Desactivado'}
-                  </Badge>
-                  {m.invited_at && !m.accepted_at && (
-                    <Badge tone="info" dot={false} className="ml-1">
-                      invitado
-                    </Badge>
-                  )}
-                </TD>
-                {puedeEditar && (
-                  <TD>
-                    <form action={alternarActivoForm} className="inline">
-                      <input type="hidden" name="tenant" value={tenantDemo} />
-                      <input type="hidden" name="rol" value={rolDemo} />
-                      <input type="hidden" name="userId" value={m.user_id} />
-                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                        {m.is_active ? 'Desactivar' : 'Reactivar'}
-                      </BotonEnvio>
-                    </form>
+            {members.map((m) => {
+              // Uno mismo no se cambia el rol ni se quita el acceso: la base
+              // lo niega (0127) y un botón que siempre falla solo confunde.
+              const esUnoMismo = m.user_id === ctx.userId
+              return (
+                <TR key={m.user_id}>
+                  <TD className="min-w-56">
+                    <span className="block font-semibold text-[var(--color-text-primary)]">
+                      {m.display_name}
+                      {esUnoMismo && (
+                        <span className="ml-1.5 text-xs font-normal text-[var(--color-text-muted)]">
+                          (tú)
+                        </span>
+                      )}
+                    </span>
+                    <span className="block text-xs">{m.email}</span>
+                    {m.job_title && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {m.job_title}
+                      </span>
+                    )}
                   </TD>
-                )}
-              </TR>
-            ))}
+                  <TD className="min-w-52">
+                    {puedeEditar && !esUnoMismo ? (
+                      <form action={cambiarRolMiembroForm} className="flex items-center gap-1.5">
+                        <input type="hidden" name="tenant" value={tenantDemo} />
+                        <input type="hidden" name="rol" value={rolDemo} />
+                        <input type="hidden" name="userId" value={m.user_id} />
+                        <select
+                          name="roleId"
+                          defaultValue={m.role_id}
+                          aria-label={`Rol de ${m.display_name}`}
+                          className="h-9 min-w-0 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                        >
+                          {roles.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.name}
+                            </option>
+                          ))}
+                        </select>
+                        <BotonEnvio
+                          aria-label={`Guardar el rol de ${m.display_name}`}
+                          className={BOTON_CHICO}
+                        >
+                          Cambiar
+                        </BotonEnvio>
+                      </form>
+                    ) : (
+                      <span className="text-sm text-[var(--color-text-primary)]">
+                        {m.role_name}
+                      </span>
+                    )}
+                    {m.sucursales && m.sucursales.length > 0 && (
+                      <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
+                        Solo {m.sucursales.join(', ')}
+                      </span>
+                    )}
+                  </TD>
+                  <TD>
+                    <Badge tone={m.is_active ? 'success' : 'neutral'}>
+                      {m.is_active ? 'Activo' : 'Desactivado'}
+                    </Badge>
+                    {m.invited_at && !m.accepted_at && (
+                      <Badge tone="info" dot={false} className="ml-1">
+                        Invitado
+                      </Badge>
+                    )}
+                  </TD>
+                  {puedeEditar && (
+                    <TD>
+                      {!esUnoMismo && (
+                        <form action={alternarActivoForm} className="inline">
+                          <input type="hidden" name="tenant" value={tenantDemo} />
+                          <input type="hidden" name="rol" value={rolDemo} />
+                          <input type="hidden" name="userId" value={m.user_id} />
+                          <BotonEnvio
+                            aria-label={`${m.is_active ? 'Desactivar' : 'Reactivar'} a ${m.display_name}`}
+                            className={BOTON_CHICO}
+                          >
+                            {m.is_active ? 'Desactivar' : 'Reactivar'}
+                          </BotonEnvio>
+                        </form>
+                      )}
+                    </TD>
+                  )}
+                </TR>
+              )
+            })}
           </TBody>
         </Table>
 
@@ -201,7 +241,7 @@ export default async function UsuariosPage({
           <CardHeader>
             <CardTitle id="invitaciones-titulo">Invitaciones pendientes</CardTitle>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Todavia no son parte del equipo: entran cuando abren su enlace con el correo invitado.
+              Todavía no son parte del equipo: entran cuando abren su enlace con el correo invitado.
             </p>
           </CardHeader>
           <CardBody>
@@ -209,9 +249,9 @@ export default async function UsuariosPage({
               <EmptyState
                 icon="mark_email_unread"
                 title="Nadie esperando en la puerta"
-                description="Cuando invites a alguien, su invitacion espera aqui hasta que la acepte. Sin papeles ni llamadas."
+                description="Cuando invites a alguien, su invitación espera aquí hasta que la acepte. Sin papeles ni llamadas."
                 tourHref={`/tutorial${ctx.demoQs}`}
-                tourLabel="Como funcionan los permisos"
+                tourLabel="Cómo funcionan los permisos"
                 className="py-8"
               />
             ) : (

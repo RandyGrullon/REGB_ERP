@@ -28,7 +28,9 @@ export const metadata = { title: 'Comisiones · REGB ERP' }
 
 interface EntradaRow {
   id: string
+  sales_order_id: string
   order_number: string
+  customer_name: string
   salesperson_name: string | null
   base_amount: string
   commission_amount: string
@@ -61,7 +63,7 @@ const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' =>
 const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const botonClase =
-  'flex h-8 items-center gap-1 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 
 /** Comisiones (modulo 34): una sola formula por plan, liquidacion con aprobacion real. */
 export default async function ComisionesPage({
@@ -77,10 +79,12 @@ export default async function ComisionesPage({
     ctx.tenantId,
     async (tx) => {
       const e = await tx<EntradaRow[]>`
-      select ce.id, so.number as order_number, up.display_name as salesperson_name,
+      select ce.id, ce.sales_order_id, so.number as order_number, cu.name as customer_name,
+             up.display_name as salesperson_name,
              ce.base_amount::text, ce.commission_amount::text, ce.status
       from public.commission_entries ce
       join public.sales_orders so on so.id = ce.sales_order_id
+      join public.customers cu on cu.id = so.customer_id
       left join public.user_profiles up on up.user_id = ce.salesperson_id and up.tenant_id = ce.tenant_id
       where ce.tenant_id = ${ctx.tenantId}
       order by ce.created_at desc`
@@ -96,7 +100,12 @@ export default async function ComisionesPage({
     },
   )
 
-  const pendientes = entradas.filter((e) => e.status === 'pending').length
+  // Lo que el dueño viene a buscar: cuánto hay por aprobar y cuánto por
+  // pagar, no solo cuántas filas hay.
+  const suma = (estado: string) =>
+    entradas.filter((e) => e.status === estado).reduce((t, e) => t + Number(e.commission_amount), 0)
+  const cuenta = (estado: string) => entradas.filter((e) => e.status === estado).length
+  const pendientes = cuenta('pending')
   const puedeGestionar = exigir(ctx, 'commissions', 'commissions.manage').ok
   const qs = ctx.demoQs
   const campos = (id: string) => (
@@ -113,32 +122,52 @@ export default async function ComisionesPage({
         <PageHeader
           icon="percent"
           title="Comisiones"
-          description="Una sola formula por plan -porcentaje o monto fijo-. No se paga sin aprobar primero."
+          description="Lo que se le paga a cada vendedor por sus pedidos. Cada plan es un porcentaje o un monto fijo, y ninguna comisión se paga sin aprobarla primero."
           actions={
-            <a
-              href={`/comisiones/planes${qs}`}
-              className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
-            >
-              Planes de comision
-            </a>
+            puedeGestionar && (
+              <a
+                href={`/comisiones/planes${qs}`}
+                className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
+              >
+                Planes de comisión
+              </a>
+            )
           }
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Entradas" value={String(entradas.length)} />
-          <StatCard label="Pendientes de aprobar" value={String(pendientes)} />
+          <StatCard
+            label="Por aprobar"
+            value={`RD$ ${money(suma('pending'))}`}
+            hint={`${pendientes} ${pendientes === 1 ? 'comisión' : 'comisiones'}`}
+          />
+          <StatCard
+            label="Aprobadas por pagar"
+            value={`RD$ ${money(suma('approved'))}`}
+            hint={`${cuenta('approved')} ${cuenta('approved') === 1 ? 'comisión' : 'comisiones'}`}
+          />
+          <StatCard
+            label="Pagadas"
+            value={`RD$ ${money(suma('paid'))}`}
+            hint={`${cuenta('paid')} ${cuenta('paid') === 1 ? 'comisión' : 'comisiones'}`}
+          />
         </section>
 
         {entradas.length === 0 ? (
-          <EmptyState icon="percent" title="Todavia no hay ninguna comision" description="" />
+          <EmptyState
+            icon="percent"
+            title="Todavía no hay ninguna comisión"
+            description="Cada comisión sale de un pedido de venta y de un plan. Regístrala abajo cuando el pedido se confirme; después se aprueba y se paga."
+          />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Orden</TH>
+                <TH>Pedido</TH>
+                <TH>Cliente</TH>
                 <TH>Vendedor</TH>
                 <TH numeric>Base</TH>
-                <TH numeric>Comision</TH>
+                <TH numeric>Comisión</TH>
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
@@ -150,9 +179,15 @@ export default async function ComisionesPage({
             <TBody>
               {entradas.map((e) => (
                 <TR key={e.id}>
-                  <TD className="text-[var(--color-text-primary)]">
-                    <Mono>{e.order_number}</Mono>
+                  <TD className="whitespace-nowrap">
+                    <a
+                      href={`/pedidos/${e.sales_order_id}${qs}`}
+                      className="text-[var(--color-text-link)] hover:underline"
+                    >
+                      <Mono>{e.order_number}</Mono>
+                    </a>
                   </TD>
+                  <TD className="text-[var(--color-text-primary)]">{e.customer_name}</TD>
                   <TD className="text-[var(--color-text-muted)]">{e.salesperson_name ?? '—'}</TD>
                   <TD numeric>
                     <span className="tabular">RD$ {money(Number(e.base_amount))}</span>
@@ -184,7 +219,7 @@ export default async function ComisionesPage({
                             <input type="hidden" name="siguiente" value="rejected" />
                             <BotonEnvio
                               className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                              aria-label="Rechazar comision"
+                              aria-label="Rechazar comisión"
                             >
                               <Icon name="close" size={16} />
                             </BotonEnvio>
@@ -212,7 +247,7 @@ export default async function ComisionesPage({
         {puedeGestionar && planes.length > 0 && ordenes.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva comision</CardTitle>
+              <CardTitle>Nueva comisión</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearEntradaForm} className="flex flex-wrap items-end gap-3">
@@ -229,7 +264,7 @@ export default async function ComisionesPage({
                   </select>
                 </label>
                 <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Orden de venta
+                  Pedido de venta
                   <select name="salesOrderId" required className={claseInput}>
                     {ordenes.map((o) => (
                       <option key={o.id} value={o.id}>

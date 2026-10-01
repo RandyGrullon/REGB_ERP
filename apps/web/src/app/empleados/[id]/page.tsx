@@ -15,13 +15,19 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { yearsOfService } from '@regb/operations'
+import {
+  saldoPrestamo,
+  saldoVacaciones,
+  totalAPagarPrestamo,
+  yearsOfService,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearContratoForm, darDeBajaEmpleadoForm, vincularUsuarioForm } from '../actions'
 import { ESTADO_EMPLEADO, TIPO_CONTRATO } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaCorta } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +54,20 @@ interface CuentaRow {
   user_id: string
   nombre: string
   email: string | null
+}
+
+interface PrestamoRow {
+  id: string
+  principal: string
+  installments: number
+  installment_amount: string
+  monthly_rate: string
+  pagado: string
+}
+
+interface VolanteRow {
+  period_end: string
+  net_salary: string
 }
 
 interface ContratoRow {
@@ -77,7 +97,7 @@ export default async function EmpleadoDetallePage({
 
   const puedeVincular = exigir(ctx, 'employees', 'employees.employee.link').ok
 
-  const [head, contratos, cuentas] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+  const [head, contratos, cuentas, rrhh] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<EmpleadoHead[]>`
       select e.id, e.code, e.first_name, e.last_name, e.national_id, e.position, e.department,
              e.hire_date::text, e.salary::text, e.status,
@@ -87,7 +107,7 @@ export default async function EmpleadoDetallePage({
       from public.employees e
       left join public.employees m on m.id = e.manager_id
       where e.id = ${id} and e.tenant_id = ${ctx.tenantId}`
-    if (!h) return [null, [], []] as const
+    if (!h) return [null, [], [], null] as const
 
     const c = await tx<ContratoRow[]>`
       select id, contract_type, start_date::text, end_date::text, salary::text, position, is_active
@@ -112,10 +132,37 @@ export default async function EmpleadoDetallePage({
           order by nombre`
         : []
 
-    return [h, c, u] as const
+    // Lo que RRHH viene a buscar de esta persona sin abrir tres pantallas.
+    // Cada consulta pasa por la RLS de su modulo: sin el modulo, cero filas.
+    const [vac] = await tx<{ dias: string }[]>`
+      select coalesce(sum(business_days), 0)::text as dias
+      from public.time_off_requests
+      where tenant_id = ${ctx.tenantId} and employee_id = ${id}
+        and leave_type = 'vacation' and status = 'approved'`
+    const prestamos = await tx<PrestamoRow[]>`
+      select l.id, l.principal::text, l.installments, l.installment_amount::text,
+             l.monthly_rate::text,
+             coalesce((select sum(p.amount) from public.benefit_loan_payments p
+                        where p.loan_id = l.id), 0)::text as pagado
+      from public.benefit_loans l
+      where l.tenant_id = ${ctx.tenantId} and l.employee_id = ${id} and l.status = 'active'`
+    const [volante] = await tx<VolanteRow[]>`
+      select pp.period_end::text, pl.net_salary::text
+      from public.payroll_lines pl
+      join public.payroll_periods pp on pp.id = pl.period_id
+      where pl.tenant_id = ${ctx.tenantId} and pl.employee_id = ${id} and pp.status <> 'draft'
+      order by pp.period_end desc
+      limit 1`
+
+    return [
+      h,
+      c,
+      u,
+      { vacacionesTomadas: Number(vac?.dias ?? 0), prestamos, volante: volante ?? null },
+    ] as const
   })
 
-  if (!head) notFound()
+  if (!head || !rrhh) notFound()
 
   const hoy = new Date()
   const anos = yearsOfService(new Date(`${head.hire_date.slice(0, 10)}T12:00:00`), hoy)
@@ -125,6 +172,25 @@ export default async function EmpleadoDetallePage({
   const puedeDarDeBaja =
     exigir(ctx, 'employees', 'employees.employee.terminate').ok && head.status !== 'terminated'
   const qs = ctx.demoQs
+  const diasVacaciones = saldoVacaciones(
+    new Date(`${head.hire_date.slice(0, 10)}T00:00:00`),
+    hoy,
+    rrhh.vacacionesTomadas,
+  )
+  const saldoPrestamos = rrhh.prestamos.reduce(
+    (a, p) =>
+      a +
+      saldoPrestamo(
+        totalAPagarPrestamo(
+          Number(p.principal),
+          p.installments,
+          Number(p.installment_amount),
+          Number(p.monthly_rate),
+        ),
+        [{ amount: Number(p.pagado) }],
+      ),
+    0,
+  )
 
   const fecha = (iso: string) =>
     new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
@@ -175,8 +241,69 @@ export default async function EmpleadoDetallePage({
             hint={anos === 0 ? 'Menos de un año' : `${anos} año${anos === 1 ? '' : 's'}`}
           />
           <StatCard label="Cédula" value={head.national_id ?? '—'} />
-          <StatCard label="Contacto" value={head.email ?? head.phone ?? '—'} />
+          {/* Un correo largo no cabe en la cifra grande de un StatCard: se corta. */}
+          <Card className="min-w-0 p-4">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
+              Contacto
+            </p>
+            <p className="tabular mt-1 text-lg font-semibold text-[var(--color-text-primary)]">
+              {head.phone ?? 'Sin teléfono'}
+            </p>
+            <p className="break-all text-xs text-[var(--color-text-secondary)]">
+              {head.email ?? 'Sin correo'}
+            </p>
+          </Card>
         </section>
+
+        {head.status !== 'terminated' && (
+          <section
+            aria-label="Vacaciones, préstamos y nómina"
+            className="grid grid-cols-1 gap-3 sm:grid-cols-3"
+          >
+            <a
+              href={`/vacaciones${qs}`}
+              className="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              <p className="text-xs text-[var(--color-text-muted)]">Vacaciones disponibles</p>
+              <p className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
+                {diasVacaciones} día{diasVacaciones === 1 ? '' : 's'}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {rrhh.vacacionesTomadas > 0
+                  ? `ya tomó ${rrhh.vacacionesTomadas} día${rrhh.vacacionesTomadas === 1 ? '' : 's'}`
+                  : 'no ha tomado vacaciones'}
+              </p>
+            </a>
+            <a
+              href={`/beneficios${qs}`}
+              className="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              <p className="text-xs text-[var(--color-text-muted)]">Préstamos por cobrar</p>
+              <p className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
+                RD$ {money(saldoPrestamos)}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {rrhh.prestamos.length === 0
+                  ? 'sin préstamos activos'
+                  : 'se descuenta en cada nómina'}
+              </p>
+            </a>
+            <a
+              href={`/payroll${qs}`}
+              className="rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 transition-colors hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              <p className="text-xs text-[var(--color-text-muted)]">Último neto pagado</p>
+              <p className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
+                {rrhh.volante ? `RD$ ${money(Number(rrhh.volante.net_salary))}` : '—'}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                {rrhh.volante
+                  ? `nómina al ${fechaCorta(rrhh.volante.period_end, true)}`
+                  : 'todavía no ha cobrado ninguna nómina'}
+              </p>
+            </a>
+          </section>
+        )}
 
         <Card>
           <CardHeader>
@@ -373,6 +500,13 @@ export default async function EmpleadoDetallePage({
                 </TR>
               </THead>
               <TBody>
+                {contratos.length === 0 && (
+                  <TR>
+                    <TD colSpan={5} className="text-center text-xs text-[var(--color-text-muted)]">
+                      Sin contratos registrados. Registra el primero arriba, con su cargo y salario.
+                    </TD>
+                  </TR>
+                )}
                 {contratos.map((c) => (
                   <TR key={c.id} className={c.is_active ? '' : 'opacity-60'}>
                     <TD>{fecha(c.start_date)}</TD>
@@ -385,7 +519,7 @@ export default async function EmpleadoDetallePage({
                       {c.is_active ? (
                         <Badge tone="success">Vigente</Badge>
                       ) : (
-                        <Badge tone="neutral">Historico</Badge>
+                        <Badge tone="neutral">Histórico</Badge>
                       )}
                     </TD>
                   </TR>

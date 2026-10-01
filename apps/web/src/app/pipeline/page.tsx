@@ -75,12 +75,12 @@ export default async function PipelinePage({
         <PageHeader
           icon="trending_up"
           title="Oportunidades"
-          description="El forecast suma cada monto por SU propia probabilidad, nunca el monto crudo de todo lo abierto."
+          description="Las ventas grandes en camino, etapa por etapa. El pronóstico pondera cada monto por su probabilidad: no cuenta lo abierto como si ya estuviera ganado."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Oportunidades abiertas" value={String(abiertas.length)} />
-          <StatCard label="Forecast ponderado" value={`RD$ ${money(forecast)}`} />
+          <StatCard label="Pronóstico ponderado" value={`RD$ ${money(forecast)}`} />
           <StatCard label="Ganadas" value={String(ganadas.length)} />
         </section>
 
@@ -109,7 +109,7 @@ export default async function PipelinePage({
                       </p>
                       {o.lead_name && (
                         <p className="text-xs text-[var(--color-text-muted)]">
-                          Lead: {o.lead_name}
+                          Prospecto: {o.lead_name}
                         </p>
                       )}
                       {puedeGestionar && (
@@ -158,12 +158,12 @@ export default async function PipelinePage({
                   />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Lead de origen (opcional)
+                  Prospecto de origen (opcional)
                   <select
                     name="leadId"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
-                    <option value="">Sin lead de origen</option>
+                    <option value="">Sin prospecto de origen</option>
                     {leads.map((l) => (
                       <option key={l.id} value={l.id}>
                         {l.name}

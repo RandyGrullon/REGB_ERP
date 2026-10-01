@@ -46,6 +46,7 @@ interface DashboardFila {
   id: string
   name: string
   reportes: string
+  items: { id: string; name: string }[] | null
 }
 
 interface ExportFila {
@@ -72,7 +73,12 @@ export default async function ReportesPage({
       select id, name, source_key, chart_type from public.report_definitions
       where tenant_id = ${ctx.tenantId} order by created_at desc`
     const d = await tx<DashboardFila[]>`
-      select db.id, db.name, (select count(*)::text from public.dashboard_items where dashboard_id = db.id) as reportes
+      select db.id, db.name,
+             (select count(*)::text from public.dashboard_items where dashboard_id = db.id) as reportes,
+             (select json_agg(json_build_object('id', rd.id, 'name', rd.name) order by di.position)
+                from public.dashboard_items di
+                join public.report_definitions rd on rd.id = di.report_id
+               where di.dashboard_id = db.id) as items
       from public.dashboards db where db.tenant_id = ${ctx.tenantId} order by db.created_at desc`
     const e = await tx<ExportFila[]>`
       select se.id, rd.name as report_name, se.frequency, se.recipients, se.status,
@@ -85,6 +91,16 @@ export default async function ReportesPage({
 
   const puedeGestionar = exigir(ctx, 'bi', 'bi.manage').ok
   const qs = ctx.demoQs
+  const ahora = new Date()
+  const fechaHora = (iso: string) =>
+    new Date(iso).toLocaleString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/Santo_Domingo',
+    })
+
 
   return (
     <Shell {...shell} activePath="/reportes">
@@ -92,13 +108,13 @@ export default async function ReportesPage({
         <PageHeader
           icon="bar_chart"
           title="BI & Reportes"
-          description="El constructor visual elige entre un catalogo fijo de fuentes ya vetadas -nunca acepta SQL libre-."
+          description="Arma reportes con las fuentes ya preparadas del sistema, júntalos en tableros y programa su envío."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Reportes guardados" value={String(reportes.length)} />
-          <StatCard label="Dashboards" value={String(dashboards.length)} />
-          <StatCard label="Exports programados" value={String(exports.length)} />
+          <StatCard label="Tableros" value={String(dashboards.length)} />
+          <StatCard label="Envíos programados" value={String(exports.length)} />
         </section>
 
         <Card>
@@ -109,16 +125,16 @@ export default async function ReportesPage({
             {reportes.length === 0 ? (
               <EmptyState
                 icon="bar_chart"
-                title="Todavia no hay ningun reporte"
-                description="Crea el primero abajo."
+                title="Todavía no hay ningún reporte"
+                description="Crea el primero abajo: elige de dónde salen los datos y cómo quieres verlos."
               />
             ) : (
-              <Table>
+              <Table className="min-w-[520px]">
                 <THead>
                   <TR>
                     <TH>Reporte</TH>
                     <TH>Fuente</TH>
-                    <TH>Grafico</TH>
+                    <TH>Gráfico</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -153,6 +169,7 @@ export default async function ReportesPage({
                   <input
                     name="name"
                     required
+                    placeholder="Ventas de la semana"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
@@ -171,7 +188,7 @@ export default async function ReportesPage({
                   </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Grafico
+                  Gráfico
                   <select
                     name="chartType"
                     defaultValue="table"
@@ -179,11 +196,11 @@ export default async function ReportesPage({
                   >
                     <option value="table">Tabla</option>
                     <option value="bar">Barras</option>
-                    <option value="line">Linea</option>
+                    <option value="line">Línea</option>
                   </select>
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias (opcional)
+                  Días (opcional)
                   <input
                     name="days"
                     inputMode="numeric"
@@ -191,7 +208,7 @@ export default async function ReportesPage({
                   />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Limite (opcional)
+                  Límite (opcional)
                   <input
                     name="limit"
                     inputMode="numeric"
@@ -209,23 +226,42 @@ export default async function ReportesPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Dashboards</CardTitle>
+            <CardTitle>Tableros</CardTitle>
           </CardHeader>
           <CardBody>
             {dashboards.length === 0 ? (
               <EmptyState
                 icon="dashboard"
-                title="Todavia no hay ningun dashboard"
-                description="Crea el primero abajo."
+                title="Todavía no hay ningún tablero"
+                description="Un tablero junta varios reportes en un solo lugar. Crea el primero abajo."
               />
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
                 {dashboards.map((d) => (
-                  <li key={d.id} className="flex items-center justify-between py-2">
-                    <span className="text-sm text-[var(--color-text-primary)]">{d.name}</span>
-                    <span className="text-xs text-[var(--color-text-muted)]">
-                      {d.reportes} reporte(s)
-                    </span>
+                  <li key={d.id} className="py-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                        {d.name}
+                      </span>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        {d.reportes} {Number(d.reportes) === 1 ? 'reporte' : 'reportes'}
+                      </span>
+                    </div>
+                    {d.items && d.items.length > 0 && (
+                      <ul className="mt-1 flex flex-wrap gap-2">
+                        {d.items.map((it) => (
+                          <li key={it.id}>
+                            <a
+                              href={`/reportes/${it.id}${qs}`}
+                              className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-3 py-1 text-xs text-[var(--color-text-link)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                            >
+                              <Icon name="bar_chart" size={14} />
+                              {it.name}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -237,7 +273,7 @@ export default async function ReportesPage({
                   <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                   <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Nuevo dashboard
+                    Nuevo tablero
                     <input
                       name="name"
                       required
@@ -298,23 +334,23 @@ export default async function ReportesPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Exports programados</CardTitle>
+            <CardTitle>Envíos programados</CardTitle>
           </CardHeader>
           <CardBody>
             {exports.length === 0 ? (
               <EmptyState
                 icon="schedule_send"
-                title="Todavia no hay ningun export programado"
-                description="Programa el primero abajo."
+                title="Todavía no hay ningún envío programado"
+                description="Programa el primero abajo: el reporte, cada cuánto y a qué correos."
               />
             ) : (
-              <Table>
+              <Table className="min-w-[860px]">
                 <THead>
                   <TR>
                     <TH>Reporte</TH>
                     <TH>Frecuencia</TH>
                     <TH>Destinatarios</TH>
-                    <TH>Próxima ejecucion</TH>
+                    <TH>Próximo envío</TH>
                     <TH>Estado</TH>
                     <TH>
                       <span className="sr-only">Acción</span>
@@ -331,8 +367,16 @@ export default async function ReportesPage({
                       <TD className="text-[var(--color-text-muted)]">
                         <Mono>{e.recipients}</Mono>
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">
-                        {new Date(e.next_run_at).toLocaleString('es-DO')}
+                      <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                        {fechaHora(e.next_run_at)}
+                        {e.status === 'active' && new Date(e.next_run_at) < ahora && (
+                          <span className="block text-xs text-[var(--color-semantic-text-warning)]">
+                            atrasado: ejecútalo ahora
+                          </span>
+                        )}
+                        {e.last_run_at && (
+                          <span className="block text-xs">último: {fechaHora(e.last_run_at)}</span>
+                        )}
                       </TD>
                       <TD>
                         <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
@@ -426,9 +470,9 @@ export default async function ReportesPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              El constructor visual elige entre un catálogo fijo de fuentes ya vetadas -nunca acepta
-              una consulta libre que pudiera filtrar datos de otro cliente-. Un export programado
-              registra su calendario, pero el envio real por correo todavía no esta conectado.
+              Los reportes salen de un catálogo fijo de fuentes ya preparadas: no se pueden escribir
+              consultas a mano, así nunca se cuelan datos de otra empresa. Un envío programado
+              guarda su calendario y se puede ejecutar a mano, pero el correo todavía no sale solo.
             </p>
           </CardBody>
         </Card>

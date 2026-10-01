@@ -76,7 +76,7 @@ describe('motivoNoCierre', () => {
   })
 
   it('el checklist se reclama antes que la firma', () => {
-    expect(motivoNoCierre([{ required: true, done: false }], null)).toContain('checklist')
+    expect(motivoNoCierre([{ required: true, done: false }], null)).toContain('lista de verificación')
   })
 
   it('reclama la firma cuando el checklist ya esta', () => {

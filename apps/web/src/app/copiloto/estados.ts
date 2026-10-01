@@ -13,18 +13,18 @@ export const CATALOGO_PREGUNTAS: PreguntaCatalogo[] = [
 ]
 
 export const FUENTE_LABEL_COPILOTO: Record<string, string> = {
-  sales_by_day: 'Ventas por dia',
-  top_products: 'Productos mas vendidos',
+  sales_by_day: 'Ventas por día',
+  top_products: 'Productos más vendidos',
   overdue_invoices: 'Facturas vencidas',
-  leads_by_status: 'Leads por estado',
+  leads_by_status: 'Prospectos por estado',
   tickets_by_priority: 'Tickets por prioridad',
   no_match: 'Sin coincidencia',
 }
 
 export const PREGUNTAS_EJEMPLO = [
-  '¿Cuanto vendimos hoy?',
-  '¿Cual es el producto mas vendido?',
-  '¿Que facturas estan vencidas?',
-  '¿Cuantos leads tengo por estado?',
-  '¿Cuantos tickets urgentes hay?',
+  '¿Cuánto vendimos hoy?',
+  '¿Cuál es el producto más vendido?',
+  '¿Qué facturas están vencidas?',
+  '¿Cuántos prospectos tengo por estado?',
+  '¿Cuántos tickets urgentes hay?',
 ]

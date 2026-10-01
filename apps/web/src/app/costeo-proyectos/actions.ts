@@ -29,7 +29,7 @@ const num = (raw: string): number | null => {
 
 export async function agregarPresupuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'project-costing', 'project-costing.manage')
   if (!permiso.ok) return permiso
 
@@ -40,7 +40,7 @@ export async function agregarPresupuesto(fd: FormData): Promise<ActionResult> {
 
   if (!concept) return { ok: false, error: 'Falta el concepto.' }
   if (!['general', 'labor', 'materials', 'equipment', 'subcontract'].includes(category)) {
-    return { ok: false, error: 'Elige una categoria valida.' }
+    return { ok: false, error: 'Elige una categoría válida.' }
   }
   if (amount === null || amount < 0) return { ok: false, error: 'El monto no puede ser negativo.' }
 
@@ -58,7 +58,7 @@ export async function agregarPresupuesto(fd: FormData): Promise<ActionResult> {
 
 export async function registrarCosto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'project-costing', 'project-costing.manage')
   if (!permiso.ok) return permiso
 
@@ -88,7 +88,7 @@ export async function registrarCosto(fd: FormData): Promise<ActionResult> {
 /** Marcar facturado SI se permite: es informacion nueva, no una correccion del monto. */
 export async function marcarFacturado(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'project-costing', 'project-costing.manage')
   if (!permiso.ok) return permiso
 

@@ -29,6 +29,7 @@ import { registrarDevolucionForm, registrarRecepcionForm } from '../actions'
 import { ESTADO_DEVOLUCION, ORIGEN_DEVOLUCION } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 import { puedeVerCostoDeCompra } from '../costo'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,7 +38,9 @@ interface OrdenHead {
   number: string
   status: string
   supplier_name: string
+  supplier_phone: string | null
   warehouse_name: string
+  order_date: string
 }
 
 interface LineaPendiente {
@@ -81,7 +84,8 @@ export default async function RecibirOrdenPage({
 
   const { head, lineas, previas } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<OrdenHead[]>`
-      select po.id, po.number, po.status, s.name as supplier_name, w.name as warehouse_name
+      select po.id, po.number, po.status, s.name as supplier_name, s.phone as supplier_phone,
+             w.name as warehouse_name, po.order_date::text
       from public.purchase_orders po
       join public.suppliers s on s.id = po.supplier_id
       join public.warehouses w on w.id = po.warehouse_id
@@ -173,7 +177,7 @@ export default async function RecibirOrdenPage({
         <PageHeader
           icon="inventory_2"
           title={`Recibir ${head.number}`}
-          description={`${head.supplier_name} · entra a ${head.warehouse_name}`}
+          description={`${head.supplier_name}${head.supplier_phone ? ` (${head.supplier_phone})` : ''} · entra a ${head.warehouse_name} · pedida el ${new Date(`${head.order_date.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', { day: 'numeric', month: 'long' })}`}
           crumbs={[{ label: 'Recepciones', href: `/recepciones${qs}` }, { label: head.number }]}
         />
 
@@ -186,7 +190,7 @@ export default async function RecibirOrdenPage({
         ) : (
           <Card>
             <CardHeader>
-              <CardTitle>Inspeccion de lo que llego</CardTitle>
+              <CardTitle>Inspección de lo que llegó</CardTitle>
             </CardHeader>
             <CardBody className="p-0">
               <form action={registrarRecepcionForm}>
@@ -218,9 +222,7 @@ export default async function RecibirOrdenPage({
                             <input type="hidden" name="lineId" value={l.id} />
                           </TD>
                           <TD numeric>
-                            <span className="tabular">
-                              {pendiente} {l.unit}
-                            </span>
+                            <span className="tabular">{cantidad(pendiente, l.unit)}</span>
                           </TD>
                           <TD numeric>
                             <input
@@ -256,7 +258,7 @@ export default async function RecibirOrdenPage({
                           <TD>
                             <input
                               name="rejectionReason"
-                              placeholder="Si rechazaste algo, por que"
+                              placeholder="Si rechazaste algo, ¿por qué?"
                               aria-label={`Razón del rechazo de ${l.name}`}
                               className="h-9 w-40 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
@@ -285,7 +287,7 @@ export default async function RecibirOrdenPage({
                     Notas de la recepción
                     <input
                       name="notes"
-                      placeholder="Numero de factura del proveedor, placa del camion, etc."
+                      placeholder="Número de factura del proveedor, placa del camión, etc."
                       className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
@@ -296,8 +298,8 @@ export default async function RecibirOrdenPage({
                 </div>
               </form>
               <p className="px-3 pb-3 text-xs text-[var(--color-text-muted)]">
-                Deja en cero lo que no llego en este camion -no hace falta recibir todas las lineas
-                a la vez-. &ldquo;Aceptado&rdquo; en blanco es lo recibido menos lo rechazado
+                Deja en cero lo que no llegó en este camión (no hace falta recibir todas las líneas
+                a la vez). &ldquo;Aceptado&rdquo; en blanco es lo recibido menos lo rechazado
                 {veCosto
                   ? ', y el costo viene neto: lo cotizado menos el descuento del proveedor, sin ITBIS'
                   : ''}
@@ -341,16 +343,16 @@ export default async function RecibirOrdenPage({
                       <TR key={p.id}>
                         <TD className="text-[var(--color-text-primary)]">{p.product_name}</TD>
                         <TD numeric>
-                          <span className="tabular">{p.qty_received}</span>
+                          <span className="tabular">{cantidad(p.qty_received)}</span>
                         </TD>
                         <TD numeric>
                           <span className="tabular text-[var(--color-semantic-text-success)]">
-                            {p.qty_accepted}
+                            {cantidad(p.qty_accepted)}
                           </span>
                         </TD>
                         <TD numeric>
                           <span className="tabular text-[var(--color-semantic-text-danger)]">
-                            {p.qty_rejected}
+                            {cantidad(p.qty_rejected)}
                           </span>
                         </TD>
                         <TD>
@@ -368,7 +370,7 @@ export default async function RecibirOrdenPage({
                                   }
                                   title={ORIGEN_DEVOLUCION[d.origin]?.efecto}
                                 >
-                                  {d.qty}{' '}
+                                  {cantidad(d.qty)}{' '}
                                   {(ORIGEN_DEVOLUCION[d.origin]?.label ?? d.origin).toLowerCase()} ·{' '}
                                   {ESTADO_DEVOLUCION[d.status] ?? d.status}
                                 </Badge>
@@ -385,17 +387,17 @@ export default async function RecibirOrdenPage({
                               <select
                                 name="origin"
                                 defaultValue={dispRechazado > 0 ? 'rejected' : 'accepted'}
-                                aria-label={`Que se devuelve de ${p.product_name}`}
+                                aria-label={`Qué se devuelve de ${p.product_name}`}
                                 className="h-8 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-1 text-xs text-[var(--color-text-primary)]"
                               >
                                 {dispRechazado > 0 && (
                                   <option value="rejected">
-                                    Rechazado (hasta {dispRechazado}, no mueve inventario)
+                                    Rechazado (hasta {cantidad(dispRechazado)}, no mueve inventario)
                                   </option>
                                 )}
                                 {dispAceptado > 0 && (
                                   <option value="accepted">
-                                    Ya aceptado (hasta {dispAceptado}, sale del almacen)
+                                    Ya aceptado (hasta {cantidad(dispAceptado)}, sale del almacén)
                                   </option>
                                 )}
                               </select>
@@ -407,14 +409,14 @@ export default async function RecibirOrdenPage({
                                 name="qty"
                                 required
                                 defaultValue={dispRechazado > 0 ? String(dispRechazado) : ''}
-                                placeholder={dispRechazado > 0 ? undefined : 'Cuantas'}
+                                placeholder={dispRechazado > 0 ? undefined : 'Cuántas'}
                                 inputMode="decimal"
                                 aria-label={`Cantidad a devolver de ${p.product_name}`}
                                 className="h-8 w-16 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                               />
                               <input
                                 name="reason"
-                                placeholder="Razon"
+                                placeholder="Razón"
                                 required
                                 defaultValue={dispRechazado > 0 ? (p.rejection_reason ?? '') : ''}
                                 aria-label={`Razón de la devolución de ${p.product_name}`}
@@ -436,7 +438,11 @@ export default async function RecibirOrdenPage({
         )}
 
         {lineas.length === 0 && previas.length === 0 && (
-          <EmptyState icon="fact_check" title="Sin movimiento todavia" description="" />
+          <EmptyState
+            icon="fact_check"
+            title="Sin movimiento todavía"
+            description="Esta orden no tiene nada por recibir ni nada recibido. Revisa en Órdenes de compra que esté confirmada."
+          />
         )}
       </div>
     </Shell>

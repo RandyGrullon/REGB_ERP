@@ -100,13 +100,21 @@ const AVISOS: Record<string, Handler> = {
    * factura sigue siendo una accion explicita (§S22).
    */
   'sales-orders.order.delivered': async (e, sql) => {
-    const numero = String(e.payload.number ?? e.payload.orderId ?? '')
+    // El evento trae el id; el aviso dice el NÚMERO del pedido (SO-0001),
+    // que es lo que el dueño reconoce. Antes salía el uuid a la vista.
+    let numero = e.payload.number ? String(e.payload.number) : ''
+    if (!numero && e.payload.orderId) {
+      const [o] = await sql<{ number: string }[]>`
+        select number from public.sales_orders
+        where tenant_id = ${e.tenant_id} and id = ${String(e.payload.orderId)}`
+      numero = o?.number ?? ''
+    }
     await notificar(
       sql,
       e.tenant_id,
       'ar',
       'Hay un pedido entregado sin facturar',
-      `El pedido ${numero} ya se entrego. Emitele la factura para que entre a la cartera y al 607.`,
+      `${numero ? `El pedido ${numero}` : 'Un pedido'} ya se entregó. Emítele la factura para que entre a la cartera y al 607.`,
       '/cobrar',
     )
   },
@@ -123,8 +131,8 @@ const AVISOS: Record<string, Handler> = {
       sql,
       e.tenant_id,
       'pos',
-      falta ? 'Falto efectivo en el cierre de caja' : 'Sobro efectivo en el cierre de caja',
-      `La diferencia fue de ${Math.abs(diferencia).toFixed(2)}. Casi nunca es robo: suele ser vuelto mal dado o un precio desactualizado.`,
+      falta ? 'Faltó efectivo en el cierre de caja' : 'Sobró efectivo en el cierre de caja',
+      `La diferencia fue de RD$ ${Math.abs(diferencia).toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Casi nunca es robo: suele ser vuelto mal dado o un precio desactualizado.`,
       '/pos/shifts',
     )
   },
@@ -147,7 +155,7 @@ const AVISOS: Record<string, Handler> = {
       e.tenant_id,
       'inventory',
       `${bajo!.n} producto(s) bajo el punto de reorden`,
-      'Se vendio y quedaron por debajo del minimo que fijaste. Repon antes de quedarte sin que vender.',
+      'Se vendió y quedaron por debajo del mínimo que fijaste. Repón antes de quedarte sin qué vender.',
       '/inventory',
     )
   },
@@ -166,8 +174,8 @@ const AVISOS: Record<string, Handler> = {
       sql,
       e.tenant_id,
       'sales-orders',
-      'Hay lineas prometidas sin existencia',
-      `${b!.n} linea(s) en backorder. Es tu lista de compras hecha por los clientes.`,
+      'Hay líneas prometidas sin existencia',
+      `${b!.n} línea(s) de pedidos esperando mercancía. Es tu lista de compras hecha por los clientes.`,
       '/pedidos',
     )
   },

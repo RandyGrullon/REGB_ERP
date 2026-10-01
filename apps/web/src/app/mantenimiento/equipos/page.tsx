@@ -59,27 +59,32 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/mantenimiento">
+    <Shell {...shell} activePath="/mantenimiento/equipos">
       <div className="space-y-5">
         <PageHeader
           icon="precision_manufacturing"
           title="Equipos"
-          crumbs={[{ label: 'Mantenimiento', href: `/mantenimiento${qs}` }, { label: 'Equipos' }]}
+          description="Cada equipo con sus horas de uso y cada cuánto le toca servicio (por horas, por días o las dos cosas)."
+          crumbs={[
+            { label: 'Mantenimiento de equipos', href: `/mantenimiento${qs}` },
+            { label: 'Equipos' },
+          ]}
         />
 
         {equipos.length === 0 ? (
           <EmptyState
             icon="precision_manufacturing"
-            title="Todavia no hay ningun equipo"
-            description="Crea el primero abajo."
+            title="Todavía no hay ningún equipo"
+            description="Registra abajo el primero con su código, dónde está y cada cuánto le toca servicio: el sistema te avisa cuando se venza."
           />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Equipo</TH>
-                <TH>Ubicacion</TH>
-                <TH numeric>Uso acumulado</TH>
+                <TH>Ubicación</TH>
+                <TH numeric>Horas de uso</TH>
+                <TH>Último servicio</TH>
                 <TH>Estado</TH>
                 <TH>Mantenimiento</TH>
               </TR>
@@ -113,8 +118,18 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
                     <TD className="text-[var(--color-text-muted)]">{e.location ?? '—'}</TD>
                     <TD numeric>
                       <span className="tabular">
-                        {Number(e.usage_hours).toLocaleString('es-DO')}
+                        {Number(e.usage_hours).toLocaleString('es-DO')} h
                       </span>
+                    </TD>
+                    <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                      {e.last_service_at
+                        ? new Date(e.last_service_at).toLocaleDateString('es-DO', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            timeZone: 'UTC',
+                          })
+                        : 'Nunca'}
                     </TD>
                     <TD>
                       <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
@@ -123,7 +138,7 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
                     </TD>
                     <TD>
                       {vencido ? (
-                        <Badge tone="danger">Vencido</Badge>
+                        <Badge tone="danger">Le toca servicio</Badge>
                       ) : (
                         <Badge tone="success">Al día</Badge>
                       )}
@@ -145,7 +160,7 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input
                     name="code"
                     required
@@ -161,14 +176,14 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
                   />
                 </label>
                 <label className="flex min-w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Ubicacion (opcional)
+                  Ubicación (opcional)
                   <input
                     name="location"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Intervalo de uso (opcional)
+                  Cada cuántas horas (opcional)
                   <input
                     name="maintenanceIntervalUsage"
                     inputMode="decimal"
@@ -176,7 +191,7 @@ export default async function EquiposPage({ searchParams }: { searchParams: Prom
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Intervalo en dias (opcional)
+                  Cada cuántos días (opcional)
                   <input
                     name="maintenanceIntervalDays"
                     inputMode="numeric"

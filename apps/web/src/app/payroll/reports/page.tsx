@@ -56,7 +56,7 @@ export default async function ReportesPayrollPage({
 }) {
   const params = await searchParams
   // Los volantes de TODOS piden `payroll.export`, como declara el manifest
-  // ("TSS y reportes"). Con `payroll.view` los veia cualquiera con `*.view`
+  // ("Volantes"). Con `payroll.view` los veia cualquiera con `*.view`
   // -el Gerente de Sucursal, el salario de toda la empresa- (0138).
   const { ctx, shell } = await modulePage(params, 'payroll', 'payroll.export')
   // Un ?period= que no es un id tumbaba la pagina (500 de postgres).
@@ -106,19 +106,19 @@ export default async function ReportesPayrollPage({
         <PageHeader
           icon="receipt_long"
           title="Volantes de nómina"
-          description="El desglose de TSS, ISR y neto de cada empleado en un periodo ya procesado."
+          description="El desglose de TSS, ISR y neto de cada empleado en un período ya procesado."
           crumbs={[{ label: 'Nómina', href: `/payroll${qs}` }, { label: 'Volantes' }]}
         />
 
         {periodos.length === 0 ? (
           <EmptyState
             icon="receipt_long"
-            title="Todavía no hay ningún periodo procesado"
+            title="Todavía no hay ningún período procesado"
             description="Cuando proceses una nómina, aquí verás el volante de cada empleado."
           />
         ) : (
           <>
-            <nav aria-label="Periodos" className="flex flex-wrap gap-2">
+            <nav aria-label="Períodos" className="flex flex-wrap gap-2">
               {periodos.map((p) => (
                 <a
                   key={p.id}

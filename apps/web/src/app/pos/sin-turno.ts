@@ -30,7 +30,7 @@ export function motivoSinTurno(e: SinTurnoEntrada): SinTurno | null {
     return {
       icono: 'lock',
       titulo: 'No hay turno abierto',
-      descripcion: 'Tu rol no puede abrir la caja. Pidele a un encargado que abra el turno.',
+      descripcion: 'Tu rol no puede abrir la caja. Pídele a un encargado que abra el turno.',
       enlace: null,
     }
   }
@@ -39,21 +39,21 @@ export function motivoSinTurno(e: SinTurnoEntrada): SinTurno | null {
   if (!e.tieneExistencias) {
     return {
       icono: 'warehouse',
-      titulo: 'La caja necesita un almacen',
+      titulo: 'La caja necesita un almacén',
       descripcion:
-        'Cada turno descuenta la mercancia de un almacen, y los almacenes viven en el modulo Existencias, que este negocio no tiene activo. Activalo y vuelve para abrir la caja.',
+        'Cada turno descuenta la mercancía de un almacén, y los almacenes viven en el módulo Existencias, que este negocio no tiene activo. Actívalo y vuelve para abrir la caja.',
       enlace: { href: `/marketplace${e.qs}`, texto: 'Ver Existencias en el Marketplace' },
     }
   }
 
   return {
     icono: 'warehouse',
-    titulo: 'Falta crear un almacen',
+    titulo: 'Falta crear un almacén',
     descripcion: e.puedeCrearAlmacen
-      ? 'La caja descuenta la mercancia de un almacen y todavia no hay ninguno. Crealo y vuelve para abrir el turno.'
-      : 'La caja descuenta la mercancia de un almacen y todavia no hay ninguno. Pidele a quien administra el inventario que cree uno en Existencias > Almacenes.',
+      ? 'La caja descuenta la mercancía de un almacén y todavía no hay ninguno. Créalo y vuelve para abrir el turno.'
+      : 'La caja descuenta la mercancía de un almacén y todavía no hay ninguno. Pídele a quien administra el inventario que cree uno en Existencias > Almacenes.',
     enlace: e.puedeCrearAlmacen
-      ? { href: `/inventory/warehouses${e.qs}`, texto: 'Crear un almacen' }
+      ? { href: `/inventory/warehouses${e.qs}`, texto: 'Crear un almacén' }
       : null,
   }
 }

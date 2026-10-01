@@ -34,7 +34,7 @@ const num = (raw: string): number | null => {
 /** Registra una requisicion -queda 'pending' de inmediato, lista para aprobar-. */
 export async function crearRequisicion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'requisitions', 'requisitions.request')
   if (!permiso.ok) return permiso
 
@@ -44,7 +44,7 @@ export async function crearRequisicion(fd: FormData): Promise<ActionResult> {
   const estimatedAmount = num(String(fd.get('estimatedAmount') ?? ''))
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
-  if (!description) return { ok: false, error: 'Describe que se necesita.' }
+  if (!description) return { ok: false, error: 'Describe qué se necesita.' }
   if (estimatedAmount === null || estimatedAmount <= 0) {
     return { ok: false, error: 'El monto estimado debe ser mayor que cero.' }
   }
@@ -72,14 +72,14 @@ export async function crearRequisicion(fd: FormData): Promise<ActionResult> {
 /** Aprueba o rechaza una requisicion pendiente -el limite de monto del rol decide-. */
 export async function resolverRequisicion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const requisitionId = String(fd.get('requisitionId') ?? '')
   const decision = String(fd.get('decision') ?? '')
   const note = String(fd.get('note') ?? '').trim() || null
-  if (!requisitionId) return { ok: false, error: 'Falta la requisicion.' }
+  if (!requisitionId) return { ok: false, error: 'Falta la requisición.' }
   if (decision !== 'approved' && decision !== 'rejected')
-    return { ok: false, error: 'Decision invalida.' }
+    return { ok: false, error: 'Decisión inválida.' }
 
   try {
     let amountError: string | null = null
@@ -87,9 +87,9 @@ export async function resolverRequisicion(fd: FormData): Promise<ActionResult> {
       const [row] = await tx<{ status: string; estimated_amount: string }[]>`
         select status, estimated_amount::text from public.purchase_requisitions
         where id = ${requisitionId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa requisicion no existe.')
+      if (!row) throw new Error('Esa requisición no existe.')
       if (!transicionValidaRequisicion(row.status as EstadoRequisicion, decision)) {
-        throw new Error('Esa requisicion ya fue resuelta.')
+        throw new Error('Esa requisición ya fue resuelta.')
       }
 
       const permiso = exigir(
@@ -126,21 +126,23 @@ export async function resolverRequisicion(fd: FormData): Promise<ActionResult> {
 /** Marca una requisicion aprobada como convertida -con una referencia de texto a la orden resultante-. */
 export async function marcarConvertida(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
+  // Quien aprueba, o quien hace la orden de compra (el comprador).
   const permiso = exigir(ctx, 'requisitions', 'requisitions.approve')
-  if (!permiso.ok) return permiso
+  const haceLaOrden = exigir(ctx, 'purchase-orders', 'purchase-orders.create').ok // registry:allow — permiso opcional: sin compras, solo marca quien aprueba
+  if (!permiso.ok && !haceLaOrden) return permiso
 
   const requisitionId = String(fd.get('requisitionId') ?? '')
   const poReference = String(fd.get('poReference') ?? '').trim() || null
-  if (!requisitionId) return { ok: false, error: 'Falta la requisicion.' }
+  if (!requisitionId) return { ok: false, error: 'Falta la requisición.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [row] = await tx<{ status: string }[]>`
         select status from public.purchase_requisitions where id = ${requisitionId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa requisicion no existe.')
+      if (!row) throw new Error('Esa requisición no existe.')
       if (!transicionValidaRequisicion(row.status as EstadoRequisicion, 'converted')) {
-        throw new Error('Solo una requisicion aprobada se puede convertir.')
+        throw new Error('Solo una requisición aprobada se puede convertir.')
       }
 
       await tx`
@@ -162,7 +164,7 @@ export async function crearRequisicionForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await crearRequisicion(fd),
     'crearRequisicion',
-    'Listo, quedo pendiente de aprobar.',
+    'Listo, quedó pendiente de aprobar.',
   )
 }
 export async function resolverRequisicionForm(fd: FormData): Promise<void> {
@@ -172,7 +174,7 @@ export async function resolverRequisicionForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await resolverRequisicion(fd),
     'resolverRequisicion',
-    aprobada ? 'Listo, quedo aprobada.' : 'Listo, quedo rechazada.',
+    aprobada ? 'Listo, quedó aprobada.' : 'Listo, quedó rechazada.',
   )
 }
 export async function marcarConvertidaForm(fd: FormData): Promise<void> {

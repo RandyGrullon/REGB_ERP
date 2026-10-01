@@ -231,6 +231,7 @@ export default async function FacturaDetallePage({
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Santo_Domingo',
     })
 
   const ocultos = (
@@ -262,7 +263,7 @@ export default async function FacturaDetallePage({
               </span>
               {dias > 0 && balance > 0 && !anulada && (
                 <Badge tone="danger" dot={false}>
-                  {dias} dias de atraso
+                  {dias} días de atraso
                 </Badge>
               )}
               {head.customer_exempt && (
@@ -319,7 +320,7 @@ export default async function FacturaDetallePage({
                     className="h-9 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                   <BotonEnvio
-                    title="Con cobros vigentes o notas de credito ya no se anula"
+                    title="Con cobros vigentes o notas de crédito ya no se anula"
                     className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] transition-colors hover:bg-[var(--color-surface-raised)]"
                   >
                     <Icon name="cancel" size={16} />
@@ -347,7 +348,7 @@ export default async function FacturaDetallePage({
             hint={totalMora > 0 ? `incl. RD$ ${money(totalMora)} de mora` : 'con ITBIS'}
           />
           <StatCard label="Cobrado" value={`RD$ ${money(cobrado)}`} hint="sin reversados" />
-          <StatCard label="Notas de credito" value={`RD$ ${money(totalNotas)}`} />
+          <StatCard label="Notas de crédito" value={`RD$ ${money(totalNotas)}`} />
           <StatCard
             label="Saldo"
             value={`RD$ ${money(balance)}`}
@@ -395,7 +396,7 @@ export default async function FacturaDetallePage({
                 <form
                   action={aplicarCargoPorMoraForm}
                   className="flex flex-wrap items-center gap-1"
-                  title={`${dias} días de atraso — el monto lo decides tu, no hay calculo automático`}
+                  title={`${dias} días de atraso — el monto lo decides tú, no hay cálculo automático`}
                 >
                   {campos}
                   <input
@@ -428,7 +429,7 @@ export default async function FacturaDetallePage({
           <CardBody>
             {lineas.length === 0 ? (
               <p className="py-3 text-center text-xs text-[var(--color-text-muted)]">
-                Esta factura es anterior a las lineas de factura: su detalle esta en el pedido de
+                Esta factura es anterior a las líneas de factura: su detalle está en el pedido de
                 origen.
               </p>
             ) : (
@@ -667,14 +668,14 @@ export default async function FacturaDetallePage({
                       })}
                       <label className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                         <input type="checkbox" name="restock" value="1" defaultChecked />
-                        Reponer inventario (vuelve al almacen del pedido)
+                        Reponer inventario (vuelve al almacén del pedido)
                       </label>
                       <input
                         name="reason"
                         required
                         minLength={4}
-                        placeholder="Motivo (ej.: devolvio 2 sin abrir)"
-                        aria-label="Motivo de la devolucion"
+                        placeholder="Motivo (ej.: devolvió 2 sin abrir)"
+                        aria-label="Motivo de la devolución"
                         className={`${campoCls} w-full`}
                       />
                       <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
@@ -709,7 +710,7 @@ export default async function FacturaDetallePage({
                       name="reason"
                       required
                       minLength={4}
-                      placeholder="Motivo (ej.: rayon en la caja)"
+                      placeholder="Motivo (ej.: rayón en la caja)"
                       aria-label="Motivo de la rebaja"
                       className={`${campoCls} w-full`}
                     />
@@ -740,7 +741,7 @@ export default async function FacturaDetallePage({
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
-                    <TH numeric>Dias de atraso al aplicar</TH>
+                    <TH numeric>Días de atraso al aplicar</TH>
                     <TH>Notas</TH>
                     <TH>Aplicado por</TH>
                     <TH numeric>Monto</TH>

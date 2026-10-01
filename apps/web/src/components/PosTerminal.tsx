@@ -406,8 +406,8 @@ export function PosTerminal({
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             onKeyDown={alEscanear}
-            placeholder="Buscar o escanear codigo de barras…"
-            aria-label="Buscar producto o escanear codigo de barras"
+            placeholder="Buscar o escanear código de barras…"
+            aria-label="Buscar producto o escanear código de barras"
             autoFocus
             className="h-12 w-full rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-input)] pl-11 pr-3 text-base text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-brand-bright)]"
           />
@@ -419,7 +419,7 @@ export function PosTerminal({
             className="flex items-center gap-2 rounded-[var(--radius-md)] bg-[color-mix(in_srgb,var(--color-semantic-warning)_16%,transparent)] px-3 py-2 text-sm text-[var(--color-semantic-text-warning)]"
           >
             <Icon name="barcode_reader" size={18} />
-            Ningun producto con el codigo <strong>{noEncontrado}</strong>. Revisa que este en el
+            Ningún producto con el código <strong>{noEncontrado}</strong>. Revisa que este en el
             catálogo con su código de barras.
           </p>
         )}
@@ -527,7 +527,7 @@ export function PosTerminal({
                 <div className="flex items-start gap-2">
                   <span className="min-w-0 flex-1 text-sm text-[var(--color-text-primary)]">
                     {p.name}
-                    {l.qty > p.disponible && (
+                    {p.tracksStock && l.qty > p.disponible && (
                       <Badge tone="warning" dot={false} className="ml-1">
                         sin stock
                       </Badge>
@@ -620,7 +620,10 @@ export function PosTerminal({
               onClick={() => setMetodo(m.id)}
               className={cn(
                 btn,
-                'h-11 flex-col gap-0.5 border text-[11px]',
+                // overflow-hidden: si la fuente de íconos todavía no
+                // cargó, la ligadura ("account_balance") se pinta como
+                // texto y empujaba la página 47 px a la derecha a 1280.
+                'h-11 min-w-0 flex-col gap-0.5 overflow-hidden border text-[11px]',
                 metodo === m.id
                   ? 'border-[var(--color-brand)] bg-[var(--color-brand-soft)] font-medium text-[var(--color-brand-bright)]'
                   : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]',

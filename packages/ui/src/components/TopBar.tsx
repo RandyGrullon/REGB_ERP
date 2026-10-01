@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { cn } from '../utils'
 import { Icon } from './Icon'
+import { Logo } from './Logo'
 
 /**
  * Barra superior — el patron estandar de una aplicacion de gestion.
@@ -65,15 +66,10 @@ export function TopBar({
         className,
       )}
     >
-      {/* Marca: cuadro con la inicial + nombre. En movil solo el cuadro,
-          que es lo que hace falta para saber en que producto estas. */}
+      {/* Marca: el simbolo + nombre. En movil solo el simbolo, que es lo
+          que hace falta para saber en que producto estas. */}
       <span className="flex shrink-0 items-center gap-2">
-        <span
-          aria-hidden
-          className="grid h-7 w-7 place-items-center rounded-[var(--radius-md)] bg-[var(--color-brand)] text-[13px] font-bold text-[var(--color-text-on-brand)]"
-        >
-          {productName.charAt(0)}
-        </span>
+        <Logo size="md" decorative />
         <span className="hidden text-sm font-bold tracking-tight text-[var(--color-text-primary)] sm:inline">
           {productName}
         </span>

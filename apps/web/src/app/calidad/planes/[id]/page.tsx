@@ -29,6 +29,8 @@ interface PlanHead {
   scope: string
   product_name: string | null
   active: boolean
+  inspecciones: string
+  ultima: string | null
 }
 
 interface CriterioRow {
@@ -51,7 +53,9 @@ export default async function PlanDetallePage({
 
   const { head, criterios } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<PlanHead[]>`
-      select ip.id, ip.name, ip.scope, pr.name as product_name, ip.active
+      select ip.id, ip.name, ip.scope, pr.name as product_name, ip.active,
+             (select count(*) from public.inspections i where i.plan_id = ip.id)::text as inspecciones,
+             (select max(i.performed_at) from public.inspections i where i.plan_id = ip.id)::text as ultima
       from public.inspection_plans ip
       left join public.products pr on pr.id = ip.product_id
       where ip.id = ${id} and ip.tenant_id = ${ctx.tenantId}`
@@ -78,18 +82,24 @@ export default async function PlanDetallePage({
   )
 
   return (
-    <Shell {...shell} activePath="/calidad">
+    <Shell {...shell} activePath="/calidad/planes">
       <div className="space-y-5">
         <PageHeader
           icon="checklist"
           title={head.name}
+          description={[
+            `${ALCANCE_PLAN[head.scope] ?? head.scope}: ${head.product_name ?? 'cualquier producto'}`,
+            head.inspecciones === '0'
+              ? 'todavía no se ha usado'
+              : `${head.inspecciones} ${head.inspecciones === '1' ? 'inspección' : 'inspecciones'}, la última el ${new Date(head.ultima!).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })}`,
+          ].join(' · ')}
           crumbs={[
             { label: 'Control de calidad', href: `/calidad${qs}` },
             { label: 'Planes', href: `/calidad/planes${qs}` },
             { label: head.name },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone={head.active ? 'success' : 'neutral'}>
                 {head.active ? 'Activo' : 'Inactivo'}
               </Badge>
@@ -106,14 +116,10 @@ export default async function PlanDetallePage({
           }
         />
 
-        <p className="text-xs text-[var(--color-text-muted)]">
-          {ALCANCE_PLAN[head.scope] ?? head.scope} ·{' '}
-          {head.product_name ?? 'General -cualquier producto-'}
-        </p>
-
         {criterios.length === 0 ? (
           <p className="text-sm text-[var(--color-text-muted)]">
-            Este plan todavía no tiene criterios.
+            Este plan todavía no tiene criterios. Agrega abajo lo que hay que revisar, y marca como
+            crítico lo que por sí solo debe rechazar la mercancía.
           </p>
         ) : (
           <Table>
@@ -134,7 +140,7 @@ export default async function PlanDetallePage({
                   <TD className="text-[var(--color-text-primary)]">{c.criterion}</TD>
                   <TD>
                     <Badge tone={c.is_critical ? 'danger' : 'neutral'}>
-                      {c.is_critical ? 'Critico' : 'Menor'}
+                      {c.is_critical ? 'Crítico' : 'Menor'}
                     </Badge>
                   </TD>
                   {puedeGestionar && (
@@ -175,7 +181,7 @@ export default async function PlanDetallePage({
                 </label>
                 <label className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                   <input type="checkbox" name="isCritical" />
-                  Critico -reprueba la inspección entera si falla-
+                  Crítico (si falla, reprueba la inspección entera)
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />

@@ -7,7 +7,7 @@ export const ESTADO_VACANTE: Record<string, string> = {
 
 /** Etiquetas de la etapa del pipeline. */
 export const ETAPA_APLICACION: Record<string, string> = {
-  applied: 'Aplico',
+  applied: 'Postulado',
   screening: 'En filtro',
   interview: 'Entrevista',
   offer: 'Oferta',

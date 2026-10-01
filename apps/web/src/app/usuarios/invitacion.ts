@@ -47,15 +47,15 @@ export function enlaceDeInvitacion(origen: string, token: string): string {
 /** El mensaje que ve quien invito. Qué pasó · por qué · qué hacer. */
 export function mensajeDeEnvio(email: string, envio: EnvioCorreo): string {
   if (envio.enviado) {
-    return `Le enviamos la invitacion a ${email}. El enlace sirve una sola vez y vence en ${DIAS_DE_VIGENCIA} dias.`
+    return `Le enviamos la invitación a ${email}. El enlace sirve una sola vez y vence en ${DIAS_DE_VIGENCIA} días.`
   }
   switch (envio.motivo) {
     case 'demo':
-      return `No se envio ningun correo: estas en modo demostracion y no hay servidor de correo conectado. Copia el enlace y compartelo tu con ${email}.`
+      return `No se envió ningún correo: estás en modo demostración y no hay servidor de correo conectado. Copia el enlace y compártelo tú con ${email}.`
     case 'ya_registrado':
-      return `No se envio ningun correo: ${email} ya tiene cuenta en REGB y Supabase no le manda invitacion. Compartele el enlace; al abrirlo con su cuenta queda dentro.`
+      return `No se envió ningún correo: ${email} ya tiene cuenta en REGB y Supabase no le manda invitación. Compártele el enlace; al abrirlo con su cuenta queda dentro.`
     case 'fallo':
-      return `La invitacion quedo creada, pero el correo NO salio${envio.detalle ? ` (${envio.detalle})` : ''}. Comparte el enlace a mano o toca Reenviar mas tarde.`
+      return `La invitación quedó creada, pero el correo NO salió${envio.detalle ? ` (${envio.detalle})` : ''}. Comparte el enlace a mano o toca Reenviar más tarde.`
   }
 }
 
@@ -68,26 +68,26 @@ export const RESULTADOS_ACEPTAR = {
   invalida: {
     titulo: 'Ese enlace no sirve',
     texto:
-      'No encontramos una invitacion con ese enlace. Puede que la hayan reenviado -el enlace anterior deja de servir- o que se copiara incompleto. Pidele a tu administrador uno nuevo.',
+      'No encontramos una invitación con ese enlace. Puede que la hayan reenviado -el enlace anterior deja de servir- o que se copiara incompleto. Pídele a tu administrador uno nuevo.',
   },
   vencida: {
-    titulo: 'La invitacion vencio',
-    texto: `Las invitaciones duran ${DIAS_DE_VIGENCIA} dias. Pidele a tu administrador que te la reenvie desde Usuarios.`,
+    titulo: 'La invitación venció',
+    texto: `Las invitaciones duran ${DIAS_DE_VIGENCIA} días. Pídele a tu administrador que te la reenvíe desde Usuarios.`,
   },
   revocada: {
-    titulo: 'La invitacion fue revocada',
+    titulo: 'La invitación fue revocada',
     texto:
-      'Quien te invito la cancelo. Si crees que es un error, habla con el administrador de tu empresa.',
+      'Quien te invitó la canceló. Si crees que es un error, habla con el administrador de tu empresa.',
   },
   otro_correo: {
     titulo: 'Entraste con otro correo',
     texto:
-      'Esta invitacion es para otra direccion de correo. Sal y entra con la cuenta del correo al que te llego la invitacion.',
+      'Esta invitación es para otra dirección de correo. Sal y entra con la cuenta del correo al que te llegó la invitación.',
   },
   otro_cliente: {
     titulo: 'Tu cuenta ya es de otra empresa',
     texto:
-      'Hoy una cuenta de REGB pertenece a una sola empresa. Pidele a quien te invito que use otro correo tuyo.',
+      'Hoy una cuenta de REGB pertenece a una sola empresa. Pídele a quien te invitó que use otro correo tuyo.',
   },
   ya_miembro: {
     titulo: 'Ya estas dentro',
@@ -95,19 +95,19 @@ export const RESULTADOS_ACEPTAR = {
   },
   correo_sin_confirmar: {
     titulo: 'Falta confirmar tu correo',
-    texto: 'Abre el enlace que te llego por correo para confirmarlo y vuelve a intentarlo.',
+    texto: 'Abre el enlace que te llegó por correo para confirmarlo y vuelve a intentarlo.',
   },
   sin_sesion: {
     titulo: 'Necesitas entrar primero',
-    texto: 'Entra con el correo al que te llego la invitacion y vuelve a abrir el enlace.',
+    texto: 'Entra con el correo al que te llegó la invitación y vuelve a abrir el enlace.',
   },
   demo: {
-    titulo: 'Modo demostracion',
+    titulo: 'Modo demostración',
     texto:
-      'Aqui no hay cuentas reales, asi que nadie puede aceptar una invitacion. Cuando REGB este conectado a Supabase, este mismo tipo de enlace crea el acceso de la persona.',
+      'Aquí no hay cuentas reales, así que nadie puede aceptar una invitación. Cuando REGB este conectado a Supabase, este mismo tipo de enlace crea el acceso de la persona.',
   },
   error: {
-    titulo: 'No pudimos aceptar la invitacion',
+    titulo: 'No pudimos aceptar la invitación',
     texto: 'Algo fallo de nuestro lado. Intenta abrir el enlace otra vez en unos minutos.',
   },
 } as const

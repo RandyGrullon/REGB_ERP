@@ -82,7 +82,7 @@ export function BarraEscritorio() {
           }
         />
         <span className="text-[var(--color-text-secondary)]">
-          {enLinea ? 'En línea' : 'Sin conexion — se sigue vendiendo'}
+          {enLinea ? 'En línea' : 'Sin conexión — se sigue vendiendo'}
         </span>
       </span>
 
@@ -109,7 +109,7 @@ export function BarraEscritorio() {
           <button
             type="button"
             onClick={() => void puente()?.sincronizarAhora().then(setEstado)}
-            className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
           >
             <Icon name="cloud_upload" size={16} />
             Subir ahora
@@ -122,7 +122,7 @@ export function BarraEscritorio() {
               ?.abrirGaveta()
               .then((r) => setAviso(r.ok ? null : (r.error ?? 'No se pudo abrir la gaveta.')))
           }
-          className="flex h-9 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+          className="flex h-9 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
         >
           <Icon name="point_of_sale" size={16} />
           Abrir gaveta

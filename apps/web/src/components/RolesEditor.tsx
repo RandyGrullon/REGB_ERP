@@ -1,8 +1,9 @@
 'use client'
 
+import { etiquetaPermiso } from '@/lib/etiqueta-permiso'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Badge, Button, Card, cn } from '@regb/ui'
+import { Badge, Button, Card, cn, Icon } from '@regb/ui'
 import { matchingPatterns } from '@regb/permissions'
 import { TemaToggle } from './TemaToggle'
 import {
@@ -65,61 +66,6 @@ function estadoDe(
     if (permisos[p] === true) return { estado: 'heredado', via: p }
   }
   return { estado: 'sin-definir', via: '' }
-}
-
-const ETIQUETA_ACCION: Record<string, string> = {
-  view: 'Ver',
-  create: 'Crear',
-  edit: 'Editar',
-  delete: 'Eliminar',
-  export: 'Exportar',
-  approve: 'Aprobar',
-  reject: 'Rechazar',
-  adjust: 'Ajustar',
-  transfer: 'Transferir',
-  count: 'Contar',
-  sell: 'Vender',
-  void: 'Anular',
-  discount: 'Descontar',
-  run: 'Procesar',
-  upload: 'Subir',
-  review: 'Revisar',
-  open: 'Abrir',
-  close: 'Cerrar',
-  own: 'Solo lo propio',
-  invite: 'Invitar',
-  remove: 'Quitar',
-  start: 'Iniciar',
-  request: 'Solicitar',
-}
-
-/** El objeto sobre el que actua el permiso, en espanol. */
-const ETIQUETA_OBJETO: Record<string, string> = {
-  cost: 'costos',
-  price: 'precios',
-  shift: 'turno',
-  report: 'reportes',
-  role: 'roles',
-  member: 'miembros',
-  branding: 'marca',
-  trial: 'prueba',
-  own: 'propio',
-}
-
-/** `inventory.cost.view` → "Ver costos" */
-function etiqueta(perm: string): string {
-  const partes = perm.split('.').slice(1)
-  const accion = partes.at(-1) ?? ''
-  const base = ETIQUETA_ACCION[accion] ?? accion
-
-  if (partes.length > 1) {
-    const objeto = partes
-      .slice(0, -1)
-      .map((p) => ETIQUETA_OBJETO[p] ?? p)
-      .join(' ')
-    return `${base} ${objeto}`
-  }
-  return base
 }
 
 export function RolesEditor({
@@ -321,12 +267,13 @@ export function RolesEditor({
             {/* ── 1. Modulos visibles ──────────────────────────────── */}
             <Section
               data-tour="rol-modulos-visibles"
-              titulo="Modulos visibles en el sidebar"
+              titulo="Módulos visibles en el menú"
               ayuda="Lo que este rol ve al entrar. Los que no marques siguen existiendo, simplemente no aparecen."
             >
               {rol.visibleModules.includes('*') ? (
-                <p className="text-sm text-[var(--color-semantic-text-success)]">
-                  ✓ Ve todos los módulos que el cliente tenga activos
+                <p className="flex items-center gap-1.5 text-sm text-[var(--color-semantic-text-success)]">
+                  <Icon name="check_circle" size={18} className="shrink-0" />
+                  Ve todos los módulos que el cliente tenga activos
                 </p>
               ) : (
                 <div className="flex flex-wrap gap-1.5">
@@ -373,11 +320,11 @@ export function RolesEditor({
 
             {/* ── 2. Permisos por modulo ───────────────────────────── */}
             <Section
-              titulo="Que puede hacer"
+              titulo="Qué puede hacer"
               ayuda={
                 canEdit
-                  ? 'Toca un permiso para ciclarlo: sin definir → concedido → denegado. Una denegacion gana sobre cualquier permiso más general.'
-                  : 'Rojo tachado = denegado explicitamente. Una denegacion gana sobre cualquier permiso más general.'
+                  ? 'Toca un permiso para ciclarlo: sin definir → concedido → denegado. Una denegación gana sobre cualquier permiso más general.'
+                  : 'Rojo tachado = denegado explícitamente. Una denegación gana sobre cualquier permiso más general.'
               }
             >
               <div className="space-y-3">
@@ -395,7 +342,7 @@ export function RolesEditor({
                         return (
                           <PermChip
                             key={p}
-                            label={etiqueta(p)}
+                            label={etiquetaPermiso(p)}
                             estado={estado}
                             via={via}
                             editable={canEdit && !guardando}
@@ -416,8 +363,8 @@ export function RolesEditor({
 
             {/* ── 3. Alcance ABAC ──────────────────────────────────── */}
             <Section
-              titulo="Sobre que datos"
-              ayuda="El alcance no dice que ACCIONES puede hacer, sino sobre QUE FILAS."
+              titulo="Sobre qué datos"
+              ayuda="El alcance no dice qué acciones puede hacer, sino sobre qué registros."
             >
               <ScopeEditor
                 scope={rol.scope}
@@ -430,7 +377,7 @@ export function RolesEditor({
 
             {!canEdit && (
               <p className="mt-6 text-xs text-[var(--color-text-muted)]">
-                Estas viendo esto como <strong>{tenantName}</strong> con un rol que no puede editar
+                Estás viendo esto como <strong>{tenantName}</strong> con un rol que no puede editar
                 permisos. Cambia a Owner o Admin para modificarlos.
               </p>
             )}
@@ -489,13 +436,13 @@ function PermChip({
   const explicacion: Record<Estado, string> = {
     heredado: `Heredado de "${via}"`,
     denegado: `Denegado por "${via}"`,
-    concedido: 'Concedido explicitamente',
+    concedido: 'Concedido explícitamente',
     'sin-definir': 'Sin conceder',
   }
 
   const siguiente: Record<Estado, string> = {
     'sin-definir': 'conceder',
-    heredado: 'conceder explicitamente',
+    heredado: 'conceder explícitamente',
     concedido: 'denegar',
     denegado: 'dejar sin definir',
   }
@@ -504,6 +451,15 @@ function PermChip({
     ? `${explicacion[estado]} · toca para ${siguiente[estado]}`
     : explicacion[estado]
 
+  // Nunca solo color (Aurora, ley 4): cada estado lleva su icono y, para
+  // el lector de pantalla, su nombre.
+  const icono: Record<Estado, string | null> = {
+    concedido: 'check',
+    heredado: 'subdirectory_arrow_right',
+    denegado: 'block',
+    'sin-definir': null,
+  }
+
   return (
     <button
       type="button"
@@ -511,14 +467,15 @@ function PermChip({
       onClick={onClick}
       title={titulo}
       className={cn(
-        'rounded-[var(--radius-sm)] px-2 py-1 text-xs transition-all duration-100',
+        'inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 py-1 text-xs transition-all duration-100 md:min-h-7',
         'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
         editable ? 'cursor-pointer hover:brightness-110 active:translate-y-px' : 'cursor-default',
         estilo[estado],
       )}
     >
-      {estado === 'heredado' && '↳ '}
+      {icono[estado] && <Icon name={icono[estado]} size={14} className="shrink-0" />}
       {label}
+      <span className="sr-only"> ({explicacion[estado]})</span>
     </button>
   )
 }
@@ -539,7 +496,7 @@ function ScopeEditor({
   const derivados: string[] = []
   if (scope.own_branches_only) derivados.push('Solo las sucursales que tenga asignadas')
   if (scope.own_warehouses_only) derivados.push('Solo los almacenes que tenga asignados')
-  if (scope.own_register_only) derivados.push('Solo la caja y el turno donde este')
+  if (scope.own_register_only) derivados.push('Solo la caja y el turno donde esté')
 
   return (
     <div className="space-y-3">
@@ -552,7 +509,7 @@ function ScopeEditor({
       />
       <Interruptor
         label="Solo lo propio"
-        ayuda="Unicamente los registros que esa persona creo."
+        ayuda="Únicamente los registros que esa persona creó."
         activo={Boolean(scope.own_only)}
         editable={editable}
         onToggle={(v) => onChange('own_only', v ? true : null)}
@@ -572,7 +529,7 @@ function ScopeEditor({
           // El <label> de al lado es hermano y no envuelve, asi que no
           // nombra a este campo. El placeholder tampoco: desaparece al
           // escribir y varios lectores no lo anuncian.
-          aria-label="Monto maximo por operacion"
+          aria-label="Monto máximo por operación"
           onBlur={(e) => {
             const v = e.target.value.trim()
             onChange('max_amount', v === '' ? null : Number(v))
@@ -580,7 +537,7 @@ function ScopeEditor({
           className="tabular h-9 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] disabled:opacity-60"
         />
         <span className="text-xs text-[var(--color-text-muted)]">
-          por operacion. Vacio = sin limite.
+          por operación. Vacío = sin límite.
         </span>
       </div>
 
@@ -610,10 +567,10 @@ function ScopeEditor({
           <p className="text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">
             Derivado de la asignación
           </p>
-          <ul className="mt-1 space-y-0.5">
+          <ul className="mt-1 list-disc space-y-0.5 pl-4">
             {derivados.map((d) => (
               <li key={d} className="text-xs text-[var(--color-text-secondary)]">
-                · {d}
+                {d}
               </li>
             ))}
           </ul>

@@ -34,7 +34,7 @@ async function ipDelSolicitante(): Promise<string | null> {
 
 export async function crearSolicitud(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-sign', 'e-sign.manage')
   if (!permiso.ok) return permiso
 
@@ -43,7 +43,7 @@ export async function crearSolicitud(fd: FormData): Promise<ActionResult> {
   const signerEmail = String(fd.get('signerEmail') ?? '').trim()
 
   if (!['quote', 'other'].includes(documentType))
-    return { ok: false, error: 'Elige un tipo de documento valido.' }
+    return { ok: false, error: 'Elige un tipo de documento válido.' }
   if (!signerName || !signerEmail)
     return { ok: false, error: 'Falta el nombre o el correo de quien firma.' }
 
@@ -52,7 +52,7 @@ export async function crearSolicitud(fd: FormData): Promise<ActionResult> {
   if (documentType === 'quote') {
     const [id, ...labelParts] = String(fd.get('quoteChoice') ?? '').split('|')
     documentLabel = labelParts.join('|')
-    if (!id || !documentLabel) return { ok: false, error: 'Elige la cotizacion a firmar.' }
+    if (!id || !documentLabel) return { ok: false, error: 'Elige la cotización a firmar.' }
     documentId = id
   } else {
     documentLabel = String(fd.get('manualLabel') ?? '').trim()
@@ -77,7 +77,7 @@ export async function crearSolicitud(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de una solicitud de firma. */
 export async function transicionarSolicitud(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-sign', 'e-sign.manage')
   if (!permiso.ok) return permiso
 
@@ -100,7 +100,7 @@ export async function transicionarSolicitud(fd: FormData): Promise<ActionResult>
       select status, document_type, document_id, document_label, signer_email
       from public.signature_requests where id = ${requestId} and tenant_id = ${ctx.tenantId} for update`
     if (!sol) return 'no-existe'
-    if (!transicionValidaFirma(sol.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaFirma(sol.status, siguiente)) return 'Esa transición no está permitida.'
     if (siguiente === 'declined' && !declinedReason) return 'Explica por que se rechazo.'
 
     const firmando = siguiente === 'signed'

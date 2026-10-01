@@ -34,18 +34,18 @@ async function rncInvalido(
 }
 
 const MENSAJE_RNC =
-  'Ese RNC no es valido: revisa los numeros (el ultimo digito es de control). Si es una cedula, van 11 digitos.'
+  'Ese RNC no es válido: revisa los números (el último dígito es de control). Si es una cédula, van 11 dígitos.'
 
 export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'orgs', 'orgs.create')
   if (!permiso.ok) return permiso
 
   const legal = String(formData.get('legal') ?? '').trim()
   const rnc = String(formData.get('rnc') ?? '').trim() || null
   const currency = String(formData.get('currency') ?? 'DOP')
-  if (legal.length < 3) return { ok: false, error: 'La razon social necesita al menos 3 letras.' }
+  if (legal.length < 3) return { ok: false, error: 'La razón social necesita al menos 3 letras.' }
 
   try {
     const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -74,7 +74,7 @@ export async function crearEmpresa(formData: FormData): Promise<ActionResult> {
 
 export async function editarEmpresa(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'orgs', 'orgs.edit')
   if (!permiso.ok) return permiso
 
@@ -95,7 +95,7 @@ export async function editarEmpresa(formData: FormData): Promise<ActionResult> {
   const phone = texto('phone', 30)
   const email = texto('email', 120)
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
-    return { ok: false, error: 'Ese correo no parece valido.' }
+    return { ok: false, error: 'Ese correo no parece válido.' }
   }
 
   try {
@@ -124,7 +124,7 @@ export async function editarEmpresa(formData: FormData): Promise<ActionResult> {
 
 export async function marcarPrincipal(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'orgs', 'orgs.edit')
   if (!permiso.ok) return permiso
 

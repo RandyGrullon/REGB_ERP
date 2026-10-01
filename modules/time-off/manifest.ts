@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'time-off',
-  name: 'Vacaciones & Permisos',
+  name: 'Vacaciones y permisos',
   description: 'Solicitud, aprobación, saldos y calendario del equipo.',
   icon: 'beach_access',
   category: 'standard',

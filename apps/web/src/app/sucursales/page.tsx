@@ -11,6 +11,7 @@ import {
   TH,
   TD,
   Mono,
+  PageHeader,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
@@ -60,19 +61,16 @@ export default async function SucursalesPage({
   return (
     <Shell {...shell} activePath="/sucursales">
       <div className="space-y-5">
-        <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Sucursales</h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-            {branches.filter((b) => b.is_active).length} activas de {branches.length}. Cada rol
-            puede limitarse a sucursales concretas desde Roles y permisos.
-          </p>
-        </div>
+        <PageHeader
+          icon="storefront"
+          title="Sucursales"
+          description={`${branches.filter((b) => b.is_active).length} activas de ${branches.length}. A cada persona se le puede limitar el acceso a sus sucursales desde Usuarios, y a cada rol desde Roles y permisos.`}
+        />
 
         <Table>
           <THead>
             <TR>
               <TH>Sucursal</TH>
-              <TH>Código</TH>
               <TH>Empresa</TH>
               <TH>Dirección</TH>
               <TH>Estado</TH>
@@ -86,10 +84,18 @@ export default async function SucursalesPage({
           <TBody>
             {branches.map((b) => (
               <TR key={b.id}>
-                <TD className="font-medium text-[var(--color-text-primary)]">{b.name}</TD>
-                <TD>{b.code ? <Mono>{b.code}</Mono> : '—'}</TD>
+                <TD className="min-w-40">
+                  <span className="block font-semibold text-[var(--color-text-primary)]">
+                    {b.name}
+                  </span>
+                  {b.code && (
+                    <span className="text-xs text-[var(--color-text-muted)]">
+                      Código <Mono>{b.code}</Mono>
+                    </span>
+                  )}
+                </TD>
                 <TD>{b.company_name}</TD>
-                <TD>{b.address ?? '—'}</TD>
+                <TD className="min-w-56">{b.address ?? 'Sin dirección'}</TD>
                 <TD>
                   <Badge tone={b.is_active ? 'success' : 'neutral'}>
                     {b.is_active ? 'Activa' : 'Cerrada'}
@@ -101,7 +107,10 @@ export default async function SucursalesPage({
                       <input type="hidden" name="tenant" value={ctx.demoQs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={b.id} />
-                      <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                      <BotonEnvio
+                        aria-label={`${b.is_active ? 'Cerrar' : 'Reabrir'} la sucursal ${b.name}`}
+                        className="inline-flex h-11 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] md:h-8"
+                      >
                         {b.is_active ? 'Cerrar' : 'Reabrir'}
                       </BotonEnvio>
                     </form>
@@ -132,7 +141,7 @@ export default async function SucursalesPage({
                   />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input
                     name="codigo"
                     placeholder="STI"
@@ -154,7 +163,7 @@ export default async function SucursalesPage({
                   </select>
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Direccion
+                  Dirección
                   <input
                     name="direccion"
                     placeholder="Av. 27 de Febrero #123"

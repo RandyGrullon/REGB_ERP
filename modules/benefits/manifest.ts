@@ -35,8 +35,12 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/beneficios', label: 'Préstamos & Adelantos', perm: 'benefits.view' },
-    { path: '/beneficios/planes', label: 'Planes & Inscripciones', perm: 'benefits.manage-enrollments' },
+    { path: '/beneficios', label: 'Préstamos y adelantos', perm: 'benefits.view' },
+    {
+      path: '/beneficios/planes',
+      label: 'Planes e inscripciones',
+      perm: 'benefits.manage-enrollments',
+    },
   ],
 
   dashboardWidgets: ['loans-outstanding', 'benefits-cost'],

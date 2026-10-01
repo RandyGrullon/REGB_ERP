@@ -18,7 +18,7 @@ function demoDe(fd: FormData): DemoParams {
 /** Planifica una ruta nueva -sin paradas todavia-. */
 export async function crearRuta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.manage')
   if (!permiso.ok) return permiso
 
@@ -46,7 +46,7 @@ export async function crearRuta(fd: FormData): Promise<ActionResult> {
 /** Agrega una parada a una ruta todavia en planificacion. */
 export async function agregarParada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.manage')
   if (!permiso.ok) return permiso
 
@@ -54,14 +54,14 @@ export async function agregarParada(fd: FormData): Promise<ActionResult> {
   const customerId = String(fd.get('customerId') ?? '') || null
   const address = String(fd.get('address') ?? '').trim()
   if (!routeId) return { ok: false, error: 'Falta la ruta.' }
-  if (!address) return { ok: false, error: 'Escribe la direccion.' }
+  if (!address) return { ok: false, error: 'Escribe la dirección.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [ruta] = await tx<{ status: string }[]>`
       select status from public.delivery_routes where id = ${routeId} and tenant_id = ${ctx.tenantId}`
     if (!ruta) return 'no-existe'
     if (ruta.status !== 'planned')
-      return 'Solo se pueden agregar paradas mientras la ruta esta planificada.'
+      return 'Solo se pueden agregar paradas mientras la ruta está planificada.'
 
     const [n] = await tx<{ n: string }[]>`
       select coalesce(max(sequence), 0)::text as n from public.route_stops
@@ -83,7 +83,7 @@ export async function agregarParada(fd: FormData): Promise<ActionResult> {
 /** Despacha la ruta -pasa a en progreso-. */
 export async function despacharRuta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.manage')
   if (!permiso.ok) return permiso
 
@@ -119,7 +119,7 @@ export async function despacharRuta(fd: FormData): Promise<ActionResult> {
 /** Cancela una ruta -solo mientras sigue planificada-. */
 export async function cancelarRuta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.manage')
   if (!permiso.ok) return permiso
 
@@ -131,7 +131,7 @@ export async function cancelarRuta(fd: FormData): Promise<ActionResult> {
       select status from public.delivery_routes where id = ${routeId} and tenant_id = ${ctx.tenantId}`
     if (!ruta) return 'no-existe'
     if (!transicionValidaRuta(ruta.status as EstadoRuta, 'cancelled')) {
-      return 'Esa ruta ya no se puede cancelar -ya salio a reparto-.'
+      return 'Esa ruta ya no se puede cancelar: ya salió a reparto.'
     }
 
     await tx`
@@ -151,7 +151,7 @@ export async function cancelarRuta(fd: FormData): Promise<ActionResult> {
 /** Marca una parada entregada o fallida -la prueba de entrega es quien recibio-. */
 export async function resolverParada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.deliver')
   if (!permiso.ok) return permiso
 
@@ -163,9 +163,9 @@ export async function resolverParada(fd: FormData): Promise<ActionResult> {
 
   if (!stopId) return { ok: false, error: 'Falta la parada.' }
   if (siguiente !== 'delivered' && siguiente !== 'failed')
-    return { ok: false, error: 'Estado invalido.' }
+    return { ok: false, error: 'Estado inválido.' }
   if (siguiente === 'delivered' && !recipientName) {
-    return { ok: false, error: 'Escribe quien recibio -es la prueba de entrega-.' }
+    return { ok: false, error: 'Escribe quién recibió: es la prueba de entrega.' }
   }
 
   try {
@@ -194,7 +194,7 @@ export async function resolverParada(fd: FormData): Promise<ActionResult> {
 /** Completa la ruta -solo si ninguna parada sigue pendiente-. */
 export async function completarRuta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'logistics', 'logistics.manage')
   if (!permiso.ok) return permiso
 
@@ -211,7 +211,7 @@ export async function completarRuta(fd: FormData): Promise<ActionResult> {
 
     const paradas = await tx<{ status: 'pending' | 'delivered' | 'failed' }[]>`
       select status from public.route_stops where route_id = ${routeId} and tenant_id = ${ctx.tenantId}`
-    if (!rutaCompleta(paradas)) return 'Todavia hay paradas pendientes.'
+    if (!rutaCompleta(paradas)) return 'Todavía hay paradas pendientes.'
 
     await tx`
       update public.delivery_routes set status = 'completed', completed_at = now(), updated_at = now()

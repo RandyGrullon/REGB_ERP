@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Icon } from '@regb/ui'
+import { Icon, Logo } from '@regb/ui'
 
 /**
  * Lo que ve alguien cuando una pantalla revienta.
@@ -28,37 +28,42 @@ export default function ErrorDePantalla({
 
   return (
     <div className="grid h-full place-items-center bg-[var(--color-surface-base)] p-6">
-      <div
-        role="alert"
-        className="w-full max-w-md rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6 text-center"
-      >
-        <Icon name="report" size={40} className="text-[var(--color-semantic-text-danger)]" />
-        <h1 className="mt-3 text-lg font-semibold text-[var(--color-text-primary)]">
-          Esta pantalla tuvo un problema
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-          Lo que ya guardaste sigue guardado. Puedes intentarlo de nuevo; si vuelve a pasar,
-          comparte el código de abajo con soporte.
-        </p>
-        {error.digest && (
-          <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-muted)]">
-            Código: {error.digest}
+      <div className="flex w-full max-w-md flex-col items-center gap-6">
+        {/* La pantalla que fallo se llevo el Shell: el logo deja claro que
+          sigues dentro de REGB. */}
+        <Logo variant="full" size="md" />
+        <div
+          role="alert"
+          className="w-full rounded-[var(--radius-xl)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-6 text-center"
+        >
+          <Icon name="report" size={40} className="text-[var(--color-semantic-text-danger)]" />
+          <h1 className="mt-3 text-lg font-semibold text-[var(--color-text-primary)]">
+            Esta pantalla tuvo un problema
+          </h1>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
+            Lo que ya guardaste sigue guardado. Puedes intentarlo de nuevo; si vuelve a pasar,
+            comparte el código de abajo con soporte.
           </p>
-        )}
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <button
-            type="button"
-            onClick={reset}
-            className="h-10 rounded-[var(--radius-full)] bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Intentar de nuevo
-          </button>
-          <a
-            href="/"
-            className="grid h-10 place-items-center rounded-[var(--radius-full)] border border-[var(--color-border)] px-5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-          >
-            Ir al inicio
-          </a>
+          {error.digest && (
+            <p className="mt-3 font-[family-name:var(--font-mono)] text-xs text-[var(--color-text-muted)]">
+              Código: {error.digest}
+            </p>
+          )}
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            <button
+              type="button"
+              onClick={reset}
+              className="h-10 rounded-[var(--radius-full)] bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              Intentar de nuevo
+            </button>
+            <a
+              href="/"
+              className="grid h-10 place-items-center rounded-[var(--radius-full)] border border-[var(--color-border)] px-5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            >
+              Ir al inicio
+            </a>
+          </div>
         </div>
       </div>
     </div>

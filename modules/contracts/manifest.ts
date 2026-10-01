@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'contracts',
-  name: 'Contratos & Suscripciones',
+  name: 'Contratos y suscripciones',
   description: 'Recurrencia, renovacion automática y escalamiento de precio.',
   icon: 'assignment',
   category: 'standard',

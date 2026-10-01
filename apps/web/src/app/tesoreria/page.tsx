@@ -24,7 +24,7 @@ import { TIPO_CUENTA, TIPO_MOVIMIENTO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Tesoreria · REGB ERP' }
+export const metadata = { title: 'Tesorería · REGB ERP' }
 
 interface CuentaRow {
   id: string
@@ -51,7 +51,8 @@ interface MovimientoRow {
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
-/** Tesoreria (modulo 19): cuanto efectivo hay, en que cuenta y como se movio. */
+/** Tesorería (módulo 19): cuánto efectivo hay, en qué cuenta y cómo se movió. */
+
 export default async function TesoreriaPage({
   searchParams,
 }: {
@@ -111,12 +112,12 @@ export default async function TesoreriaPage({
       <div className="space-y-5">
         <PageHeader
           icon="account_balance"
-          title="Tesoreria"
-          description="Cuanto efectivo tienes de verdad, en que cuenta esta y como se movio. Un movimiento registrado no se edita ni se borra: se corrige con el contrario."
+          title="Tesorería"
+          description="Cuánto efectivo tienes de verdad, en qué cuenta está y cómo se movió. Un movimiento registrado no se edita ni se borra: se corrige con el contrario."
           actions={
             <a
               href={`/tesoreria/flujo${qs}`}
-              className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+              className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
             >
               <Icon name="ssid_chart" size={18} />
               Flujo de caja
@@ -141,19 +142,23 @@ export default async function TesoreriaPage({
         {cuentas.length === 0 ? (
           <EmptyState
             icon="account_balance"
-            title="Todavia no hay ninguna cuenta bancaria"
-            description="Registra la primera abajo con su saldo actual. De ahi en adelante el saldo lo calcula el sistema solo."
+            title="Todavía no hay ninguna cuenta bancaria"
+            description="Registra la primera abajo con su saldo actual. De ahí en adelante el saldo lo calcula el sistema solo."
           />
         ) : (
-          <Table>
+          <Table className="md:min-w-[760px]">
             <THead>
               <TR>
                 <TH>Cuenta</TH>
-                <TH>Banco</TH>
-                <TH>Número</TH>
-                <TH>Tipo</TH>
-                <TH numeric>Saldo inicial</TH>
-                <TH numeric>Movimientos</TH>
+                <TH className="hidden md:table-cell">Banco</TH>
+                <TH className="hidden md:table-cell">Número</TH>
+                <TH className="hidden md:table-cell">Tipo</TH>
+                <TH numeric className="hidden md:table-cell">
+                  Saldo inicial
+                </TH>
+                <TH numeric className="hidden md:table-cell">
+                  Movimientos
+                </TH>
                 <TH numeric>Saldo actual</TH>
               </TR>
             </THead>
@@ -174,16 +179,23 @@ export default async function TesoreriaPage({
                           Inactiva
                         </Badge>
                       )}
+                      <span className="block text-xs text-[var(--color-text-muted)] md:hidden">
+                        {c.bank_name} · {TIPO_CUENTA[c.account_type] ?? c.account_type}
+                      </span>
                     </TD>
-                    <TD className="text-[var(--color-text-primary)]">{c.bank_name}</TD>
-                    <TD>
+                    <TD className="hidden text-[var(--color-text-primary)] md:table-cell">
+                      {c.bank_name}
+                    </TD>
+                    <TD className="hidden md:table-cell">
                       <Mono>{c.account_number}</Mono>
                     </TD>
-                    <TD>{TIPO_CUENTA[c.account_type] ?? c.account_type}</TD>
-                    <TD numeric>
+                    <TD className="hidden md:table-cell">
+                      {TIPO_CUENTA[c.account_type] ?? c.account_type}
+                    </TD>
+                    <TD numeric className="hidden md:table-cell">
                       <span className="tabular">{money(Number(c.opening_balance))}</span>
                     </TD>
-                    <TD numeric>
+                    <TD numeric className="hidden md:table-cell">
                       <span className="tabular">{c.movimientos}</span>
                     </TD>
                     <TD numeric>
@@ -200,6 +212,67 @@ export default async function TesoreriaPage({
               })}
             </TBody>
           </Table>
+        )}
+
+        {ultimos.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Últimos movimientos</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <Table className="md:min-w-[640px]">
+                <THead>
+                  <TR>
+                    <TH>Fecha</TH>
+                    <TH className="hidden md:table-cell">Cuenta</TH>
+                    <TH>Concepto</TH>
+                    <TH className="hidden md:table-cell">Tipo</TH>
+                    <TH numeric>Monto</TH>
+                  </TR>
+                </THead>
+                <TBody>
+                  {ultimos.map((m) => {
+                    const t = TIPO_MOVIMIENTO[m.type] ?? {
+                      label: m.type,
+                      tone: 'neutral' as const,
+                      entra: true,
+                    }
+                    return (
+                      <TR key={m.id}>
+                        <TD className="whitespace-nowrap">{fecha(m.transaction_date)}</TD>
+                        <TD className="hidden text-[var(--color-text-primary)] md:table-cell">
+                          {m.account_name}
+                        </TD>
+                        <TD>
+                          {m.description}
+                          <span className="block text-xs text-[var(--color-text-muted)] md:hidden">
+                            {m.account_name} · {t.label}
+                          </span>
+                        </TD>
+                        <TD className="hidden md:table-cell">
+                          <Badge tone={t.tone} className="whitespace-nowrap">
+                            {t.label}
+                          </Badge>
+                        </TD>
+                        <TD numeric>
+                          <span
+                            className={`tabular ${
+                              t.entra
+                                ? 'text-[var(--color-semantic-text-success)]'
+                                : 'text-[var(--color-semantic-text-warning)]'
+                            }`}
+                          >
+                            {t.entra ? '+' : '−'}
+                            {money(Number(m.amount))}
+                          </span>
+                        </TD>
+                      </TR>
+                    )
+                  })}
+                </TBody>
+              </Table>
+            </CardBody>
+          </Card>
         )}
 
         {puedeTransferir && activas.length >= 2 && (
@@ -222,7 +295,12 @@ export default async function TesoreriaPage({
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Hacia
-                  <select name="toAccountId" required className={claseInput}>
+                  <select
+                    name="toAccountId"
+                    required
+                    defaultValue={activas[1]?.id}
+                    className={claseInput}
+                  >
                     {activas.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.account_name} · {c.bank_name}
@@ -250,7 +328,7 @@ export default async function TesoreriaPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Se registran las dos mitades juntas -salida en el origen, entrada en el destino-.
+                Se registran las dos mitades juntas (salida en el origen y entrada en el destino).
                 Nunca queda una transferencia con un solo lado.
               </p>
             </CardBody>
@@ -284,7 +362,7 @@ export default async function TesoreriaPage({
                   />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Numero
+                  Número
                   <input
                     name="accountNumber"
                     required
@@ -305,7 +383,7 @@ export default async function TesoreriaPage({
                     name="openingBalance"
                     inputMode="decimal"
                     defaultValue="0"
-                    title="El saldo que tiene hoy esa cuenta en el banco. De aqui en adelante lo calcula el sistema."
+                    title="El saldo que tiene hoy esa cuenta en el banco. De aquí en adelante lo calcula el sistema."
                     className={`tabular text-right ${claseInput}`}
                   />
                 </label>
@@ -314,58 +392,6 @@ export default async function TesoreriaPage({
                   Registrar
                 </BotonEnvio>
               </form>
-            </CardBody>
-          </Card>
-        )}
-
-        {ultimos.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Últimos movimientos</CardTitle>
-            </CardHeader>
-            <CardBody>
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Fecha</TH>
-                    <TH>Cuenta</TH>
-                    <TH>Concepto</TH>
-                    <TH>Tipo</TH>
-                    <TH numeric>Monto</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {ultimos.map((m) => {
-                    const t = TIPO_MOVIMIENTO[m.type] ?? {
-                      label: m.type,
-                      tone: 'neutral' as const,
-                      entra: true,
-                    }
-                    return (
-                      <TR key={m.id}>
-                        <TD>{fecha(m.transaction_date)}</TD>
-                        <TD className="text-[var(--color-text-primary)]">{m.account_name}</TD>
-                        <TD>{m.description}</TD>
-                        <TD>
-                          <Badge tone={t.tone}>{t.label}</Badge>
-                        </TD>
-                        <TD numeric>
-                          <span
-                            className={`tabular ${
-                              t.entra
-                                ? 'text-[var(--color-semantic-text-success)]'
-                                : 'text-[var(--color-semantic-text-warning)]'
-                            }`}
-                          >
-                            {t.entra ? '+' : '−'}
-                            {money(Number(m.amount))}
-                          </span>
-                        </TD>
-                      </TR>
-                    )
-                  })}
-                </TBody>
-              </Table>
             </CardBody>
           </Card>
         )}

@@ -13,7 +13,13 @@ import {
   TR,
   Table,
 } from '@regb/ui'
-import { convertFromBase, convertToBase, daysSinceRate, findApplicableRate } from '@regb/operations'
+import {
+  convertFromBase,
+  convertToBase,
+  daysSinceRate,
+  fechaFiscal,
+  findApplicableRate,
+} from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -34,6 +40,13 @@ interface TasaRow {
   rate_date: string
   rate: string
 }
+
+const fechaCorta = (iso: string) =>
+  new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
@@ -106,10 +119,10 @@ export default async function MonedasPage({
         <PageHeader
           icon="currency_exchange"
           title="Monedas"
-          description="Historial de tasas capturadas a mano -sin conexion automatica a una API del Banco Central- y una calculadora de conversion."
+          description="Las tasas de cambio que capturas a mano (no se bajan solas del Banco Central) y una calculadora para convertir montos."
         />
 
-        <Table>
+        <Table className="min-w-[520px]">
           <THead>
             <TR>
               <TH>Moneda</TH>
@@ -141,14 +154,16 @@ export default async function MonedasPage({
                       {ultima ? `RD$ ${money(Number(ultima.rate))}` : '—'}
                     </span>
                   </TD>
-                  <TD>{ultima ? ultima.rate_date.slice(0, 10) : '—'}</TD>
+                  <TD className="whitespace-nowrap">{ultima ? fechaCorta(ultima.rate_date) : '—'}</TD>
                   <TD>
                     {dias === null ? (
-                      <Badge tone="neutral">sin tasa</Badge>
+                      <Badge tone="neutral">Sin tasa</Badge>
                     ) : dias > 7 ? (
-                      <Badge tone="warning">{dias} dias</Badge>
+                      <Badge tone="warning">hace {dias} días</Badge>
                     ) : (
-                      <Badge tone="success">{dias} dias</Badge>
+                      <Badge tone="success">
+                        {dias === 0 ? 'de hoy' : `hace ${dias} día${dias === 1 ? '' : 's'}`}
+                      </Badge>
                     )}
                   </TD>
                 </TR>
@@ -159,7 +174,7 @@ export default async function MonedasPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Calculadora de conversion</CardTitle>
+            <CardTitle>Calculadora de conversión</CardTitle>
           </CardHeader>
           <CardBody>
             <form method="get" className="flex flex-wrap items-end gap-3">
@@ -189,7 +204,7 @@ export default async function MonedasPage({
                 </select>
               </label>
               <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                Direccion
+                Dirección
                 <select
                   name="direction"
                   defaultValue={params.direction ?? 'to_dop'}
@@ -226,8 +241,8 @@ export default async function MonedasPage({
               </p>
             )}
             <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-              Sin tasa exacta de esa fecha, se usa la más reciente conocida ANTES de ella -nunca una
-              futura-.
+              Sin tasa exacta de esa fecha, se usa la más reciente capturada antes de ella, nunca una
+              posterior.
             </p>
           </CardBody>
         </Card>
@@ -253,7 +268,12 @@ export default async function MonedasPage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha
-                  <input name="rateDate" type="date" className={claseInput} />
+                  <input
+                    name="rateDate"
+                    type="date"
+                    defaultValue={fechaFiscal(hoy)}
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Tasa (RD$)

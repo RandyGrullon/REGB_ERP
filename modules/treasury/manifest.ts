@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'treasury',
-  name: 'Tesorería & Bancos',
+  name: 'Tesorería y bancos',
   description: 'Cuentas bancarias, flujo de caja proyectado y transferencias.',
   icon: 'account_balance',
   category: 'standard',
@@ -40,7 +40,7 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/tesoreria', label: 'Tesoreria', perm: 'treasury.view' },
+    { path: '/tesoreria', label: 'Tesorería', perm: 'treasury.view' },
     { path: '/tesoreria/flujo', label: 'Flujo de caja', perm: 'treasury.view' },
     { path: '/tesoreria/:id', label: 'Cuenta bancaria', perm: 'treasury.view', hidden: true },
   ],

@@ -33,7 +33,7 @@ function demoDe(fd: FormData): DemoParams {
 /** Genera un EAN-13 para cada producto activo que todavia no tiene codigo de barras. */
 export async function generarCodigosFaltantes(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'barcode', 'barcode.generate')
   if (!permiso.ok) return permiso
 
@@ -46,7 +46,7 @@ export async function generarCodigosFaltantes(fd: FormData): Promise<ActionResul
 
       const sinCodigo = await tx<{ id: string }[]>`
         select id from public.products
-        where tenant_id = ${ctx.tenantId} and active and barcode is null
+        where tenant_id = ${ctx.tenantId} and active and tracks_stock and barcode is null
         order by created_at`
 
       for (const p of sinCodigo) {

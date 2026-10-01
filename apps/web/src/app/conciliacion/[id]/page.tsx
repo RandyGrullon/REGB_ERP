@@ -63,10 +63,10 @@ const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 const TIPO_LABEL: Record<string, string> = {
-  deposit: 'Deposito',
+  deposit: 'Depósito',
   withdrawal: 'Retiro',
-  transfer_in: 'Entrada por transf.',
-  transfer_out: 'Salida por transf.',
+  transfer_in: 'Entrada por transferencia',
+  transfer_out: 'Salida por transferencia',
 }
 
 /** Ficha de un import: sus lineas, la sugerencia del sistema y la confirmacion humana. */
@@ -137,6 +137,7 @@ export default async function ImportConciliacionPage({
   )
 
   const puedeConfirmar = exigir(ctx, 'bank-rec', 'bank-rec.match.confirm').ok
+  const puedeRegistrar = exigir(ctx, 'treasury', 'treasury.transaction.record').ok
   const qs = ctx.demoQs
 
   const fecha = (iso: string) =>
@@ -162,7 +163,7 @@ export default async function ImportConciliacionPage({
           title={`${head.account_name} · ${head.bank_name}`}
           description={`Período ${fecha(head.period_start)} – ${fecha(head.period_end)}`}
           crumbs={[
-            { label: 'Conciliacion', href: `/conciliacion${qs}` },
+            { label: 'Conciliación', href: `/conciliacion${qs}` },
             { label: head.account_name },
           ]}
         />
@@ -186,14 +187,14 @@ export default async function ImportConciliacionPage({
             <CardTitle>Líneas del estado</CardTitle>
           </CardHeader>
           <CardBody>
-            <Table>
+            <Table className="md:min-w-[860px]">
               <THead>
                 <TR>
-                  <TH>Fecha</TH>
+                  <TH className="hidden md:table-cell">Fecha</TH>
                   <TH>Descripción</TH>
                   <TH numeric>Monto</TH>
-                  <TH>Estado</TH>
-                  <TH>Emparejar con</TH>
+                  <TH className="hidden md:table-cell">Estado</TH>
+                  <TH className="hidden md:table-cell">Emparejar con</TH>
                 </TR>
               </THead>
               <TBody>
@@ -201,109 +202,134 @@ export default async function ImportConciliacionPage({
                   const e = ESTADO_LINEA[l.match_status]
                   const monto = Number(l.amount)
                   const sugerido = sugerencias.get(l.id)
+                  const emparejar = (
+                    <>
+                      {l.match_status === 'matched' && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-[var(--color-text-secondary)]">
+                            {l.matched_description}
+                            {l.matched_date && ` · ${fecha(l.matched_date)}`}
+                          </span>
+                          {puedeConfirmar && (
+                            <form action={desconciliarForm}>
+                              {campos}
+                              <input type="hidden" name="lineId" value={l.id} />
+                              <BotonEnvio
+                                title="Deshacer esta conciliación"
+                                className="text-xs text-[var(--color-text-link)] hover:underline"
+                              >
+                                Deshacer
+                              </BotonEnvio>
+                            </form>
+                          )}
+                        </div>
+                      )}
+                      {l.match_status === 'ignored' && puedeConfirmar && (
+                        <form action={reactivarLineaForm}>
+                          {campos}
+                          <input type="hidden" name="lineId" value={l.id} />
+                          <BotonEnvio className="text-xs text-[var(--color-text-link)] hover:underline">
+                            Reactivar
+                          </BotonEnvio>
+                        </form>
+                      )}
+                      {l.match_status === 'pending' && puedeConfirmar && (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <form action={confirmarMatchForm} className="flex items-center gap-1">
+                            {campos}
+                            <input type="hidden" name="lineId" value={l.id} />
+                            <select
+                              name="transactionId"
+                              defaultValue={sugerido ?? ''}
+                              aria-label={`Movimiento para emparejar con ${l.description}`}
+                              className="h-8 max-w-56 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            >
+                              <option value="" disabled>
+                                Elige un movimiento
+                              </option>
+                              {candidatas.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {fecha(c.transaction_date)} · {TIPO_LABEL[c.type] ?? c.type} ·{' '}
+                                  {money(Number(c.amount))} · {c.description.slice(0, 30)}
+                                </option>
+                              ))}
+                            </select>
+                            <BotonEnvio
+                              title={
+                                sugerido
+                                  ? 'Sugerido por el sistema'
+                                  : 'Confirmar el emparejamiento elegido'
+                              }
+                              className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                            >
+                              <Icon name="check" size={14} />
+                              {sugerido ? 'Confirmar' : 'Conciliar'}
+                            </BotonEnvio>
+                          </form>
+                          <form action={ignorarLineaForm}>
+                            {campos}
+                            <input type="hidden" name="lineId" value={l.id} />
+                            <BotonEnvio
+                              title="Esta línea nunca va a tener pareja"
+                              className="text-xs text-[var(--color-text-muted)] hover:underline"
+                            >
+                              Ignorar
+                            </BotonEnvio>
+                          </form>
+                          {!sugerido && puedeRegistrar && (
+                            <a
+                              href={`/tesoreria/${head.bank_account_id}${qs}`}
+                              title="Si el banco lo cobró y nadie lo anotó, regístralo en la cuenta y vuelve a conciliarlo"
+                              className="text-xs text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                            >
+                              Registrarlo en la cuenta
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )
                   return (
                     <TR key={l.id}>
-                      <TD>{fecha(l.line_date)}</TD>
-                      <TD className="text-[var(--color-text-primary)]">{l.description}</TD>
+                      <TD className="hidden whitespace-nowrap md:table-cell">
+                        {fecha(l.line_date)}
+                      </TD>
+                      <TD className="text-[var(--color-text-primary)]">
+                        {l.description}
+                        {/* En el teléfono: fecha, estado y cómo emparejarla, aquí mismo. */}
+                        <div className="mt-1 space-y-2 md:hidden">
+                          <span className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                            {fecha(l.line_date)}
+                            <Badge tone={e?.tone ?? 'neutral'}>{e?.label ?? l.match_status}</Badge>
+                          </span>
+                          <div>{emparejar}</div>
+                        </div>
+                      </TD>
                       <TD numeric>
                         <span
-                          className={`tabular ${
+                          className={`tabular whitespace-nowrap ${
                             monto > 0
                               ? 'text-[var(--color-semantic-text-success)]'
                               : 'text-[var(--color-semantic-text-warning)]'
                           }`}
                         >
-                          {monto > 0 ? '+' : ''}
-                          {money(monto)}
+                          {monto > 0 ? '+' : '−'}
+                          {money(Math.abs(monto))}
                         </span>
                       </TD>
-                      <TD>
+                      <TD className="hidden md:table-cell">
                         <Badge tone={e?.tone ?? 'neutral'}>{e?.label ?? l.match_status}</Badge>
                       </TD>
-                      <TD>
-                        {l.match_status === 'matched' && (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-[var(--color-text-secondary)]">
-                              {l.matched_description}
-                              {l.matched_date && ` · ${fecha(l.matched_date)}`}
-                            </span>
-                            {puedeConfirmar && (
-                              <form action={desconciliarForm}>
-                                {campos}
-                                <input type="hidden" name="lineId" value={l.id} />
-                                <BotonEnvio
-                                  title="Deshacer esta conciliacion"
-                                  className="text-xs text-[var(--color-text-link)] hover:underline"
-                                >
-                                  Deshacer
-                                </BotonEnvio>
-                              </form>
-                            )}
-                          </div>
-                        )}
-                        {l.match_status === 'ignored' && puedeConfirmar && (
-                          <form action={reactivarLineaForm}>
-                            {campos}
-                            <input type="hidden" name="lineId" value={l.id} />
-                            <BotonEnvio className="text-xs text-[var(--color-text-link)] hover:underline">
-                              Reactivar
-                            </BotonEnvio>
-                          </form>
-                        )}
-                        {l.match_status === 'pending' && puedeConfirmar && (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <form action={confirmarMatchForm} className="flex items-center gap-1">
-                              {campos}
-                              <input type="hidden" name="lineId" value={l.id} />
-                              <select
-                                name="transactionId"
-                                defaultValue={sugerido ?? ''}
-                                aria-label={`Movimiento para emparejar con ${l.description}`}
-                                className="h-8 max-w-56 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                              >
-                                <option value="" disabled>
-                                  Elige un movimiento
-                                </option>
-                                {candidatas.map((c) => (
-                                  <option key={c.id} value={c.id}>
-                                    {fecha(c.transaction_date)} · {TIPO_LABEL[c.type] ?? c.type} ·{' '}
-                                    {money(Number(c.amount))} · {c.description.slice(0, 30)}
-                                  </option>
-                                ))}
-                              </select>
-                              <BotonEnvio
-                                title={
-                                  sugerido
-                                    ? 'Sugerido por el sistema'
-                                    : 'Confirmar el emparejamiento elegido'
-                                }
-                                className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
-                              >
-                                <Icon name="check" size={14} />
-                                {sugerido ? 'Confirmar' : 'Conciliar'}
-                              </BotonEnvio>
-                            </form>
-                            <form action={ignorarLineaForm}>
-                              {campos}
-                              <input type="hidden" name="lineId" value={l.id} />
-                              <BotonEnvio
-                                title="Esta linea nunca va a tener pareja"
-                                className="text-xs text-[var(--color-text-muted)] hover:underline"
-                              >
-                                Ignorar
-                              </BotonEnvio>
-                            </form>
-                          </div>
-                        )}
-                      </TD>
+                      <TD className="hidden md:table-cell">{emparejar}</TD>
                     </TR>
                   )
                 })}
               </TBody>
             </Table>
             <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-              La sugerencia es por monto, signo y fecha cercana -nunca es automatica del todo-: cada
-              conciliación la confirma una persona.
+              La sugerencia es por monto, signo y fecha cercana, pero nunca es automática del todo:
+              cada conciliación la confirma una persona. Una línea que no tiene pareja en tesorería
+              (como una comisión del banco) se registra primero en la cuenta, y después se concilia.
             </p>
           </CardBody>
         </Card>

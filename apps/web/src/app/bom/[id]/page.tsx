@@ -25,6 +25,7 @@ import { Shell } from '@/components/Shell'
 import { activarBomForm, agregarLineaForm, quitarLineaForm } from '../actions'
 import { ESTADO_BOM } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,7 @@ interface BomHead {
   product_id: string
   sku: string
   product_name: string
+  unit: string
   version: number
   status: string
   output_qty: string
@@ -43,6 +45,7 @@ interface LineaRow {
   component_product_id: string
   sku: string
   name: string
+  unit: string
   cost: string
   quantity_per_unit: string
   is_substitute_for: string | null
@@ -119,14 +122,15 @@ export default async function BomDetallePage({
     ctx.tenantId,
     async (tx) => {
       const [h] = await tx<BomHead[]>`
-      select bm.id, bm.product_id, p.sku, p.name as product_name, bm.version, bm.status, bm.output_qty::text
+      select bm.id, bm.product_id, p.sku, p.name as product_name, p.unit, bm.version, bm.status,
+             bm.output_qty::text
       from public.bill_of_materials bm
       join public.products p on p.id = bm.product_id
       where bm.id = ${id} and bm.tenant_id = ${ctx.tenantId}`
       if (!h) return { head: null, lineas: [], productos: [], costoUnitario: 0 }
 
       const l = await tx<LineaRow[]>`
-      select bl.id, bl.component_product_id, p.sku, p.name, p.cost::text,
+      select bl.id, bl.component_product_id, p.sku, p.name, p.unit, p.cost::text,
              bl.quantity_per_unit::text, bl.is_substitute_for
       from public.bom_lines bl
       join public.products p on p.id = bl.component_product_id
@@ -137,7 +141,9 @@ export default async function BomDetallePage({
         h.status === 'draft'
           ? await tx<ProductoOption[]>`
             select id, sku, name from public.products
-            where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+            where tenant_id = ${ctx.tenantId} and active and tracks_stock
+              and id <> ${h.product_id}
+            order by name limit 300`
           : []
 
       const principales = l.filter((x) => x.is_substitute_for === null)
@@ -185,9 +191,16 @@ export default async function BomDetallePage({
         <PageHeader
           icon="account_tree"
           title={`${head.sku} · ${head.product_name} (v${head.version})`}
+          description={
+            enBorrador
+              ? 'Borrador: revisa los componentes y actívala para que producción la use.'
+              : head.status === 'active'
+                ? 'Receta activa: es la que usan las órdenes de producción y la planificación.'
+                : 'Versión vieja: se guarda como historial, ya no se usa.'
+          }
           crumbs={[
             { label: 'Lista de materiales', href: `/bom${qs}` },
-            { label: `v${head.version}` },
+            { label: `${head.sku} v${head.version}` },
           ]}
           actions={
             <div className="flex items-center gap-2">
@@ -216,8 +229,21 @@ export default async function BomDetallePage({
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Produce" value={head.output_qty} />
-          <StatCard label="Costo unitario (multinivel)" value={`RD$ ${money(costoUnitario)}`} />
+          <StatCard
+            label="Produce"
+            value={cantidad(head.output_qty, head.unit)}
+            hint="con las cantidades de abajo"
+          />
+          <StatCard
+            label="Costo por unidad"
+            value={`RD$ ${money(costoUnitario)}`}
+            hint="sumando todos los niveles"
+          />
+          <StatCard
+            label="Componentes"
+            value={String(principales.length)}
+            hint="sin contar sustitutos"
+          />
         </section>
 
         <Table>
@@ -225,7 +251,8 @@ export default async function BomDetallePage({
             <TR>
               <TH>Componente</TH>
               <TH numeric>Cantidad</TH>
-              <TH numeric>Costo directo</TH>
+              <TH numeric>Costo por unidad</TH>
+              <TH numeric>Aporta al costo</TH>
               {enBorrador && puedeGestionar && (
                 <TH>
                   <span className="sr-only">Acción</span>
@@ -234,6 +261,14 @@ export default async function BomDetallePage({
             </TR>
           </THead>
           <TBody>
+            {principales.length === 0 && (
+              <TR>
+                <TD colSpan={5} className="py-6 text-center text-[var(--color-text-muted)]">
+                  Todavía no tiene componentes. Agrégalos abajo con la cantidad que lleva cada
+                  tanda.
+                </TD>
+              </TR>
+            )}
             {principales.map((l) => (
               <Fragment key={l.id}>
                 <TR>
@@ -241,10 +276,18 @@ export default async function BomDetallePage({
                     <Mono>{l.sku}</Mono> {l.name}
                   </TD>
                   <TD numeric>
-                    <span className="tabular">{l.quantity_per_unit}</span>
+                    <span className="tabular">{cantidad(l.quantity_per_unit, l.unit)}</span>
                   </TD>
                   <TD numeric>
-                    <span className="tabular">RD$ {money(Number(l.cost))}</span>
+                    <span className="tabular whitespace-nowrap">RD$ {money(Number(l.cost))}</span>
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular">
+                      RD${' '}
+                      {money(
+                        (Number(l.quantity_per_unit) * Number(l.cost)) / Number(head.output_qty),
+                      )}
+                    </span>
                   </TD>
                   {enBorrador && puedeGestionar && (
                     <TD>
@@ -267,10 +310,15 @@ export default async function BomDetallePage({
                       <Badge tone="neutral">Sustituto</Badge> <Mono>{s.sku}</Mono> {s.name}
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{s.quantity_per_unit}</span>
+                      <span className="tabular">{cantidad(s.quantity_per_unit, s.unit)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular">RD$ {money(Number(s.cost))}</span>
+                      <span className="tabular whitespace-nowrap">RD$ {money(Number(s.cost))}</span>
+                    </TD>
+                    <TD numeric>
+                      <span className="text-xs text-[var(--color-text-muted)]">
+                        si falta el principal
+                      </span>
                     </TD>
                     {enBorrador && puedeGestionar && (
                       <TD>
@@ -323,7 +371,7 @@ export default async function BomDetallePage({
                 <label className="flex min-w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Sustituto de
                   <select name="isSubstituteFor" className={claseInput}>
-                    <option value="">Linea principal</option>
+                    <option value="">Línea principal</option>
                     {principales.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.sku} — {p.name}

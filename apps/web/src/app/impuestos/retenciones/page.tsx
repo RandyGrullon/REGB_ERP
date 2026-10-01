@@ -201,7 +201,7 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
         <PageHeader
           icon="account_balance_wallet"
           title="Retenciones"
-          description="Que es cada proveedor a ojos de la DGII y cuanto hay que retenerle. El numero se ve antes de aceptarlo."
+          description="Qué es cada proveedor a ojos de la DGII y cuánto hay que retenerle. El número se ve antes de aceptarlo."
           crumbs={[{ label: 'Impuestos', href: `/impuestos${qs}` }, { label: 'Retenciones' }]}
         />
 
@@ -210,7 +210,7 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
           <StatCard
             label="Exentos"
             value={String(conPerfil.filter((p) => p.is_exempt).length)}
-            hint="zona franca o regimen especial"
+            hint="zona franca o régimen especial"
           />
           <StatCard label="Reglas disponibles" value={String(reglas.length)} />
         </section>
@@ -221,11 +221,10 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
         >
           <Icon name="info" size={20} className="shrink-0 text-[var(--color-text-muted)]" />
           <p className="text-[var(--color-text-secondary)]">
-            Esto <strong className="text-[var(--color-text-primary)]">calcula</strong> la retencion;
-            no la escribe en la factura. El monto retenido y su codigo se siguen guardando en{' '}
-            <strong className="text-[var(--color-text-primary)]">Cuentas por pagar</strong>, que es
-            donde vive la factura del proveedor. Conectar las dos cosas es el paso siguiente y esta
-            declarado, no escondido.
+            Esto <strong className="text-[var(--color-text-primary)]">calcula</strong> la retención,
+            pero no la escribe en la factura: el monto retenido y su código los anotas tú al
+            registrar la factura en{' '}
+            <strong className="text-[var(--color-text-primary)]">Cuentas por pagar</strong>.
           </p>
         </div>
 
@@ -241,7 +240,7 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
               className="shrink-0 text-[var(--color-semantic-text-warning)]"
             />
             <p className="text-[var(--color-text-secondary)]">
-              No hay ninguna regla de retencion activa, así que la calculadora va a dar cero
+              No hay ninguna regla de retención activa, así que la calculadora va a dar cero
               siempre. Registra la primera en{' '}
               <a
                 href={`/impuestos${qs}`}
@@ -256,7 +255,7 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
 
         <Card>
           <CardHeader>
-            <CardTitle>Cuanto le retengo a este proveedor</CardTitle>
+            <CardTitle>Cuánto le retengo a este proveedor</CardTitle>
           </CardHeader>
           <CardBody className="space-y-3">
             <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
@@ -318,18 +317,18 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
               <p className="text-xs text-[var(--color-text-muted)]">
                 Elige un proveedor que ya tenga perfil fiscal y escribe el subtotal y el ITBIS de la
                 factura. Un proveedor sin perfil no se le retiene nada, porque nadie ha dicho
-                todavía si es persona fisica o juridica.
+                todavía si es persona física o jurídica.
               </p>
             ) : (
               <>
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                   <StatCard
-                    label="Retencion de ITBIS"
+                    label="Retención de ITBIS"
                     value={`RD$ ${money(resultado.itbisRetenido)}`}
                     hint="sobre el ITBIS facturado"
                   />
                   <StatCard
-                    label="Retencion de ISR"
+                    label="Retención de ISR"
                     value={`RD$ ${money(resultado.isrRetenido)}`}
                     hint={servicios === null ? 'sobre el subtotal' : 'sobre los servicios'}
                   />
@@ -352,50 +351,50 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
                 </div>
                 {servicios !== null && subtotal !== null && servicios < subtotal && (
                   <p className="text-xs text-[var(--color-text-muted)]">
-                    El ISR se calculo sobre{' '}
+                    El ISR se calculó sobre{' '}
                     <strong className="text-[var(--color-text-secondary)]">
                       RD$ {money(Math.min(servicios, subtotal))}
                     </strong>{' '}
-                    de servicios, no sobre el subtotal completo: a una persona fisica se le retiene
+                    de servicios, no sobre el subtotal completo: a una persona física se le retiene
                     por la mano de obra, no por las piezas. Es el mismo número que después va en el
                     campo de servicios de la factura, para el 606.
                   </p>
                 )}
                 {itbisSospechoso && itbisEsperado !== null && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
-                    Con la tasa por defecto de tu catalogo, el ITBIS de un subtotal de RD${' '}
+                    Con la tasa por defecto de tu catálogo, el ITBIS de un subtotal de RD${' '}
                     {money(subtotal ?? 0)} daria <strong>RD$ {money(itbisEsperado)}</strong> y
-                    escribiste RD$ {money(itbis ?? 0)}. Puede estar bien -hay líneas exentas y tasas
-                    reducidas-, pero si es un dedazo la retencion de ITBIS sale mal en la misma
-                    proporcion.
+                    escribiste RD$ {money(itbis ?? 0)}. Puede estar bien (hay líneas exentas y tasas
+                    reducidas), pero si es un dedazo la retención de ITBIS sale mal en la misma
+                    proporción.
                   </p>
                 )}
                 {(resultado.candidatas.isr > 1 || resultado.candidatas.itbis > 1) && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
-                    Este proveedor no tiene una regla asignada y habia{' '}
+                    Este proveedor no tiene una regla asignada y había{' '}
                     {resultado.candidatas.isr > 1
                       ? `${resultado.candidatas.isr} reglas de ISR`
                       : `${resultado.candidatas.itbis} reglas de ITBIS`}{' '}
-                    que le podian aplicar. Se uso{' '}
+                    que le podían aplicar. Se usó{' '}
                     <Mono>
                       {resultado.candidatas.isr > 1
                         ? (resultado.reglaAplicada.isr ?? '—')
                         : (resultado.reglaAplicada.itbis ?? '—')}
                     </Mono>{' '}
-                    -la de vigencia más reciente-. Asignale su regla en el formulario de abajo para
+                    (la de vigencia más reciente). Asígnale su regla en el formulario de abajo para
                     que no lo decida un desempate.
                   </p>
                 )}
                 {elegido?.is_exempt === true && (
                   <p className="text-xs text-[var(--color-semantic-text-warning)]">
-                    Este proveedor esta marcado como exento, así que no se le retiene nada. Si eso
-                    ya no es cierto, quitale la marca abajo.
+                    Este proveedor está marcado como exento, así que no se le retiene nada. Si eso
+                    ya no es cierto, quítale la marca abajo.
                   </p>
                 )}
                 {resultado.isrRetenido > 0 && resultado.tipoRetencionIsr === null && (
                   <p className="text-xs text-[var(--color-semantic-text-danger)]">
                     La regla de ISR no trae código de la DGII. Sin el, la factura no puede llenar su
-                    tipo de retencion y el 606 del período rebota entero.
+                    tipo de retención y el 606 del período rebota entero.
                   </p>
                 )}
               </>
@@ -415,23 +414,23 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
               className="shrink-0 text-[var(--color-semantic-text-warning)]"
             />
             <p className="text-[var(--color-text-secondary)]">
-              El modulo de <strong className="text-[var(--color-text-primary)]">Proveedores</strong>{' '}
-              no esta activo, así que no hay a quien asignarle un perfil fiscal. Las tasas y las
+              El módulo de <strong className="text-[var(--color-text-primary)]">Proveedores</strong>{' '}
+              no está activo, así que no hay a quién asignarle un perfil fiscal. Las tasas y las
               reglas siguen funcionando.
             </p>
           </div>
         ) : proveedores.length === 0 ? (
           <EmptyState
             icon="local_shipping"
-            title="Todavia no hay proveedores"
-            description="Registra tus proveedores y despues vuelve aqui a decir cuales son personas fisicas y cuales juridicas."
+            title="Todavía no hay proveedores"
+            description="Registra tus proveedores y después vuelve aquí a decir cuáles son personas físicas y cuáles jurídicas."
           />
         ) : (
           <section aria-labelledby="perfiles" className="space-y-2">
             <h2 id="perfiles" className="text-sm font-semibold text-[var(--color-text-primary)]">
               Perfil fiscal por proveedor
             </h2>
-            <Table>
+            <Table className="min-w-[640px]">
               <THead>
                 <TR>
                   <TH>Proveedor</TH>
@@ -453,15 +452,20 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
                     </TD>
                     <TD>
                       {p.party_type === null ? (
-                        <Badge tone="warning">sin perfil</Badge>
+                        <Badge tone="warning">Sin perfil</Badge>
                       ) : p.is_exempt ? (
                         <Badge tone="info" dot={false}>
-                          exento
+                          Exento
                         </Badge>
                       ) : (
                         <Badge tone="neutral" dot={false}>
-                          {p.party_type === 'fisica' ? 'persona fisica' : 'persona juridica'}
+                          {p.party_type === 'fisica' ? 'Persona física' : 'Persona jurídica'}
                         </Badge>
+                      )}
+                      {p.notes && (
+                        <span className="mt-1 block max-w-xs text-xs text-[var(--color-text-muted)]">
+                          {p.notes}
+                        </span>
                       )}
                     </TD>
                     <TD>
@@ -504,8 +508,8 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                     Es una
                     <select name="partyType" defaultValue="juridica" className={claseInput}>
-                      <option value="juridica">Persona juridica</option>
-                      <option value="fisica">Persona fisica</option>
+                      <option value="juridica">Persona jurídica</option>
+                      <option value="fisica">Persona física</option>
                     </select>
                   </label>
                   <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -539,7 +543,7 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
                   Nota
                   <input
                     name="notes"
-                    placeholder="Zona franca, certificacion vigente hasta..."
+                    placeholder="Zona franca, certificación vigente hasta…"
                     className={claseInput}
                   />
                 </label>
@@ -549,7 +553,8 @@ export default async function RetencionesPage({ searchParams }: { searchParams: 
                 </BotonEnvio>
                 <p className="text-xs text-[var(--color-text-muted)]">
                   Marcar exento borra las reglas asignadas: un proveedor exento con regla es una
-                  contradiccion que se descubre cuando ya se le retuvo dinero que no tocaba.
+                  contradicción que se descubre cuando ya se le retuvo dinero que no tocaba.
+
                 </p>
               </form>
             </CardBody>

@@ -22,22 +22,31 @@ import { Shell } from '@/components/Shell'
 import { aceptarSugerenciaForm, descartarSugerenciaForm } from '../actions'
 import { ACCION_SUGERENCIA, ESTADO_SUGERENCIA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, unirFrases } from '@/lib/cantidad'
+import { explotarNecesidadesMrp } from '@regb/operations'
+import { resolverNodoMrp } from '../explosion'
 
 export const dynamic = 'force-dynamic'
 
 interface CorridaHead {
   id: string
+  target_product_id: string
   run_at: string
   notes: string | null
   sku: string
   producto_terminado: string
+  unit: string
   target_qty: string
+  quien: string | null
 }
 
 interface SugerenciaRow {
   id: string
+  product_id: string
   sku: string
   name: string
+  unit: string
+  existencia: string
   action: string
   qty_suggested: string
   status: string
@@ -69,26 +78,56 @@ export default async function MrpDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'mrp')
 
-  const { head, sugerencias, almacenes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<CorridaHead[]>`
-      select r.id, r.run_at::text, r.notes, p.sku, p.name as producto_terminado, r.target_qty::text
+  const { head, sugerencias, almacenes, brutas } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<CorridaHead[]>`
+      select r.id, r.target_product_id, r.run_at::text, r.notes, p.sku, p.name as producto_terminado, p.unit,
+             r.target_qty::text, up.display_name as quien
       from public.mrp_runs r
       join public.products p on p.id = r.target_product_id
+      left join public.user_profiles up on up.tenant_id = r.tenant_id and up.user_id = r.created_by
       where r.id = ${id} and r.tenant_id = ${ctx.tenantId}`
-    if (!h) return { head: null, sugerencias: [], almacenes: [] }
+      if (!h)
+        return { head: null, sugerencias: [], almacenes: [], brutas: new Map<string, number>() }
 
-    const s = await tx<SugerenciaRow[]>`
-      select s.id, p.sku, p.name, s.action, s.qty_suggested::text, s.status, s.production_order_id
+      const s = await tx<SugerenciaRow[]>`
+      select s.id, s.product_id, p.sku, p.name, p.unit,
+             coalesce((select sum(sl.qty_on_hand) from public.stock_levels sl
+                        where sl.product_id = p.id and sl.tenant_id = s.tenant_id), 0)::text
+               as existencia,
+             s.action, s.qty_suggested::text, s.status, s.production_order_id
       from public.mrp_suggestions s
       join public.products p on p.id = s.product_id
       where s.run_id = ${id} and s.tenant_id = ${ctx.tenantId}
       order by p.name`
 
-    const a = await tx<AlmacenOption[]>`
-      select id, name from public.warehouses where tenant_id = ${ctx.tenantId} order by name`
+      const a = await tx<AlmacenOption[]>`
+      select id, name from public.warehouses
+      where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
 
-    return { head: h, sugerencias: s, almacenes: a }
-  })
+      // Cuánto pide la receta en total para esa cantidad, con la receta de
+      // hoy. Lo sugerido se calculó al planificar, restando lo que había ese
+      // día; sin el total, "hay 540 y faltan 20" no se entiende.
+      const nodo = await resolverNodoMrp(
+        tx,
+        ctx.tenantId,
+        h.target_product_id,
+        Number(h.target_qty),
+        0,
+        true,
+      )
+      const brutas = new Map(
+        explotarNecesidadesMrp(nodo.subComponentes ?? []).map((n) => [
+          n.productId,
+          n.cantidadBruta,
+        ]),
+      )
+
+      return { head: h, sugerencias: s, almacenes: a, brutas }
+    },
+  )
 
   if (!head) notFound()
 
@@ -107,14 +146,25 @@ export default async function MrpDetallePage({
       <div className="space-y-5">
         <PageHeader
           icon="insights"
-          title={`${head.sku} · ${head.producto_terminado} × ${head.target_qty}`}
-          description={`Corrida del ${fecha(head.run_at)}`}
-          crumbs={[{ label: 'Planificacion MRP', href: `/mrp${qs}` }, { label: 'Detalle' }]}
+          title={`${head.producto_terminado}: ${cantidad(head.target_qty)} por fabricar`}
+          description={unirFrases([
+            `Planificado el ${fecha(head.run_at)}${head.quien ? ` por ${head.quien}` : ''}`,
+            'Lo sugerido se calculó ese día, restando lo que había en existencia.',
+          ])}
+          crumbs={[
+            { label: 'Planificación de materiales', href: `/mrp${qs}` },
+            { label: head.sku },
+          ]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Sugerencias" value={String(sugerencias.length)} />
-          <StatCard label="Pendientes" value={String(pendientes)} />
+          <StatCard label="Pendientes" value={String(pendientes)} hint="por aceptar o descartar" />
+          <StatCard
+            label="Para comprar"
+            value={String(sugerencias.filter((s) => s.action === 'purchase').length)}
+            hint="materia prima"
+          />
         </section>
 
         {head.notes && (
@@ -128,7 +178,9 @@ export default async function MrpDetallePage({
             <TR>
               <TH>Componente</TH>
               <TH>Acción</TH>
-              <TH numeric>Cantidad</TH>
+              <TH numeric>Se necesita</TH>
+              <TH numeric>Hay ahora</TH>
+              <TH numeric>Sugerido</TH>
               <TH>Estado</TH>
               {puedeResolver && (
                 <TH>
@@ -149,7 +201,25 @@ export default async function MrpDetallePage({
                   </Badge>
                 </TD>
                 <TD numeric>
-                  <span className="tabular">{s.qty_suggested}</span>
+                  <span className="tabular whitespace-nowrap">
+                    {brutas.has(s.product_id) ? cantidad(brutas.get(s.product_id), s.unit) : '—'}
+                  </span>
+                </TD>
+                <TD numeric>
+                  <span className="tabular whitespace-nowrap text-[var(--color-text-muted)]">
+                    {cantidad(s.existencia, s.unit)}
+                  </span>
+                </TD>
+                <TD numeric>
+                  <span className="tabular whitespace-nowrap font-semibold">
+                    {cantidad(s.qty_suggested, s.unit)}
+                  </span>
+                  {s.status === 'pending' &&
+                    Number(s.existencia) >= (brutas.get(s.product_id) ?? Infinity) && (
+                      <span className="block text-xs font-normal text-[var(--color-semantic-text-success)]">
+                        ya alcanza con lo que hay
+                      </span>
+                    )}
                 </TD>
                 <TD>
                   <Badge tone={badgeEstado(s.status)}>
@@ -223,15 +293,16 @@ export default async function MrpDetallePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Lo que esto no hace</CardTitle>
+            <CardTitle>Qué pasa al aceptar</CardTitle>
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              Aceptar una sugerencia de <strong>producir</strong> crea la orden de produccion en
-              borrador -manufacturing es un módulo requerido, ese acoplamiento es real-. Aceptar una
-              de <strong>comprar</strong> solo queda registrado: no crea una requisicion ni una
-              orden de compra por su cuenta, y tampoco resta lo que ya venga en camino de un
-              proveedor -la necesidad neta solo mira el stock disponible ahora mismo-.
+              Aceptar una sugerencia de <strong>producir</strong> crea la orden de producción en
+              borrador, en el almacén que elijas, lista para revisar y liberar. Aceptar una de{' '}
+              <strong>comprar</strong> la deja anotada como aceptada: la orden de compra se hace en
+              Órdenes de compra. Lo sugerido se calculó al planificar, contra lo que había en
+              existencia ese día; lo que ya viene en camino de un proveedor no se descuenta. Si
+              ahora ya alcanza con lo que hay, descarta la sugerencia.
             </p>
           </CardBody>
         </Card>

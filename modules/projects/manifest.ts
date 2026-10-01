@@ -14,7 +14,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'projects',
-  name: 'Proyectos & Tareas',
+  name: 'Proyectos y tareas',
   description: 'Kanban, Gantt, dependencias, hitos y plantillas.',
   icon: 'view_kanban',
   category: 'standard',
@@ -34,7 +34,7 @@ export default defineModule({
   permissions: ['projects.view', 'projects.manage'],
 
   routes: [
-    { path: '/proyectos', label: 'Proyectos & Tareas', perm: 'projects.view' },
+    { path: '/proyectos', label: 'Proyectos y tareas', perm: 'projects.view' },
     { path: '/proyectos/:id', label: 'Detalle del proyecto', perm: 'projects.view', hidden: true },
   ],
 

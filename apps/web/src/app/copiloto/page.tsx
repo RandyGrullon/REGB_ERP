@@ -44,13 +44,13 @@ export default async function CopilotoPage({
         <PageHeader
           icon="auto_awesome"
           title="Copiloto IA"
-          description="Nunca genera una consulta libre: empareja tu pregunta con el mismo catalogo fijo de fuentes vetadas que usa BI & Reportes."
+          description="Pregúntale con tus palabras por tus ventas, productos, facturas vencidas, prospectos o tickets. Contesta con los mismos reportes de BI y Reportes."
         />
 
         {puedePreguntar && (
           <Card>
             <CardHeader>
-              <CardTitle>Preguntame algo</CardTitle>
+              <CardTitle>Pregúntame algo</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={preguntarForm} className="flex flex-wrap items-end gap-3">
@@ -61,7 +61,7 @@ export default async function CopilotoPage({
                   <input
                     name="question"
                     required
-                    placeholder="¿Cuanto vendimos hoy?"
+                    placeholder="¿Cuánto vendimos hoy?"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
@@ -70,9 +70,20 @@ export default async function CopilotoPage({
                   Preguntar
                 </BotonEnvio>
               </form>
-              <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-                Ejemplos: {PREGUNTAS_EJEMPLO.join(' · ')}
-              </p>
+              {/* Los ejemplos se pueden tocar: preguntan de una vez. */}
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-[var(--color-text-muted)]">Prueba con:</span>
+                {PREGUNTAS_EJEMPLO.map((q) => (
+                  <form key={q} action={preguntarForm}>
+                    <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                    <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                    <input type="hidden" name="question" value={q} />
+                    <BotonEnvio className="inline-flex min-h-11 items-center rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] md:min-h-8">
+                      {q}
+                    </BotonEnvio>
+                  </form>
+                ))}
+              </div>
             </CardBody>
           </Card>
         )}
@@ -104,7 +115,13 @@ export default async function CopilotoPage({
                         {FUENTE_LABEL_COPILOTO[c.matched_key] ?? c.matched_key}
                       </Badge>
                       <span className="text-xs text-[var(--color-text-muted)]">
-                        {new Date(c.created_at).toLocaleString('es-DO')}
+                        {new Date(c.created_at).toLocaleString('es-DO', {
+                          day: 'numeric',
+                          month: 'short',
+                          hour: 'numeric',
+                          minute: '2-digit',
+                          timeZone: 'America/Santo_Domingo',
+                        })}
                       </span>
                     </div>
                   </li>
@@ -120,10 +137,10 @@ export default async function CopilotoPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              No usa un modelo de lenguaje real todavía -empareja tu pregunta con un catálogo fijo
-              de preguntas ya vetadas por palabras clave, sin conexion a ningún proveedor de IA
-              externo-. Por eso nunca puede ver datos de otro cliente: no existe ningun camino de
-              codigo que acepte una consulta arbitraria.
+              Todavía no usa un modelo de lenguaje: reconoce las palabras clave de tu pregunta y la
+              contesta con uno de cinco reportes fijos, sin mandar nada a un proveedor de IA de
+              afuera. Por eso nunca ve datos de otro negocio: no puede hacer ninguna consulta que no
+              esté en esa lista.
             </p>
           </CardBody>
         </Card>

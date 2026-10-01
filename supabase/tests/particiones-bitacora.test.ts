@@ -31,8 +31,11 @@ const particiones = () => sql<{ nombre: string; hasta: string }[]>`
 
 describe('La bitacora tiene donde escribir', () => {
   it('hay particion para el mes en curso', async () => {
+    // Mes UTC: las particiones las crea la base, que corre en UTC. Con el mes
+    // local, entre las 8 p. m. del último día y la medianoche UTC se buscaba
+    // el mes que ya terminó.
     const hoy = new Date()
-    const nombre = `log_${hoy.getFullYear()}_${String(hoy.getMonth() + 1).padStart(2, '0')}`
+    const nombre = `log_${hoy.getUTCFullYear()}_${String(hoy.getUTCMonth() + 1).padStart(2, '0')}`
     const nombres = (await particiones()).map((p) => p.nombre)
     expect(nombres).toContain(nombre)
   })
@@ -45,8 +48,8 @@ describe('La bitacora tiene donde escribir', () => {
     const hoy = new Date()
     const faltan: string[] = []
     for (let i = 0; i < 12; i += 1) {
-      const d = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1)
-      const n = `log_${d.getFullYear()}_${String(d.getMonth() + 1).padStart(2, '0')}`
+      const d = new Date(Date.UTC(hoy.getUTCFullYear(), hoy.getUTCMonth() + i, 1))
+      const n = `log_${d.getUTCFullYear()}_${String(d.getUTCMonth() + 1).padStart(2, '0')}`
       if (!nombres.includes(n)) faltan.push(n)
     }
     expect(faltan).toEqual([])

@@ -6,6 +6,7 @@ import {
   CardTitle,
   EmptyState,
   Icon,
+  Mono,
   PageHeader,
   StatCard,
   TBody,
@@ -21,6 +22,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { abrirRecallForm, cerrarRecallForm, consumirFefoForm, registrarLoteForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Lotes y series · REGB ERP' }
@@ -40,13 +42,16 @@ interface LoteRow {
   id: string
   product_id: string
   product_name: string
+  unit: string
   lot_number: string
   expiry_date: string | null
   qty_total: string
+  almacenes: string | null
 }
 
 interface RecallRow {
   id: string
+  lot_id: string | null
   product_name: string
   lot_number: string | null
   reason: string
@@ -69,21 +74,25 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
       const p = await tx<ProductoOption[]>`
         select id, sku, name from public.products
         -- Un servicio (envio, instalacion) no tiene lotes ni existencias:
-        -- ofrecerlo aquí terminaba en el error del kardex al registrar.
+        -- ofrecerlo aqui terminaba en el error del kardex al registrar.
         where tenant_id = ${ctx.tenantId} and active and tracks_stock order by name limit 300`
       const a = await tx<AlmacenOption[]>`
         select id, name from public.warehouses
         where tenant_id = ${ctx.tenantId} and is_active order by is_default desc, name`
       const l = await tx<LoteRow[]>`
-        select pl.id, pl.product_id, pr.name as product_name, pl.lot_number, pl.expiry_date::text,
+        select pl.id, pl.product_id, pr.name as product_name, pr.unit, pl.lot_number,
+               pl.expiry_date::text,
                coalesce((select sum(ls.qty_on_hand) from public.lot_stock ls where ls.lot_id = pl.id), 0)::text
-                 as qty_total
+                 as qty_total,
+               (select string_agg(w.name, ', ' order by w.name)
+                  from public.lot_stock ls join public.warehouses w on w.id = ls.warehouse_id
+                 where ls.lot_id = pl.id and ls.qty_on_hand > 0) as almacenes
         from public.product_lots pl
         join public.products pr on pr.id = pl.product_id
         where pl.tenant_id = ${ctx.tenantId}
         order by pl.expiry_date nulls last, pr.name`
       const r = await tx<RecallRow[]>`
-        select rc.id, pr.name as product_name, pl.lot_number, rc.reason, rc.status, rc.created_at::text
+        select rc.id, rc.lot_id, pr.name as product_name, pl.lot_number, rc.reason, rc.status, rc.created_at::text
         from public.product_recalls rc
         join public.products pr on pr.id = rc.product_id
         left join public.product_lots pl on pl.id = rc.lot_id
@@ -101,6 +110,9 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
     (l) => l.expiry_date && !loteVigente(new Date(l.expiry_date), ahora),
   ).length
   const recallsAbiertos = recalls.filter((r) => r.status === 'open').length
+  const lotesEnRetiro = new Set(
+    recalls.filter((r) => r.status === 'open' && r.lot_id).map((r) => r.lot_id),
+  )
 
   const puedeGestionar = exigir(ctx, 'lots-serials', 'lots-serials.manage').ok
   const puedeRecall = exigir(ctx, 'lots-serials', 'lots-serials.recall').ok
@@ -111,6 +123,15 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
     </>
   )
+
+  // Fecha sin hora: se pinta en UTC para que el 9 de septiembre no salga 8.
+  const dia = (iso: string) =>
+    new Date(iso).toLocaleDateString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC',
+    })
 
   const badgeVencimiento = (fecha: string | null) => {
     if (!fecha) return null
@@ -126,15 +147,156 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
         <PageHeader
           icon="qr_code_2"
           title="Lotes y series"
-          description="Consumir stock elige el lote por FEFO -el que vence mas pronto primero-, nunca a criterio de quien despacha."
+          description="Cada lote con su vencimiento. Al sacar mercancía el sistema elige primero el lote que vence más pronto, no el que quede más a mano."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard label="Lotes registrados" value={String(lotes.length)} />
-          <StatCard label="Por vencer" value={String(porVencer)} />
-          <StatCard label="Vencidos" value={String(vencidos)} />
-          <StatCard label="Recalls abiertos" value={String(recallsAbiertos)} />
+          <StatCard label="Por vencer" value={String(porVencer)} hint="en los próximos días" />
+          <StatCard label="Vencidos" value={String(vencidos)} hint="sacarlos del estante" />
+          <StatCard
+            label="Retiros abiertos"
+            value={String(recallsAbiertos)}
+            hint="lotes bloqueados"
+          />
         </section>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Lotes registrados</CardTitle>
+          </CardHeader>
+          <CardBody className="p-0">
+            {lotes.length === 0 ? (
+              <EmptyState
+                icon="qr_code_2"
+                title="Todavía no hay ningún lote"
+                description="Registra el lote de lo que llega con fecha de vencimiento (pinturas, químicos, alimentos) y el sistema te avisa antes de que se venza."
+              />
+            ) : (
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Producto</TH>
+                    <TH>Lote / serie</TH>
+                    <TH>Vencimiento</TH>
+                    <TH>Dónde está</TH>
+                    <TH numeric>Existencia</TH>
+                    {puedeRecall && (
+                      <TH>
+                        <span className="sr-only">Acción</span>
+                      </TH>
+                    )}
+                  </TR>
+                </THead>
+                <TBody>
+                  {lotes.map((l) => (
+                    <TR key={l.id}>
+                      <TD className="text-[var(--color-text-primary)]">{l.product_name}</TD>
+                      <TD className="whitespace-nowrap">
+                        <Mono>{l.lot_number}</Mono>
+                      </TD>
+                      <TD className="whitespace-nowrap">
+                        {l.expiry_date ? dia(l.expiry_date) : 'No vence'}{' '}
+                        {badgeVencimiento(l.expiry_date)}
+                      </TD>
+                      <TD>{l.almacenes ?? 'Agotado'}</TD>
+                      <TD numeric>
+                        <span className="tabular">{cantidad(l.qty_total, l.unit)}</span>
+                      </TD>
+                      {puedeRecall && (
+                        <TD>
+                          {lotesEnRetiro.has(l.id) ? (
+                            <Badge tone="danger">En retiro</Badge>
+                          ) : (
+                            <form
+                              action={abrirRecallForm}
+                              className="flex flex-wrap items-center gap-1"
+                            >
+                              {campos}
+                              <input type="hidden" name="productId" value={l.product_id} />
+                              <input type="hidden" name="lotId" value={l.id} />
+                              <input
+                                name="reason"
+                                placeholder="Por qué se retira"
+                                aria-label={`Por qué se retira el lote ${l.lot_number} de ${l.product_name}`}
+                                className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                              />
+                              <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                                Retirar
+                              </BotonEnvio>
+                            </form>
+                          )}
+                        </TD>
+                      )}
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Retiros de mercancía</CardTitle>
+          </CardHeader>
+          <CardBody className="p-0">
+            {recalls.length === 0 ? (
+              <EmptyState
+                icon="report"
+                title="Ningún lote retirado"
+                description="Si un lote sale malo o el fabricante lo retira, márcalo con Retirar en la tabla de lotes: queda bloqueado y con su razón para cualquier reclamo."
+              />
+            ) : (
+              <Table>
+                <THead>
+                  <TR>
+                    <TH>Producto</TH>
+                    <TH>Lote</TH>
+                    <TH>Razón</TH>
+                    <TH>Desde</TH>
+                    <TH>Estado</TH>
+                    {puedeRecall && (
+                      <TH>
+                        <span className="sr-only">Acción</span>
+                      </TH>
+                    )}
+                  </TR>
+                </THead>
+                <TBody>
+                  {recalls.map((r) => (
+                    <TR key={r.id}>
+                      <TD className="text-[var(--color-text-primary)]">{r.product_name}</TD>
+                      <TD>{r.lot_number ?? 'Todo el producto'}</TD>
+                      <TD className="max-w-72">
+                        <span className="line-clamp-2" title={r.reason}>
+                          {r.reason}
+                        </span>
+                      </TD>
+                      <TD className="whitespace-nowrap">{dia(r.created_at)}</TD>
+                      <TD>
+                        <Badge tone={r.status === 'open' ? 'danger' : 'neutral'}>
+                          {r.status === 'open' ? 'Retirado' : 'Cerrado'}
+                        </Badge>
+                      </TD>
+                      {puedeRecall && r.status === 'open' && (
+                        <TD>
+                          <form action={cerrarRecallForm}>
+                            {campos}
+                            <input type="hidden" name="recallId" value={r.id} />
+                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                              Cerrar
+                            </BotonEnvio>
+                          </form>
+                        </TD>
+                      )}
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            )}
+          </CardBody>
+        </Card>
 
         {puedeGestionar && (
           <div className="grid gap-5 lg:grid-cols-2">
@@ -156,7 +318,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
                     </select>
                   </label>
                   <label className="flex min-w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Almacen
+                    Almacén
                     <select name="warehouseId" required className={claseInput}>
                       {almacenes.map((a) => (
                         <option key={a.id} value={a.id}>
@@ -183,12 +345,12 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
                     />
                   </label>
                   <label className="flex min-w-48 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    De donde sale
+                    De dónde sale
                     {/* Lo que llego por Recepciones YA esta en el inventario:
                         registrar su lote como entrada lo contaba dos veces. */}
                     <select name="origen" defaultValue="existente" className={claseInput}>
                       <option value="existente">
-                        Ya esta en el almacén (llego por una recepción)
+                        Ya está en el almacén (llegó por una recepción)
                       </option>
                       <option value="entrada">Entra ahora al inventario</option>
                     </select>
@@ -212,7 +374,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
 
             <Card>
               <CardHeader>
-                <CardTitle>Consumir stock (FEFO automático)</CardTitle>
+                <CardTitle>Sacar mercancía (sale primero lo que vence antes)</CardTitle>
               </CardHeader>
               <CardBody>
                 <form action={consumirFefoForm} className="flex flex-wrap items-end gap-3">
@@ -228,7 +390,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
                     </select>
                   </label>
                   <label className="flex min-w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Almacen
+                    Almacén
                     <select name="warehouseId" required className={claseInput}>
                       {almacenes.map((a) => (
                         <option key={a.id} value={a.id}>
@@ -247,136 +409,22 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
                     />
                   </label>
                   <label className="flex min-w-32 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Razon
+                    Razón
                     <input name="notes" placeholder="Venta, merma, etc." className={claseInput} />
                   </label>
-                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                  <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                     <Icon name="output" size={14} />
                     Consumir
                   </BotonEnvio>
                 </form>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  El sistema elige solo de que lote sacar cada unidad -el que vence más pronto
-                  primero-. No esta conectado al checkout de ventas todavía.
+                  El sistema elige solo de qué lote sacar cada unidad: el que vence más pronto
+                  primero. Úsalo para mermas, muestras y salidas que no pasan por la caja.
                 </p>
               </CardBody>
             </Card>
           </div>
         )}
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Lotes registrados</CardTitle>
-          </CardHeader>
-          <CardBody className="p-0">
-            {lotes.length === 0 ? (
-              <EmptyState icon="qr_code_2" title="Todavia no hay ningun lote" description="" />
-            ) : (
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Producto</TH>
-                    <TH>Lote / serie</TH>
-                    <TH>Vencimiento</TH>
-                    <TH numeric>Existencia total</TH>
-                    {puedeRecall && (
-                      <TH>
-                        <span className="sr-only">Acción</span>
-                      </TH>
-                    )}
-                  </TR>
-                </THead>
-                <TBody>
-                  {lotes.map((l) => (
-                    <TR key={l.id}>
-                      <TD className="text-[var(--color-text-primary)]">{l.product_name}</TD>
-                      <TD>{l.lot_number}</TD>
-                      <TD>
-                        {l.expiry_date ?? '—'} {badgeVencimiento(l.expiry_date)}
-                      </TD>
-                      <TD numeric>
-                        <span className="tabular">{l.qty_total}</span>
-                      </TD>
-                      {puedeRecall && (
-                        <TD>
-                          <form
-                            action={abrirRecallForm}
-                            className="flex flex-wrap items-center gap-1"
-                          >
-                            {campos}
-                            <input type="hidden" name="productId" value={l.product_id} />
-                            <input type="hidden" name="lotId" value={l.id} />
-                            <input
-                              name="reason"
-                              placeholder="Razon del recall"
-                              aria-label={`Razón del recall de ${l.product_name} lote ${l.lot_number}`}
-                              className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                            />
-                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
-                              Recall
-                            </BotonEnvio>
-                          </form>
-                        </TD>
-                      )}
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Recalls</CardTitle>
-          </CardHeader>
-          <CardBody className="p-0">
-            {recalls.length === 0 ? (
-              <EmptyState icon="report" title="Ningun recall abierto ni cerrado" description="" />
-            ) : (
-              <Table>
-                <THead>
-                  <TR>
-                    <TH>Producto</TH>
-                    <TH>Lote</TH>
-                    <TH>Razón</TH>
-                    <TH>Estado</TH>
-                    {puedeRecall && (
-                      <TH>
-                        <span className="sr-only">Acción</span>
-                      </TH>
-                    )}
-                  </TR>
-                </THead>
-                <TBody>
-                  {recalls.map((r) => (
-                    <TR key={r.id}>
-                      <TD className="text-[var(--color-text-primary)]">{r.product_name}</TD>
-                      <TD>{r.lot_number ?? 'Todo el producto'}</TD>
-                      <TD className="max-w-56 truncate">{r.reason}</TD>
-                      <TD>
-                        <Badge tone={r.status === 'open' ? 'danger' : 'neutral'}>
-                          {r.status === 'open' ? 'Abierto' : 'Cerrado'}
-                        </Badge>
-                      </TD>
-                      {puedeRecall && r.status === 'open' && (
-                        <TD>
-                          <form action={cerrarRecallForm}>
-                            {campos}
-                            <input type="hidden" name="recallId" value={r.id} />
-                            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                              Cerrar
-                            </BotonEnvio>
-                          </form>
-                        </TD>
-                      )}
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            )}
-          </CardBody>
-        </Card>
       </div>
     </Shell>
   )

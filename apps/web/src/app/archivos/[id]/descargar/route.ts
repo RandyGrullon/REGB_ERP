@@ -18,7 +18,7 @@ export async function GET(
     tenant: url.searchParams.get('tenant') ?? undefined,
     rol: url.searchParams.get('rol') ?? undefined,
   })
-  if (!ctx) return new Response('Sesion no valida', { status: 401 })
+  if (!ctx) return new Response('Sesión no válida', { status: 401 })
   if (!exigir(ctx, 'files', 'files.view').ok) return new Response('No existe', { status: 404 })
 
   const [file] = await asUser(

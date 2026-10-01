@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { supabaseServer } from '@/lib/supabase'
+import { rutaInterna } from '@/lib/ruta-interna'
 
 /**
  * Vuelta del enlace magico.
@@ -31,6 +32,5 @@ export async function GET(request: NextRequest) {
 
   // Ruta relativa a proposito: `siguiente` viene de la URL y no es de fiar.
   // Sin esto, un enlace preparado podria mandar al usuario a otro dominio.
-  const destino = siguiente.startsWith('/') ? siguiente : '/'
-  return NextResponse.redirect(`${origin}${destino}`)
+  return NextResponse.redirect(`${origin}${rutaInterna(siguiente)}`)
 }

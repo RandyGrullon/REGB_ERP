@@ -47,13 +47,13 @@ const VERBOS: { prueba: RegExp; texto: string }[] = [
     texto: 'Listo, lo agregamos.',
   },
   { prueba: /^(eliminar|borrar|quitar|remover)/i, texto: 'Listo, lo eliminamos.' },
-  { prueba: /^(anular|cancelar)/i, texto: 'Listo, quedo anulado.' },
+  { prueba: /^(anular|cancelar)/i, texto: 'Listo, quedó anulado.' },
   {
     prueba:
       /^(cerrar|finalizar|completar|terminar|confirmar|aprobar|entregar|recibir|pagar|cobrar|conciliar|contabilizar|enviar|publicar|activar)/i,
-    texto: 'Listo, quedo hecho.',
+    texto: 'Listo, quedó hecho.',
   },
-  { prueba: /^(rechazar|denegar)/i, texto: 'Listo, quedo rechazado.' },
+  { prueba: /^(rechazar|denegar)/i, texto: 'Listo, quedó rechazado.' },
   {
     prueba: /^(alternar|cambiar|mover|transicionar|reprogramar|asignar|marcar)/i,
     texto: 'Listo, lo cambiamos.',

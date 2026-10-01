@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'mrp',
-  name: 'Planificación MRP',
+  name: 'Planificación de materiales',
   description: 'Explosión de necesidades y sugerencias de compra o producción.',
   icon: 'insights',
   category: 'advanced',
@@ -35,7 +35,7 @@ export default defineModule({
   permissions: ['mrp.view', 'mrp.run', 'mrp.resolve'],
 
   routes: [
-    { path: '/mrp', label: 'Planificacion MRP', perm: 'mrp.view' },
+    { path: '/mrp', label: 'Planificación de materiales', perm: 'mrp.view' },
     { path: '/mrp/:id', label: 'Detalle', perm: 'mrp.view', hidden: true },
   ],
 

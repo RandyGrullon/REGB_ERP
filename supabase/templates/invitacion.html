@@ -1,0 +1,32 @@
+<!--
+  Plantilla "Invite user" de Supabase Auth (REGB ERP).
+
+  En local la carga supabase/config.toml ([auth.email.template.invite]).
+  En el proyecto real se pega este mismo HTML en
+  Authentication → Emails → Templates → Invite user (docs/SUPABASE.md).
+
+  El enlace vuelve a la app con `token_hash` y no con el `#fragmento` de la
+  plantilla de fabrica: el servidor no ve el fragmento, y es el servidor
+  (/auth/invitacion/<token>) el que abre la sesion con verifyOtp y acepta la
+  invitacion. `RedirectTo` ya trae /auth/invitacion/<token>: lo arma la
+  Edge Function `invitar-usuario` con REGB_SITE_URL.
+-->
+<h2>Te invitaron a REGB ERP</h2>
+<p>Hola {{ .Data.display_name }}:</p>
+<p>Te dieron acceso al sistema de tu empresa. Toca el botón para entrar:</p>
+<p>
+  <a
+    href="{{ .RedirectTo }}?token_hash={{ .TokenHash }}&type=invite"
+    style="
+      display: inline-block;
+      padding: 12px 20px;
+      border-radius: 999px;
+      background: #0071e3;
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+    "
+    >Aceptar la invitación</a
+  >
+</p>
+<p>El enlace sirve una sola vez. Si no esperabas este correo, ignóralo.</p>

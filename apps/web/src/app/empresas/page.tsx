@@ -1,20 +1,4 @@
-import {
-  Badge,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
-  Icon,
-  Mono,
-  PageHeader,
-  StatCard,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
-  Table,
-} from '@regb/ui'
+import { Badge, Card, CardBody, CardHeader, CardTitle, Mono, PageHeader, StatCard } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -63,30 +47,20 @@ export default async function EmpresasPage({
   const puedeEditar = exigir(ctx, 'orgs', 'orgs.edit').ok
   const qs = ctx.demoQs
 
-  /** Columnas que se repiten sin importar si la fila es editable. */
-  const colsComunes = (c: CompanyRow) => (
-    <>
-      <TD>{c.currency}</TD>
-      <TD numeric>
-        <span className="tabular">{c.branch_count}</span>
-      </TD>
-      <TD>
-        {c.is_default ? (
-          <Badge tone="brand">Principal</Badge>
-        ) : puedeEditar ? (
-          <form action={marcarPrincipalForm} className="inline">
-            <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-            <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-            <input type="hidden" name="id" value={c.id} />
-            <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-              Hacer principal
-            </BotonEnvio>
-          </form>
-        ) : (
-          '—'
-        )}
-      </TD>
-    </>
+  const campo =
+    'h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
+  const etiqueta = 'flex flex-col gap-1 text-xs font-semibold text-[var(--color-text-muted)]'
+
+  /** Lo que se ve de una empresa, se pueda editar o no. */
+  const pie = (c: CompanyRow) => (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+      {c.is_default && <Badge tone="brand">Principal</Badge>}
+      <span>Moneda {c.currency}</span>
+      <span aria-hidden>·</span>
+      <span>
+        {Number(c.branch_count)} {Number(c.branch_count) === 1 ? 'sucursal' : 'sucursales'}
+      </span>
+    </div>
   )
 
   return (
@@ -95,7 +69,7 @@ export default async function EmpresasPage({
         <PageHeader
           icon="apartment"
           title="Empresas"
-          description="Cada razon social (RNC) factura por separado; la configuracion se hereda de la principal."
+          description="Cada razón social (RNC) factura por separado; la configuración se hereda de la principal."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -118,95 +92,120 @@ export default async function EmpresasPage({
           />
         </section>
 
-        <Table>
-          <THead>
-            <TR>
-              <TH>Razón social y RNC</TH>
-              <TH>Moneda</TH>
-              <TH numeric>Sucursales</TH>
-              <TH>Principal</TH>
-            </TR>
-          </THead>
-          <TBody>
-            {companies.map((c) =>
-              puedeEditar ? (
-                <TR key={c.id}>
-                  <TD>
-                    <form
-                      action={editarEmpresaForm}
-                      className="flex flex-wrap items-center gap-1.5"
-                    >
+        {/* Una tarjeta por empresa y no una tabla: son pocas, y lo que se
+            edita (razón social, RNC, dirección, teléfono, correo) no cabía
+            en una fila; en el teléfono quedaba un formulario de 900 px
+            dentro de una tabla con barra de desplazamiento. */}
+        <ul className="grid gap-3 xl:grid-cols-2" aria-label="Tus empresas">
+          {companies.map((c) => (
+            <li key={c.id}>
+              <Card className="h-full">
+                <CardHeader className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base">{c.trade_name || c.legal_name}</CardTitle>
+                    <p className="mt-0.5 text-xs text-[var(--color-text-muted)]">
+                      {c.trade_name && c.trade_name !== c.legal_name ? `${c.legal_name} · ` : ''}
+                      RNC {c.tax_id ? <Mono>{c.tax_id}</Mono> : 'sin registrar'}
+                    </p>
+                  </div>
+                  {!c.is_default && puedeEditar && (
+                    <form action={marcarPrincipalForm}>
                       <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                       <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={c.id} />
-                      <input
-                        name="legal"
-                        required
-                        minLength={3}
-                        defaultValue={c.legal_name}
-                        aria-label={`Razón social de ${c.legal_name}`}
-                        className="h-8 min-w-48 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
-                      />
-                      <input
-                        name="rnc"
-                        defaultValue={c.tax_id ?? ''}
-                        placeholder="RNC"
-                        aria-label={`RNC de ${c.legal_name}`}
-                        className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
-                      />
-                      <BotonEnvio
-                        aria-label={`Guardar cambios de ${c.legal_name}`}
-                        className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-brand-bright)] transition-colors hover:bg-[var(--color-brand-soft)]"
-                      >
-                        <Icon name="save" size={16} />
+                      <BotonEnvio className="inline-flex h-11 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)] md:h-9">
+                        Hacer principal
                       </BotonEnvio>
-                      {/* Lo que sale en el ticket y en la factura. Antes no habia donde
-                          escribirlo aunque la base lo guardaba. */}
-                      <div className="flex w-full flex-wrap gap-1.5">
+                    </form>
+                  )}
+                </CardHeader>
+                <CardBody className="space-y-3">
+                  {puedeEditar ? (
+                    <form action={editarEmpresaForm} className="grid gap-3 sm:grid-cols-2">
+                      <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                      <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                      <input type="hidden" name="id" value={c.id} />
+                      <label className={`${etiqueta} sm:col-span-2`}>
+                        Razón social
                         <input
-                          name="address"
-                          defaultValue={c.address ?? ''}
-                          placeholder="Dirección (sale en tus tickets)"
-                          aria-label={`Dirección de ${c.legal_name}`}
-                          className="h-8 min-w-48 flex-[2] rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                          name="legal"
+                          required
+                          minLength={3}
+                          defaultValue={c.legal_name}
+                          className={campo}
                         />
+                      </label>
+                      <label className={etiqueta}>
+                        RNC
+                        <input
+                          name="rnc"
+                          defaultValue={c.tax_id ?? ''}
+                          placeholder="1-31-12345-6"
+                          className={campo}
+                        />
+                      </label>
+                      <label className={etiqueta}>
+                        Teléfono
                         <input
                           name="phone"
                           defaultValue={c.phone ?? ''}
-                          placeholder="Teléfono"
+                          placeholder="809-555-0101"
                           inputMode="tel"
-                          aria-label={`Teléfono de ${c.legal_name}`}
-                          className="h-8 w-36 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                          className={campo}
                         />
+                      </label>
+                      {/* Lo que sale en el ticket y en la factura. Antes no había dónde
+                          escribirlo aunque la base lo guardaba. */}
+                      <label className={`${etiqueta} sm:col-span-2`}>
+                        Dirección (sale en tus tickets y facturas)
+                        <input
+                          name="address"
+                          defaultValue={c.address ?? ''}
+                          placeholder="Av. 27 de Febrero #123, Santo Domingo"
+                          className={campo}
+                        />
+                      </label>
+                      <label className={`${etiqueta} sm:col-span-2`}>
+                        Correo
                         <input
                           name="email"
                           type="email"
                           defaultValue={c.email ?? ''}
-                          placeholder="Correo"
-                          aria-label={`Correo de ${c.legal_name}`}
-                          className="h-8 min-w-40 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-sm text-[var(--color-text-primary)]"
+                          placeholder="facturacion@tuempresa.do"
+                          className={campo}
                         />
+                      </label>
+                      <div className="flex flex-wrap items-center justify-between gap-3 sm:col-span-2">
+                        {pie(c)}
+                        <BotonEnvio className="h-11 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)] md:h-10">
+                          Guardar cambios
+                        </BotonEnvio>
                       </div>
                     </form>
-                  </TD>
-                  {colsComunes(c)}
-                </TR>
-              ) : (
-                <TR key={c.id}>
-                  <TD className="font-medium text-[var(--color-text-primary)]">
-                    {c.legal_name}
-                    {c.tax_id && (
-                      <span className="ml-2 text-xs text-[var(--color-text-muted)]">
-                        <Mono>{c.tax_id}</Mono>
-                      </span>
-                    )}
-                  </TD>
-                  {colsComunes(c)}
-                </TR>
-              ),
-            )}
-          </TBody>
-        </Table>
+                  ) : (
+                    <>
+                      <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                        <div>
+                          <dt className="text-xs text-[var(--color-text-muted)]">Dirección</dt>
+                          <dd className="text-[var(--color-text-primary)]">{c.address ?? '—'}</dd>
+                        </div>
+                        <div>
+                          <dt className="text-xs text-[var(--color-text-muted)]">Teléfono</dt>
+                          <dd className="text-[var(--color-text-primary)]">{c.phone ?? '—'}</dd>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <dt className="text-xs text-[var(--color-text-muted)]">Correo</dt>
+                          <dd className="text-[var(--color-text-primary)]">{c.email ?? '—'}</dd>
+                        </div>
+                      </dl>
+                      {pie(c)}
+                    </>
+                  )}
+                </CardBody>
+              </Card>
+            </li>
+          ))}
+        </ul>
 
         {puedeCrear && (
           <Card data-tour="empresa-nueva">

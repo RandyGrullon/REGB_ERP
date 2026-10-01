@@ -9,7 +9,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'recruiting',
-  name: 'Reclutamiento (ATS)',
+  name: 'Reclutamiento',
   description: 'Vacantes, portal de empleo, pipeline de candidatos y entrevistas.',
   icon: 'person_add',
   category: 'advanced',
@@ -33,7 +33,7 @@ export default defineModule({
     'recruiting.manage-pipeline',
   ],
 
-  routes: [{ path: '/reclutamiento', label: 'Vacantes', perm: 'recruiting.view' }],
+  routes: [{ path: '/reclutamiento', label: 'Reclutamiento', perm: 'recruiting.view' }],
 
   dashboardWidgets: ['open-positions', 'pipeline-summary'],
   reports: ['time-to-hire', 'pipeline-by-stage'],

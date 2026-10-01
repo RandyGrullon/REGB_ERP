@@ -31,7 +31,11 @@ interface TransferenciaRow {
   to_name: string
   status: string
   lineas: string
+  productos: string | null
+  notes: string | null
   created_at: string
+  dispatched_at: string | null
+  received_at: string | null
 }
 
 interface AlmacenOption {
@@ -59,7 +63,11 @@ export default async function TransferenciasPage({
     const t = await tx<TransferenciaRow[]>`
       select tord.id, wf.name as from_name, wt.name as to_name, tord.status,
              (select count(*) from public.transfer_order_lines l where l.order_id = tord.id)::text as lineas,
-             tord.created_at::text
+             (select string_agg(p.name || ' · ' || trim_scale(l.qty_requested)::text || ' ' || p.unit, ', ' order by p.name)
+                from public.transfer_order_lines l
+                join public.products p on p.id = l.product_id
+               where l.order_id = tord.id) as productos,
+             tord.notes, tord.created_at::text, tord.dispatched_at::text, tord.received_at::text
       from public.transfer_orders tord
       join public.warehouses wf on wf.id = tord.from_warehouse_id
       join public.warehouses wt on wt.id = tord.to_warehouse_id
@@ -73,6 +81,9 @@ export default async function TransferenciasPage({
   })
 
   const enTransito = transferencias.filter((t) => t.status === 'in_transit').length
+  const porDespachar = transferencias.filter((t) => t.status === 'draft').length
+  const fecha = (iso: string) =>
+    new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short' })
   const puedeCrear = exigir(ctx, 'transfers', 'transfers.create').ok
   const qs = ctx.demoQs
 
@@ -82,49 +93,75 @@ export default async function TransferenciasPage({
         <PageHeader
           icon="local_shipping"
           title="Transferencias"
-          description="Despachado mueve el origen, recibido mueve el destino -dos momentos distintos, con el transito real entre ellos-."
+          description="Al despacharla, la mercancía sale del almacén de origen; al recibirla, entra al de destino. Mientras tanto queda en tránsito."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="En transito" value={String(enTransito)} />
-          <StatCard label="Total" value={String(transferencias.length)} />
+          <StatCard
+            label="En tránsito"
+            value={String(enTransito)}
+            hint="salieron y no han llegado"
+          />
+          <StatCard label="Por despachar" value={String(porDespachar)} hint="en borrador" />
+          <StatCard label="Total" value={String(transferencias.length)} hint="las últimas 50" />
         </section>
 
         {transferencias.length === 0 ? (
           <EmptyState
             icon="local_shipping"
-            title="Todavia no hay ninguna transferencia"
-            description="Crea la primera abajo."
+            title="Todavía no hay ninguna transferencia"
+            description={
+              almacenes.length < 2
+                ? 'Para transferir hace falta un segundo almacén: una sucursal, un depósito o el camión de reparto.'
+                : 'Crea la primera abajo: eliges de dónde sale y a dónde va, le agregas los productos y la despachas.'
+            }
           />
         ) : (
           <Table>
             <THead>
               <TR>
+                <TH>Creada</TH>
                 <TH>De</TH>
                 <TH>A</TH>
-                <TH numeric>Líneas</TH>
+                <TH>Qué se mueve</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
             <TBody>
               {transferencias.map((t) => (
                 <TR key={t.id}>
-                  <TD>
+                  <TD className="whitespace-nowrap">
                     <a
                       href={`/transferencias/${t.id}${qs}`}
-                      className="text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                      className="font-medium text-[var(--color-text-link)] underline-offset-2 hover:underline"
                     >
-                      {t.from_name}
+                      {fecha(t.created_at)}
                     </a>
                   </TD>
-                  <TD>{t.to_name}</TD>
-                  <TD numeric>
-                    <span className="tabular">{t.lineas}</span>
-                  </TD>
+                  <TD className="text-[var(--color-text-primary)]">{t.from_name}</TD>
+                  <TD className="text-[var(--color-text-primary)]">{t.to_name}</TD>
                   <TD>
+                    <span className="line-clamp-2">{t.productos ?? 'Sin productos todavía'}</span>
+                    {t.notes && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {t.notes}
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="whitespace-nowrap">
                     <Badge tone={badgeTono(t.status)}>
                       {ESTADO_TRANSFERENCIA[t.status] ?? t.status}
                     </Badge>
+                    {t.status === 'received' && t.received_at && (
+                      <span className="block pt-1 text-xs text-[var(--color-text-muted)]">
+                        el {fecha(t.received_at)}
+                      </span>
+                    )}
+                    {t.status === 'in_transit' && t.dispatched_at && (
+                      <span className="block pt-1 text-xs text-[var(--color-text-muted)]">
+                        salió el {fecha(t.dispatched_at)}
+                      </span>
+                    )}
                   </TD>
                 </TR>
               ))}

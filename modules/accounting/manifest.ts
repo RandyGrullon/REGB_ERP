@@ -49,13 +49,13 @@ export default defineModule({
     {
       path: '/contabilidad/cuentas',
       label: 'Catálogo de cuentas',
-      perm: 'accounting.accounts.manage',
+      perm: 'accounting.view',
       icon: 'account_tree',
     },
     { path: '/contabilidad/mayor', label: 'Mayor', perm: 'accounting.view', icon: 'menu_book' },
     {
       path: '/contabilidad/balanza',
-      label: 'Balanza de comprobacion',
+      label: 'Balanza de comprobación',
       perm: 'accounting.view',
       icon: 'balance',
     },

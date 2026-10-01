@@ -78,7 +78,7 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
   {
     proposito: 'cxc',
     etiqueta: 'Cuentas por cobrar clientes',
-    ayuda: 'Se debita al emitir una factura a credito; se acredita con cada cobro.',
+    ayuda: 'Se debita al emitir una factura a crédito; se acredita con cada cobro.',
     tipo: 'asset',
     codigo: '1102',
     nombre: 'Cuentas por cobrar clientes',
@@ -93,11 +93,11 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
   },
   {
     proposito: 'inventario',
-    etiqueta: 'Inventario de mercancias',
+    etiqueta: 'Inventario de mercancías',
     ayuda: 'Se acredita con el costo de lo vendido en caja.',
     tipo: 'asset',
     codigo: '1104',
-    nombre: 'Inventario de mercancias',
+    nombre: 'Inventario de mercancías',
   },
   {
     proposito: 'itbis_adelantado',
@@ -126,7 +126,7 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
   {
     proposito: 'itbis_retenido',
     etiqueta: 'ITBIS retenido a terceros',
-    ayuda: 'La parte de ITBIS que le retienes al proveedor: se le paga a la DGII, no a el.',
+    ayuda: 'La parte de ITBIS que le retienes al proveedor: se le paga a la DGII, no a él.',
     tipo: 'liability',
     codigo: '2103',
     nombre: 'ITBIS retenido por pagar',
@@ -134,7 +134,7 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
   {
     proposito: 'isr_retenido',
     etiqueta: 'ISR retenido a terceros',
-    ayuda: 'La retencion de ISR al proveedor (honorarios, alquileres): se le paga a la DGII.',
+    ayuda: 'La retención de ISR al proveedor (honorarios, alquileres): se le paga a la DGII.',
     tipo: 'liability',
     codigo: '2104',
     nombre: 'ISR retenido por pagar',
@@ -145,7 +145,7 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
     ayuda: 'Se acredita con lo vendido, sin el ITBIS.',
     tipo: 'revenue',
     codigo: '4101',
-    nombre: 'Ventas de mercancias',
+    nombre: 'Ventas de mercancías',
   },
   {
     proposito: 'costo_ventas',
@@ -157,16 +157,16 @@ export const PROPOSITOS_CONTABLES: readonly DefinicionProposito[] = [
   },
   {
     proposito: 'compras',
-    etiqueta: 'Compras de mercancia (606 tipo 09 o sin clasificar)',
-    ayuda: 'Lo que se debita con la factura de un proveedor de mercancia. Por defecto, el inventario.',
+    etiqueta: 'Compras de mercancía (606 tipo 09 o sin clasificar)',
+    ayuda: 'Lo que se debita con la factura de un proveedor de mercancía. Por defecto, el inventario.',
     tipo: 'asset',
     codigo: '1104',
-    nombre: 'Inventario de mercancias',
+    nombre: 'Inventario de mercancías',
   },
   {
     proposito: 'gastos',
     etiqueta: 'Gastos (606 tipos 01-08, 10 y 11)',
-    ayuda: 'Lo que se debita con la factura de un proveedor que no es mercancia para vender.',
+    ayuda: 'Lo que se debita con la factura de un proveedor que no es mercancía para vender.',
     tipo: 'expense',
     codigo: '6101',
     nombre: 'Gastos generales',

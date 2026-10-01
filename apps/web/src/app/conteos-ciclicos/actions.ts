@@ -42,7 +42,7 @@ const num = (raw: string): number | null => {
 /** Recalcula la clase ABC de cada producto a partir de su valor actual en inventario. */
 export async function recalcularAbc(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.manage')
   if (!permiso.ok) return permiso
 
@@ -94,12 +94,12 @@ export async function recalcularAbc(fd: FormData): Promise<ActionResult> {
 /** Inicia un conteo nuevo en un almacen, con una fila por cada producto que tiene existencia ahi. */
 export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.manage')
   if (!permiso.ok) return permiso
 
   const warehouseId = String(fd.get('warehouseId') ?? '')
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     // `public.existencias` y no `stock_levels`: desde 0109 la columna
@@ -132,7 +132,7 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
   })
 
   if (resultado === 'sin-existencias') {
-    return { ok: false, error: 'Ese almacen no tiene existencias para contar.' }
+    return { ok: false, error: 'Ese almacén no tiene existencias para contar.' }
   }
 
   revalidatePath('/conteos-ciclicos')
@@ -142,16 +142,16 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
 /** Registra lo contado en una linea -conteo ciego: el formulario nunca le muestra el numero del sistema-. */
 export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.count')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const countId = String(fd.get('countId') ?? '')
   const counted = num(String(fd.get('counted') ?? ''))
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
   if (counted === null || counted < 0)
-    return { ok: false, error: 'La cantidad contada no es valida.' }
+    return { ok: false, error: 'La cantidad contada no es válida.' }
 
   try {
     // Unica puerta desde 0115: comprueba que el conteo siga en
@@ -175,7 +175,7 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
 /** Envia el conteo a aprobacion -solo si TODAS las lineas ya tienen algo contado-. */
 export async function enviarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.count')
   if (!permiso.ok) return permiso
 
@@ -187,14 +187,14 @@ export async function enviarConteo(fd: FormData): Promise<ActionResult> {
       select status from public.cycle_counts where id = ${countId} and tenant_id = ${ctx.tenantId}`
     if (!conteo) return 'no-existe'
     if (!transicionValidaConteo(conteo.status as EstadoConteoCiclico, 'pending_approval')) {
-      return 'Ese conteo ya no se puede enviar a aprobacion.'
+      return 'Ese conteo ya no se puede enviar a aprobación.'
     }
 
     const [pendientes] = await tx<{ n: string }[]>`
       select count(*)::text as n from public.cycle_count_lines
       where count_id = ${countId} and tenant_id = ${ctx.tenantId} and counted_qty is null`
     if (Number(pendientes!.n) > 0) {
-      return 'Todavia hay productos sin contar en esta lista.'
+      return 'Todavía hay productos sin contar en esta lista.'
     }
 
     await tx`
@@ -219,7 +219,7 @@ export async function enviarConteo(fd: FormData): Promise<ActionResult> {
 /** Aprueba el conteo: postea el ajuste de cada linea con diferencia, y marca contados los productos. */
 export async function aprobarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.approve')
   if (!permiso.ok) return permiso
 
@@ -286,7 +286,7 @@ export async function aprobarConteo(fd: FormData): Promise<ActionResult> {
 /** Rechaza el conteo -no ajusta nada-. */
 export async function rechazarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'stock-counts', 'stock-counts.approve')
   if (!permiso.ok) return permiso
 
@@ -323,7 +323,7 @@ export async function iniciarConteoForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await iniciarConteo(fd),
     'iniciarConteo',
-    'Listo, el conteo quedo abierto para contar.',
+    'Listo, el conteo quedó abierto para contar.',
   )
 }
 export async function registrarLineaConteoForm(fd: FormData): Promise<void> {

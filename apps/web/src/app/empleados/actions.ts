@@ -32,7 +32,7 @@ const num = (raw: string): number | null => {
 /** Da de alta un empleado, con su primer contrato. */
 export async function crearEmpleado(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'employees', 'employees.employee.create')
   if (!permiso.ok) return permiso
 
@@ -51,7 +51,7 @@ export async function crearEmpleado(fd: FormData): Promise<ActionResult> {
       .toLowerCase() || null
   const phone = String(fd.get('phone') ?? '').trim() || null
 
-  if (code.length < 1) return { ok: false, error: 'Escribe el codigo del empleado.' }
+  if (code.length < 1) return { ok: false, error: 'Escribe el código del empleado.' }
   if (firstName.length < 2 || lastName.length < 2)
     return { ok: false, error: 'Escribe el nombre completo.' }
   if (position.length < 2) return { ok: false, error: 'Escribe el cargo.' }
@@ -90,7 +90,7 @@ export async function crearEmpleado(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya existe un empleado con ese codigo o esa cedula.' }
+      return { ok: false, error: 'Ya existe un empleado con ese código o esa cédula.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -102,7 +102,7 @@ export async function crearEmpleado(fd: FormData): Promise<ActionResult> {
 /** Registra un contrato nuevo -promocion o cambio de salario-. */
 export async function crearContrato(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'employees', 'employees.contract.create')
   if (!permiso.ok) return permiso
 
@@ -115,7 +115,7 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
 
   if (!employeeId) return { ok: false, error: 'Falta el empleado.' }
   if (!['indefinido', 'determinado', 'por_obra'].includes(contractType)) {
-    return { ok: false, error: 'Tipo de contrato no valido.' }
+    return { ok: false, error: 'Tipo de contrato no válido.' }
   }
   if (salary === null || salary <= 0)
     return { ok: false, error: 'Escribe el nuevo salario mensual.' }
@@ -141,7 +141,7 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
 /** Da de baja a un empleado. */
 export async function darDeBajaEmpleado(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'employees', 'employees.employee.terminate')
   if (!permiso.ok) return permiso
 
@@ -183,7 +183,7 @@ export async function darDeBajaEmpleado(fd: FormData): Promise<ActionResult> {
  */
 export async function vincularUsuario(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'employees', 'employees.employee.link')
   if (!permiso.ok) return permiso
 

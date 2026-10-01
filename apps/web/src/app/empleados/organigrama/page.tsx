@@ -19,24 +19,31 @@ function Rama({
   node,
   posiciones,
   nivel,
+  qs,
 }: {
   node: OrgNode
   posiciones: Map<string, string>
   nivel: number
+  qs: string
 }) {
   return (
     <li>
       <div
-        className="flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2"
-        style={{ marginLeft: nivel * 24 }}
+        className="flex flex-wrap items-center gap-x-2 gap-y-0.5 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-2"
+        style={{ marginLeft: Math.min(nivel, 6) * 16 }}
       >
-        <span className="font-medium text-[var(--color-text-primary)]">{node.name}</span>
+        <a
+          href={`/empleados/${node.id}${qs}`}
+          className="font-semibold text-[var(--color-text-primary)] hover:text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+        >
+          {node.name}
+        </a>
         <span className="text-xs text-[var(--color-text-muted)]">{posiciones.get(node.id)}</span>
       </div>
       {node.reports.length > 0 && (
         <ul className="mt-2 space-y-2">
           {node.reports.map((r) => (
-            <Rama key={r.id} node={r} posiciones={posiciones} nivel={nivel + 1} />
+            <Rama key={r.id} node={r} posiciones={posiciones} nivel={nivel + 1} qs={qs} />
           ))}
         </ul>
       )}
@@ -74,22 +81,22 @@ export default async function OrganigramaPage({
         <PageHeader
           icon="account_tree"
           title="Organigrama"
-          description="Quien le reporta a quien, armado solo a partir del jefe directo de cada empleado."
+          description="Quién le reporta a quién, armado a partir del jefe directo de cada empleado. Toca un nombre para ver su ficha."
           crumbs={[{ label: 'Empleados', href: `/empleados${qs}` }, { label: 'Organigrama' }]}
         />
 
         {arbol.length === 0 ? (
           <EmptyState
             icon="account_tree"
-            title="Todavia no hay nada que dibujar"
-            description="Registra empleados activos y asignales un jefe directo para ver el organigrama."
+            title="Todavía no hay nada que dibujar"
+            description="Registra empleados activos y asígnales un jefe directo para ver el organigrama."
           />
         ) : (
           <Card>
             <CardBody>
               <ul className="space-y-2">
                 {arbol.map((n) => (
-                  <Rama key={n.id} node={n} posiciones={posiciones} nivel={0} />
+                  <Rama key={n.id} node={n} posiciones={posiciones} nivel={0} qs={qs} />
                 ))}
               </ul>
             </CardBody>

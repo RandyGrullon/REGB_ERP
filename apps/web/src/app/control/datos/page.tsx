@@ -3,7 +3,6 @@ import {
   EmptyState,
   FilterSelect,
   Icon,
-  Mono,
   SearchField,
   StatCard,
   TBody,
@@ -17,6 +16,7 @@ import {
 } from '@regb/ui'
 import { cargarInventarioDatos } from '@/lib/control-datos'
 import { db } from '@/lib/db'
+import { nombreEntidad } from '@/app/auditoria/etiquetas'
 import { requireProvider } from '@/lib/provider-guard'
 
 export const dynamic = 'force-dynamic'
@@ -45,7 +45,7 @@ interface Params {
 /** Agrupacion por prefijo: 30 tablas en una tabla plana no se leen. */
 const GRUPOS: { titulo: string; icono: string; test: (t: string) => boolean }[] = [
   {
-    titulo: 'Organizacion',
+    titulo: 'Organización',
     icono: 'apartment',
     test: (t) =>
       [
@@ -115,7 +115,8 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
 
   const visibles = tenants.filter((t) => (soloTenant === '' ? true : t.slug === soloTenant))
   const tablasVisibles = inv.tablas.filter((t) => {
-    if (q !== '' && !t.includes(q)) return false
+    // Se busca por el nombre en castellano y por el de la base.
+    if (q !== '' && !`${t} ${nombreEntidad(t)}`.toLowerCase().includes(q)) return false
     if (ocultarVacias && (inv.totalPorTabla.get(t) ?? 0) === 0) return false
     return true
   })
@@ -173,7 +174,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
           name="q"
           defaultValue={p.q ?? ''}
           label="Buscar tabla"
-          placeholder="products, pos_sales…"
+          placeholder="Producto, venta en caja…"
         />
         <FilterSelect label="Cliente" name="tenant" defaultValue={soloTenant} className="w-56">
           <option value="">Todos los clientes</option>
@@ -191,7 +192,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
             defaultChecked={p.vacias === '1'}
             className="h-4 w-4 accent-[var(--color-brand)]"
           />
-          Mostrar tablas vacias
+          Mostrar tablas vacías
         </label>
         <ToolbarActions hasFilters={hayFiltro} clearHref="/control/datos" />
       </Toolbar>
@@ -200,7 +201,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
         <EmptyState
           icon="filter_alt_off"
           title="Nada que mostrar con ese filtro"
-          description="Si buscaste una tabla que existe pero esta vacia, marca 'Mostrar tablas vacias'."
+          description="Si buscaste una tabla que existe pero está vacía, marca 'Mostrar tablas vacías'."
         />
       ) : (
         <>
@@ -212,7 +213,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
               <THead>
                 <TR>
                   <TH>Cliente</TH>
-                  <TH>Tier</TH>
+                  <TH>Plan</TH>
                   <TH numeric>Filas totales</TH>
                   <TH numeric>Tablas con datos</TH>
                   <TH numeric>Archivos</TH>
@@ -234,7 +235,7 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
                           {t.legal_name}
                         </Link>
                       </TD>
-                      <TD>{t.tier}</TD>
+                      <TD>{t.tier.toUpperCase()}</TD>
                       <TD numeric>
                         <span className="tabular font-semibold">
                           {filas.toLocaleString('es-DO')}
@@ -285,7 +286,9 @@ export default async function DatosPage({ searchParams }: { searchParams: Promis
                   {g.tablas.map((tabla) => (
                     <TR key={tabla}>
                       <TD>
-                        <Mono>{tabla}</Mono>
+                        <span className="text-[var(--color-text-primary)]" title={tabla}>
+                          {nombreEntidad(tabla)}
+                        </span>
                       </TD>
                       {visibles.map((t) => {
                         const n = inv.porTenant.get(t.id)?.get(tabla) ?? 0

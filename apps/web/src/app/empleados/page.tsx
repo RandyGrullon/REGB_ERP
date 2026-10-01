@@ -99,7 +99,7 @@ export default async function EmpleadosPage({
         <PageHeader
           icon="badge"
           title="Empleados"
-          description="Expediente, contratos y a quien le reporta cada quien."
+          description="Expediente, contratos y a quién le reporta cada quien."
           actions={
             <a
               href={`/empleados/organigrama${qs}`}
@@ -114,7 +114,7 @@ export default async function EmpleadosPage({
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Empleados activos" value={String(activos.length)} />
           <StatCard
-            label="Nomina mensual"
+            label="Nómina mensual"
             value={`RD$ ${money(nominaTotal)}`}
             hint="salarios activos"
           />
@@ -127,20 +127,20 @@ export default async function EmpleadosPage({
         {empleados.length === 0 ? (
           <EmptyState
             icon="badge"
-            title="Todavia no hay ningun empleado registrado"
-            description="Registra el primero abajo, con su cargo y su fecha de ingreso."
+            title="Todavía no hay ningún empleado registrado"
+            description="El expediente de cada persona: cargo, salario, contrato y a quién le reporta. Con él se calcula la nómina y el saldo de vacaciones. Registra el primero abajo."
           />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Empleado</TH>
-                <TH>Cargo</TH>
-                <TH>Departamento</TH>
-                <TH>Ingreso</TH>
+                <TH className="hidden sm:table-cell">Cargo</TH>
+                <TH className="hidden md:table-cell">Departamento</TH>
+                <TH className="hidden sm:table-cell">Ingreso</TH>
                 <TH numeric>Antigüedad</TH>
                 <TH numeric>Salario</TH>
-                <TH>Estado</TH>
+                <TH className="hidden sm:table-cell">Estado</TH>
               </TR>
             </THead>
             <TBody>
@@ -159,20 +159,28 @@ export default async function EmpleadosPage({
                       >
                         {e.first_name} {e.last_name}
                       </a>
-                      <span className="block text-xs text-[var(--color-text-muted)]">{e.code}</span>
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {e.code}
+                        {/* En el teléfono el cargo va aquí: la columna se esconde. */}
+                        <span className="sm:hidden">
+                          {' · '}
+                          {e.position}
+                          {e.status !== 'active' ? ` · ${es.label}` : ''}
+                        </span>
+                      </span>
                     </TD>
-                    <TD>{e.position}</TD>
-                    <TD>{e.department ?? '—'}</TD>
-                    <TD>{fecha(e.hire_date)}</TD>
+                    <TD className="hidden sm:table-cell">{e.position}</TD>
+                    <TD className="hidden md:table-cell">{e.department ?? '—'}</TD>
+                    <TD className="hidden whitespace-nowrap sm:table-cell">{fecha(e.hire_date)}</TD>
                     <TD numeric>
-                      <span className="tabular">
-                        {anos} ano{anos === 1 ? '' : 's'}
+                      <span className="tabular whitespace-nowrap">
+                        {anos === 0 ? 'Menos de 1 año' : `${anos} año${anos === 1 ? '' : 's'}`}
                       </span>
                     </TD>
                     <TD numeric>
                       <span className="tabular font-semibold">{money(Number(e.salary))}</span>
                     </TD>
-                    <TD>
+                    <TD className="hidden sm:table-cell">
                       <Badge tone={es.tone}>{es.label}</Badge>
                     </TD>
                   </TR>
@@ -202,11 +210,11 @@ export default async function EmpleadosPage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Nombre
-                  <input name="firstName" required placeholder="Maria" className={claseInput} />
+                  <input name="firstName" required placeholder="Juana" className={claseInput} />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Apellido
-                  <input name="lastName" required placeholder="Rosario" className={claseInput} />
+                  <input name="lastName" required placeholder="Pérez" className={claseInput} />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Cargo

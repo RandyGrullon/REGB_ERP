@@ -83,11 +83,7 @@ const CLAVE_SECCIONES = 'regb-menu-secciones'
 const CLAVE_MODULOS = 'regb-menu-modulos'
 
 /** "Nómina" y "nomina" son lo mismo para quien busca con prisa. */
-const plano = (t: string) =>
-  t
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
+const plano = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
 /** Estado recordado. localStorage puede no existir o fallar (modo privado). */
 function leer(clave: string): Record<string, boolean> {
@@ -321,7 +317,9 @@ function FilaModulo({
           aria-current={principalActiva ? 'page' : undefined}
           onClick={(e) => onNavegar(e, principal.path)}
           className={cn(
-            'relative flex h-10 min-w-0 flex-1 items-center gap-2.5 rounded-[var(--radius-lg)] pl-3 md:h-9',
+            // Alto mínimo y no fijo: un nombre largo ("Códigos de barra &
+            // RFID") pasa a dos líneas en vez de cortarse con "…".
+            'relative flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-[var(--radius-lg)] py-1.5 pl-3 md:min-h-9',
             variasPantallas ? 'pr-8' : 'pr-2',
             'text-sm transition-colors duration-100',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
@@ -350,7 +348,9 @@ function FilaModulo({
                 : 'text-[var(--color-text-muted)] group-hover:text-[var(--color-text-secondary)]',
             )}
           />
-          <span className="flex-1 truncate">{etiqueta}</span>
+          <span title={etiqueta} className="line-clamp-2 flex-1 break-words leading-snug">
+            {etiqueta}
+          </span>
 
           {mod.isTrial && (
             <span
@@ -366,7 +366,7 @@ function FilaModulo({
               amarillo en el menu hacia creer al dueño que algo estaba roto.
               La sugerencia vive en el marketplace, en "Con que funciona". */}
           {badgeTotal > 0 && !abierto && (
-            <span className="tabular shrink-0 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1.5 text-[10px] font-semibold leading-[18px] text-white">
+            <span className="tabular shrink-0 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1.5 text-[10px] font-semibold leading-[18px] text-[var(--color-text-on-brand)]">
               {badgeTotal > 99 ? '99+' : badgeTotal}
             </span>
           )}
@@ -394,7 +394,11 @@ function FilaModulo({
       </div>
 
       {variasPantallas && (
-        <ul id={id} hidden={!abierto} className="ml-[21px] mt-0.5 space-y-0.5 border-l border-[var(--color-border)] pl-2">
+        <ul
+          id={id}
+          hidden={!abierto}
+          className="ml-[21px] mt-0.5 space-y-0.5 border-l border-[var(--color-border)] pl-2"
+        >
           {mod.routes.map((route) => {
             const activa = route.path === activePath
             return (
@@ -404,7 +408,7 @@ function FilaModulo({
                   aria-current={activa ? 'page' : undefined}
                   onClick={(e) => onNavegar(e, route.path)}
                   className={cn(
-                    'flex h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 text-[13px] md:h-8',
+                    'flex min-h-9 items-center gap-2 rounded-[var(--radius-md)] px-2 py-1 text-[13px] md:min-h-8',
                     'transition-colors duration-100',
                     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]',
                     activa
@@ -412,9 +416,14 @@ function FilaModulo({
                       : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)]',
                   )}
                 >
-                  <span className="flex-1 truncate">{route.label}</span>
+                  <span
+                    title={route.label}
+                    className="line-clamp-2 flex-1 break-words leading-snug"
+                  >
+                    {route.label}
+                  </span>
                   {route.badge ? (
-                    <span className="tabular shrink-0 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1.5 text-[10px] font-semibold leading-[18px] text-white">
+                    <span className="tabular shrink-0 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1.5 text-[10px] font-semibold leading-[18px] text-[var(--color-text-on-brand)]">
                       {route.badge > 99 ? '99+' : route.badge}
                     </span>
                   ) : null}

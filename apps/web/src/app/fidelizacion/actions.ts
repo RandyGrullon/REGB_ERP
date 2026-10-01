@@ -28,7 +28,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function registrarPuntos(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
@@ -39,7 +39,7 @@ export async function registrarPuntos(fd: FormData): Promise<ActionResult> {
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
   if (!Number.isFinite(puntos) || puntos === 0)
     return { ok: false, error: 'Los puntos no pueden ser cero.' }
-  if (!reason) return { ok: false, error: 'Escribe una razon.' }
+  if (!reason) return { ok: false, error: 'Escribe una razón.' }
 
   await asUser(
     ctx.userId,
@@ -56,7 +56,7 @@ export async function registrarPuntos(fd: FormData): Promise<ActionResult> {
 
 export async function crearCupon(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
@@ -68,9 +68,9 @@ export async function crearCupon(fd: FormData): Promise<ActionResult> {
   const discountValueRaw = Number(fd.get('discountValue') ?? '')
   const expiresAtRaw = String(fd.get('expiresAt') ?? '')
 
-  if (!code) return { ok: false, error: 'Falta el codigo del cupon.' }
+  if (!code) return { ok: false, error: 'Falta el código del cupón.' }
   if (!['percentage', 'fixed'].includes(discountType))
-    return { ok: false, error: 'Elige un tipo de descuento valido.' }
+    return { ok: false, error: 'Elige un tipo de descuento válido.' }
   if (!Number.isFinite(discountValueRaw) || discountValueRaw <= 0)
     return { ok: false, error: 'El descuento debe ser mayor que cero.' }
   const discountValue = discountType === 'percentage' ? discountValueRaw / 100 : discountValueRaw
@@ -93,7 +93,7 @@ export async function crearCupon(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de un cupon -activo a redimido o expirado, ambos terminales-. */
 export async function transicionarCupon(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
@@ -104,7 +104,7 @@ export async function transicionarCupon(fd: FormData): Promise<ActionResult> {
     const [c] = await tx<{ status: EstadoCupon }[]>`
       select status from public.loyalty_coupons where id = ${couponId} and tenant_id = ${ctx.tenantId} for update`
     if (!c) return 'no-existe'
-    if (!transicionValidaCupon(c.status, siguiente)) return 'Ese cupon ya se resolvio.'
+    if (!transicionValidaCupon(c.status, siguiente)) return 'Ese cupón ya se resolvió.'
 
     await tx`
       update public.loyalty_coupons
@@ -120,7 +120,7 @@ export async function transicionarCupon(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Ese cupon no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Ese cupón no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath('/fidelizacion/cupones')
@@ -129,7 +129,7 @@ export async function transicionarCupon(fd: FormData): Promise<ActionResult> {
 
 export async function crearReferido(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
@@ -138,9 +138,9 @@ export async function crearReferido(fd: FormData): Promise<ActionResult> {
   const bonusPoints = Number(fd.get('bonusPoints') ?? '')
 
   if (!referrerCustomerId) return { ok: false, error: 'Falta el cliente que refiere.' }
-  if (!referredCustomerId) return { ok: false, error: 'Elige a quien refiere.' }
+  if (!referredCustomerId) return { ok: false, error: 'Elige a quién refiere.' }
   if (referrerCustomerId === referredCustomerId)
-    return { ok: false, error: 'Un cliente no puede referirse a si mismo.' }
+    return { ok: false, error: 'Un cliente no puede referirse a sí mismo.' }
   if (!Number.isFinite(bonusPoints) || bonusPoints <= 0)
     return { ok: false, error: 'El bono debe ser mayor que cero.' }
 
@@ -159,7 +159,7 @@ export async function crearReferido(fd: FormData): Promise<ActionResult> {
 /** Completar un referido acredita el bono al referente en el mismo movimiento; expirar no acredita nada. */
 export async function transicionarReferido(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'loyalty', 'loyalty.manage')
   if (!permiso.ok) return permiso
 
@@ -173,7 +173,7 @@ export async function transicionarReferido(fd: FormData): Promise<ActionResult> 
       select status, referrer_customer_id, bonus_points from public.loyalty_referrals
       where id = ${referralId} and tenant_id = ${ctx.tenantId} for update`
     if (!r) return 'no-existe'
-    if (!transicionValidaReferido(r.status, siguiente)) return 'Ese referido ya se resolvio.'
+    if (!transicionValidaReferido(r.status, siguiente)) return 'Ese referido ya se resolvió.'
 
     await tx`
       update public.loyalty_referrals

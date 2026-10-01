@@ -177,7 +177,23 @@ async function pedir(path, rol, reintentos = 3) {
     try {
       const res = await fetch(url, { redirect: 'follow' })
       estado = res.status
-      if (estado >= 500) cuerpo = await res.text()
+      cuerpo = await res.text()
+      // Con el Suspense del layout (la pantalla de carga) la respuesta se
+      // transmite por partes y el código ya salió como 200 cuando la
+      // pantalla falla: el error queda como `digest` dentro del HTML. Un
+      // `notFound()` o un `redirect()` también dejan digest, y esos no son
+      // fallos. Cualquier otro sí.
+      const digests = [
+        ...[...cuerpo.matchAll(/data-dgst="([^"]+)"/g)].map((m) => m[1]),
+        // En el payload de React va escapado ("digest":"…" con barras); los
+        // digest son números o NEXT_…, así que basta con lo que sigue.
+        ...[...cuerpo.matchAll(/digest[^A-Za-z0-9]{1,8}([A-Za-z0-9_;]+)/g)].map((m) => m[1]),
+      ].filter((d) => /^(\d+|NEXT_)/.test(d)) // fuera `digest: undefined` del código de la página
+      if (digests.some((d) => !/^NEXT_(HTTP_ERROR_FALLBACK|REDIRECT|NOT_FOUND)/.test(d))) {
+        estado = 500
+      } else if (estado === 200 && digests.some((d) => d.startsWith('NEXT_HTTP_ERROR_FALLBACK;404'))) {
+        estado = 404
+      }
     } catch (err) {
       estado = 0
       cuerpo = err.message

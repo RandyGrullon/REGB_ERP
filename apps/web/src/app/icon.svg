@@ -1,15 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Marca de REGB: la R en blanco sobre el azul de accion (tokens brand
-       light #0066CC / dark #0071E3). La R es un trazo y no texto: un
-       favicon no puede depender de las fuentes de cada maquina. -->
+  <!-- Logo de REGB, la "R que brota": cuatro piezas que encajan alrededor
+       de una cruz y un lazo en forma de hoja. Los trazos son copia de
+       LOGO_TRAZOS (packages/ui/src/components/Logo.tsx); si cambian alli,
+       cambian aqui. Azul de accion: brand light #0066CC / dark #0071E3. -->
   <style>
-    .fondo { fill: #0066CC; }
-    @media (prefers-color-scheme: dark) { .fondo { fill: #0071E3; } }
+    .loseta { fill: #0066CC; }
+    @media (prefers-color-scheme: dark) { .loseta { fill: #0071E3; } }
   </style>
-  <rect class="fondo" width="64" height="64" rx="14" />
-  <path
-    fill="#FFFFFF"
-    fill-rule="evenodd"
-    d="M19 13h17.5C44 13 49 17.6 49 24.6c0 5.3-3 9-7.7 10.4L50 51h-9.3l-7.9-15H27v15h-8V13Zm8 7v9h9c3.2 0 5-1.7 5-4.5S39.2 20 36 20h-9Z"
-  />
+  <path class="loseta" d="M23.2 0H40.8c8.12 0 12.18 0 15.28 1.58a14.5 14.5 0 0 1 6.34 6.34c1.58 3.1 1.58 7.16 1.58 15.28V40.8c0 8.12 0 12.18 -1.58 15.28a14.5 14.5 0 0 1 -6.34 6.34c-3.1 1.58 -7.16 1.58 -15.28 1.58H23.2c-8.12 0 -12.18 0 -15.28 -1.58a14.5 14.5 0 0 1 -6.34 -6.34c-1.58 -3.1 -1.58 -7.16 -1.58 -15.28V23.2c0 -8.12 0 -12.18 1.58 -15.28a14.5 14.5 0 0 1 6.34 -6.34c3.1 -1.58 7.16 -1.58 15.28 -1.58Z"/>
+  <g fill="#FFFFFF">
+    <path d="M20 14H24.5A1.5 1.5 0 0 1 26 15.5V28.5A1.5 1.5 0 0 1 24.5 30H18.5A1.5 1.5 0 0 1 17 28.5V17A3 3 0 0 1 20 14Z"/>
+    <path d="M18.5 34H24.5A1.5 1.5 0 0 1 26 35.5V48.5A1.5 1.5 0 0 1 24.5 50H20A3 3 0 0 1 17 47V35.5A1.5 1.5 0 0 1 18.5 34Z"/>
+    <path d="M30.64 35.36Q30 34 31.5 34L37.5 34Q39 34 39.64 35.36L45.86 48.64Q46.5 50 45 50L39 50Q37.5 50 36.86 48.64Z"/>
+    <path d="M30 28.5V22A8 8 0 0 1 38 14H45.5A1.5 1.5 0 0 1 47 15.5V22A8 8 0 0 1 39 30H31.5A1.5 1.5 0 0 1 30 28.5Z"/>
+  </g>
 </svg>

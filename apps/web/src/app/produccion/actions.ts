@@ -40,7 +40,7 @@ const num = (raw: string): number | null => {
 /** Crea una orden en borrador sobre el BOM activo elegido. */
 export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'manufacturing', 'manufacturing.manage')
   if (!permiso.ok) return permiso
 
@@ -49,7 +49,7 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const qtyPlanned = num(String(fd.get('qtyPlanned') ?? ''))
 
   if (!bomId) return { ok: false, error: 'Elige el BOM.' }
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén.' }
   if (qtyPlanned === null || qtyPlanned <= 0) {
     return { ok: false, error: 'La cantidad planificada debe ser mayor que cero.' }
   }
@@ -74,7 +74,7 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
 /** Libera la orden: explota la receta y consume los componentes de una sola vez. */
 export async function liberarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'manufacturing', 'manufacturing.manage')
   if (!permiso.ok) return permiso
 
@@ -95,7 +95,7 @@ export async function liberarOrden(fd: FormData): Promise<ActionResult> {
     const [bom] = await tx<{ output_qty: string; status: string }[]>`
       select output_qty::text, status from public.bill_of_materials
       where id = ${orden.bom_id} and tenant_id = ${ctx.tenantId}`
-    if (!bom || bom.status !== 'active') return 'El BOM de esta orden ya no esta activo.'
+    if (!bom || bom.status !== 'active') return 'El BOM de esta orden ya no está activo.'
 
     const lineasBom = await tx<{ component_product_id: string; quantity_per_unit: string }[]>`
       select component_product_id, quantity_per_unit::text from public.bom_lines
@@ -140,7 +140,7 @@ export async function liberarOrden(fd: FormData): Promise<ActionResult> {
 /** Registra avance -completado y/o merma-, entra el producto terminado, y completa la orden sola si ya cubre lo planificado. */
 export async function reportarAvance(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'manufacturing', 'manufacturing.report')
   if (!permiso.ok) return permiso
 
@@ -220,7 +220,7 @@ export async function reportarAvance(fd: FormData): Promise<ActionResult> {
 /** Cancela una orden -solo mientras sigue en borrador, antes de consumir nada-. */
 export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'manufacturing', 'manufacturing.manage')
   if (!permiso.ok) return permiso
 
@@ -232,7 +232,7 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
       select status from public.production_orders where id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!orden) return 'no-existe'
     if (!transicionValidaOrdenProduccion(orden.status as EstadoOrdenProduccion, 'cancelled')) {
-      return 'Esa orden ya no se puede cancelar -ya consumio inventario-.'
+      return 'Esa orden ya no se puede cancelar: ya consumió inventario.'
     }
 
     await tx`

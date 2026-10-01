@@ -5,7 +5,9 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Icon,
   Mono,
+  PageHeader,
   Table,
   THead,
   TBody,
@@ -19,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { cerrarConteoForm, iniciarConteoForm, registrarLineaConteoForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, cantidadConSigno } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Conteos · REGB ERP' }
@@ -82,6 +85,9 @@ export default async function CountsPage({
   )
 
   const puedeContar = exigir(ctx, 'inventory', 'inventory.count').ok
+  // Con el módulo de conteos cíclicos el negocio cuenta allá (ABC, conteo
+  // ciego y aprobación): esta pantalla sencilla se queda para lo puntual.
+  const hayCiclicos = exigir(ctx, 'stock-counts', 'stock-counts.view').ok
   const qs = ctx.demoQs
   const conteoAbierto = counts.find((c) => c.id === abrir)
 
@@ -96,17 +102,29 @@ export default async function CountsPage({
   return (
     <Shell {...shell} activePath="/inventory/counts">
       <div className="space-y-5">
-        <div>
-          <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
-            <a href={`/inventory${qs}`} className="text-[var(--color-text-link)] hover:underline">
-              Existencias
-            </a>{' '}
-            › Conteos
-          </nav>
-          <h1 className="mt-1 text-xl font-bold text-[var(--color-text-primary)]">
-            Conteos ciclicos
-          </h1>
-        </div>
+        <PageHeader
+          icon="checklist"
+          title="Conteos físicos"
+          description="Cuenta lo que hay en el estante y el sistema ajusta la diferencia. No hace falta cerrar el negocio: cuenta una parte cada semana."
+          crumbs={[{ label: 'Existencias', href: `/inventory${qs}` }, { label: 'Conteos' }]}
+        />
+
+        {hayCiclicos && (
+          <a
+            href={`/conteos-ciclicos${qs}`}
+            className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-brand-bright)]"
+          >
+            <Icon name="info" size={20} className="mt-0.5 text-[var(--color-brand-bright)]" />
+            <span>
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                Tu negocio tiene Conteos cíclicos.
+              </span>{' '}
+              Ahí se programa qué contar según la clasificación ABC, se cuenta a ciegas y el ajuste
+              espera aprobación. Úsalo para el conteo de rutina; esta pantalla queda para un conteo
+              puntual.
+            </span>
+          </a>
+        )}
 
         {conteoAbierto && (
           <Card>
@@ -119,7 +137,7 @@ export default async function CountsPage({
             <CardBody className="space-y-3">
               {lineasAbiertas.length === 0 ? (
                 <p className="text-sm text-[var(--color-text-muted)]">
-                  Este almacén no tenia existencias al abrir el conteo.
+                  Este almacén no tenía existencias al abrir el conteo.
                 </p>
               ) : (
                 <Table>
@@ -127,7 +145,7 @@ export default async function CountsPage({
                     <TR>
                       <TH>Producto</TH>
                       <TH numeric>Sistema dice</TH>
-                      <TH numeric>Conteo fisico</TH>
+                      <TH numeric>Conteo físico</TH>
                       <TH numeric>Diferencia</TH>
                     </TR>
                   </THead>
@@ -142,7 +160,7 @@ export default async function CountsPage({
                             <Mono>{l.sku}</Mono> {l.name}
                           </TD>
                           <TD numeric>
-                            <span className="tabular">{l.system_qty}</span>
+                            <span className="tabular">{cantidad(l.system_qty)}</span>
                           </TD>
                           <TD numeric>
                             <form action={registrarLineaConteoForm} className="inline">
@@ -152,7 +170,9 @@ export default async function CountsPage({
                               <input
                                 type="text"
                                 name="counted"
-                                defaultValue={l.counted_qty ?? ''}
+                                defaultValue={
+                                  l.counted_qty !== null ? String(Number(l.counted_qty)) : ''
+                                }
                                 inputMode="decimal"
                                 placeholder="—"
                                 className={inputCls}
@@ -168,8 +188,7 @@ export default async function CountsPage({
                                 tone={diff === 0 ? 'success' : diff < 0 ? 'danger' : 'warning'}
                                 dot={false}
                               >
-                                {diff > 0 ? '+' : ''}
-                                {diff}
+                                {cantidadConSigno(diff)}
                               </Badge>
                             )}
                           </TD>
@@ -188,7 +207,7 @@ export default async function CountsPage({
                 </BotonEnvio>
               </form>
               <p className="text-xs text-[var(--color-text-muted)]">
-                Las lineas sin contar se ignoran: no se asume que "no contado" es "sin diferencia".
+                Las líneas sin contar se ignoran: no se asume que "no contado" es "sin diferencia".
               </p>
             </CardBody>
           </Card>
@@ -197,8 +216,22 @@ export default async function CountsPage({
         {counts.length === 0 ? (
           <EmptyState
             icon="checklist"
-            title="Sin conteos todavia"
-            description="Empieza uno abajo. No hace falta contar todo: muchos arrancan solo con los productos que mas rotan."
+            title="Sin conteos todavía"
+            description={
+              hayCiclicos
+                ? 'Los conteos de rutina de tu negocio están en Conteos cíclicos. Aquí puedes abrir un conteo puntual de un almacén entero.'
+                : 'Empieza uno abajo. No hace falta contar todo: muchos arrancan solo con los productos que más rotan.'
+            }
+            action={
+              hayCiclicos ? (
+                <a
+                  href={`/conteos-ciclicos${qs}`}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                >
+                  Ir a Conteos cíclicos
+                </a>
+              ) : undefined
+            }
           />
         ) : (
           <Table>
@@ -250,7 +283,7 @@ export default async function CountsPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen
+                  Almacén
                   <select
                     name="warehouseId"
                     required

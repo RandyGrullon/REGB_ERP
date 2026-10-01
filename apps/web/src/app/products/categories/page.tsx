@@ -4,6 +4,7 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Icon,
   PageHeader,
   TBody,
   TD,
@@ -19,7 +20,7 @@ import { crearCategoriaForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Categorias · REGB ERP' }
+export const metadata = { title: 'Categorías · REGB ERP' }
 
 interface CategoryRow {
   id: string
@@ -63,16 +64,16 @@ export default async function CategoriesPage({
       <div className="max-w-3xl space-y-5">
         <PageHeader
           icon="sell"
-          title="Categorias"
-          description="Sirven para filtrar el catalogo y agrupar los reportes. Con un nivel de subcategorias basta para casi cualquier negocio."
-          crumbs={[{ label: 'Catalogo', href: `/products${qs}` }, { label: 'Categorias' }]}
+          title="Categorías"
+          description="Sirven para filtrar el catálogo y agrupar los reportes. Con un nivel de subcategorías basta para casi cualquier negocio."
+          crumbs={[{ label: 'Catálogo', href: `/products${qs}` }, { label: 'Categorías' }]}
         />
 
         {categories.length === 0 ? (
           <EmptyState
             icon="sell"
-            title="Todavia no hay categorias"
-            description="Crea la primera abajo. Si importaste un CSV con columna de categoria, ya deberian aparecer aqui."
+            title="Todavía no hay categorías"
+            description="Crea la primera abajo. Si importaste un CSV con columna de categoría, ya deberían aparecer aquí."
           />
         ) : (
           <Table>
@@ -87,8 +88,16 @@ export default async function CategoriesPage({
               {categories.map((c) => (
                 <TR key={c.id}>
                   <TD className="font-medium text-[var(--color-text-primary)]">
-                    {c.parent_name && <span className="text-[var(--color-text-muted)]">↳ </span>}
-                    {c.name}
+                    <span className="inline-flex items-center gap-1">
+                      {c.parent_name && (
+                        <Icon
+                          name="subdirectory_arrow_right"
+                          size={16}
+                          className="text-[var(--color-text-muted)]"
+                        />
+                      )}
+                      {c.name}
+                    </span>
                   </TD>
                   <TD>{c.parent_name ?? '—'}</TD>
                   <TD numeric>
@@ -120,7 +129,7 @@ export default async function CategoriesPage({
                     name="name"
                     required
                     minLength={2}
-                    placeholder="Lacteos"
+                    placeholder="Lácteos"
                     className={inputCls}
                   />
                 </label>

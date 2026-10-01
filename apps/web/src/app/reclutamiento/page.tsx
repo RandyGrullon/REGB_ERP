@@ -19,7 +19,7 @@ import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearCandidatoForm, crearVacanteForm } from './actions'
-import { ESTADO_VACANTE, FUENTE_CANDIDATO } from './estados'
+import { ESTADO_VACANTE, ETAPA_APLICACION, FUENTE_CANDIDATO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -31,6 +31,7 @@ interface VacanteRow {
   department: string | null
   status: string
   aplicaciones: string
+  en_proceso: string
 }
 
 interface CandidatoRow {
@@ -38,7 +39,10 @@ interface CandidatoRow {
   first_name: string
   last_name: string
   email: string | null
+  phone: string | null
   source: string
+  vacante: string | null
+  etapa: string | null
 }
 
 const badgeTono = (estado: string): 'success' | 'warning' | 'neutral' => {
@@ -56,24 +60,43 @@ export default async function ReclutamientoPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'recruiting')
 
-  const [vacantes, candidatos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const v = await tx<VacanteRow[]>`
+  const [vacantes, candidatos, totalCandidatos] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const v = await tx<VacanteRow[]>`
       select p.id, p.title, p.department, p.status,
-             count(a.id)::text as aplicaciones
+             count(a.id)::text as aplicaciones,
+             count(a.id) filter (where a.stage not in ('hired', 'rejected'))::text as en_proceso
       from public.recruiting_positions p
       left join public.recruiting_applications a on a.position_id = p.id
       where p.tenant_id = ${ctx.tenantId}
       group by p.id
       order by p.created_at desc`
 
-    const c = await tx<CandidatoRow[]>`
-      select id, first_name, last_name, email, source from public.recruiting_candidates
-      where tenant_id = ${ctx.tenantId} order by created_at desc limit 20`
+      // Con su postulación más reciente: a qué vacante y en qué etapa va.
+      const c = await tx<CandidatoRow[]>`
+      select c.id, c.first_name, c.last_name, c.email, c.phone, c.source,
+             ult.title as vacante, ult.stage as etapa
+      from public.recruiting_candidates c
+      left join lateral (
+        select p.title, a.stage from public.recruiting_applications a
+        join public.recruiting_positions p on p.id = a.position_id
+        where a.candidate_id = c.id
+        order by a.applied_at desc limit 1
+      ) ult on true
+      where c.tenant_id = ${ctx.tenantId} order by c.created_at desc limit 50`
 
-    return [v, c] as const
-  })
+      const [n] = await tx<{ total: string }[]>`
+      select count(*)::text as total from public.recruiting_candidates
+      where tenant_id = ${ctx.tenantId}`
+
+      return [v, c, Number(n?.total ?? 0)] as const
+    },
+  )
 
   const abiertas = vacantes.filter((v) => v.status === 'open').length
+  const enProceso = vacantes.reduce((a, v) => a + Number(v.en_proceso), 0)
   const puedeGestionar = exigir(ctx, 'recruiting', 'recruiting.manage-positions').ok
   const puedeCandidatos = exigir(ctx, 'recruiting', 'recruiting.manage-candidates').ok
   const qs = ctx.demoQs
@@ -87,19 +110,24 @@ export default async function ReclutamientoPage({
         <PageHeader
           icon="person_add"
           title="Reclutamiento"
-          description="Vacantes y candidatos, de la solicitud a la contratación. Los candidatos se registran aquí."
+          description="Las vacantes de la empresa y las personas que se postulan, desde que llegan hasta que se contratan. Abre una vacante para mover a sus candidatos de etapa y agendar entrevistas."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Vacantes abiertas" value={String(abiertas)} />
-          <StatCard label="Candidatos registrados" value={String(candidatos.length)} />
+          <StatCard
+            label="Candidatos en proceso"
+            value={String(enProceso)}
+            hint="ni contratados ni descartados"
+          />
+          <StatCard label="Candidatos registrados" value={String(totalCandidatos)} />
         </section>
 
         {vacantes.length === 0 ? (
           <EmptyState
             icon="work"
-            title="Todavia no hay ninguna vacante"
-            description="Registra la primera abajo."
+            title="Todavía no hay ninguna vacante"
+            description="Una vacante es un puesto que quieres llenar. Créala abajo y después agrégale candidatos."
           />
         ) : (
           <Table>
@@ -107,7 +135,7 @@ export default async function ReclutamientoPage({
               <TR>
                 <TH>Vacante</TH>
                 <TH>Departamento</TH>
-                <TH numeric>Aplicaciones</TH>
+                <TH numeric>Candidatos</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
@@ -117,14 +145,22 @@ export default async function ReclutamientoPage({
                   <TD>
                     <a
                       href={`/reclutamiento/${v.id}${qs}`}
-                      className="text-[var(--color-text-primary)] underline-offset-2 hover:underline"
+                      className="font-semibold text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                     >
                       {v.title}
                     </a>
                   </TD>
                   <TD>{v.department ?? '—'}</TD>
                   <TD numeric>
-                    <span className="tabular">{v.aplicaciones}</span>
+                    <span className="tabular whitespace-nowrap">
+                      {v.aplicaciones}
+                      {Number(v.en_proceso) > 0 && (
+                        <span className="text-[var(--color-text-muted)]">
+                          {' '}
+                          ({v.en_proceso} en proceso)
+                        </span>
+                      )}
+                    </span>
                   </TD>
                   <TD>
                     <Badge tone={badgeTono(v.status)}>{ESTADO_VACANTE[v.status] ?? v.status}</Badge>
@@ -145,7 +181,7 @@ export default async function ReclutamientoPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Titulo
+                  Título
                   <input name="title" required className={claseInput} />
                 </label>
                 <label className="flex min-w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -153,12 +189,12 @@ export default async function ReclutamientoPage({
                   <input name="department" className={claseInput} />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input name="description" className={claseInput} />
                 </label>
-                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
-                  <Icon name="send" size={18} />
-                  Publicar
+                <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                  <Icon name="add" size={18} />
+                  Crear vacante
                 </BotonEnvio>
               </form>
             </CardBody>
@@ -171,14 +207,19 @@ export default async function ReclutamientoPage({
           </CardHeader>
           <CardBody className="space-y-3">
             {candidatos.length === 0 ? (
-              <EmptyState icon="person" title="Todavia no hay ningun candidato" description="" />
+              <EmptyState
+                icon="person"
+                title="Todavía no hay ningún candidato"
+                description="Registra aquí a quien te mande su currículum o te refieran. Después lo agregas a una vacante."
+              />
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Nombre</TH>
-                    <TH>Correo</TH>
+                    <TH>Contacto</TH>
                     <TH>Fuente</TH>
+                    <TH>Postulado a</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -187,8 +228,27 @@ export default async function ReclutamientoPage({
                       <TD className="text-[var(--color-text-primary)]">
                         {c.first_name} {c.last_name}
                       </TD>
-                      <TD>{c.email ?? '—'}</TD>
+                      <TD>
+                        {c.email ?? '—'}
+                        {c.phone && (
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            {c.phone}
+                          </span>
+                        )}
+                      </TD>
                       <TD>{FUENTE_CANDIDATO[c.source] ?? c.source}</TD>
+                      <TD>
+                        {c.vacante ? (
+                          <>
+                            {c.vacante}
+                            <span className="block text-xs text-[var(--color-text-muted)]">
+                              {ETAPA_APLICACION[c.etapa ?? ''] ?? c.etapa}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[var(--color-text-muted)]">Sin vacante</span>
+                        )}
+                      </TD>
                     </TR>
                   ))}
                 </TBody>
@@ -212,7 +272,7 @@ export default async function ReclutamientoPage({
                   <input name="email" type="email" className={claseInput} />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Telefono
+                  Teléfono
                   <input name="phone" className={claseInput} />
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">

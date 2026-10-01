@@ -3,7 +3,6 @@ import {
   EmptyState,
   FilterSelect,
   Icon,
-  Mono,
   SearchField,
   StatCard,
   TBody,
@@ -15,7 +14,8 @@ import {
   Toolbar,
   ToolbarActions,
 } from '@regb/ui'
-import { cargarBitacoraGlobal } from '@/lib/control-datos'
+import { nombreCampo, nombreEntidad, valor } from '@/app/auditoria/etiquetas'
+import { cargarBitacoraGlobal, type FilaBitacora } from '@/lib/control-datos'
 import { db } from '@/lib/db'
 import { requireProvider } from '@/lib/provider-guard'
 
@@ -66,25 +66,74 @@ const ACCION_LABEL: Record<string, string> = {
   impersonate: 'Entró REGB',
 }
 
-/** Que cambio, en palabras. Un jsonb crudo no lo lee nadie de un vistazo. */
+/**
+ * Qué cambió, en palabras. Un jsonb crudo no lo lee nadie de un vistazo, y
+ * enseñaba `status: "draft" → "posted"`, `null` y uuids. Se usan los mismos
+ * nombres que la Auditoría del cliente: campo en castellano y valor legible.
+ */
 function resumirCambio(antes: unknown, despues: unknown): string {
-  if (!despues || typeof despues !== 'object') return '—'
-  const d = despues as Record<string, unknown>
-  if (!antes || typeof antes !== 'object') {
-    const nombre = d.name ?? d.legal_name ?? d.number ?? d.sku ?? d.display_name
-    return nombre ? String(nombre) : `${Object.keys(d).length} campos`
+  const d = (despues && typeof despues === 'object' ? despues : null) as Record<
+    string,
+    unknown
+  > | null
+  const a = (antes && typeof antes === 'object' ? antes : null) as Record<string, unknown> | null
+  const registro = d ?? a
+  if (!registro) return '—'
+  if (!a || !d) {
+    const nombre =
+      registro.name ??
+      registro.legal_name ??
+      registro.number ??
+      registro.title ??
+      registro.display_name ??
+      registro.sku
+    if (nombre) return String(nombre)
+    const n = Object.keys(registro).length
+    return `${n} dato${n === 1 ? '' : 's'}`
   }
-  const a = antes as Record<string, unknown>
   const cambiados = Object.keys(d).filter(
     (k) => JSON.stringify(a[k]) !== JSON.stringify(d[k]) && k !== 'updated_at',
   )
-  if (cambiados.length === 0) return 'sin cambios visibles'
-  return cambiados
+  if (cambiados.length === 0) return 'Sin cambios visibles'
+  const texto = cambiados
     .slice(0, 3)
-    .map((k) => `${k}: ${JSON.stringify(a[k])} → ${JSON.stringify(d[k])}`)
+    .map((k) => `${nombreCampo(k)}: ${valor(a[k])} → ${valor(d[k])}`)
     .join(' · ')
-    .slice(0, 160)
+  return texto.length > 160 ? `${texto.slice(0, 157)}…` : texto
 }
+
+/**
+ * El antes y el después, campo por campo y en castellano, en UN bloque de
+ * texto por fila. Una tabla por movimiento eran ~30 celdas × 300 filas y la
+ * página pesaba casi 8 MB; el texto plano pesa una fracción y se copia
+ * igual de fácil en una disputa.
+ *
+ * En un cambio se listan solo los campos que cambiaron (lo demás era ruido
+ * que escondía lo que pasó); al crear o borrar, el registro completo.
+ */
+function detalleCambio(antes: unknown, despues: unknown): string {
+  const a = (antes && typeof antes === 'object' ? antes : null) as Record<string, unknown> | null
+  const d = (despues && typeof despues === 'object' ? despues : null) as Record<
+    string,
+    unknown
+  > | null
+  if (a && d) {
+    const cambiados = Object.keys(d)
+      .filter((k) => k !== 'updated_at' && JSON.stringify(a[k]) !== JSON.stringify(d[k]))
+      .sort()
+    if (cambiados.length === 0) return 'Sin cambios visibles.'
+    return cambiados.map((k) => `${nombreCampo(k)}: ${valor(a[k])} → ${valor(d[k])}`).join('\n')
+  }
+  const registro = d ?? a
+  if (!registro) return ''
+  return Object.keys(registro)
+    .sort()
+    .map((k) => `${nombreCampo(k)}: ${valor(registro[k])}`)
+    .join('\n')
+}
+
+/** Quién lo hizo: sin perfil no se enseña el id, se dice lo que se sabe. */
+const quien = (f: FilaBitacora) => f.usuario ?? (f.conUsuario ? 'Usuario sin perfil' : 'Sistema')
 
 export default async function ActividadPage({ searchParams }: { searchParams: Promise<Params> }) {
   await requireProvider()
@@ -115,7 +164,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
     q === ''
       ? filas
       : filas.filter((f) =>
-          `${f.tenant ?? ''} ${f.entidad} ${f.usuario ?? ''} ${f.modulo ?? ''} ${JSON.stringify(f.despues ?? '')}`
+          `${f.tenant ?? ''} ${f.entidad} ${nombreEntidad(f.entidad)} ${f.usuario ?? ''} ${f.modulo ?? ''} ${JSON.stringify(f.despues ?? '')}`
             .toLowerCase()
             .includes(q),
         )
@@ -193,7 +242,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
           <option value="">Todas</option>
           {entidades.map((e) => (
             <option key={e} value={e}>
-              {e}
+              {nombreEntidad(e)}
             </option>
           ))}
         </FilterSelect>
@@ -205,7 +254,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
             </option>
           ))}
         </FilterSelect>
-        <FilterSelect label="Periodo" name="dias" defaultValue={p.dias ?? '30'} className="w-36">
+        <FilterSelect label="Período" name="dias" defaultValue={p.dias ?? '30'} className="w-36">
           <option value="1">Hoy</option>
           <option value="7">7 días</option>
           <option value="30">30 días</option>
@@ -218,7 +267,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
       {total > filas.length && (
         <p className="text-xs text-[var(--color-semantic-text-warning)]">
           Hay {total.toLocaleString('es-DO')} movimientos que cumplen el filtro y se muestran los{' '}
-          {filas.length} más recientes. Acota el periodo o el cliente para verlos todos.
+          {filas.length} más recientes. Acota el período o el cliente para verlos todos.
         </p>
       )}
 
@@ -226,7 +275,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
         <EmptyState
           icon="history_toggle_off"
           title="Sin movimientos con ese filtro"
-          description="Prueba a ampliar el periodo. La bitácora solo registra creaciones, ediciones y borrados de las tablas auditadas."
+          description="Prueba a ampliar el período. La bitácora solo registra creaciones, ediciones y borrados de las tablas auditadas."
         />
       ) : (
         <Table>
@@ -249,7 +298,7 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
                 </TD>
                 <TD>{f.tenant ?? <span className="text-[var(--color-text-muted)]">—</span>}</TD>
                 <TD>
-                  <span className="text-xs">{f.usuario ?? '—'}</span>
+                  <span className="text-xs">{quien(f)}</span>
                 </TD>
                 <TD>
                   <Badge tone={TONO_ACCION[f.accion] ?? 'neutral'} dot={false}>
@@ -257,7 +306,9 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
                   </Badge>
                 </TD>
                 <TD>
-                  <Mono>{f.entidad}</Mono>
+                  <span className="text-xs" title={f.entidad}>
+                    {nombreEntidad(f.entidad)}
+                  </span>
                 </TD>
                 <TD>
                   <span className="text-xs text-[var(--color-text-secondary)]">
@@ -269,8 +320,8 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
                     <summary className="cursor-pointer text-xs text-[var(--color-text-secondary)]">
                       {resumirCambio(f.antes, f.despues)}
                     </summary>
-                    <pre className="mt-1 max-w-md overflow-x-auto rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] p-2 text-[10px] text-[var(--color-text-secondary)]">
-                      {JSON.stringify({ antes: f.antes, despues: f.despues }, null, 1)}
+                    <pre className="mt-1 max-w-md whitespace-pre-wrap rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] p-2 font-[inherit] text-[11px] text-[var(--color-text-secondary)]">
+                      {detalleCambio(f.antes, f.despues)}
                     </pre>
                   </details>
                 </TD>
@@ -281,11 +332,10 @@ export default async function ActividadPage({ searchParams }: { searchParams: Pr
       )}
 
       <p className="text-xs text-[var(--color-text-muted)]">
-        Se auditan creaciones, ediciones y borrados de 16 tablas. <Mono>inventory_movements</Mono>{' '}
-        no se audita porque ya es un libro inmutable, y <Mono>pos_sales</Mono> tampoco, por volumen:
-        sus rastros estan en el kardex y en Cierres. Los campos <Mono>ip</Mono>,{' '}
-        <Mono>user_agent</Mono> y <Mono>platform</Mono> existen en la tabla pero el trigger no los
-        rellena todavía.
+        Se auditan las creaciones, ediciones y borrados de los registros del negocio. Los
+        movimientos de inventario no se auditan porque ya son un libro que no se edita, y las ventas
+        en caja tampoco, por volumen: su rastro está en el kardex y en los cierres de caja. Todavía
+        no se guarda desde qué dirección IP, navegador ni aplicación se hizo cada cambio.
       </p>
     </div>
   )

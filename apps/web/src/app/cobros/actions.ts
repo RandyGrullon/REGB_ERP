@@ -31,7 +31,7 @@ const num = (raw: string): number | null => {
 /** Genera un link de cobro. */
 export async function crearLink(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payments', 'payments.link.create')
   if (!permiso.ok) return permiso
 
@@ -65,13 +65,13 @@ export async function crearLink(fd: FormData): Promise<ActionResult> {
 /** Confirma que un link ya se pago -de forma manual, por el canal que sea-. */
 export async function confirmarPago(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payments', 'payments.link.confirm')
   if (!permiso.ok) return permiso
 
   const linkId = String(fd.get('linkId') ?? '')
   const amount = num(String(fd.get('paidAmount') ?? ''))
-  if (!linkId) return { ok: false, error: 'Falta el link.' }
+  if (!linkId) return { ok: false, error: 'Falta el enlace.' }
   if (amount === null || amount <= 0)
     return { ok: false, error: 'El monto pagado debe ser mayor que cero.' }
 
@@ -94,12 +94,12 @@ export async function confirmarPago(fd: FormData): Promise<ActionResult> {
 export async function cancelarLink(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('cancelarLink', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'payments', 'payments.link.confirm')
     if (!permiso.ok) return permiso
 
     const linkId = String(fd.get('linkId') ?? '')
-    if (!linkId) return { ok: false, error: 'Falta el link.' }
+    if (!linkId) return { ok: false, error: 'Falta el enlace.' }
 
     await asUser(
       ctx.userId,
@@ -117,7 +117,7 @@ export async function cancelarLink(fd: FormData): Promise<ActionResult> {
 /** Crea un cobro recurrente. */
 export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'payments', 'payments.recurring.create')
   if (!permiso.ok) return permiso
 
@@ -132,9 +132,9 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (description.length < 3) return { ok: false, error: 'Describe el cobro.' }
   if (!['weekly', 'monthly', 'yearly'].includes(frequency)) {
-    return { ok: false, error: 'Frecuencia no valida.' }
+    return { ok: false, error: 'Frecuencia no válida.' }
   }
-  if (!nextChargeDate) return { ok: false, error: 'Falta la fecha del proximo cobro.' }
+  if (!nextChargeDate) return { ok: false, error: 'Falta la fecha del próximo cobro.' }
 
   try {
     await asUser(
@@ -157,7 +157,7 @@ export async function crearRecurrente(fd: FormData): Promise<ActionResult> {
 export async function correrRecurrentes(fd: FormData): Promise<ActionResult> {
   return sinExcepciones('correrRecurrentes', async () => {
     const ctx = await actionCtx(demoDe(fd))
-    if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+    if (!ctx) return { ok: false, error: 'Sesión no válida.' }
     const permiso = exigir(ctx, 'payments', 'payments.recurring.create')
     if (!permiso.ok) return permiso
 

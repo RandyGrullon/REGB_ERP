@@ -23,7 +23,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearRegistro(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'timesheets', 'timesheets.manage')
   if (!permiso.ok) return permiso
 
@@ -53,7 +53,7 @@ export async function crearRegistro(fd: FormData): Promise<ActionResult> {
 
 export async function transicionarRegistro(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'timesheets', 'timesheets.manage')
   if (!permiso.ok) return permiso
 
@@ -65,7 +65,7 @@ export async function transicionarRegistro(fd: FormData): Promise<ActionResult> 
       select status from public.time_entries where id = ${entryId} and tenant_id = ${ctx.tenantId} for update`
     if (!e) return 'no-existe'
     if (!transicionValidaRegistroTiempo(e.status, siguiente))
-      return 'Esa transicion no esta permitida.'
+      return 'Esa transición no está permitida.'
 
     const aprobando = siguiente === 'approved'
     await tx`

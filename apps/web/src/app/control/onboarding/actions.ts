@@ -57,7 +57,7 @@ const CODIGOS_CON_MENSAJE = new Set(['22023', '23505', '42501', '55000', '23514'
 function mensajeDeBase(e: unknown, generico: string): string {
   const err = e as { code?: string; message?: string; constraint_name?: string }
   if (err?.code === '23514' && err.constraint_name?.startsWith('user_invitations')) {
-    return 'La invitacion al dueño no paso: revisa su nombre (de 3 a 120 letras) y su correo.'
+    return 'La invitación al dueño no pasó: revisa su nombre (de 3 a 120 letras) y su correo.'
   }
   if (err?.code && CODIGOS_CON_MENSAJE.has(err.code) && err.message) return err.message
   console.error('[alta de cliente]', e)
@@ -239,7 +239,7 @@ export async function moverEtapa(formData: FormData): Promise<void> {
   const tenantId = String(formData.get('tenantId') ?? '')
   const direction = String(formData.get('direction') ?? '')
   if (!UUID.test(tenantId) || (direction !== 'next' && direction !== 'prev')) {
-    await anotarAviso({ ok: false, error: 'Falta el cliente o la direccion.' }, 'moverEtapa')
+    await anotarAviso({ ok: false, error: 'Falta el cliente o la dirección.' }, 'moverEtapa')
     return
   }
 
@@ -251,7 +251,7 @@ export async function moverEtapa(formData: FormData): Promise<void> {
     return (
       target ?? {
         error:
-          direction === 'next' ? 'Ya esta en la ultima etapa.' : 'Ya esta en la primera etapa.',
+          direction === 'next' ? 'Ya está en la última etapa.' : 'Ya está en la primera etapa.',
       }
     )
   })

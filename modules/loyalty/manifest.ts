@@ -35,9 +35,14 @@ export default defineModule({
   permissions: ['loyalty.view', 'loyalty.manage'],
 
   routes: [
-    { path: '/fidelizacion', label: 'Fidelizacion', perm: 'loyalty.view' },
+    { path: '/fidelizacion', label: 'Fidelización', perm: 'loyalty.view' },
     { path: '/fidelizacion/cupones', label: 'Cupones', perm: 'loyalty.view' },
-    { path: '/fidelizacion/:customerId', label: 'Monedero del cliente', perm: 'loyalty.view', hidden: true },
+    {
+      path: '/fidelizacion/:customerId',
+      label: 'Monedero del cliente',
+      perm: 'loyalty.view',
+      hidden: true,
+    },
   ],
 
   dashboardWidgets: ['loyalty-active-coupons'],

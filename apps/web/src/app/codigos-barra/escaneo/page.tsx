@@ -14,10 +14,11 @@ import {
   Table,
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { exigir, modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { EscaneoCodigoBarras } from '@/components/EscaneoCodigoBarras'
 import { registrarEscaneoForm } from '../actions'
+import { cantidad, pesos } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Escaneo · REGB ERP' }
@@ -26,6 +27,7 @@ interface ProductoEncontrado {
   id: string
   sku: string
   name: string
+  unit: string
   price: string
 }
 
@@ -42,13 +44,16 @@ export default async function EscaneoPage({
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'barcode', 'barcode.scan')
+  // El precio de venta es de quien tiene `products.price.view` (el
+  // almacenista escanea para ubicar, no para cobrar).
+  const vePrecio = exigir(ctx, 'products', 'products.price.view').ok
   const codigo = params.codigo ?? ''
 
   const { producto, existencias } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     if (!codigo) return { producto: null, existencias: [] }
 
     const [p] = await tx<ProductoEncontrado[]>`
-      select id, sku, name, price::text from public.products
+      select id, sku, name, unit, price::text from public.products
       where tenant_id = ${ctx.tenantId} and barcode = ${codigo}`
     if (!p) return { producto: null, existencias: [] }
 
@@ -65,20 +70,20 @@ export default async function EscaneoPage({
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/codigos-barra">
+    <Shell {...shell} activePath="/codigos-barra/escaneo">
       <div className="space-y-5">
         <PageHeader
           icon="qr_code_scanner"
           title="Escaneo"
-          description="Escanea con la camara, o escribe el codigo -un lector fisico funciona exactamente igual-."
+          description="Apunta la cámara del celular al código, o escríbelo. Una pistola lectora también sirve: escribe el código y da Enter sola."
           crumbs={[
-            { label: 'Codigos de barra', href: `/codigos-barra${qs}` },
+            { label: 'Códigos de barra', href: `/codigos-barra${qs}` },
             { label: 'Escaneo' },
           ]}
         />
 
         <Card>
-          <CardBody>
+          <CardBody className="pt-4">
             <EscaneoCodigoBarras
               action={registrarEscaneoForm}
               tenant={qs ? ctx.tenantSlug : ''}
@@ -105,10 +110,16 @@ export default async function EscaneoPage({
                       <Mono>{producto.sku}</Mono> {producto.name}
                     </p>
                     <p className="text-sm text-[var(--color-text-muted)]">
-                      RD${' '}
-                      {Number(producto.price).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                      {vePrecio
+                        ? `${pesos(producto.price)} por ${producto.unit}`
+                        : `Se vende por ${producto.unit}`}
                     </p>
                   </div>
+                  {existencias.length === 0 && (
+                    <p className="text-sm text-[var(--color-text-muted)]">
+                      No hay existencias de este producto en ningún almacén.
+                    </p>
+                  )}
                   {existencias.length > 0 && (
                     <Table>
                       <THead>
@@ -122,7 +133,9 @@ export default async function EscaneoPage({
                           <TR key={e.warehouse_name}>
                             <TD>{e.warehouse_name}</TD>
                             <TD numeric>
-                              <span className="tabular">{e.qty_on_hand}</span>
+                              <span className="tabular">
+                                {cantidad(e.qty_on_hand, producto.unit)}
+                              </span>
                             </TD>
                           </TR>
                         ))}

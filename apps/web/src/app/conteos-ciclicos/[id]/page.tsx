@@ -27,6 +27,7 @@ import {
 } from '../actions'
 import { ESTADO_CONTEO } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, cantidadConSigno, pesos, unirFrases } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,6 +36,11 @@ interface ConteoHead {
   warehouse_name: string
   status: string
   notes: string | null
+  started_at: string
+  submitted_at: string | null
+  approved_at: string | null
+  iniciado_por: string | null
+  aprobado_por: string | null
 }
 
 interface LineaRow {
@@ -42,13 +48,11 @@ interface LineaRow {
   product_id: string
   sku: string
   name: string
+  unit: string
   system_qty: string
   counted_qty: string | null
   unit_cost: string
 }
-
-const money = (n: number) =>
-  n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 /** Detalle de un conteo ciclico (modulo 51): ciego mientras se cuenta, comparativo al pedir aprobacion. */
 export default async function ConteoDetallePage({
@@ -64,14 +68,18 @@ export default async function ConteoDetallePage({
 
   const { head, lineas } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<ConteoHead[]>`
-      select cc.id, w.name as warehouse_name, cc.status, cc.notes
+      select cc.id, w.name as warehouse_name, cc.status, cc.notes, cc.started_at::text,
+             cc.submitted_at::text, cc.approved_at::text,
+             ui.display_name as iniciado_por, ua.display_name as aprobado_por
       from public.cycle_counts cc
       join public.warehouses w on w.id = cc.warehouse_id
+      left join public.user_profiles ui on ui.tenant_id = cc.tenant_id and ui.user_id = cc.started_by
+      left join public.user_profiles ua on ua.tenant_id = cc.tenant_id and ua.user_id = cc.approved_by
       where cc.id = ${id} and cc.tenant_id = ${ctx.tenantId}`
     if (!h) return { head: null, lineas: [] }
 
     const l = await tx<LineaRow[]>`
-      select l.id, l.product_id, p.sku, p.name,
+      select l.id, l.product_id, p.sku, p.name, p.unit,
              l.system_qty::text, l.counted_qty::text, l.unit_cost::text
       from public.cycle_count_lines l
       join public.products p on p.id = l.product_id
@@ -85,6 +93,9 @@ export default async function ConteoDetallePage({
 
   const puedeContar = exigir(ctx, 'stock-counts', 'stock-counts.count').ok
   const puedeAprobar = exigir(ctx, 'stock-counts', 'stock-counts.approve').ok
+  // El impacto en pesos es costo × diferencia: quien no ve costos
+  // (el almacenista, 0109) cuenta sin ver cuánto vale.
+  const veCosto = exigir(ctx, 'inventory', 'inventory.cost.view').ok
   const qs = ctx.demoQs
   const campos = (
     <>
@@ -97,6 +108,26 @@ export default async function ConteoDetallePage({
   const contando = head.status === 'counting'
   const esperandoAprobacion = head.status === 'pending_approval'
   const todoContado = lineas.every((l) => l.counted_qty !== null)
+  const contados = lineas.filter((l) => l.counted_qty !== null).length
+  const impactoTotal = lineas.reduce((a, l) => {
+    if (l.counted_qty === null) return a
+    const d = countVariance(Number(l.counted_qty), Number(l.system_qty))
+    return a + varianceValue(d, Number(l.unit_cost))
+  }, 0)
+  const fecha = (iso: string) =>
+    new Date(iso).toLocaleString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  const historia = [
+    `Iniciado el ${fecha(head.started_at)}${head.iniciado_por ? ` por ${head.iniciado_por}` : ''}`,
+    head.submitted_at ? `enviado a aprobación el ${fecha(head.submitted_at)}` : null,
+    head.approved_at
+      ? `${head.status === 'rejected' ? 'rechazado' : 'aprobado'} el ${fecha(head.approved_at)}${head.aprobado_por ? ` por ${head.aprobado_por}` : ''}`
+      : null,
+  ].filter(Boolean)
 
   return (
     <Shell {...shell} activePath="/conteos-ciclicos">
@@ -104,12 +135,13 @@ export default async function ConteoDetallePage({
         <PageHeader
           icon="checklist"
           title={`Conteo en ${head.warehouse_name}`}
+          description={unirFrases([historia.join(' · '), head.notes])}
           crumbs={[
-            { label: 'Conteos ciclicos', href: `/conteos-ciclicos${qs}` },
-            { label: 'Detalle' },
+            { label: 'Conteos cíclicos', href: `/conteos-ciclicos${qs}` },
+            { label: head.warehouse_name },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge
                 tone={
                   head.status === 'approved'
@@ -140,7 +172,7 @@ export default async function ConteoDetallePage({
                 <>
                   <form action={aprobarConteoForm}>
                     {campos}
-                    <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
+                    <BotonEnvio className="flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full bg-[var(--color-semantic-success)] px-3 text-xs font-medium text-white hover:opacity-90">
                       <Icon name="check" size={14} />
                       Aprobar y ajustar
                     </BotonEnvio>
@@ -161,7 +193,10 @@ export default async function ConteoDetallePage({
         {contando ? (
           <Card>
             <CardHeader>
-              <CardTitle>Conteo ciego -no se muestra el número del sistema-</CardTitle>
+              <CardTitle>
+                Conteo ciego: anota lo que hay en el estante ({contados} de {lineas.length}{' '}
+                contados)
+              </CardTitle>
             </CardHeader>
             <CardBody className="p-0">
               <Table>
@@ -187,7 +222,9 @@ export default async function ConteoDetallePage({
                             <input type="hidden" name="lineId" value={l.id} />
                             <input
                               name="counted"
-                              defaultValue={l.counted_qty ?? ''}
+                              defaultValue={
+                                l.counted_qty !== null ? String(Number(l.counted_qty)) : ''
+                              }
                               inputMode="decimal"
                               placeholder="—"
                               aria-label={`Cantidad contada de ${l.name}`}
@@ -198,7 +235,7 @@ export default async function ConteoDetallePage({
                             </BotonEnvio>
                           </form>
                         ) : (
-                          <span className="tabular">{l.counted_qty ?? '—'}</span>
+                          <span className="tabular">{cantidad(l.counted_qty)}</span>
                         )}
                       </TD>
                     </TR>
@@ -215,7 +252,7 @@ export default async function ConteoDetallePage({
                 <TH numeric>Sistema</TH>
                 <TH numeric>Contado</TH>
                 <TH numeric>Diferencia</TH>
-                <TH numeric>Impacto</TH>
+                {veCosto && <TH numeric>Impacto</TH>}
               </TR>
             </THead>
             <TBody>
@@ -231,10 +268,10 @@ export default async function ConteoDetallePage({
                       <Mono>{l.sku}</Mono> {l.name}
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{l.system_qty}</span>
+                      <span className="tabular">{cantidad(l.system_qty, l.unit)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{l.counted_qty ?? '—'}</span>
+                      <span className="tabular">{cantidad(l.counted_qty)}</span>
                     </TD>
                     <TD numeric>
                       {diff !== null && (
@@ -242,17 +279,35 @@ export default async function ConteoDetallePage({
                           tone={diff === 0 ? 'success' : diff < 0 ? 'danger' : 'warning'}
                           dot={false}
                         >
-                          {diff > 0 ? '+' : ''}
-                          {diff}
+                          {cantidadConSigno(diff)}
                         </Badge>
                       )}
                     </TD>
-                    <TD numeric>
-                      {impacto !== null && <span className="tabular">RD$ {money(impacto)}</span>}
-                    </TD>
+                    {veCosto && (
+                      <TD numeric>
+                        {impacto !== null && (
+                          <span className="tabular whitespace-nowrap">{pesos(impacto)}</span>
+                        )}
+                      </TD>
+                    )}
                   </TR>
                 )
               })}
+              {veCosto && (
+                <TR>
+                  <TD
+                    colSpan={4}
+                    className="text-right font-semibold text-[var(--color-text-primary)]"
+                  >
+                    {head.status === 'approved' ? 'Ajuste aplicado' : 'Ajuste si se aprueba'}
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular font-semibold text-[var(--color-text-primary)]">
+                      {pesos(impactoTotal)}
+                    </span>
+                  </TD>
+                </TR>
+              )}
             </TBody>
           </Table>
         )}

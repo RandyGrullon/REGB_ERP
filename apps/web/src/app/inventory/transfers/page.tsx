@@ -4,7 +4,9 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Icon,
   Mono,
+  PageHeader,
   Table,
   THead,
   TBody,
@@ -17,6 +19,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { crearTransferenciaForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Transferencias · REGB ERP' }
@@ -71,6 +74,10 @@ export default async function TransfersPage({
   })
 
   const puedeTransferir = exigir(ctx, 'inventory', 'inventory.transfer').ok
+  // Con el módulo de Transferencias el traslado tiene despacho, tránsito y
+  // recepción: es ahí donde el negocio mueve la mercancía.
+  const hayModulo = exigir(ctx, 'transfers', 'transfers.view').ok
+  const puedeAlmacenes = exigir(ctx, 'inventory', 'inventory.warehouses.manage').ok
   const qs = ctx.demoQs
 
   const fecha = (iso: string) =>
@@ -84,23 +91,57 @@ export default async function TransfersPage({
   return (
     <Shell {...shell} activePath="/inventory/transfers">
       <div className="space-y-5">
-        <div>
-          <nav aria-label="Miga de pan" className="text-sm text-[var(--color-text-muted)]">
-            <a href={`/inventory${qs}`} className="text-[var(--color-text-link)] hover:underline">
-              Existencias
-            </a>{' '}
-            › Transferencias
-          </nav>
-          <h1 className="mt-1 text-xl font-bold text-[var(--color-text-primary)]">
-            Transferencias
-          </h1>
-        </div>
+        <PageHeader
+          icon="swap_horiz"
+          title="Transferencias"
+          description="Mover mercancía de un almacén a otro en un solo paso: sale de uno y entra en el otro al mismo tiempo."
+          crumbs={[{ label: 'Existencias', href: `/inventory${qs}` }, { label: 'Transferencias' }]}
+        />
+
+        {hayModulo && (
+          <a
+            href={`/transferencias${qs}`}
+            className="flex items-start gap-3 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 text-sm text-[var(--color-text-secondary)] hover:border-[var(--color-brand-bright)]"
+          >
+            <Icon name="info" size={20} className="mt-0.5 text-[var(--color-brand-bright)]" />
+            <span>
+              <span className="font-semibold text-[var(--color-text-primary)]">
+                Tu negocio lleva las transferencias con despacho y recepción.
+              </span>{' '}
+              Las que salieron de un almacén y todavía no llegan al otro están en Transferencias,
+              con su tránsito. Esta pantalla queda para un traslado rápido de un solo paso.
+            </span>
+          </a>
+        )}
 
         {transfers.length === 0 ? (
           <EmptyState
             icon="swap_horiz"
-            title="Sin transferencias todavia"
-            description="Mueve stock entre almacenes con el formulario de abajo."
+            title="Sin traslados rápidos todavía"
+            description={
+              warehouses.length < 2
+                ? 'Para transferir hace falta un segundo almacén: una sucursal, un depósito o el camión de reparto.'
+                : hayModulo
+                  ? 'Las transferencias de tu negocio se despachan y se reciben en Transferencias. Aquí solo aparecen los traslados rápidos de un paso.'
+                  : 'Mueve mercancía entre almacenes con el formulario de abajo.'
+            }
+            action={
+              warehouses.length < 2 && puedeAlmacenes ? (
+                <a
+                  href={`/inventory/warehouses${qs}`}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                >
+                  Crear otro almacén
+                </a>
+              ) : hayModulo ? (
+                <a
+                  href={`/transferencias${qs}`}
+                  className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                >
+                  Ir a Transferencias
+                </a>
+              ) : undefined
+            }
           />
         ) : (
           <Table>
@@ -110,7 +151,7 @@ export default async function TransfersPage({
                 <TH>De</TH>
                 <TH>A</TH>
                 <TH numeric>Cantidad</TH>
-                <TH>Cuando</TH>
+                <TH>Cuándo</TH>
               </TR>
             </THead>
             <TBody>
@@ -122,7 +163,7 @@ export default async function TransfersPage({
                   <TD>{t.from_name}</TD>
                   <TD>{t.to_name}</TD>
                   <TD numeric>
-                    <span className="tabular">{t.qty}</span>
+                    <span className="tabular">{cantidad(t.qty)}</span>
                   </TD>
                   <TD>{fecha(t.completed_at ?? t.created_at)}</TD>
                 </TR>

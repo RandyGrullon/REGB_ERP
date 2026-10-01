@@ -17,7 +17,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'maintenance',
-  name: 'Mantenimiento (CMMS)',
+  name: 'Mantenimiento de equipos',
   description: 'Preventivo y correctivo, órdenes de trabajo, repuestos y MTBF.',
   icon: 'build',
   category: 'advanced',
@@ -37,7 +37,7 @@ export default defineModule({
   permissions: ['maintenance.view', 'maintenance.work', 'maintenance.manage'],
 
   routes: [
-    { path: '/mantenimiento', label: 'Mantenimiento', perm: 'maintenance.view' },
+    { path: '/mantenimiento', label: 'Órdenes de trabajo', perm: 'maintenance.view' },
     { path: '/mantenimiento/equipos', label: 'Equipos', perm: 'maintenance.manage' },
     { path: '/mantenimiento/equipos/:id', label: 'Detalle del equipo', perm: 'maintenance.manage', hidden: true },
     { path: '/mantenimiento/ordenes/:id', label: 'Detalle de orden', perm: 'maintenance.view', hidden: true },

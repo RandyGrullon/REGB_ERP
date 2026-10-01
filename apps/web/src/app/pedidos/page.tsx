@@ -123,7 +123,7 @@ export default async function PedidosPage({
         <PageHeader
           icon="shopping_cart"
           title="Pedidos de venta"
-          description="Confirmar aparta la mercancia sin sacarla del almacen; entregar es lo que la saca. Lo que no alcanza queda en backorder."
+          description="Confirmar aparta la mercancía sin sacarla del almacén; entregar es lo que la saca. Lo que no alcanza queda pendiente hasta que entre mercancía."
           actions={
             <a
               href={`/pedidos/clientes${qs}`}
@@ -143,7 +143,7 @@ export default async function PedidosPage({
             hint="lo que falta de los pedidos abiertos"
           />
           <StatCard
-            label="Con backorder"
+            label="Esperan mercancía"
             value={String(totales?.backorders ?? 0)}
             hint="falta existencia"
           />
@@ -153,8 +153,8 @@ export default async function PedidosPage({
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
           <SearchField
             defaultValue={q}
-            label="Numero o cliente"
-            placeholder="PV-2026-00001, Ferreteria…"
+            label="Número o cliente"
+            placeholder="PV-2026-00001, Ferretería…"
           />
           <FilterSelect label="Estado" name="estado" defaultValue={estado}>
             <option value="">Todos</option>
@@ -198,7 +198,7 @@ export default async function PedidosPage({
                     <TD>
                       <a
                         href={`/pedidos/${o.id}${qs}`}
-                        className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                        className="whitespace-nowrap font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                       >
                         <Mono>{o.number}</Mono>
                       </a>
@@ -207,7 +207,7 @@ export default async function PedidosPage({
                       {o.customer_name}
                     </TD>
                     <TD>{o.warehouse_name}</TD>
-                    <TD>{fecha(o.order_date)}</TD>
+                    <TD className="whitespace-nowrap">{fecha(o.order_date)}</TD>
                     <TD numeric>
                       <span className="tabular">{o.lineas}</span>
                     </TD>
@@ -216,7 +216,7 @@ export default async function PedidosPage({
                         <Badge tone={e.tone}>{e.label}</Badge>
                         {o.backorder && (
                           <Badge tone="warning" dot={false} title="Falta existencia por apartar">
-                            backorder
+                            falta mercancía
                           </Badge>
                         )}
                       </span>
@@ -274,7 +274,7 @@ export default async function PedidosPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Se crea en borrador. Le agregas lineas y despues lo confirmas: ahi es cuando se
+                Se crea en borrador. Le agregas líneas y después lo confirmas: ahí es cuando se
                 aparta la mercancía.
               </p>
             </CardBody>

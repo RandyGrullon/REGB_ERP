@@ -24,7 +24,7 @@ const num = (raw: string): number | null => {
 /** Captura la tasa de una moneda para una fecha. */
 export async function ponerTasa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'multicurrency', 'multicurrency.rate.set')
   if (!permiso.ok) return permiso
 

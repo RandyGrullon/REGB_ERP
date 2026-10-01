@@ -33,7 +33,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearPlan(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.manage')
   if (!permiso.ok) return permiso
 
@@ -43,7 +43,7 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Ponle un nombre al plan.' }
   if (!['receiving', 'production', 'final', 'other'].includes(scope)) {
-    return { ok: false, error: 'Elige un alcance valido.' }
+    return { ok: false, error: 'Elige un alcance válido.' }
   }
 
   await asUser(
@@ -60,7 +60,7 @@ export async function crearPlan(fd: FormData): Promise<ActionResult> {
 
 export async function agregarCriterio(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.manage')
   if (!permiso.ok) return permiso
 
@@ -84,7 +84,7 @@ export async function agregarCriterio(fd: FormData): Promise<ActionResult> {
 
 export async function quitarCriterio(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.manage')
   if (!permiso.ok) return permiso
 
@@ -105,7 +105,7 @@ export async function quitarCriterio(fd: FormData): Promise<ActionResult> {
 
 export async function alternarPlanActivo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.manage')
   if (!permiso.ok) return permiso
 
@@ -128,14 +128,14 @@ export async function alternarPlanActivo(fd: FormData): Promise<ActionResult> {
 /** Registra una inspeccion real: un pase/falla por cada criterio del plan. */
 export async function registrarInspeccion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.inspect')
   if (!permiso.ok) return permiso
 
   const planId = String(fd.get('planId') ?? '')
   const productId = String(fd.get('productId') ?? '') || null
   const notes = String(fd.get('notes') ?? '').trim() || null
-  if (!planId) return { ok: false, error: 'Elige el plan de inspeccion.' }
+  if (!planId) return { ok: false, error: 'Elige el plan de inspección.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const criterios = await tx<{ id: string; criterion: string; is_critical: boolean }[]>`
@@ -175,7 +175,7 @@ export async function registrarInspeccion(fd: FormData): Promise<ActionResult> {
 /** Abre una no conformidad, opcionalmente ligada a una inspeccion que la origino. */
 export async function abrirNoConformidad(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.inspect')
   if (!permiso.ok) return permiso
 
@@ -185,7 +185,7 @@ export async function abrirNoConformidad(fd: FormData): Promise<ActionResult> {
 
   if (!description) return { ok: false, error: 'Describe la no conformidad.' }
   if (!['minor', 'major', 'critical'].includes(severity)) {
-    return { ok: false, error: 'Elige una severidad valida.' }
+    return { ok: false, error: 'Elige una severidad válida.' }
   }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -206,7 +206,7 @@ export async function abrirNoConformidad(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de una no conformidad -open/investigating/dismissed-. */
 export async function transicionarNoConformidad(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.inspect')
   if (!permiso.ok) return permiso
 
@@ -218,7 +218,7 @@ export async function transicionarNoConformidad(fd: FormData): Promise<ActionRes
       select status from public.non_conformances where id = ${ncId} and tenant_id = ${ctx.tenantId} for update`
     if (!nc) return 'no-existe'
     if (!transicionValidaNoConformidad(nc.status, siguiente)) {
-      return 'Esa transicion no esta permitida.'
+      return 'Esa transición no está permitida.'
     }
     await tx`
       update public.non_conformances set status = ${siguiente}, updated_at = now()
@@ -237,7 +237,7 @@ export async function transicionarNoConformidad(fd: FormData): Promise<ActionRes
 /** Crea el CAPA de una no conformidad -la mueve a `capa_created` en el mismo paso-. */
 export async function crearCapa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.inspect')
   if (!permiso.ok) return permiso
 
@@ -248,7 +248,7 @@ export async function crearCapa(fd: FormData): Promise<ActionResult> {
   const dueDate = String(fd.get('dueDate') ?? '') || null
 
   if (!rootCause || !correctiveAction) {
-    return { ok: false, error: 'La causa raiz y la accion correctiva son obligatorias.' }
+    return { ok: false, error: 'La causa raíz y la acción correctiva son obligatorias.' }
   }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -256,7 +256,7 @@ export async function crearCapa(fd: FormData): Promise<ActionResult> {
       select status from public.non_conformances where id = ${ncId} and tenant_id = ${ctx.tenantId} for update`
     if (!nc) return 'no-existe'
     if (!transicionValidaNoConformidad(nc.status, 'capa_created')) {
-      return 'Esa no conformidad no esta lista para un CAPA -tiene que estar en investigacion-.'
+      return 'Esa no conformidad no está lista para su acción correctiva: primero tiene que estar en investigación.'
     }
 
     await tx`
@@ -280,7 +280,7 @@ export async function crearCapa(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de un CAPA -al cerrarlo, cierra tambien su no conformidad-. */
 export async function transicionarCapa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'quality', 'quality.inspect')
   if (!permiso.ok) return permiso
 
@@ -293,7 +293,7 @@ export async function transicionarCapa(fd: FormData): Promise<ActionResult> {
       select status from public.capas where id = ${capaId} and tenant_id = ${ctx.tenantId} for update`
     if (!capa) return 'no-existe'
     if (!transicionValidaCapa(capa.status, siguiente)) {
-      return 'Esa transicion no esta permitida.'
+      return 'Esa transición no está permitida.'
     }
 
     const verificando = siguiente === 'verified'
@@ -316,7 +316,7 @@ export async function transicionarCapa(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Ese CAPA no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa acción correctiva no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/calidad/no-conformidades/${ncId}`)

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { pasoDesdeGuia } from '@/app/tutorial/actions'
+import { Icon } from '@regb/ui'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 /**
@@ -114,10 +115,10 @@ export function GuiaFlotante({ guia }: { guia: PasoGuia }) {
           <button
             type="button"
             onClick={() => setOculta(true)}
-            aria-label="Ocultar la guia"
-            className="h-8 w-8 shrink-0 rounded-[var(--radius-md)] text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+            aria-label="Ocultar la guía"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-overlay)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
           >
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </div>
 

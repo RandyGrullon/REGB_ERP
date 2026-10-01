@@ -25,6 +25,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarProveedorForm, crearProveedorForm } from '../actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { pesos } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Proveedores · REGB ERP' }
@@ -38,6 +39,7 @@ interface SupplierRow {
   payment_terms: number
   is_active: boolean
   ordenes: string
+  comprado: string
 }
 
 const inputCls =
@@ -63,7 +65,10 @@ export default async function ProveedoresPage({
     const s = await tx<SupplierRow[]>`
       select s.id, s.name, s.tax_id, s.phone, s.email, s.payment_terms, s.is_active,
              (select count(*) from public.purchase_orders o
-               where o.supplier_id = s.id)::text as ordenes
+               where o.supplier_id = s.id)::text as ordenes,
+             (select coalesce(sum(o.total), 0) from public.purchase_orders o
+               where o.supplier_id = s.id and o.status not in ('draft', 'cancelled'))::text
+               as comprado
       from public.suppliers s
       where s.tenant_id = ${ctx.tenantId}
         and (${verInactivos} or s.is_active)
@@ -86,18 +91,34 @@ export default async function ProveedoresPage({
         <PageHeader
           icon="local_shipping"
           title="Proveedores"
-          description="A quien le compras. Los usa cada orden de compra."
-          crumbs={[{ label: 'Compras', href: `/compras${qs}` }, { label: 'Proveedores' }]}
+          description="A quién le compras. Los usa cada orden de compra."
+          crumbs={[{ label: 'Órdenes de compra', href: `/compras${qs}` }, { label: 'Proveedores' }]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Activos" value={String(totales?.activos ?? 0)} />
-          <StatCard label="Con credito" value={String(totales?.credito ?? 0)} hint="dias > 0" />
-          <StatCard label="Mostrados" value={String(suppliers.length)} />
+          <StatCard
+            label="Activos"
+            value={String(totales?.activos ?? 0)}
+            hint="se les puede comprar"
+          />
+          <StatCard
+            label="Con crédito"
+            value={String(totales?.credito ?? 0)}
+            hint="te dan días para pagar"
+          />
+          <StatCard
+            label="Mostrados"
+            value={String(suppliers.length)}
+            hint={hayFiltros ? 'con los filtros' : 'todos'}
+          />
         </section>
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
-          <SearchField defaultValue={q} label="Nombre o RNC" placeholder="Distribuidora…" />
+          <SearchField
+            defaultValue={q}
+            label="Nombre o RNC"
+            placeholder="Materiales, 132-98765-9…"
+          />
           <label className="flex h-10 items-end gap-1.5 pb-2 text-xs text-[var(--color-text-secondary)]">
             <input
               type="checkbox"
@@ -127,9 +148,10 @@ export default async function ProveedoresPage({
               <TR>
                 <TH>Nombre</TH>
                 <TH>RNC</TH>
-                <TH>Teléfono</TH>
-                <TH numeric>Dias crédito</TH>
+                <TH>Contacto</TH>
+                <TH>Crédito</TH>
                 <TH numeric>Órdenes</TH>
+                <TH numeric>Comprado</TH>
                 <TH>Estado</TH>
                 {puedeGestionar && (
                   <TH>
@@ -142,13 +164,34 @@ export default async function ProveedoresPage({
               {suppliers.map((s) => (
                 <TR key={s.id} className={s.is_active ? '' : 'opacity-50'}>
                   <TD className="font-medium text-[var(--color-text-primary)]">{s.name}</TD>
-                  <TD>{s.tax_id ? <Mono>{formatTaxId(s.tax_id)}</Mono> : '—'}</TD>
-                  <TD>{s.phone ?? '—'}</TD>
-                  <TD numeric>
-                    <span className="tabular">{s.payment_terms}</span>
+                  <TD className="whitespace-nowrap">
+                    {s.tax_id ? <Mono>{formatTaxId(s.tax_id)}</Mono> : '—'}
+                  </TD>
+                  <TD>
+                    {s.phone ? (
+                      <a
+                        href={`tel:${s.phone}`}
+                        className="whitespace-nowrap text-[var(--color-text-link)] hover:underline"
+                      >
+                        {s.phone}
+                      </a>
+                    ) : (
+                      '—'
+                    )}
+                    {s.email && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {s.email}
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="whitespace-nowrap">
+                    {s.payment_terms > 0 ? `${s.payment_terms} días` : 'Contado'}
                   </TD>
                   <TD numeric>
                     <span className="tabular">{s.ordenes}</span>
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular whitespace-nowrap">{pesos(s.comprado)}</span>
                   </TD>
                   <TD>
                     <Badge tone={s.is_active ? 'success' : 'neutral'}>
@@ -187,18 +230,18 @@ export default async function ProveedoresPage({
                   <input name="name" required className={inputCls} />
                 </label>
                 <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  RNC / Cedula
+                  RNC / Cédula
                   <input
                     name="taxId"
                     placeholder="130-11111-1"
                     inputMode="numeric"
                     pattern="[\d\s-]{9,13}"
-                    title="RNC de 9 digitos o cedula de 11. Opcional."
+                    title="RNC de 9 dígitos o cédula de 11. Opcional."
                     className={inputCls}
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Telefono
+                  Teléfono
                   <input name="phone" placeholder="809-555-0101" className={inputCls} />
                 </label>
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -206,7 +249,7 @@ export default async function ProveedoresPage({
                   <input name="email" type="email" className={inputCls} />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias crédito
+                  Días crédito
                   <input name="terms" inputMode="numeric" defaultValue="0" className={inputCls} />
                 </label>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-medium text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">

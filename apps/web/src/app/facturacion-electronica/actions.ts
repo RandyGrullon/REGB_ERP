@@ -26,7 +26,7 @@ const CONTINGENCIAS = ['sin-conexion', 'sin-sistema']
 /** Crea la configuracion si no existe. El token se genera en la base. */
 async function asegurarConfig(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
@@ -44,7 +44,7 @@ async function asegurarConfig(fd: FormData): Promise<ActionResult> {
 
 async function cambiarAmbiente(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
@@ -56,9 +56,9 @@ async function cambiarAmbiente(fd: FormData): Promise<ActionResult> {
   const bloqueo = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [c] = await tx<{ certificado: boolean }[]>`
       select certificado from public.ecf_config where tenant_id = ${ctx.tenantId}`
-    if (!c) return 'Todavia no has configurado la facturacion electronica.'
+    if (!c) return 'Todavía no has configurado la facturación electrónica.'
     if (ambiente === 'ecf' && !c.certificado) {
-      return 'No puedes pasar a produccion sin estar certificado por la DGII: cada comprobante seria rechazado y quemaria una secuencia.'
+      return 'No puedes pasar a producción sin estar certificado por la DGII: cada comprobante sería rechazado y quemaría una secuencia.'
     }
     await tx`
       update public.ecf_config set ambiente = ${ambiente}, updated_at = now()
@@ -81,7 +81,7 @@ async function cambiarAmbiente(fd: FormData): Promise<ActionResult> {
  */
 async function cambiarContingencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
@@ -116,7 +116,7 @@ async function cambiarContingencia(fd: FormData): Promise<ActionResult> {
  */
 async function rotarToken(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'e-invoice', 'e-invoice.manage')
   if (!permiso.ok) return permiso
 
@@ -155,6 +155,6 @@ export async function rotarTokenForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await rotarToken(fd),
     'rotarToken',
-    'Listo, token nuevo. Acuerdate de volver a declarar las tres URL en la DGII.',
+    'Listo, clave nueva. Acuérdate de volver a declarar las tres URL en la DGII.',
   )
 }

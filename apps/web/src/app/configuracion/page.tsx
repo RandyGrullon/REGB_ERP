@@ -6,7 +6,7 @@ import { guardarConfiguracionForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Configuracion · REGB ERP' }
+export const metadata = { title: 'Configuración · REGB ERP' }
 
 interface SettingsRow {
   trade_name: string | null
@@ -48,7 +48,7 @@ export default async function ConfiguracionPage({
     <Shell {...shell} activePath="/configuracion">
       <div className="max-w-2xl space-y-5">
         <div>
-          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Configuracion</h1>
+          <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Configuración</h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
             Preferencias de {shell.data.tenant.name}. Aplican a todas tus empresas y usuarios.
           </p>
@@ -124,7 +124,7 @@ export default async function ConfiguracionPage({
                 </BotonEnvio>
               ) : (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Tu rol &quot;{ctx.roleName}&quot; puede ver la configuracion pero no cambiarla.
+                  Tu rol &quot;{ctx.roleName}&quot; puede ver la configuración pero no cambiarla.
                 </p>
               )}
             </form>
@@ -137,7 +137,7 @@ export default async function ConfiguracionPage({
           </CardHeader>
           <CardBody className="text-sm text-[var(--color-text-secondary)]">
             <p>
-              Estas en el plan <strong>{shell.data.tenant.tier.toUpperCase()}</strong> con{' '}
+              Estás en el plan <strong>{shell.data.tenant.tier.toUpperCase()}</strong> con{' '}
               {Number(modulos?.n ?? 0)} módulos activos. Activar o apagar módulos se hace desde el{' '}
               <a
                 href={`/marketplace${ctx.demoQs}`}

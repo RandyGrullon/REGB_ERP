@@ -1,6 +1,6 @@
 /** Etiquetas del alcance de un plan de inspeccion. */
 export const ALCANCE_PLAN: Record<string, string> = {
-  receiving: 'Recepcion',
+  receiving: 'Recepción',
   production: 'En proceso',
   final: 'Final',
   other: 'Otro',
@@ -17,22 +17,22 @@ export const RESULTADO_INSPECCION: Record<string, string> = {
 export const SEVERIDAD_NC: Record<string, string> = {
   minor: 'Menor',
   major: 'Mayor',
-  critical: 'Critica',
+  critical: 'Crítica',
 }
 
 /** Etiquetas del estado de una no conformidad. */
 export const ESTADO_NC: Record<string, string> = {
   open: 'Abierta',
   investigating: 'Investigando',
-  capa_created: 'CAPA creado',
+  capa_created: 'Con acción correctiva',
   closed: 'Cerrada',
   dismissed: 'Descartada',
 }
 
-/** Etiquetas del estado de un CAPA. */
+/** Etiquetas del estado de una acción correctiva (CAPA). */
 export const ESTADO_CAPA: Record<string, string> = {
-  open: 'Abierto',
+  open: 'Abierta',
   in_progress: 'En progreso',
-  verified: 'Verificado',
-  closed: 'Cerrado',
+  verified: 'Verificada',
+  closed: 'Cerrada',
 }

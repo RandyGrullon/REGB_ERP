@@ -61,7 +61,7 @@ const fechaCorta = (iso: string) => {
   })
 }
 
-/** Gastos & Reembolsos (modulo 68): reportar, aprobar y ver el ITBIS deducible. */
+/** Gastos y reembolsos (modulo 68): reportar, aprobar y ver el ITBIS deducible. */
 export default async function GastosPage({ searchParams }: { searchParams: Promise<DemoParams> }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'expenses')
@@ -99,7 +99,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
       <div className="space-y-5">
         <PageHeader
           icon="receipt_long"
-          title="Gastos & Reembolsos"
+          title="Gastos y reembolsos"
           description="Reporta el gasto con su monto y su proveedor. Con un NCF válido del proveedor, la empresa puede deducir el ITBIS."
           actions={
             puedeAprobar && (
@@ -122,8 +122,8 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
         {gastos.length === 0 ? (
           <EmptyState
             icon="receipt_long"
-            title="Todavia no hay ningun gasto reportado"
-            description="Registra el primero abajo."
+            title="Todavía no hay ningún gasto reportado"
+            description="Cuando alguien paga algo de la empresa con su dinero, lo reporta aquí y se le devuelve por transferencia, en efectivo o en la nómina. Reporta el primero abajo."
           />
         ) : (
           <Table>
@@ -184,7 +184,7 @@ export default async function GastosPage({ searchParams }: { searchParams: Promi
                   </select>
                 </label>
                 <label className="flex min-w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Categoria
+                  Categoría
                   <select name="category" required defaultValue="meals" className={claseInput}>
                     {Object.entries(CATEGORIA_GASTO).map(([id, label]) => (
                       <option key={id} value={id}>

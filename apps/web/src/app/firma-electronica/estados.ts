@@ -9,7 +9,7 @@ export const ESTADO_FIRMA: Record<string, string> = {
 
 /** Etiquetas del tipo de documento. */
 export const TIPO_DOCUMENTO_FIRMA: Record<string, string> = {
-  quote: 'Cotizacion',
+  quote: 'Cotización',
   contract: 'Contrato',
   other: 'Otro',
 }

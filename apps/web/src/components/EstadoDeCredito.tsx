@@ -69,9 +69,9 @@ export function EstadoDeCredito({
       {!compacto && (
         <dl className="mt-3 grid grid-cols-2 gap-3 border-t border-[var(--color-border)] pt-3 text-xs sm:grid-cols-4">
           <div>
-            <dt className="text-[var(--color-text-muted)]">Limite</dt>
+            <dt className="text-[var(--color-text-muted)]">Límite</dt>
             <dd className="tabular text-sm font-semibold text-[var(--color-text-primary)]">
-              {s.creditLimit === null ? 'Sin limite' : `RD$ ${money(s.creditLimit)}`}
+              {s.creditLimit === null ? 'Sin límite' : `RD$ ${money(s.creditLimit)}`}
             </dd>
           </div>
           <div>

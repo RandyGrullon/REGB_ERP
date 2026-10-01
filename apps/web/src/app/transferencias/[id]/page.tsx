@@ -28,6 +28,7 @@ import {
 } from '../actions'
 import { ESTADO_TRANSFERENCIA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad, unirFrases } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +39,10 @@ interface OrdenHead {
   from_name: string
   to_name: string
   notes: string | null
+  created_at: string
+  dispatched_at: string | null
+  received_at: string | null
+  cancelled_at: string | null
 }
 
 interface LineaRow {
@@ -45,6 +50,7 @@ interface LineaRow {
   product_id: string
   sku: string
   name: string
+  unit: string
   qty_requested: string
   qty_sent: string | null
   qty_received: string | null
@@ -75,7 +81,9 @@ export default async function TransferenciaDetallePage({
 
   const { head, lineas, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<OrdenHead[]>`
-      select tord.id, tord.status, tord.from_warehouse_id, wf.name as from_name, wt.name as to_name, tord.notes
+      select tord.id, tord.status, tord.from_warehouse_id, wf.name as from_name, wt.name as to_name,
+             tord.notes, tord.created_at::text, tord.dispatched_at::text, tord.received_at::text,
+             tord.cancelled_at::text
       from public.transfer_orders tord
       join public.warehouses wf on wf.id = tord.from_warehouse_id
       join public.warehouses wt on wt.id = tord.to_warehouse_id
@@ -83,7 +91,7 @@ export default async function TransferenciaDetallePage({
     if (!h) return { head: null, lineas: [], productos: [] }
 
     const l = await tx<LineaRow[]>`
-      select l.id, l.product_id, p.sku, p.name,
+      select l.id, l.product_id, p.sku, p.name, p.unit,
              l.qty_requested::text, l.qty_sent::text, l.qty_received::text
       from public.transfer_order_lines l
       join public.products p on p.id = l.product_id
@@ -124,17 +132,33 @@ export default async function TransferenciaDetallePage({
 
   const enBorrador = head.status === 'draft'
   const enTransito = head.status === 'in_transit'
+  const fecha = (iso: string) =>
+    new Date(iso).toLocaleString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+    })
+  const pasos = [
+    `Creada el ${fecha(head.created_at)}`,
+    head.dispatched_at ? `salió el ${fecha(head.dispatched_at)}` : null,
+    head.received_at ? `llegó el ${fecha(head.received_at)}` : null,
+    head.cancelled_at ? `cancelada el ${fecha(head.cancelled_at)}` : null,
+  ].filter(Boolean)
 
   return (
     <Shell {...shell} activePath="/transferencias">
       <div className="space-y-5">
         <PageHeader
           icon="local_shipping"
-          title={`${head.from_name} → ${head.to_name}`}
-          description={head.notes ?? ''}
-          crumbs={[{ label: 'Transferencias', href: `/transferencias${qs}` }, { label: 'Detalle' }]}
+          title={`De ${head.from_name} a ${head.to_name}`}
+          description={unirFrases([head.notes, pasos.join(' · ')])}
+          crumbs={[
+            { label: 'Transferencias', href: `/transferencias${qs}` },
+            { label: head.to_name },
+          ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge
                 tone={
                   head.status === 'received'
@@ -194,12 +218,12 @@ export default async function TransferenciaDetallePage({
                           <input type="hidden" name="lineId" value={l.id} />
                         </TD>
                         <TD numeric>
-                          <span className="tabular">{l.qty_sent}</span>
+                          <span className="tabular">{cantidad(l.qty_sent, l.unit)}</span>
                         </TD>
                         <TD numeric>
                           <input
                             name="qtyReceived"
-                            defaultValue={l.qty_sent ?? ''}
+                            defaultValue={l.qty_sent !== null ? String(Number(l.qty_sent)) : ''}
                             inputMode="decimal"
                             aria-label={`Cantidad recibida de ${l.name}`}
                             className={claseInput}
@@ -237,6 +261,15 @@ export default async function TransferenciaDetallePage({
               </TR>
             </THead>
             <TBody>
+              {lineas.length === 0 && (
+                <TR>
+                  <TD colSpan={6} className="py-6 text-center text-[var(--color-text-muted)]">
+                    {enBorrador
+                      ? 'Todavía no tiene productos. Agrégalos abajo y después despáchala.'
+                      : 'Esta transferencia no tiene productos.'}
+                  </TD>
+                </TR>
+              )}
               {lineas.map((l) => {
                 const discrepancia =
                   l.qty_sent !== null && l.qty_received !== null
@@ -248,20 +281,20 @@ export default async function TransferenciaDetallePage({
                       <Mono>{l.sku}</Mono> {l.name}
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{l.qty_requested}</span>
+                      <span className="tabular">{cantidad(l.qty_requested, l.unit)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{l.qty_sent ?? '—'}</span>
+                      <span className="tabular">{cantidad(l.qty_sent)}</span>
                     </TD>
                     <TD numeric>
-                      <span className="tabular">{l.qty_received ?? '—'}</span>
+                      <span className="tabular">{cantidad(l.qty_received)}</span>
                     </TD>
                     {(head.status === 'received' || head.status === 'in_transit') && (
                       <TD>
                         {discrepancia && discrepancia.tipo !== 'ninguna' ? (
                           <Badge tone={discrepancia.tipo === 'faltante' ? 'danger' : 'warning'}>
-                            {discrepancia.tipo === 'faltante' ? 'Falto' : 'Sobro'}{' '}
-                            {Math.abs(discrepancia.diferencia)}
+                            {discrepancia.tipo === 'faltante' ? 'Faltó' : 'Sobró'}{' '}
+                            {cantidad(Math.abs(discrepancia.diferencia))}
                           </Badge>
                         ) : discrepancia ? (
                           <Badge tone="success">Coincide</Badge>
@@ -308,7 +341,7 @@ export default async function TransferenciaDetallePage({
                   >
                     {productos.map((p) => (
                       <option key={p.id} value={p.id}>
-                        {p.sku} — {p.name} (hay {Number(p.disponible)} en {head.from_name})
+                        {p.sku} — {p.name} (hay {cantidad(p.disponible)} en {head.from_name})
                       </option>
                     ))}
                   </select>

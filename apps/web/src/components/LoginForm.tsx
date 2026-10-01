@@ -1,8 +1,31 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@regb/ui'
+import { Button, Icon } from '@regb/ui'
 import { createClient } from '@regb/sdk/browser'
+
+/**
+ * Lo que dice Supabase, en español y con qué hacer (§11.7). Supabase
+ * responde en inglés; un cajero no tiene por qué entender "rate limit".
+ */
+function mensajeDeError(msg: string): string {
+  if (/invalid login credentials/i.test(msg)) {
+    return 'El correo o la contraseña no coinciden. Si nunca has entrado, pide un enlace de acceso.'
+  }
+  if (/email not confirmed/i.test(msg)) {
+    return 'Todavía no confirmaste tu correo. Revisa tu bandeja o pide un enlace de acceso.'
+  }
+  if (/signups? not allowed|user not found/i.test(msg)) {
+    return 'Ese correo no tiene cuenta en REGB. Pídele a tu administrador que te invite desde Usuarios.'
+  }
+  if (/rate limit|too many requests|security purposes/i.test(msg)) {
+    return 'Pediste demasiados enlaces seguidos. Espera un minuto y vuelve a intentarlo.'
+  }
+  if (/failed to fetch|network/i.test(msg)) {
+    return 'No pudimos hablar con el servidor de acceso. Revisa tu conexión y vuelve a intentarlo.'
+  }
+  return msg
+}
 
 /**
  * Formulario de entrada.
@@ -37,7 +60,13 @@ export function LoginForm({
         const { error } = await supabase.auth.signInWithOtp({
           email: email.trim().toLowerCase(),
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback?siguiente=${nextPath}`,
+            // `siguiente` codificado: una ruta con `?` o `&` (la de una
+            // invitacion con parametros) rompia la URL de vuelta.
+            emailRedirectTo: `${window.location.origin}/auth/callback?siguiente=${encodeURIComponent(nextPath)}`,
+            // REGB no tiene registro libre: el enlace solo sale para quien
+            // ya tiene cuenta. Sin esto Supabase intentaria crear la cuenta
+            // y responderia en ingles "Signups not allowed for otp".
+            shouldCreateUser: false,
           },
         })
         if (error) throw error
@@ -56,13 +85,7 @@ export function LoginForm({
     } catch (err) {
       // Mensaje util, no un codigo: que paso, por que, que hacer (§11.7).
       const msg = err instanceof Error ? err.message : String(err)
-      setError(
-        /invalid login credentials/i.test(msg)
-          ? 'El correo o la contraseña no coinciden. Si nunca has entrado, pide un enlace de acceso.'
-          : /email not confirmed/i.test(msg)
-            ? 'Todavía no confirmaste tu correo. Revisa tu bandeja o pide un enlace de acceso.'
-            : msg,
-      )
+      setError(mensajeDeError(msg))
     } finally {
       setCargando(false)
     }
@@ -71,9 +94,12 @@ export function LoginForm({
   if (enviado) {
     return (
       <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4 text-center">
-        <p className="text-3xl" aria-hidden>
-          📬
-        </p>
+        <span
+          aria-hidden
+          className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--color-surface-base)]"
+        >
+          <Icon name="mark_email_unread" size={26} className="text-[var(--color-text-secondary)]" />
+        </span>
         <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">
           Te mandamos un enlace
         </p>

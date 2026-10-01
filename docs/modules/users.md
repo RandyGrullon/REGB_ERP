@@ -305,12 +305,11 @@ Solo ids en el payload: un evento puede salir a un webhook de terceros
 
 ## Lo que NO hace
 
-- **Probar el envio real de extremo a extremo.** El flujo con Supabase
-  (Edge Function, plantilla, `verifyOtp`, `refreshSession`) esta escrito
-  pero nunca se ha corrido contra un proyecto real: no hay credenciales. Lo
-  probado es la base (34 casos) y la accion en modo demostracion y con la
-  respuesta de la Edge Function simulada (15 casos,
-  `usuarios.accion.test.ts`).
+- **Probarlo contra el proyecto de producción.** El flujo completo (Edge
+  Function, plantilla, `verifyOtp`, `refreshSession`) se corrió de punta a
+  punta contra Supabase en local el 30 sep 2026 (ronda 4): el correo llega
+  a Mailpit, el invitado acepta y entra. Falta hacerlo en el proyecto real
+  con el SMTP propio ([`SUPABASE.md`](../SUPABASE.md)).
 - **Reenviar el correo a quien ya tiene cuenta.** `inviteUserByEmail` no
   invita dos veces; la pantalla lo dice ("ya tiene cuenta") y da el enlace
   para compartirlo a mano.

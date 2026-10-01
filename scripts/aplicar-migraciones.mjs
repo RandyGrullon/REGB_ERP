@@ -58,7 +58,19 @@ const archivos = readdirSync(DIR)
   .filter((f) => f.endsWith('.sql'))
   .sort()
 
-const hashDe = (f) => createHash('sha256').update(readFileSync(join(DIR, f))).digest('hex').slice(0, 16)
+const sha = (datos) => createHash('sha256').update(datos).digest('hex').slice(0, 16)
+const bytesDe = (f) => readFileSync(join(DIR, f))
+
+// El hash se saca del texto con finales de linea LF, como lo guarda git.
+// Con `core.autocrlf` (Windows) el mismo archivo sale con CRLF en una
+// copia y con LF en otra, y el hash de los bytes crudos cambiaba: la
+// misma migracion daba DERIVA segun la maquina que corriera el script.
+// Para un archivo con LF (todo lo que sale de git sin conversion) este
+// hash es IGUAL al de los bytes crudos: los libros viejos siguen valiendo.
+const hashDe = (f) => sha(Buffer.from(bytesDe(f).toString('utf8').replace(/\r\n/g, '\n'), 'utf8'))
+// Lo que anoto la version anterior en una copia con CRLF. Se acepta al
+// comparar, nunca se escribe.
+const hashCrudo = (f) => sha(bytesDe(f))
 
 // 'prefer' sirve para los dos casos: Supabase exige TLS y lo negocia
 // solo; el Postgres local de pruebas no lo tiene y cae a conexion simple.
@@ -100,7 +112,10 @@ try {
   }
 
   // ── Deriva: algo aplicado que cambio despues en el repo ───────────────
-  const derivadas = archivos.filter((f) => yaAplicadas.has(f) && yaAplicadas.get(f) !== hashDe(f))
+  const derivadas = archivos.filter(
+    (f) =>
+      yaAplicadas.has(f) && yaAplicadas.get(f) !== hashDe(f) && yaAplicadas.get(f) !== hashCrudo(f),
+  )
   if (derivadas.length > 0) {
     console.error('\nDERIVA: estas migraciones ya se aplicaron y despues CAMBIARON en el repo:')
     derivadas.forEach((f) => console.error(`  · ${f}`))
@@ -114,7 +129,9 @@ try {
 
   const pendientes = archivos.filter((f) => !yaAplicadas.has(f))
 
-  console.log(`${archivos.length} en el repo · ${yaAplicadas.size} aplicadas · ${pendientes.length} pendientes`)
+  console.log(
+    `${archivos.length} en el repo · ${yaAplicadas.size} aplicadas · ${pendientes.length} pendientes`,
+  )
 
   if (pendientes.length === 0) {
     console.log('Nada que hacer: la base esta al dia.')
@@ -143,7 +160,9 @@ try {
     } catch (e) {
       console.log('FALLO')
       console.error(`\n${e.message}\n`)
-      console.error(`Se aplicaron las anteriores y quedaron anotadas. Arregla ${f} y vuelve a correr.`)
+      console.error(
+        `Se aplicaron las anteriores y quedaron anotadas. Arregla ${f} y vuelve a correr.`,
+      )
       await sql.end()
       process.exit(1)
     }

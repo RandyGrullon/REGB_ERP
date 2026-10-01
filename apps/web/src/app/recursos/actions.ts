@@ -36,7 +36,7 @@ function lunesDe(fecha: string): string {
 
 export async function fijarCapacidad(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'resources', 'resources.manage')
   if (!permiso.ok) return permiso
 
@@ -66,7 +66,7 @@ export async function fijarCapacidad(fd: FormData): Promise<ActionResult> {
 
 export async function asignar(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'resources', 'resources.manage')
   if (!permiso.ok) return permiso
 

@@ -4,6 +4,7 @@ import {
   CardHeader,
   CardTitle,
   EmptyState,
+  Icon,
   PageHeader,
   StatCard,
   TBody,
@@ -88,9 +89,9 @@ export default async function FlujoDeCajaPage({
         <PageHeader
           icon="ssid_chart"
           title="Flujo de caja proyectado"
-          description={`Ocho semanas hacia adelante: el efectivo de hoy, más lo que esperas cobrar, menos lo que tienes que pagar. Lo vencido cuenta en la semana 1 -ya debería haber entrado o salido-.`}
+          description="Ocho semanas hacia adelante: el efectivo de hoy, más lo que esperas cobrar, menos lo que tienes que pagar. Lo vencido cuenta en la semana 1, porque ya debería haber entrado o salido."
           crumbs={[
-            { label: 'Tesoreria', href: `/tesoreria${ctx.demoQs}` },
+            { label: 'Tesorería', href: `/tesoreria${ctx.demoQs}` },
             { label: 'Flujo de caja' },
           ]}
         />
@@ -125,14 +126,14 @@ export default async function FlujoDeCajaPage({
                 aria-hidden="true"
                 className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--color-semantic-bg-danger)] text-[var(--color-semantic-text-danger)]"
               >
-                !
+                <Icon name="priority_high" size={16} />
               </span>
               <p className="text-[var(--color-text-secondary)]">
                 <strong className="text-[var(--color-semantic-text-danger)]">
                   El efectivo se pone en rojo en la semana {enRojo + 1}
                 </strong>{' '}
                 ({rango(proyeccion[enRojo]!.weekStart, proyeccion[enRojo]!.weekEnd)}). Con lo que
-                hay hoy y lo que esta programado, no alcanza. Adelanta cobros o corre pagos antes de
+                hay hoy y lo que está programado, no alcanza. Adelanta cobros o corre pagos antes de
                 que llegue.
               </p>
             </CardBody>
@@ -142,8 +143,8 @@ export default async function FlujoDeCajaPage({
         {efectivoHoy === 0 && entradas.length === 0 && salidas.length === 0 ? (
           <EmptyState
             icon="ssid_chart"
-            title="Todavia no hay nada que proyectar"
-            description="Registra una cuenta bancaria con su saldo. Si ademas tienes cuentas por cobrar o por pagar activas, sus facturas abiertas aparecen aqui solas."
+            title="Todavía no hay nada que proyectar"
+            description="Registra una cuenta bancaria con su saldo. Si además tienes cuentas por cobrar o por pagar activas, sus facturas abiertas aparecen aquí solas."
           />
         ) : (
           <Card>
@@ -151,11 +152,11 @@ export default async function FlujoDeCajaPage({
               <CardTitle>Semana por semana</CardTitle>
             </CardHeader>
             <CardBody>
-              <Table>
+              <Table className="min-w-[640px]">
                 <THead>
                   <TR>
                     <TH>Semana</TH>
-                    <TH>Del</TH>
+                    <TH>Fechas</TH>
                     <TH numeric>Entra</TH>
                     <TH numeric>Sale</TH>
                     <TH numeric>Neto</TH>
@@ -166,7 +167,7 @@ export default async function FlujoDeCajaPage({
                   {proyeccion.map((s, i) => (
                     <TR key={i}>
                       <TD className="font-medium text-[var(--color-text-primary)]">{i + 1}</TD>
-                      <TD>{rango(s.weekStart, s.weekEnd)}</TD>
+                      <TD className="whitespace-nowrap">{rango(s.weekStart, s.weekEnd)}</TD>
                       <TD numeric>
                         <span className="tabular text-[var(--color-semantic-text-success)]">
                           {s.projectedIn === 0 ? '—' : money(s.projectedIn)}
@@ -194,9 +195,10 @@ export default async function FlujoDeCajaPage({
                 </TBody>
               </Table>
               <p className="mt-3 text-xs text-[var(--color-text-muted)]">
-                Esto es una proyeccion, no una promesa: cuenta lo que esta facturado y con fecha, no
-                lo que se espera vender. Sin cuentas por cobrar o por pagar activos, sus columnas
-                quedan vacias y el efectivo se muestra plano.
+                Esto es una proyección, no una promesa: cuenta lo que está facturado y con fecha, no
+                lo que se espera vender. Una semana sin facturas que venzan sale con una raya en
+                Entra y Sale, y el efectivo sigue igual.
+
               </p>
             </CardBody>
           </Card>

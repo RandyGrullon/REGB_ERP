@@ -43,7 +43,7 @@ const num = (raw: string): number | null => {
 
 export async function crearProveedor(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.suppliers.manage')
   if (!permiso.ok) return permiso
 
@@ -54,7 +54,7 @@ export async function crearProveedor(fd: FormData): Promise<ActionResult> {
   const terms = num(String(fd.get('terms') ?? '0')) ?? 0
 
   if (name.length < 2) return { ok: false, error: 'El nombre necesita al menos 2 letras.' }
-  if (terms < 0) return { ok: false, error: 'Los dias de credito no pueden ser negativos.' }
+  if (terms < 0) return { ok: false, error: 'Los días de crédito no pueden ser negativos.' }
 
   // Mismo motivo que con los clientes (0021/pedidos): un RNC mal tecleado
   // no se nota al guardarlo, se nota el dia que haga falta declarar el
@@ -63,7 +63,7 @@ export async function crearProveedor(fd: FormData): Promise<ActionResult> {
   if (taxId !== null && !isValidTaxId(taxId)) {
     return {
       ok: false,
-      error: `"${taxIdRaw}" no es un RNC ni una cedula valida: el digito verificador no cuadra.`,
+      error: `"${taxIdRaw}" no es un RNC ni una cédula válida: el dígito verificador no cuadra.`,
     }
   }
 
@@ -79,7 +79,7 @@ export async function crearProveedor(fd: FormData): Promise<ActionResult> {
 
 export async function alternarProveedor(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.suppliers.manage')
   if (!permiso.ok) return permiso
 
@@ -101,13 +101,13 @@ export async function alternarProveedor(fd: FormData): Promise<ActionResult> {
 /** Crea la orden en borrador. Las lineas se agregan despues. */
 export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.create')
   if (!permiso.ok) return permiso
 
   const supplierId = String(fd.get('supplierId') ?? '')
   const warehouseId = String(fd.get('warehouseId') ?? '')
-  if (!supplierId || !warehouseId) return { ok: false, error: 'Elige proveedor y almacen.' }
+  if (!supplierId || !warehouseId) return { ok: false, error: 'Elige proveedor y almacén.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [n] = await tx<{ next_purchase_order_number: string }[]>`
@@ -156,7 +156,7 @@ async function recalcular(
 
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.edit')
   if (!permiso.ok) return permiso
 
@@ -206,7 +206,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'no-borrador') {
-    return { ok: false, error: 'Solo se pueden agregar lineas a una orden en borrador.' }
+    return { ok: false, error: 'Solo se pueden agregar líneas a una orden en borrador.' }
   }
   if (resultado === 'sin-producto') return { ok: false, error: 'Ese producto no existe.' }
 
@@ -216,7 +216,7 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.edit')
   if (!permiso.ok) return permiso
 
@@ -241,7 +241,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'no-borrador') {
-    return { ok: false, error: 'Solo se pueden quitar lineas de una orden en borrador.' }
+    return { ok: false, error: 'Solo se pueden quitar líneas de una orden en borrador.' }
   }
 
   revalidatePath(`/compras/${orderId}`)
@@ -253,7 +253,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
  */
 export async function confirmarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.confirm')
   if (!permiso.ok) return permiso
 
@@ -287,7 +287,7 @@ export async function confirmarOrden(fd: FormData): Promise<ActionResult> {
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'no-borrador') return { ok: false, error: 'Esta orden ya fue confirmada.' }
   if (resultado === 'sin-lineas') {
-    return { ok: false, error: 'Agrega al menos una linea antes de confirmar.' }
+    return { ok: false, error: 'Agrega al menos una línea antes de confirmar.' }
   }
 
   revalidatePath(`/compras/${orderId}`)
@@ -305,7 +305,7 @@ export async function confirmarOrden(fd: FormData): Promise<ActionResult> {
  */
 export async function recibirLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.receive')
   if (!permiso.ok) return permiso
 
@@ -314,7 +314,7 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
   const qty = num(String(fd.get('qty') ?? ''))
   const costoRecibidoRaw = String(fd.get('unitCost') ?? '').trim()
   if (!orderId || !lineId) return { ok: false, error: 'Faltan datos.' }
-  if (qty === null) return { ok: false, error: 'Cantidad no valida.' }
+  if (qty === null) return { ok: false, error: 'Cantidad no válida.' }
 
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [order] = await tx<{ status: string; warehouse_id: string }[]>`
@@ -359,7 +359,7 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
         ? costoNetoUnitario(Number(line.unit_cost), Number(line.discount_pct))
         : Number(costoRecibidoRaw.replace(/,/g, ''))
     if (!Number.isFinite(costoRecibido) || costoRecibido < 0) {
-      return 'El costo de recepcion no es valido.'
+      return 'El costo de recepción no es válido.'
     }
 
     await tx`
@@ -393,8 +393,8 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'sin-confirmar') return { ok: false, error: 'Confirma la orden primero.' }
-  if (resultado === 'cancelada') return { ok: false, error: 'La orden esta cancelada.' }
-  if (resultado === 'sin-linea') return { ok: false, error: 'Esa linea no existe.' }
+  if (resultado === 'cancelada') return { ok: false, error: 'La orden está cancelada.' }
+  if (resultado === 'sin-linea') return { ok: false, error: 'Esa línea no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/compras/${orderId}`)
@@ -404,7 +404,7 @@ export async function recibirLinea(fd: FormData): Promise<ActionResult> {
 
 export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'purchase-orders', 'purchase-orders.cancel')
   if (!permiso.ok) return permiso
 
@@ -436,7 +436,7 @@ export async function cancelarOrden(fd: FormData): Promise<ActionResult> {
 
   if (resultado === 'no-existe') return { ok: false, error: 'Esa orden no existe.' }
   if (resultado === 'recibida') {
-    return { ok: false, error: 'Esa orden ya se recibio completa: no queda nada que cancelar.' }
+    return { ok: false, error: 'Esa orden ya se recibió completa: no queda nada que cancelar.' }
   }
 
   revalidatePath(`/compras/${orderId}`)

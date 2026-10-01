@@ -31,7 +31,7 @@ const num = (raw: string): number | null => {
 /** Crea un curso nuevo. */
 export async function crearCurso(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-courses')
   if (!permiso.ok) return permiso
 
@@ -40,9 +40,9 @@ export async function crearCurso(fd: FormData): Promise<ActionResult> {
   const durationHours = num(String(fd.get('durationHours') ?? ''))
   const passingScore = Number.parseInt(String(fd.get('passingScore') ?? '70'), 10)
 
-  if (!title) return { ok: false, error: 'Escribe el titulo del curso.' }
+  if (!title) return { ok: false, error: 'Escribe el título del curso.' }
   if (!Number.isInteger(passingScore) || passingScore < 0 || passingScore > 100) {
-    return { ok: false, error: 'El minimo para aprobar debe estar entre 0 y 100.' }
+    return { ok: false, error: 'El mínimo para aprobar debe estar entre 0 y 100.' }
   }
 
   try {
@@ -65,7 +65,7 @@ export async function crearCurso(fd: FormData): Promise<ActionResult> {
 /** Inscribe a un empleado en un curso. */
 export async function inscribirEmpleado(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-enrollments')
   if (!permiso.ok) return permiso
 
@@ -94,13 +94,13 @@ export async function inscribirEmpleado(fd: FormData): Promise<ActionResult> {
 /** Registra la nota final de una inscripcion -aprueba o no, contra el minimo real del curso-. */
 export async function registrarNota(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-enrollments')
   if (!permiso.ok) return permiso
 
   const enrollmentId = String(fd.get('enrollmentId') ?? '')
   const score = num(String(fd.get('score') ?? ''))
-  if (!enrollmentId) return { ok: false, error: 'Falta la inscripcion.' }
+  if (!enrollmentId) return { ok: false, error: 'Falta la inscripción.' }
   if (score === null || score < 0 || score > 100)
     return { ok: false, error: 'La nota debe estar entre 0 y 100.' }
 
@@ -111,8 +111,8 @@ export async function registrarNota(fd: FormData): Promise<ActionResult> {
         from public.training_enrollments e
         join public.training_courses c on c.id = e.course_id
         where e.id = ${enrollmentId} and e.tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa inscripcion no existe.')
-      if (row.status !== 'enrolled') throw new Error('Esa inscripcion ya fue resuelta.')
+      if (!row) throw new Error('Esa inscripción no existe.')
+      if (row.status !== 'enrolled') throw new Error('Esa inscripción ya fue resuelta.')
 
       const status = aproboEvaluacion(score, row.passing_score) ? 'completed' : 'failed'
       await tx`
@@ -138,21 +138,21 @@ export async function registrarNota(fd: FormData): Promise<ActionResult> {
 /** Emite un certificado para una inscripcion ya completada -queda fijo desde que se emite-. */
 export async function emitirCertificado(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-enrollments')
   if (!permiso.ok) return permiso
 
   const enrollmentId = String(fd.get('enrollmentId') ?? '')
   const expiresAtRaw = String(fd.get('expiresAt') ?? '') || null
-  if (!enrollmentId) return { ok: false, error: 'Falta la inscripcion.' }
+  if (!enrollmentId) return { ok: false, error: 'Falta la inscripción.' }
 
   try {
     await asUser(ctx.userId, ctx.tenantId, async (tx) => {
       const [row] = await tx<{ status: string }[]>`
         select status from public.training_enrollments where id = ${enrollmentId} and tenant_id = ${ctx.tenantId}`
-      if (!row) throw new Error('Esa inscripcion no existe.')
+      if (!row) throw new Error('Esa inscripción no existe.')
       if (row.status !== 'completed')
-        throw new Error('Solo se emite certificado a una inscripcion completada.')
+        throw new Error('Solo se emite certificado a una inscripción completada.')
 
       await tx`
         insert into public.training_certificates (tenant_id, enrollment_id, expires_at)
@@ -174,7 +174,7 @@ export async function emitirCertificado(fd: FormData): Promise<ActionResult> {
 /** Crea una competencia nueva -para la matriz-. */
 export async function crearCompetencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-competencies')
   if (!permiso.ok) return permiso
 
@@ -202,7 +202,7 @@ export async function crearCompetencia(fd: FormData): Promise<ActionResult> {
 /** Asigna -o actualiza- el nivel de un empleado en una competencia. */
 export async function asignarNivelCompetencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'training', 'training.manage-competencies')
   if (!permiso.ok) return permiso
 
@@ -213,7 +213,7 @@ export async function asignarNivelCompetencia(fd: FormData): Promise<ActionResul
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
   if (!competencyId) return { ok: false, error: 'Elige la competencia.' }
   if (!Number.isInteger(level) || level < 1 || level > 5) {
-    return { ok: false, error: 'El nivel debe ser un numero de 1 a 5.' }
+    return { ok: false, error: 'El nivel debe ser un número de 1 a 5.' }
   }
 
   try {

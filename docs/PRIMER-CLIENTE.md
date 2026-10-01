@@ -39,49 +39,44 @@ mayoría en el país.
 
 Hoy la app corre en **modo demostración**: el cliente y el rol viajan en la
 URL (`?tenant=…&rol=…`) y no hay contraseña. Eso es una vitrina, no un
-sistema. `apps/web/src/lib/supabase.ts:38` lo decide con una sola condición:
-si existen las dos variables de entorno, hay login real.
+sistema. `apps/web/src/lib/supabase.ts` lo decide con una sola condición:
+si existen `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY`, hay
+login real.
 
-1. Crea un proyecto en Supabase. En *Project Settings → Database →
-   Connection string*, usa la variante **Session pooler** (URI), no
-   *Direct connection*: la directa exige IPv6, que la mayoría de redes
-   domesticas no tiene. Pon esa cadena (con la contraseña real, no
-   `[YOUR-PASSWORD]`) en `DATABASE_URL`.
-2. Aplica las 40 migraciones sobre esa base, **desde cero y en orden**. No
-   hay `down`: la garantía es que arranca limpia, y es la que se ejerce en
-   cada `gate:f0`. No hay `psql` ni `supabase` CLI garantizados en todos los
-   entornos; el driver `postgres` (ya en `apps/web/node_modules`) sirve
-   igual — un script de una docena de líneas que lee `supabase/migrations/`
-   ordenado y llama `sql.file()` por archivo, cortando en el primer error.
-3. Crea `apps/web/.env.local`:
+**Todo el paso a paso está en [SUPABASE.md](SUPABASE.md)**: crear el
+proyecto, qué valores copiar y de qué pantalla, el comando único de
+migraciones (`pnpm db:preparar`, o `pnpm db:migrar` en producción), el
+hook del token, el SMTP para las invitaciones, la función
+`invitar-usuario`, Vercel con sus crons y la lista de "cómo saber que quedó
+bien". Se validó el 30 de septiembre de 2026 contra el Supabase completo en
+local, con el recorrido entero y sesiones reales.
 
-```bash
-NEXT_PUBLIC_SUPABASE_URL=https://<proyecto>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon key>
-DATABASE_URL=postgresql://…
-```
+Lo que no puede faltar, en una línea cada uno:
 
-4. **Registra el hook de token.** Sin esto nada funciona: es lo que mete
-   `tenant_id` y `is_provider` en el JWT, y toda la RLS del sistema cuelga
-   de ese claim. En el panel de Supabase, *Authentication → Hooks → Custom
-   Access Token*, apunta a **`rls.custom_access_token_hook`** — no
-   `auth.custom_access_token_hook`. La migración
-   [`0008_auth_token_hook.sql`](../supabase/migrations/0008_auth_token_hook.sql)
-   ya le dio el `grant` a `supabase_auth_admin`.
+- **Las migraciones con `pnpm db:migrar`**, que lleva el libro
+  `regb.migraciones_aplicadas` y aplica solo lo que falta. Si tu red corta
+  Postgres, usa `pnpm db:sql-para-editor` y pega los bloques en el SQL
+  Editor.
+- **El hook de token**: Authentication → Hooks → Customize Access Token →
+  Postgres → **`rls.custom_access_token_hook`**, no `auth.`. Sin él,
+  la persona entra y no ve nada.
+- **Registro cerrado, pero el proveedor Email encendido.** Si apagas el
+  proveedor, nadie entra por correo.
 
-   > 🐞 **Descubierto al desplegar contra un proyecto real por primera
-   > vez (2026-09-02):** las funciones de aislamiento (`tenant_id()`,
-   > `is_provider()`, `module_active()`, `impersonating()`, y este mismo
-   > hook) vivían en el esquema `auth`. Eso funcionaba en el Postgres
-   > limpio de CI, donde nuestra propia migración es dueña de ese
-   > esquema — pero en Supabase real, `auth` pertenece a `supabase_admin`
-   > y el rol `postgres` con el que te conectas solo tiene `USAGE`, no
-   > `CREATE`. La migración 0001 fallaba con *"permission denied for
-   > schema auth"* antes de llegar siquiera al hook. Se movieron todas a
-   > un esquema propio, `rls`, que si es nuestro.
+> 🐞 **Descubierto al desplegar contra un proyecto real por primera
+> vez (2026-09-02):** las funciones de aislamiento (`tenant_id()`,
+> `is_provider()`, `module_active()`, `impersonating()` y el mismo
+> hook) vivían en el esquema `auth`. Eso funcionaba en el Postgres
+> limpio de CI, donde nuestra propia migración es dueña de ese
+> esquema. Pero en Supabase real, `auth` pertenece a `supabase_admin`,
+> y el rol `postgres` con el que te conectas solo tiene `USAGE`, no
+> `CREATE`. La migración 0001 fallaba con *"permission denied for
+> schema auth"* antes de llegar siquiera al hook. Se movieron todas a
+> un esquema propio, `rls`, que sí es nuestro.
 
-**Cómo saber que quedó bien:** entra con un usuario y abre `/perfil`. Si
-ves tu rol y tus permisos, el claim llegó. Si recibes un 404, no llegó.
+**Cómo saber que quedó bien:** `pnpm db:verificar-supabase` todo en
+`[ok]`. Después entra con un usuario y abre `/perfil`: si ves tu rol y tus
+permisos, el claim llegó.
 
 ---
 
@@ -90,13 +85,15 @@ ves tu rol y tus permisos, el claim llegó. Si recibes un 404, no llegó.
 Tú necesitas ver `/control`; el cliente no debe poder ni sospechar que
 existe (`requireProvider()` devuelve 404, no 403).
 
-```sql
-insert into regb.provider_users (user_id, full_name, role, is_active)
-values ('<tu-user-id-de-supabase>', 'Randy Grullón', 'owner', true);
-```
+1. En Supabase → Authentication → Users → **Add user → Create new user**,
+   con tu correo, una contraseña y **Auto Confirm User** marcado.
+2. `pnpm db:alta-proveedor --correo tu@correo.do --nombre "Randy Grullón"`.
+   Busca tu cuenta por correo y hace el alta en `regb.provider_users`. Si
+   tu red no llega a la base, SUPABASE.md §7 trae el mismo alta en SQL, por
+   correo y sin copiar ids.
 
 Cierra sesión y vuelve a entrar: los claims se calculan al emitir el token,
-no al vuelo.
+no al vuelo. Con sesión de proveedor, la web te lleva sola a `/control`.
 
 ---
 
@@ -132,7 +129,10 @@ usuario.
   falte (sirve también para un cliente que se creó a mano por SQL); el
   mismo RNC con otro identificador se niega y dice cuál es el cliente.
 - **El enlace del dueño sale una sola vez** en el resultado: cópialo y
-  mándaselo tú (WhatsApp, correo). Desde REGB Control no sale el correo:
+  mándaselo tú (WhatsApp, correo). Al abrirlo sin cuenta, el dueño pulsa
+  **Mandarme el correo para entrar** y le llega la invitación a **su**
+  correo, la del alta. Abrirlo le crea la cuenta y lo deja dentro, sin
+  contraseña (migración 0143). Desde REGB Control no sale el correo:
   la función de correo trabaja con la sesión de alguien del cliente y
   todavía no hay nadie. Si lo pierdes, la tarjeta del cliente en el
   tablero tiene **Enlace nuevo para el dueño** (el anterior deja de

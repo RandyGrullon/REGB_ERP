@@ -69,11 +69,11 @@ export function motivoNoCierre(pasos: PasoChecklist[], firmadoPor: string | null
   const pendientes = pasosObligatoriosPendientes(pasos)
   if (pendientes > 0) {
     return pendientes === 1
-      ? 'Falta marcar 1 paso obligatorio del checklist.'
-      : `Faltan marcar ${pendientes} pasos obligatorios del checklist.`
+      ? 'Falta marcar 1 paso obligatorio de la lista de verificación.'
+      : `Faltan marcar ${pendientes} pasos obligatorios de la lista de verificación.`
   }
   if (firmadoPor === null || firmadoPor.trim() === '') {
-    return 'Falta la firma de quien recibio el trabajo.'
+    return 'Falta la firma de quien recibió el trabajo.'
   }
   return null
 }

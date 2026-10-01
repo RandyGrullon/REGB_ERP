@@ -93,7 +93,7 @@ export default async function AprobarGastosPage({
         <PageHeader
           icon="fact_check"
           title="Aprobar gastos"
-          description="Reportado → aprobado o rechazado. Aprobado → reembolsado. Por nómina, el reembolso se suma al neto de la nómina en borrador que elijas, sin TSS ni ISR. Una vez rechazado o reembolsado, el gasto queda fijo."
+          description="Un gasto reportado se aprueba o se rechaza; uno aprobado se le reembolsa a quien lo pagó. Por nómina, el reembolso se suma al neto de la nómina en borrador que elijas, sin TSS ni ISR. Una vez rechazado o reembolsado, el gasto queda fijo."
           crumbs={[{ label: 'Gastos', href: `/gastos${qs}` }, { label: 'Aprobar' }]}
         />
 
@@ -102,15 +102,19 @@ export default async function AprobarGastosPage({
             Por aprobar
           </h2>
           {porAprobar.length === 0 ? (
-            <EmptyState icon="fact_check" title="No hay ningún gasto por aprobar" description="" />
+            <EmptyState
+              icon="fact_check"
+              title="No hay ningún gasto por aprobar"
+              description="Cuando alguien reporte un gasto, aparece aquí para que lo apruebes o lo rechaces."
+            />
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Empleado</TH>
-                  <TH>Categoría</TH>
-                  <TH>Fecha</TH>
-                  <TH>Proveedor</TH>
+                  <TH className="hidden sm:table-cell">Categoría</TH>
+                  <TH className="hidden sm:table-cell">Fecha</TH>
+                  <TH className="hidden md:table-cell">Proveedor</TH>
                   <TH numeric>Monto</TH>
                   <TH>
                     <span className="sr-only">Acción</span>
@@ -120,15 +124,28 @@ export default async function AprobarGastosPage({
               <TBody>
                 {porAprobar.map((g) => (
                   <TR key={g.id}>
-                    <TD className="text-[var(--color-text-primary)]">{g.employee_name}</TD>
-                    <TD>{CATEGORIA_GASTO[g.category] ?? g.category}</TD>
-                    <TD>{fechaCorta(g.expense_date)}</TD>
-                    <TD>{g.vendor_name ?? '—'}</TD>
+                    <TD className="text-[var(--color-text-primary)]">
+                      {g.employee_name}
+                      {/* En el teléfono, qué y cuándo van aquí: sus columnas se esconden. */}
+                      <span className="block text-xs text-[var(--color-text-muted)] sm:hidden">
+                        {CATEGORIA_GASTO[g.category] ?? g.category} · {fechaCorta(g.expense_date)}
+                        {g.vendor_name ? ` · ${g.vendor_name}` : ''}
+                      </span>
+                    </TD>
+                    <TD className="hidden sm:table-cell">
+                      {CATEGORIA_GASTO[g.category] ?? g.category}
+                    </TD>
+                    <TD className="hidden whitespace-nowrap sm:table-cell">
+                      {fechaCorta(g.expense_date)}
+                    </TD>
+                    <TD className="hidden md:table-cell">{g.vendor_name ?? '—'}</TD>
                     <TD numeric>
-                      <span className="tabular">RD$ {money(Number(g.amount))}</span>
+                      <span className="tabular whitespace-nowrap">
+                        RD$ {money(Number(g.amount))}
+                      </span>
                     </TD>
                     <TD>
-                      <div className="flex gap-1.5">
+                      <div className="flex flex-col gap-1.5 sm:flex-row">
                         <form action={resolverGastoForm}>
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
@@ -144,7 +161,7 @@ export default async function AprobarGastosPage({
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                           <input type="hidden" name="recordId" value={g.id} />
                           <input type="hidden" name="decision" value="rejected" />
-                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                             <Icon name="close" size={14} />
                             Rechazar
                           </BotonEnvio>
@@ -166,28 +183,38 @@ export default async function AprobarGastosPage({
             <EmptyState
               icon="payments"
               title="No hay ningún gasto aprobado sin reembolsar"
-              description=""
+              description="Todo lo aprobado ya se le devolvió a quien lo pagó."
             />
           ) : (
             <Table>
               <THead>
                 <TR>
                   <TH>Empleado</TH>
-                  <TH>Categoría</TH>
+                  <TH className="hidden sm:table-cell">Categoría</TH>
                   <TH numeric>Monto</TH>
-                  <TH>ITBIS</TH>
+                  <TH className="hidden sm:table-cell">ITBIS</TH>
                   {puedeReembolsar && <TH>Reembolsar</TH>}
                 </TR>
               </THead>
               <TBody>
                 {porReembolsar.map((g) => (
                   <TR key={g.id}>
-                    <TD className="text-[var(--color-text-primary)]">{g.employee_name}</TD>
-                    <TD>{CATEGORIA_GASTO[g.category] ?? g.category}</TD>
-                    <TD numeric>
-                      <span className="tabular">RD$ {money(Number(g.amount))}</span>
+                    <TD className="text-[var(--color-text-primary)]">
+                      {g.employee_name}
+                      <span className="block text-xs text-[var(--color-text-muted)] sm:hidden">
+                        {CATEGORIA_GASTO[g.category] ?? g.category} ·{' '}
+                        {esDeducibleDeItbis(g.ncf) ? 'ITBIS deducible' : 'sin NCF'}
+                      </span>
                     </TD>
-                    <TD className="text-xs text-[var(--color-text-muted)]">
+                    <TD className="hidden sm:table-cell">
+                      {CATEGORIA_GASTO[g.category] ?? g.category}
+                    </TD>
+                    <TD numeric>
+                      <span className="tabular whitespace-nowrap">
+                        RD$ {money(Number(g.amount))}
+                      </span>
+                    </TD>
+                    <TD className="hidden text-xs text-[var(--color-text-muted)] sm:table-cell">
                       {esDeducibleDeItbis(g.ncf) ? 'Deducible' : 'Sin NCF'}
                     </TD>
                     {puedeReembolsar && (
@@ -215,7 +242,7 @@ export default async function AprobarGastosPage({
                               </option>
                             ))}
                           </select>
-                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-2 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
+                          <BotonEnvio className="flex h-8 items-center gap-1 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                             <Icon name="payments" size={14} />
                             Reembolsar
                           </BotonEnvio>

@@ -25,6 +25,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { alternarProductoForm, crearProductoForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Catálogo · REGB ERP' }
@@ -39,10 +40,12 @@ interface ProductRow {
   barcode: string | null
   category: string | null
   category_id: string | null
+  category_name: string | null
   tax_rate: string
   reorder_point: string | null
   tracks_stock: boolean
   active: boolean
+  existencia: string | null
 }
 
 const inputCls =
@@ -71,15 +74,19 @@ export default async function ProductsPage({
 
   const [products, categories, totales] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = await tx<ProductRow[]>`
-      select id, sku, name, unit, price::text, cost::text, barcode, category,
-             category_id, tax_rate::text, reorder_point::text, tracks_stock, active
-      from public.products
-      where tenant_id = ${ctx.tenantId}
-        and (${verInactivos} or active)
-        and (${q} = '' or name ilike ${'%' + q + '%'} or sku ilike ${'%' + q + '%'}
-             or barcode = ${q})
-        and (${categoria} = '' or category_id = ${categoria || null}::uuid)
-      order by active desc, name
+      select p.id, p.sku, p.name, p.unit, p.price::text, p.cost::text, p.barcode, p.category,
+             p.category_id, pc.name as category_name, p.tax_rate::text,
+             p.reorder_point::text, p.tracks_stock, p.active,
+             (select sum(sl.qty_on_hand) from public.stock_levels sl
+               where sl.product_id = p.id and sl.tenant_id = p.tenant_id)::text as existencia
+      from public.products p
+      left join public.product_categories pc on pc.id = p.category_id
+      where p.tenant_id = ${ctx.tenantId}
+        and (${verInactivos} or p.active)
+        and (${q} = '' or p.name ilike ${'%' + q + '%'} or p.sku ilike ${'%' + q + '%'}
+             or p.barcode = ${q})
+        and (${categoria} = '' or p.category_id = ${categoria || null}::uuid)
+      order by p.active desc, p.name
       limit 300`
     const c = await tx<{ id: string; name: string }[]>`
       select id, name from public.product_categories
@@ -99,6 +106,8 @@ export default async function ProductsPage({
   const puedeEditar = exigir(ctx, 'products', 'products.edit').ok
   // El Almacenista no ve precios de venta (§8): la columna no viaja al HTML.
   const vePrecio = exigir(ctx, 'products', 'products.price.view').ok
+  // La existencia solo tiene sentido si el negocio lleva inventario.
+  const veExistencia = ctx.licensedModules.has('inventory')
 
   const qs = ctx.demoQs
 
@@ -107,8 +116,8 @@ export default async function ProductsPage({
       <div className="space-y-5">
         <PageHeader
           icon="inventory_2"
-          title="Catalogo"
-          description="Nada funciona sin el: el inventario cuenta estos productos, la caja los vende y las facturas los cobran."
+          title="Catálogo"
+          description="Nada funciona sin él: el inventario cuenta estos productos, la caja los vende y las facturas los cobran."
           actions={
             <>
               <a
@@ -116,7 +125,7 @@ export default async function ProductsPage({
                 className="flex h-10 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
               >
                 <Icon name="sell" size={18} />
-                Categorias
+                Categorías
               </a>
               <a
                 href={`/importar${qs}`}
@@ -134,9 +143,9 @@ export default async function ProductsPage({
           <StatCard
             label="Archivados"
             value={String(totales.archivados)}
-            hint="fuera del catalogo"
+            hint="fuera del catálogo"
           />
-          <StatCard label="Categorias" value={String(categories.length)} hint="para organizar" />
+          <StatCard label="Categorías" value={String(categories.length)} hint="para organizar" />
           <StatCard
             label="Mostrando"
             value={String(products.length)}
@@ -149,10 +158,10 @@ export default async function ProductsPage({
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
           <SearchField
             defaultValue={q}
-            label="Nombre, codigo o codigo de barras"
+            label="Nombre, código o código de barras"
             placeholder="arroz, ARZ-001, 750…"
           />
-          <FilterSelect label="Categoria" name="categoria" defaultValue={categoria}>
+          <FilterSelect label="Categoría" name="categoria" defaultValue={categoria}>
             <option value="">Todas</option>
             {categories.map((c) => (
               <option key={c.id} value={c.id}>
@@ -185,6 +194,7 @@ export default async function ProductsPage({
                 <TH>Producto</TH>
                 <TH>Categoría</TH>
                 <TH>Unidad</TH>
+                {veExistencia && <TH numeric>Existencia</TH>}
                 {vePrecio && <TH numeric>Precio</TH>}
                 <TH>ITBIS</TH>
                 {puedeEditar && (
@@ -209,12 +219,32 @@ export default async function ProductsPage({
                     </a>
                     {!p.active && (
                       <Badge tone="neutral" dot={false} className="ml-2">
-                        archivado
+                        Archivado
                       </Badge>
                     )}
                   </TD>
-                  <TD>{p.category ?? '—'}</TD>
+                  <TD>{p.category_name ?? p.category ?? '—'}</TD>
                   <TD>{p.unit}</TD>
+                  {veExistencia && (
+                    <TD numeric>
+                      {p.tracks_stock ? (
+                        <span className="inline-flex items-center justify-end gap-2">
+                          {p.reorder_point !== null &&
+                            Number(p.existencia ?? 0) <= Number(p.reorder_point) && (
+                              <Badge
+                                tone="warning"
+                                title={`Se avisa por debajo de ${cantidad(p.reorder_point)}`}
+                              >
+                                Bajo
+                              </Badge>
+                            )}
+                          <span className="tabular">{cantidad(p.existencia ?? 0)}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[var(--color-text-muted)]">—</span>
+                      )}
+                    </TD>
+                  )}
                   {vePrecio && (
                     <TD numeric>
                       <span className="tabular">{money(Number(p.price))}</span>
@@ -223,7 +253,7 @@ export default async function ProductsPage({
                   <TD>
                     {Number(p.tax_rate) === 0 ? (
                       <Badge tone="neutral" dot={false}>
-                        exento
+                        Exento
                       </Badge>
                     ) : (
                       `${Math.round(Number(p.tax_rate) * 100)}%`
@@ -235,7 +265,7 @@ export default async function ProductsPage({
                         className="ml-2"
                         title="Servicio: se cobra pero no lleva inventario"
                       >
-                        servicio
+                        Servicio
                       </Badge>
                     )}
                   </TD>
@@ -267,7 +297,7 @@ export default async function ProductsPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input name="sku" required placeholder="ARZ-001" className={inputCls} />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -281,7 +311,7 @@ export default async function ProductsPage({
                   />
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Categoria
+                  Categoría
                   <select name="categoryId" className={inputCls} defaultValue="">
                     <option value="">Sin categoría</option>
                     {categories.map((c) => (
@@ -337,7 +367,7 @@ export default async function ProductsPage({
                 </label>
                 <label
                   className="flex items-center gap-2 pb-2 text-xs text-[var(--color-text-secondary)]"
-                  title="Para cobrar envio, instalacion o mano de obra: se factura igual, pero no tiene existencias."
+                  title="Para cobrar envío, instalación o mano de obra: se factura igual, pero no tiene existencias."
                 >
                   <input type="checkbox" name="sinStock" />
                   Es un servicio (no lleva inventario)
@@ -347,14 +377,14 @@ export default async function ProductsPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                ¿Tienes muchos? Subelos de una vez desde{' '}
+                ¿Tienes muchos? Súbelos de una vez desde{' '}
                 <a
                   href={`/importar${qs}`}
                   className="text-[var(--color-text-link)] hover:underline"
                 >
                   Importar
                 </a>
-                . El codigo de barras debe ser unico: el lector del POS necesita saber cual cobrar.
+                . El código de barras debe ser único: el lector del POS necesita saber cuál cobrar.
               </p>
             </CardBody>
           </Card>

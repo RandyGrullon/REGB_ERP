@@ -99,7 +99,7 @@ describe('Marcar como leido es por persona', () => {
   it('marcarTodasLeidas: la campana de quien pulsa queda en cero, la de Luis no', async () => {
     tarro.delete(COOKIE_AVISO)
     await marcarTodasLeidas(c.fd())
-    expect(textoAviso()).toBe('Listo, marcamos todas como leidas.')
+    expect(textoAviso()).toBe('Listo, marcamos todas como leídas.')
 
     expect(await sinLeer(DEMO)).toBe(0)
     expect(await sinLeer(luis)).toBe(2)

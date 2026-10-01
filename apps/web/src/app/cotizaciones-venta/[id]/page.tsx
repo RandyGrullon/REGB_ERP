@@ -181,7 +181,7 @@ export default async function CotizacionDetallePage({
               <Badge tone={badgeEstado(head.status)}>
                 {ESTADO_COTIZACION[head.status] ?? head.status}
               </Badge>
-              {head.valid_until && <span>Valida hasta {fecha(head.valid_until)}</span>}
+              {head.valid_until && <span>Válida hasta {fecha(head.valid_until)}</span>}
               {head.terms && <span>· {head.terms}</span>}
               {head.sales_order_id && head.pedido && (
                 <a
@@ -225,7 +225,7 @@ export default async function CotizacionDetallePage({
               href={`/cotizaciones-venta/${head.supersedes_id}${qs}`}
               className="text-[var(--color-text-link)] underline-offset-2 hover:underline"
             >
-              la version anterior
+              la versión anterior
             </a>
           </p>
         )}
@@ -237,7 +237,7 @@ export default async function CotizacionDetallePage({
                 {campos}
                 <input type="hidden" name="siguiente" value="sent" />
                 <BotonEnvio
-                  title="La marca como enviada al cliente: desde ahi no se edita. Imprimela o mandasela."
+                  title="La marca como enviada al cliente: desde ahí no se edita. Imprímela o mándasela."
                   className={botonClase}
                 >
                   <Icon name="send" size={14} />
@@ -251,7 +251,7 @@ export default async function CotizacionDetallePage({
                 {almacenes.length > 1 ? (
                   <select
                     name="warehouseId"
-                    aria-label="Almacen que despacha"
+                    aria-label="Almacén que despacha"
                     className={claseInput}
                   >
                     {almacenes.map((w) => (
@@ -264,7 +264,7 @@ export default async function CotizacionDetallePage({
                   <input type="hidden" name="warehouseId" value={almacenes[0]!.id} />
                 )}
                 <BotonEnvio
-                  title="Crea el pedido en borrador con estas lineas y estos precios"
+                  title="Crea el pedido en borrador con estas líneas y estos precios"
                   className={botonClase}
                 >
                   <Icon name="shopping_cart" size={14} />
@@ -300,7 +300,7 @@ export default async function CotizacionDetallePage({
                 {campos}
                 <BotonEnvio className={botonSecundarioClase}>
                   <Icon name="difference" size={14} />
-                  Crear version nueva
+                  Crear versión nueva
                 </BotonEnvio>
               </form>
             )}
@@ -400,7 +400,7 @@ export default async function CotizacionDetallePage({
                     name="unitPrice"
                     inputMode="decimal"
                     placeholder="El de su lista"
-                    title="Vacio = el precio que el cliente pagaria en un pedido: su lista de precios por cantidad, o el del catalogo."
+                    title="Vacío = el precio que el cliente pagaría en un pedido: su lista de precios por cantidad, o el del catálogo."
                     className={`tabular ${claseInput}`}
                   />
                 </label>
@@ -419,7 +419,7 @@ export default async function CotizacionDetallePage({
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Sin precio escrito se usa el de la lista de precios del cliente para esa cantidad, o
-                el del catalogo (entre parentesis). Escribe uno solo si negociaste otro.
+                el del catálogo (entre paréntesis). Escribe uno solo si negociaste otro.
               </p>
             </CardBody>
           </Card>

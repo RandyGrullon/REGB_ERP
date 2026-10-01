@@ -23,12 +23,12 @@ function demoDe(formData: FormData) {
 
 async function leerUna(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'notifications', 'notifications.edit')
   if (!permiso.ok) return permiso
 
   const id = String(formData.get('id') ?? '')
-  if (!id) return { ok: false, error: 'Falta la notificacion.' }
+  if (!id) return { ok: false, error: 'Falta la notificación.' }
 
   // Un id que no es un uuid haria saltar la conversion en la base con un
   // error de sintaxis; para quien pulsa es lo mismo que un aviso ajeno.
@@ -47,7 +47,7 @@ async function leerUna(formData: FormData): Promise<ActionResult> {
 
 async function leerTodas(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'notifications', 'notifications.edit')
   if (!permiso.ok) return permiso
 
@@ -67,5 +67,5 @@ export async function marcarLeida(fd: FormData): Promise<void> {
   if (!r.ok) await anotarAviso(r, 'marcarLeida')
 }
 export async function marcarTodasLeidas(fd: FormData): Promise<void> {
-  await anotarAviso(await leerTodas(fd), 'marcarTodasLeidas', 'Listo, marcamos todas como leidas.')
+  await anotarAviso(await leerTodas(fd), 'marcarTodasLeidas', 'Listo, marcamos todas como leídas.')
 }

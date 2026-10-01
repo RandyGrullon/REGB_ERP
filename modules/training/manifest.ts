@@ -10,7 +10,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'training',
-  name: 'Capacitación (LMS)',
+  name: 'Capacitación',
   description: 'Cursos, evaluaciones, certificados y matriz de competencias.',
   icon: 'school',
   category: 'advanced',
@@ -34,16 +34,13 @@ export default defineModule({
     'training.manage-competencies',
   ],
 
-  routes: [{ path: '/capacitacion', label: 'Capacitacion', perm: 'training.view' }],
+  routes: [{ path: '/capacitacion', label: 'Capacitación', perm: 'training.view' }],
 
   dashboardWidgets: ['enrollments-in-progress', 'certificates-expiring'],
   reports: ['completion-rate', 'competency-matrix'],
 
   events: {
-    emits: [
-      'training.enrollment.completed',
-      'training.certificate.issued',
-    ],
+    emits: ['training.enrollment.completed', 'training.certificate.issued'],
     listens: [],
   },
 

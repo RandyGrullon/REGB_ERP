@@ -63,6 +63,11 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
   const conQs = (ruta: string, extra?: string) =>
     `${ruta}${qs}${extra ? `${qs ? '&' : '?'}${extra}` : ''}`
   const hayBorrador = periodos.some((p) => p.status === 'draft')
+  // El borrador que se paga primero, y el último que ya se procesó.
+  const proximo = [...periodos]
+    .filter((p) => p.status === 'draft')
+    .sort((a, b) => a.pay_date.localeCompare(b.pay_date))[0]
+  const ultimo = periodos.find((p) => p.status !== 'draft')
   const claseBotonSecundario =
     'flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]'
 
@@ -82,7 +87,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         <PageHeader
           icon="group"
           title="Nómina"
-          description="Cada periodo paga su parte del mes: la quincena, medio salario. TSS e ISR con las tasas vigentes. Un periodo procesado queda fijo: se corrige con el siguiente."
+          description="Cada período paga su parte del mes: la quincena, medio salario. TSS e ISR con las tasas vigentes. Un período procesado queda fijo: se corrige con el siguiente."
           actions={
             <div className="flex flex-wrap gap-2">
               {puedeCrear && hayBorrador && (
@@ -105,21 +110,35 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Periodos" value={String(periodos.length)} />
+          <StatCard
+            label="Próximo pago"
+            value={proximo ? fecha(proximo.pay_date) : 'Sin período'}
+            hint={
+              proximo
+                ? `período del ${fecha(proximo.period_start)}, en borrador`
+                : 'crea el próximo período abajo'
+            }
+          />
           <StatCard
             label="Procesados"
             value={String(periodos.filter((p) => p.status !== 'draft').length)}
+            hint={`de ${periodos.length} período${periodos.length === 1 ? '' : 's'}`}
           />
           <StatCard
             label="Último neto procesado"
-            value={`RD$ ${money(Number(periodos.find((p) => p.status !== 'draft')?.total_neto ?? 0))}`}
+            value={`RD$ ${money(Number(ultimo?.total_neto ?? 0))}`}
+            hint={
+              ultimo
+                ? `${ultimo.lineas} empleado${ultimo.lineas === '1' ? '' : 's'} · pago del ${fecha(ultimo.pay_date)}`
+                : 'todavía no se ha procesado ninguna'
+            }
           />
         </section>
 
         {periodos.length === 0 ? (
           <EmptyState
             icon="group"
-            title="Todavía no hay ningún periodo de nómina"
+            title="Todavía no hay ningún período de nómina"
             description="Crea el primero abajo con sus fechas. Después, con «Procesar nómina», se calcula la TSS y el ISR de cada empleado."
           />
         ) : (
@@ -144,15 +163,26 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                 return (
                   <TR key={p.id}>
                     <TD className="text-[var(--color-text-primary)]">
-                      {fecha(p.period_start)} – {fecha(p.period_end)}
+                      <span className="whitespace-nowrap">{fecha(p.period_start)}</span> –{' '}
+                      <span className="whitespace-nowrap">{fecha(p.period_end)}</span>
                     </TD>
-                    <TD>{fecha(p.pay_date)}</TD>
-                    <TD numeric>
-                      <span className="tabular">{p.lineas}</span>
-                    </TD>
-                    <TD numeric>
-                      <span className="tabular font-semibold">{money(Number(p.total_neto))}</span>
-                    </TD>
+                    <TD className="whitespace-nowrap">{fecha(p.pay_date)}</TD>
+                    {p.status === 'draft' ? (
+                      <TD colSpan={2} className="text-right text-xs text-[var(--color-text-muted)]">
+                        Se calcula al procesar
+                      </TD>
+                    ) : (
+                      <>
+                        <TD numeric>
+                          <span className="tabular">{p.lineas}</span>
+                        </TD>
+                        <TD numeric>
+                          <span className="tabular whitespace-nowrap font-semibold">
+                            {money(Number(p.total_neto))}
+                          </span>
+                        </TD>
+                      </>
+                    )}
                     <TD>
                       <Badge tone={e.tone}>{e.label}</Badge>
                     </TD>
@@ -172,7 +202,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="periodId" value={p.id} />
                               <BotonEnvio
-                                title="Borra este borrador para crearlo con otras fechas. Un periodo procesado no se borra."
+                                title="Borra este borrador para crearlo con otras fechas. Un período procesado no se borra."
                                 className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                               >
                                 <Icon name="delete" size={14} />
@@ -225,7 +255,7 @@ export default async function PayrollPage({ searchParams }: { searchParams: Prom
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                 Quincenal: del 1 al 15 y del 16 al fin de mes, medio salario cada una. Mensual: un
-                salario. Un periodo no puede cruzarse con otro: el mismo dia no se paga dos veces.
+                salario. Un período no puede cruzarse con otro: el mismo día no se paga dos veces.
               </p>
               <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                 Después de crearlo, usa «Procesar» en su fila: primero ves lo que le toca a cada

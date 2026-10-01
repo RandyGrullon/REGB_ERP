@@ -3,6 +3,7 @@ import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, PageHeader, StatCar
 import { nivelPorPuntosDeVida, type EstadoReferido } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { crearReferidoForm, registrarPuntosForm, transicionarReferidoForm } from '../actions'
 import { ESTADO_REFERIDO, NIVEL_FIDELIDAD } from '../estados'
@@ -41,9 +42,9 @@ const badgeReferido = (s: string): 'success' | 'danger' | 'warning' => {
   return 'warning'
 }
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-8 items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 
 /** Monedero de un cliente (modulo 38): su saldo derivado, su historial y sus referidos. */
 export default async function MonederoClientePage({
@@ -113,7 +114,7 @@ export default async function MonederoClientePage({
         <PageHeader
           icon="redeem"
           title={cliente.name}
-          crumbs={[{ label: 'Fidelizacion', href: `/fidelizacion${qs}` }, { label: cliente.name }]}
+          crumbs={[{ label: 'Fidelización', href: `/fidelizacion${qs}` }, { label: cliente.name }]}
           actions={<Badge tone={badgeNivel(nivel)}>{NIVEL_FIDELIDAD[nivel]}</Badge>}
         />
 
@@ -141,7 +142,7 @@ export default async function MonederoClientePage({
                   />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Razon
+                  Razón
                   <input
                     name="reason"
                     required
@@ -173,7 +174,7 @@ export default async function MonederoClientePage({
                   <div>
                     <p className="text-sm text-[var(--color-text-primary)]">{t.reason}</p>
                     <p className="text-xs text-[var(--color-text-muted)]">
-                      {new Date(t.created_at).toLocaleString('es-DO')}
+                      {fechaHoraRD(t.created_at)}
                     </p>
                   </div>
                   <span

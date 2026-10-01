@@ -124,6 +124,7 @@ export default async function CierresPage({
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Santo_Domingo',
     })
 
   return (
@@ -132,7 +133,7 @@ export default async function CierresPage({
         <PageHeader
           icon="receipt"
           title="Tickets y cierres"
-          description="Todo lo vendido en caja. Anular no borra el ticket: lo marca y devuelve la mercancia al almacen."
+          description="Todo lo vendido en caja. Anular no borra el ticket: lo marca y devuelve la mercancía al almacén."
           crumbs={[{ label: 'Caja', href: `/pos${qs}` }, { label: 'Cierres' }]}
         />
 
@@ -196,7 +197,7 @@ export default async function CierresPage({
               <TR>
                 <TH>Ticket</TH>
                 <TH>NCF</TH>
-                <TH>Cuando</TH>
+                <TH>Hora</TH>
                 <TH>Caja</TH>
                 <TH>Cliente</TH>
                 <TH>Cajero</TH>
@@ -220,7 +221,9 @@ export default async function CierresPage({
                       title="Ver e imprimir el ticket"
                       className="text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                     >
-                      <Mono>{v.number}</Mono>
+                      <span className="whitespace-nowrap">
+                        <Mono>{v.number}</Mono>
+                      </span>
                     </a>
                     {v.voided && (
                       <Badge tone="danger" dot={false} className="ml-2" title={v.void_reason ?? ''}>
@@ -230,17 +233,19 @@ export default async function CierresPage({
                   </TD>
                   <TD>
                     {v.ncf ? (
-                      <Mono>{v.ncf}</Mono>
+                      <span className="whitespace-nowrap">
+                        <Mono>{v.ncf}</Mono>
+                      </span>
                     ) : (
                       <span
-                        title="Este ticket salio sin comprobante fiscal: no hay secuencia de la DGII cargada."
+                        title="Este ticket salió sin comprobante fiscal: no hay secuencia de la DGII cargada."
                         className="text-xs text-[var(--color-semantic-text-warning)]"
                       >
                         sin NCF
                       </span>
                     )}
                   </TD>
-                  <TD>{hora(v.created_at)}</TD>
+                  <TD className="whitespace-nowrap">{hora(v.created_at)}</TD>
                   <TD>{v.warehouse_name}</TD>
                   <TD>{v.customer_name ?? 'Consumidor final'}</TD>
                   <TD>{v.cashier_name ?? '—'}</TD>
@@ -258,44 +263,51 @@ export default async function CierresPage({
                   {puedeAnular && (
                     <TD>
                       {!v.voided && (
-                        <form action={anularVentaForm} className="flex items-center gap-1">
-                          <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
-                          <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
-                          <input type="hidden" name="saleId" value={v.id} />
-                          {/* El codigo es lo que se declara en el 608; el
+                        <details className="group relative">
+                          <summary className="flex h-8 cursor-pointer list-none items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-semantic-text-danger)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] [&::-webkit-details-marker]:hidden">
+                            <Icon name="block" size={14} />
+                            Anular
+                          </summary>
+                          <form
+                            action={anularVentaForm}
+                            className="mt-2 flex w-64 flex-col gap-2 rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-3"
+                          >
+                            <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
+                            <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
+                            <input type="hidden" name="saleId" value={v.id} />
+                            {/* El codigo es lo que se declara en el 608; el
                               texto de al lado es lo que se entiende dentro
                               de seis meses. La DGII no acepta el texto. */}
-                          <select
-                            name="voidType"
-                            required
-                            defaultValue=""
-                            aria-label={`Motivo DGII para anular ${v.number}`}
-                            className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                          >
-                            <option value="" disabled>
-                              Motivo DGII…
-                            </option>
-                            {Object.entries(TIPOS_ANULACION).map(([codigo, texto]) => (
-                              <option key={codigo} value={codigo}>
-                                {codigo} · {texto}
+                            <select
+                              name="voidType"
+                              required
+                              defaultValue=""
+                              aria-label={`Motivo DGII para anular ${v.number}`}
+                              className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            >
+                              <option value="" disabled>
+                                Motivo DGII…
                               </option>
-                            ))}
-                          </select>
-                          <input
-                            name="reason"
-                            required
-                            minLength={4}
-                            placeholder="Motivo"
-                            aria-label={`Motivo para anular ${v.number}`}
-                            className="h-8 w-28 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                          />
-                          <BotonEnvio
-                            aria-label={`Anular ${v.number}`}
-                            className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-semantic-text-danger)]"
-                          >
-                            <Icon name="block" size={16} />
-                          </BotonEnvio>
-                        </form>
+                              {Object.entries(TIPOS_ANULACION).map(([codigo, texto]) => (
+                                <option key={codigo} value={codigo}>
+                                  {codigo} · {texto}
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              name="reason"
+                              required
+                              minLength={4}
+                              placeholder="Qué pasó (ej.: se cobró dos veces)"
+                              aria-label={`Motivo para anular ${v.number}`}
+                              className="h-9 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                            />
+                            <BotonEnvio className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-[var(--color-semantic-danger)] px-3 text-xs font-semibold text-[var(--color-semantic-text-danger)] hover:bg-[color-mix(in_srgb,var(--color-semantic-danger)_12%,transparent)]">
+                              <Icon name="block" size={14} />
+                              Anular {v.number}
+                            </BotonEnvio>
+                          </form>
+                        </details>
                       )}
                     </TD>
                   )}

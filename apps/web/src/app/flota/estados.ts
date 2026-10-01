@@ -8,7 +8,7 @@ export const ESTADO_VEHICULO: Record<string, string> = {
 /** Etiquetas del estado de una multa. */
 export const ESTADO_MULTA: Record<string, string> = {
   pending: 'Pendiente',
-  disputed: 'Disputada',
+  disputed: 'Impugnada',
   paid: 'Pagada',
   dismissed: 'Descartada',
 }
@@ -17,5 +17,5 @@ export const ESTADO_MULTA: Record<string, string> = {
 export const TIPO_DOCUMENTO: Record<string, string> = {
   license: 'Licencia',
   insurance: 'Seguro',
-  inspection: 'Inspeccion',
+  inspection: 'Inspección',
 }

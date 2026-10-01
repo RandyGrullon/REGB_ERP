@@ -26,7 +26,7 @@ const TIPOS = ['vacation', 'sick', 'personal', 'maternity', 'paternity', 'bereav
 /** Registra una solicitud de ausencia -queda en `pending` hasta que alguien la resuelva-. */
 export async function solicitarAusencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'time-off', 'time-off.request')
   if (!permiso.ok) return permiso
 
@@ -37,7 +37,7 @@ export async function solicitarAusencia(fd: FormData): Promise<ActionResult> {
   const reason = String(fd.get('reason') ?? '').trim() || null
 
   if (!employeeId) return { ok: false, error: 'Elige el empleado.' }
-  if (!TIPOS.includes(leaveType)) return { ok: false, error: 'Elige un tipo de ausencia valido.' }
+  if (!TIPOS.includes(leaveType)) return { ok: false, error: 'Elige un tipo de ausencia válido.' }
   if (!startRaw || !endRaw) return { ok: false, error: 'Elige las fechas.' }
 
   const inicio = new Date(`${startRaw}T00:00:00`)
@@ -50,7 +50,7 @@ export async function solicitarAusencia(fd: FormData): Promise<ActionResult> {
 
   const businessDays = diasLaborablesEntre(inicio, fin)
   if (businessDays === 0) {
-    return { ok: false, error: 'El rango elegido no incluye ningun dia laborable.' }
+    return { ok: false, error: 'El rango elegido no incluye ningún día laborable.' }
   }
 
   try {
@@ -85,7 +85,7 @@ export async function solicitarAusencia(fd: FormData): Promise<ActionResult> {
 /** Cancela una solicitud propia todavia pendiente. */
 export async function cancelarSolicitud(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'time-off', 'time-off.request')
   if (!permiso.ok) return permiso
 
@@ -118,7 +118,7 @@ export async function cancelarSolicitud(fd: FormData): Promise<ActionResult> {
 /** Aprueba o rechaza una solicitud pendiente. */
 export async function resolverSolicitud(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'time-off', 'time-off.approve')
   if (!permiso.ok) return permiso
 

@@ -18,6 +18,7 @@ import {
 } from '@regb/ui'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaCorta, yaVencio } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { crearCotizacionForm } from './actions'
 import { ESTADO_COTIZACION } from './estados'
@@ -35,6 +36,7 @@ interface CotizacionRow {
   total: string
   sales_order_id: string | null
   pedido: string | null
+  valid_until: string | null
 }
 
 interface ClienteOption {
@@ -62,7 +64,7 @@ export default async function CotizacionesPage({
   const { cotizaciones, clientes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const c = await tx<CotizacionRow[]>`
       select q.id, q.quote_number, q.version, c.name as customer_name, q.status, q.total::text,
-             q.sales_order_id, so.number as pedido
+             q.sales_order_id, so.number as pedido, q.valid_until::text
       from public.quotes q
       left join public.customers c on c.id = q.customer_id
       left join public.sales_orders so on so.id = q.sales_order_id
@@ -86,7 +88,7 @@ export default async function CotizacionesPage({
         <PageHeader
           icon="description"
           title="Cotizaciones"
-          description="Cotiza con los precios de la lista de cada cliente, imprimela para enviarsela y, cuando la acepte, conviertela en pedido. Revisar una cotizacion enviada crea una version nueva: la anterior queda en el historial."
+          description="Cotiza con los precios de la lista de cada cliente, imprímela para enviársela y, cuando la acepte, conviértela en pedido. Revisar una cotización enviada crea una versión nueva: la anterior queda en el historial."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -99,24 +101,28 @@ export default async function CotizacionesPage({
           <StatCard
             label="Aprobadas sin pedido"
             value={String(porConvertir)}
-            hint="conviertelas en pedido"
+            hint="conviértelas en pedido"
           />
         </section>
 
         {cotizaciones.length === 0 ? (
           <EmptyState
             icon="description"
-            title="Todavia no hay ninguna cotizacion"
+            title="Todavía no hay ninguna cotización"
             description="Crea la primera abajo."
           />
         ) : (
           <Table>
             <THead>
               <TR>
-                <TH>Cotizacion</TH>
+                <TH>Cotización</TH>
                 <TH>Cliente</TH>
+                <TH>Válida hasta</TH>
                 <TH numeric>Total</TH>
                 <TH>Estado</TH>
+                <TH>
+                  <span className="sr-only">Imprimir</span>
+                </TH>
               </TR>
             </THead>
             <TBody>
@@ -131,6 +137,22 @@ export default async function CotizacionesPage({
                     </a>
                   </TD>
                   <TD className="text-[var(--color-text-muted)]">{c.customer_name ?? '—'}</TD>
+                  <TD className="whitespace-nowrap">
+                    {c.valid_until ? (
+                      <>
+                        {fechaCorta(c.valid_until, true)}
+                        {/* Enviada y ya sin vigencia: hay que llamar o
+                            marcarla vencida, no esperar respuesta. */}
+                        {c.status === 'sent' && yaVencio(c.valid_until) && (
+                          <span className="block text-[10px] text-[var(--color-semantic-text-danger)]">
+                            ya venció
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-[var(--color-text-muted)]">Sin fecha</span>
+                    )}
+                  </TD>
                   <TD numeric>
                     <span className="tabular">RD$ {money(Number(c.total))}</span>
                   </TD>
@@ -149,6 +171,18 @@ export default async function CotizacionesPage({
                       )}
                     </span>
                   </TD>
+                  <TD>
+                    <a
+                      href={`/cotizaciones-venta/${c.id}/imprimir${qs}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Imprimir ${c.quote_number} v${c.version}`}
+                      title="Imprimir o guardar en PDF"
+                      className="grid h-8 w-8 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                    >
+                      <Icon name="print" size={16} />
+                    </a>
+                  </TD>
                 </TR>
               ))}
             </TBody>
@@ -158,7 +192,7 @@ export default async function CotizacionesPage({
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Nueva cotizacion</CardTitle>
+              <CardTitle>Nueva cotización</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearCotizacionForm} className="flex flex-wrap items-end gap-3">
@@ -179,7 +213,7 @@ export default async function CotizacionesPage({
                   </select>
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Valida hasta (opcional)
+                  Válida hasta (opcional)
                   <input
                     type="date"
                     name="validUntil"
@@ -187,7 +221,7 @@ export default async function CotizacionesPage({
                   />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Terminos (opcional)
+                  Términos (opcional)
                   <input
                     name="terms"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"

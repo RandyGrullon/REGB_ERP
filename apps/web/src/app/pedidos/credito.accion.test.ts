@@ -101,7 +101,7 @@ describe('Cliente con facturas vencidas', () => {
     const r = await confirmarPedido(c.fd({ orderId: pedidoMartillo }, 'Vendedor'))
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/96 dias/)
+    expect(r.error).toMatch(/96 días/)
     expect(r.error).toMatch(/FA-VIEJA-1/)
     expect(await estadoPedido(pedidoMartillo)).toBe('draft')
     expect(await apartado()).toBe(0)
@@ -117,7 +117,7 @@ describe('Cliente con facturas vencidas', () => {
     expect(r.ok).toBe(false)
     if (r.ok) return
     // Dice quien la autoriza, sin el nombre interno del permiso.
-    expect(r.error).toMatch(/la autoriza el dueno/)
+    expect(r.error).toMatch(/la autoriza el dueño/)
     expect(r.error).not.toMatch(/ar\.credit/)
     expect(await estadoPedido(pedidoMartillo)).toBe('draft')
   })
@@ -241,7 +241,7 @@ describe('Limite de credito', () => {
     const r = await confirmarPedido(c.fd({ orderId: ped }, 'Vendedor'))
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/limite/i)
+    expect(r.error).toMatch(/límite/i)
     expect(r.error).toMatch(/50,000\.00/)
     expect(await estadoPedido(ped)).toBe('draft')
   })

@@ -81,7 +81,7 @@ export const PIEZAS: Record<string, string> = {
   empresa: 'Empresa principal (sale en cada comprobante)',
   empresa_principal: 'Empresa existente marcada como principal',
   sucursal: 'Sucursal',
-  almacen: 'Almacen predeterminado (la caja ya puede abrir turno)',
-  almacen_principal: 'Almacen existente marcado como predeterminado',
-  invitacion: 'Invitacion al dueño con el rol Owner',
+  almacen: 'Almacén predeterminado (la caja ya puede abrir turno)',
+  almacen_principal: 'Almacén existente marcado como predeterminado',
+  invitacion: 'Invitación al dueño con el rol Owner',
 }

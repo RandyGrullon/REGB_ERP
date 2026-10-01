@@ -35,7 +35,7 @@ const num = (raw: string): number | null => {
 
 export async function crearContrato(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'contracts', 'contracts.manage')
   if (!permiso.ok) return permiso
 
@@ -49,7 +49,7 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
 
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
   if (!['monthly', 'quarterly', 'annual'].includes(billingFrequency))
-    return { ok: false, error: 'Elige una frecuencia valida.' }
+    return { ok: false, error: 'Elige una frecuencia válida.' }
   if (!startDate || !endDate) return { ok: false, error: 'Falta la fecha de inicio o de fin.' }
   if (baseAmount === null || baseAmount <= 0)
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
@@ -71,7 +71,7 @@ export async function crearContrato(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado del contrato -draft/active/cancelled/expired-. */
 export async function transicionarContrato(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'contracts', 'contracts.manage')
   if (!permiso.ok) return permiso
 
@@ -82,7 +82,7 @@ export async function transicionarContrato(fd: FormData): Promise<ActionResult> 
     const [c] = await tx<{ status: EstadoContrato }[]>`
       select status from public.contracts where id = ${contractId} and tenant_id = ${ctx.tenantId} for update`
     if (!c) return 'no-existe'
-    if (!transicionValidaContrato(c.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaContrato(c.status, siguiente)) return 'Esa transición no está permitida.'
 
     const cancelando = siguiente === 'cancelled'
     await tx`
@@ -111,7 +111,7 @@ export async function transicionarContrato(fd: FormData): Promise<ActionResult> 
 /** Renueva el contrato: crea uno NUEVO en borrador con el monto escalado, marca el actual 'renewed'. */
 export async function renovarContrato(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'contracts', 'contracts.manage')
   if (!permiso.ok) return permiso
 

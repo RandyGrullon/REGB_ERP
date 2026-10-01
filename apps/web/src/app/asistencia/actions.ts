@@ -32,7 +32,7 @@ const num = (raw: string): number | null => {
 /** Marca entrada. Si hay coordenadas y una geocerca para la sucursal elegida, valida contra ella. */
 export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'attendance', 'attendance.check-in')
   if (!permiso.ok) return permiso
 
@@ -91,7 +91,7 @@ export async function marcarEntrada(fd: FormData): Promise<ActionResult> {
 /** Marca salida de un marcaje abierto. */
 export async function marcarSalida(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'attendance', 'attendance.check-in')
   if (!permiso.ok) return permiso
 
@@ -117,7 +117,7 @@ export async function marcarSalida(fd: FormData): Promise<ActionResult> {
 /** Registra la geocerca de una sucursal -o la reemplaza si ya existia-. */
 export async function guardarGeocerca(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'attendance', 'attendance.geofence.manage')
   if (!permiso.ok) return permiso
 

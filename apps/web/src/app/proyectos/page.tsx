@@ -21,16 +21,19 @@ import { Shell } from '@/components/Shell'
 import { crearProyectoForm } from './actions'
 import { ESTADO_PROYECTO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { fechaCorta, yaVencio } from '@/lib/fechas-rd'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Proyectos & Tareas · REGB ERP' }
+export const metadata = { title: 'Proyectos y tareas · REGB ERP' }
 
 interface ProyectoFila {
   id: string
   name: string
   status: string
+  start_date: string | null
   end_date: string | null
   tareas: string
+  hechas: string
 }
 
 const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' => {
@@ -41,7 +44,7 @@ const badgeEstado = (s: string): 'success' | 'danger' | 'warning' | 'neutral' =>
   return 'neutral'
 }
 
-/** Proyectos & Tareas (modulo 71): una tarea no avanza con dependencias abiertas -lo exige un trigger-. */
+/** Proyectos y tareas (modulo 71): una tarea no avanza con dependencias abiertas (lo exige un trigger). */
 export default async function ProyectosPage({
   searchParams,
 }: {
@@ -54,14 +57,20 @@ export default async function ProyectosPage({
     ctx.userId,
     ctx.tenantId,
     (tx) => tx<ProyectoFila[]>`
-    select p.id, p.name, p.status, p.end_date::text,
-           (select count(*)::text from public.project_tasks where project_id = p.id) as tareas
+    select p.id, p.name, p.status, p.start_date::text, p.end_date::text,
+           (select count(*)::text from public.project_tasks where project_id = p.id) as tareas,
+           (select count(*)::text from public.project_tasks
+             where project_id = p.id and status = 'done') as hechas
     from public.projects p
     where p.tenant_id = ${ctx.tenantId}
     order by p.created_at desc`,
   )
 
   const activos = proyectos.filter((p) => p.status === 'active').length
+  const abierto = (s: string) => s === 'planning' || s === 'active' || s === 'on_hold'
+  const atrasados = proyectos.filter(
+    (p) => abierto(p.status) && p.end_date && yaVencio(p.end_date),
+  ).length
   const puedeGestionar = exigir(ctx, 'projects', 'projects.manage').ok
   const qs = ctx.demoQs
 
@@ -70,55 +79,74 @@ export default async function ProyectosPage({
       <div className="space-y-5">
         <PageHeader
           icon="view_kanban"
-          title="Proyectos & Tareas"
-          description="Una tarea no puede avanzar con dependencias abiertas -lo exige un trigger de base de datos, no solo la pantalla-."
+          title="Proyectos y tareas"
+          description="Cada proyecto con sus tareas, sus fechas y cuánto le falta. Una tarea no arranca mientras la que la precede no esté hecha."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Proyectos" value={String(proyectos.length)} />
           <StatCard label="Activos" value={String(activos)} />
+          <StatCard
+            label="Atrasados"
+            value={String(atrasados)}
+            hint={atrasados > 0 ? 'ya pasó su fecha de fin' : 'ninguno pasó su fecha de fin'}
+          />
         </section>
 
         {proyectos.length === 0 ? (
           <EmptyState
             icon="view_kanban"
-            title="Todavia no hay ningun proyecto"
-            description="Crea el primero abajo."
+            title="Todavía no hay ningún proyecto"
+            description="Un proyecto agrupa tareas con fecha, dependencias e hitos. Crea el primero abajo; después le agregas las tareas desde su tablero."
           />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Proyecto</TH>
-                <TH numeric>Tareas</TH>
-                <TH>Vence</TH>
+                <TH numeric>Avance</TH>
+                <TH>Fechas</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
             <TBody>
-              {proyectos.map((p) => (
-                <TR key={p.id}>
-                  <TD className="text-[var(--color-text-primary)]">
-                    <a
-                      href={`/proyectos/${p.id}${qs}`}
-                      className="underline-offset-2 hover:underline"
-                    >
-                      {p.name}
-                    </a>
-                  </TD>
-                  <TD numeric>
-                    <span className="tabular">{p.tareas}</span>
-                  </TD>
-                  <TD className="text-[var(--color-text-muted)]">
-                    {p.end_date ? new Date(p.end_date).toLocaleDateString('es-DO') : 'Sin fecha'}
-                  </TD>
-                  <TD>
-                    <Badge tone={badgeEstado(p.status)}>
-                      {ESTADO_PROYECTO[p.status] ?? p.status}
-                    </Badge>
-                  </TD>
-                </TR>
-              ))}
+              {proyectos.map((p) => {
+                const total = Number(p.tareas)
+                const hechas = Number(p.hechas)
+                const atrasado = abierto(p.status) && !!p.end_date && yaVencio(p.end_date)
+                return (
+                  <TR key={p.id}>
+                    <TD className="text-[var(--color-text-primary)]">
+                      <a
+                        href={`/proyectos/${p.id}${qs}`}
+                        className="font-semibold text-[var(--color-text-link)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                      >
+                        {p.name}
+                      </a>
+                    </TD>
+                    <TD numeric>
+                      <span className="tabular whitespace-nowrap">
+                        {total === 0 ? 'Sin tareas' : `${hechas} de ${total} hechas`}
+                      </span>
+                    </TD>
+                    <TD className="whitespace-nowrap text-[var(--color-text-secondary)]">
+                      {p.start_date ? fechaCorta(p.start_date) : 'Sin inicio'} –{' '}
+                      {p.end_date ? fechaCorta(p.end_date, true) : 'sin fecha de fin'}
+                      {atrasado && (
+                        <span className="ml-2 inline-flex items-center gap-1 text-xs font-semibold text-[var(--color-semantic-text-danger)]">
+                          <Icon name="schedule" size={14} />
+                          Atrasado
+                        </span>
+                      )}
+                    </TD>
+                    <TD>
+                      <Badge tone={badgeEstado(p.status)}>
+                        {ESTADO_PROYECTO[p.status] ?? p.status}
+                      </Badge>
+                    </TD>
+                  </TR>
+                )
+              })}
             </TBody>
           </Table>
         )}

@@ -111,13 +111,13 @@ describe('balanza al dia', () => {
 
   it('una fecha de asiento mal escrita es un error legible', async () => {
     const r = await crearAsiento(c.fd({ description: 'Ajuste raro', entryDate: '31/08/2026' }))
-    expect(r).toEqual({ ok: false, error: 'La fecha del asiento no es valida.' })
+    expect(r).toEqual({ ok: false, error: 'La fecha del asiento no es válida.' })
   })
 })
 
 describe('registrar cuentas', () => {
   it('un codigo repetido es un error legible, no una excepcion', async () => {
     const r = await crearCuenta(c.fd({ code: '1101', name: 'Caja chica', type: 'asset' }))
-    expect(r).toEqual({ ok: false, error: 'Ya tienes una cuenta con el codigo 1101.' })
+    expect(r).toEqual({ ok: false, error: 'Ya tienes una cuenta con el código 1101.' })
   })
 })

@@ -1,5 +1,6 @@
 import {
   Badge,
+  FilterSelect,
   Card,
   CardBody,
   CardHeader,
@@ -23,10 +24,11 @@ import { PUERTAS_VENTAS_DGII, primeraPuerta } from '@/lib/fiscal'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { opcionesDePeriodo } from '../periodos'
 import { cerrarLiquidacionForm, marcarPagadaForm } from './actions'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Liquidacion IT-1 · REGB ERP' }
+export const metadata = { title: 'Liquidación IT-1 · REGB ERP' }
 
 interface FilingRow {
   id: string
@@ -58,9 +60,9 @@ const claseInput =
   'h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
 
 const ESTADO: Record<string, { texto: string; tono: 'neutral' | 'info' | 'success' }> = {
-  pending: { texto: 'pendiente', tono: 'neutral' },
-  filed: { texto: 'presentada', tono: 'info' },
-  paid: { texto: 'pagada', tono: 'success' },
+  pending: { texto: 'Pendiente', tono: 'neutral' },
+  filed: { texto: 'Presentada', tono: 'info' },
+  paid: { texto: 'Pagada', tono: 'success' },
 }
 
 /**
@@ -98,7 +100,9 @@ export default async function LiquidacionPage({
     Date.UTC(Number(actual.slice(0, 4)), Number(actual.slice(4, 6)) - 2, 15),
   )
   const periodoDefecto = periodoFiscal(mesPasado)
-  const periodo = /^[0-9]{6}$/.test(params.periodo ?? '') ? params.periodo! : periodoDefecto
+  // El selector de mes manda `AAAA-MM`; los enlaces del calendario, `AAAAMM`.
+  const pedido = (params.periodo ?? '').replace('-', '')
+  const periodo = /^[0-9]{6}$/.test(pedido) ? pedido : periodoDefecto
 
   const veCompras = exigir(ctx, 'ap', 'ap.view').ok
   const puedeCerrar = exigir(ctx, 'taxes', 'taxes.filing.close').ok
@@ -217,23 +221,19 @@ export default async function LiquidacionPage({
       <div className="space-y-5">
         <PageHeader
           icon="calculate"
-          title="Liquidacion IT-1"
-          description="ITBIS cobrado, mas lo que le retuviste a tus proveedores, menos el ITBIS adelantado, lo que te retuvieron y el saldo a favor del mes pasado. Si da negativo no se declara en negativo: el exceso se arrastra al mes que viene."
-          crumbs={[{ label: 'Impuestos', href: `/impuestos${qs}` }, { label: 'Liquidacion IT-1' }]}
+          title="Liquidación IT-1"
+          description="ITBIS cobrado, más lo que le retuviste a tus proveedores, menos el ITBIS adelantado, lo que te retuvieron y el saldo a favor del mes pasado. Si da negativo no se declara en negativo: el exceso se arrastra al mes que viene."
+          crumbs={[{ label: 'Impuestos', href: `/impuestos${qs}` }, { label: 'Liquidación IT-1' }]}
         />
 
         <Toolbar hidden={qs ? { tenant: ctx.tenantSlug, rol: ctx.roleName } : {}}>
-          <label className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-            Periodo
-            <input
-              name="periodo"
-              defaultValue={periodo}
-              inputMode="numeric"
-              pattern="[0-9]{6}"
-              title="Periodo en formato AAAAMM, por ejemplo 202609"
-              className={`tabular w-32 text-center ${claseInput}`}
-            />
-          </label>
+          <FilterSelect label="Período" name="periodo" defaultValue={periodo}>
+            {opcionesDePeriodo(hoy, periodo).map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.texto}
+              </option>
+            ))}
+          </FilterSelect>
           <ToolbarActions
             hasFilters={periodo !== periodoDefecto}
             clearHref={`/impuestos/liquidacion${qs}`}
@@ -256,18 +256,18 @@ export default async function LiquidacionPage({
                 <>
                   No se ve{' '}
                   <strong className="text-[var(--color-text-primary)]">todo lo que cobraste</strong>
-                  : hay {escondidas} venta{escondidas === 1 ? '' : 's'} de este periodo en un modulo
-                  apagado ({ocultas.map((x) => NOMBRE_MODULO[x.modulo] ?? x.modulo).join(', ')}),
-                  asi que el ITBIS de ventas de arriba{' '}
-                  <strong className="text-[var(--color-text-primary)]">esta corto</strong>. Esta
-                  declaracion no se puede cerrar asi: declarar de menos es una multa.{' '}
+                  : hay {escondidas} venta{escondidas === 1 ? '' : 's'} de este período en un
+                  módulo apagado ({ocultas.map((x) => NOMBRE_MODULO[x.modulo] ?? x.modulo).join(', ')}
+                  ), así que el ITBIS de ventas de arriba{' '}
+                  <strong className="text-[var(--color-text-primary)]">está corto</strong>. Esta
+                  declaración no se puede cerrar así: declarar de menos es una multa.{' '}
                 </>
               )}
               {!veCompras && (
                 <>
                   No se ve{' '}
                   <strong className="text-[var(--color-text-primary)]">lo que compraste</strong>:
-                  sin Cuentas por pagar falta el ITBIS adelantado, y sin restarlo esta liquidacion
+                  sin Cuentas por pagar falta el ITBIS adelantado, y sin restarlo esta liquidación
                   te hace pagar de más.
                 </>
               )}
@@ -298,13 +298,13 @@ export default async function LiquidacionPage({
               </a>
               . El saldo a favor se arrastra{' '}
               <strong className="text-[var(--color-text-primary)]">en cadena</strong>, un mes a la
-              vez: mientras ese periodo este abierto, este arranca en cero y no se puede cerrar.
+              vez: mientras ese período esté abierto, este arranca en cero y no se puede cerrar.
             </p>
           </div>
         )}
 
         <section
-          aria-label="Liquidacion del periodo"
+          aria-label="Liquidación del período"
           className="grid grid-cols-2 gap-3 lg:grid-cols-3"
         >
           <StatCard
@@ -335,7 +335,11 @@ export default async function LiquidacionPage({
             value={`RD$ ${money(saldoAnterior)}`}
             hint={saldo.faltaCerrar === null ? 'arrastrado' : 'falta cerrar el mes anterior'}
           />
-          <StatCard label="A pagar" value={`RD$ ${money(vivo.amountDue)}`} hint="calculo vivo" />
+          <StatCard
+            label="A pagar"
+            value={`RD$ ${money(vivo.amountDue)}`}
+            hint="con lo registrado hoy"
+          />
           <StatCard
             label="Saldo que se arrastra"
             value={`RD$ ${money(vivo.creditForward)}`}
@@ -343,13 +347,22 @@ export default async function LiquidacionPage({
           />
         </section>
 
+        {cerrada === null && cobrado === 0 && adelantado === 0 && retenidoAProveedores === 0 && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            En {legible(periodo)} no hay ventas ni compras con ITBIS registradas. Si de verdad no
+            hubo movimiento, el IT-1 igual se presenta, en cero. Si faltan facturas, regístralas
+            primero: al cerrar se vuelven a sumar.
+          </p>
+        )}
+
         {sinNcf > 0 && (
           <p className="text-xs text-[var(--color-text-muted)]">
             De lo cobrado,{' '}
             <strong className="text-[var(--color-text-secondary)]">RD$ {money(sinNcf)}</strong>{' '}
             viene de ventas <strong className="text-[var(--color-text-secondary)]">sin NCF</strong>,
             que no salen en el 607. El 607 declara comprobantes y el IT-1 declara operaciones: el
-            ITBIS de un ticket sin NCF se cobro igual y se declara igual.
+            ITBIS de un ticket sin NCF se cobró igual y se declara igual.
+
           </p>
         )}
 
@@ -364,7 +377,7 @@ export default async function LiquidacionPage({
               })}
             </strong>
             {vence.vencida
-              ? ' — ya paso.'
+              ? ' — ya pasó.'
               : ` — faltan ${vence.diasRestantes} día${vence.diasRestantes === 1 ? '' : 's'}.`}{' '}
             {reportes && (
               <>
@@ -384,7 +397,7 @@ export default async function LiquidacionPage({
         {cerrada ? (
           <Card>
             <CardHeader>
-              <CardTitle>Lo que se declaro de {legible(periodo)}</CardTitle>
+              <CardTitle>Lo que se declaró de {legible(periodo)}</CardTitle>
             </CardHeader>
             <CardBody className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -403,12 +416,12 @@ export default async function LiquidacionPage({
                 )}
               </div>
 
-              <Table>
+              <Table className="min-w-[480px]">
                 <THead>
                   <TR>
                     <TH>Concepto</TH>
                     <TH numeric>Lo declarado</TH>
-                    <TH numeric>Hoy daria</TH>
+                    <TH numeric>Hoy daría</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -509,8 +522,8 @@ export default async function LiquidacionPage({
                 />
                 <p className="text-[var(--color-text-secondary)]">
                   Esto es una <strong className="text-[var(--color-text-primary)]">foto</strong>, no
-                  un calculo vivo. Si las dos columnas no coinciden es porque después de cerrar se
-                  corrigio alguna factura del periodo:{' '}
+                  un cálculo vivo. Si las dos columnas no coinciden es porque después de cerrar se
+                  corrigió alguna factura del período:{' '}
                   <strong className="text-[var(--color-text-primary)]">
                     lo que se entrego sigue siendo lo que se entrego
                   </strong>{' '}
@@ -539,7 +552,7 @@ export default async function LiquidacionPage({
           puedeCerrar && (
             <Card>
               <CardHeader>
-                <CardTitle>Cerrar la declaracion de {legible(periodo)}</CardTitle>
+                <CardTitle>Cerrar la declaración de {legible(periodo)}</CardTitle>
               </CardHeader>
               <CardBody>
                 <form action={cerrarLiquidacionForm} className="space-y-3">
@@ -553,7 +566,7 @@ export default async function LiquidacionPage({
                         name="itbisWithheld"
                         inputMode="decimal"
                         defaultValue="0"
-                        title="Se escribe a mano: el sistema no guarda la retencion que te hacen tus clientes"
+                        title="Se escribe a mano: el sistema no guarda la retención que te hacen tus clientes"
                         className={`tabular text-right ${claseInput}`}
                       />
                     </label>
@@ -565,7 +578,7 @@ export default async function LiquidacionPage({
                       Nota
                       <input
                         name="notes"
-                        placeholder="Lo que quieras recordar de esta declaracion"
+                        placeholder="Lo que quieras recordar de esta declaración"
                         className={claseInput}
                       />
                     </label>
@@ -589,7 +602,7 @@ export default async function LiquidacionPage({
             <h2 id="historial" className="text-sm font-semibold text-[var(--color-text-primary)]">
               Declaraciones anteriores
             </h2>
-            <Table>
+            <Table className="min-w-[640px]">
               <THead>
                 <TR>
                   <TH>Período</TH>

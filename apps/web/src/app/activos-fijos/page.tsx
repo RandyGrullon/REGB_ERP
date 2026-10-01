@@ -15,6 +15,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
+import { fechaFiscal } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -34,6 +35,7 @@ interface ActivoRow {
   acquisition_cost: string
   status: string
   book_value: string
+  acumulada: string
 }
 
 const money = (n: number) =>
@@ -51,7 +53,8 @@ export default async function ActivosFijosPage({
   const [activos] = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const a = await tx<ActivoRow[]>`
       select id, code, name, category, depreciation_method, acquisition_cost::text,
-             status, public.fixed_asset_book_value(id)::text as book_value
+             status, public.fixed_asset_book_value(id)::text as book_value,
+             public.fixed_asset_accumulated_depreciation(id)::text as acumulada
       from public.fixed_assets
       where tenant_id = ${ctx.tenantId}
       order by status, name
@@ -74,7 +77,7 @@ export default async function ActivosFijosPage({
         <PageHeader
           icon="directions_car"
           title="Activos fijos"
-          description="Vehiculos, equipos y demas activos: su valor en libros, su depreciacion y su historial."
+          description="Vehículos, equipos y demás activos: su valor en libros, su depreciación y su historial."
           actions={
             puedeDepreciar && (
               <form action={correrDepreciacionForm} className="flex items-center gap-2">
@@ -82,7 +85,7 @@ export default async function ActivosFijosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <input type="hidden" name="period" value={new Date().toISOString().slice(0, 10)} />
                 <BotonEnvio
-                  title="Corre la depreciacion de este periodo para todos los activos activos. Correrla dos veces no duplica el gasto."
+                  title="Corre la depreciación de este mes para todos los activos en uso. Correrla dos veces no duplica el gasto."
                   className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
                 >
                   <Icon name="event_repeat" size={18} />
@@ -97,9 +100,13 @@ export default async function ActivosFijosPage({
           <StatCard
             label="Valor en libros"
             value={`RD$ ${money(valorLibrosTotal)}`}
-            hint={`${activosActivos.length} activos activos`}
+            hint={`${activosActivos.length} ${activosActivos.length === 1 ? 'activo en uso' : 'activos en uso'}`}
           />
-          <StatCard label="Total de activos" value={String(activos.length)} />
+          <StatCard
+            label="Depreciación acumulada"
+            value={`RD$ ${money(activosActivos.reduce((acc, a) => acc + Number(a.acumulada), 0))}`}
+            hint="de los activos en uso"
+          />
           <StatCard
             label="Dados de baja"
             value={String(activos.filter((a) => a.status === 'disposed').length)}
@@ -109,17 +116,22 @@ export default async function ActivosFijosPage({
         {activos.length === 0 ? (
           <EmptyState
             icon="directions_car"
-            title="Todavia no hay ningun activo fijo registrado"
-            description="Registra el primero abajo con su costo, su vida util y su metodo de depreciacion."
+            title="Todavía no hay ningún activo fijo registrado"
+            description="Registra el primero abajo con su costo, su vida útil y su método de depreciación."
           />
         ) : (
-          <Table>
+          <Table className="md:min-w-[760px]">
             <THead>
               <TR>
                 <TH>Activo</TH>
-                <TH>Categoría</TH>
-                <TH>Método</TH>
-                <TH numeric>Costo</TH>
+                <TH className="hidden md:table-cell">Categoría</TH>
+                <TH className="hidden md:table-cell">Método</TH>
+                <TH numeric className="hidden md:table-cell">
+                  Costo
+                </TH>
+                <TH numeric className="hidden md:table-cell">
+                  Depreciado
+                </TH>
                 <TH numeric>Valor en libros</TH>
                 <TH>Estado</TH>
               </TR>
@@ -136,12 +148,25 @@ export default async function ActivosFijosPage({
                       >
                         {a.name}
                       </a>
-                      <span className="block text-xs text-[var(--color-text-muted)]">{a.code}</span>
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {a.code}
+                        <span className="md:hidden">
+                          {' · '}
+                          {CATEGORIA_ACTIVO[a.category] ?? a.category}
+                        </span>
+                      </span>
                     </TD>
-                    <TD>{CATEGORIA_ACTIVO[a.category] ?? a.category}</TD>
-                    <TD>{METODO_DEPRECIACION[a.depreciation_method] ?? a.depreciation_method}</TD>
-                    <TD numeric>
+                    <TD className="hidden md:table-cell">
+                      {CATEGORIA_ACTIVO[a.category] ?? a.category}
+                    </TD>
+                    <TD className="hidden md:table-cell">
+                      {METODO_DEPRECIACION[a.depreciation_method] ?? a.depreciation_method}
+                    </TD>
+                    <TD numeric className="hidden md:table-cell">
                       <span className="tabular">{money(Number(a.acquisition_cost))}</span>
+                    </TD>
+                    <TD numeric className="hidden md:table-cell">
+                      <span className="tabular">{money(Number(a.acumulada))}</span>
                     </TD>
                     <TD numeric>
                       <span className="tabular font-semibold">{money(Number(a.book_value))}</span>
@@ -166,7 +191,7 @@ export default async function ActivosFijosPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Codigo
+                  Código
                   <input name="code" required placeholder="VEH-001" className={claseInput} />
                 </label>
                 <label className="flex min-w-48 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -179,7 +204,7 @@ export default async function ActivosFijosPage({
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Categoria
+                  Categoría
                   <select name="category" defaultValue="other" className={claseInput}>
                     {Object.entries(CATEGORIA_ACTIVO).map(([k, v]) => (
                       <option key={k} value={k}>
@@ -190,7 +215,13 @@ export default async function ActivosFijosPage({
                 </label>
                 <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Fecha de compra
-                  <input name="acquisitionDate" type="date" required className={claseInput} />
+                  <input
+                    name="acquisitionDate"
+                    type="date"
+                    required
+                    defaultValue={fechaFiscal(new Date())}
+                    className={claseInput}
+                  />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
                   Costo
@@ -212,7 +243,7 @@ export default async function ActivosFijosPage({
                   />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Vida util (meses)
+                  Vida útil (meses)
                   <input
                     name="usefulLifeMonths"
                     required
@@ -222,7 +253,7 @@ export default async function ActivosFijosPage({
                   />
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Metodo
+                  Método
                   <select
                     name="depreciationMethod"
                     defaultValue="straight_line"

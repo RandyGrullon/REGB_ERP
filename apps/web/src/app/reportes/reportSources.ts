@@ -8,6 +8,22 @@ import { fuenteValida, type FuenteReporte } from '@regb/operations'
  * devuelve cero filas por su cuenta.
  */
 
+/** Los estados y prioridades se guardan en inglés; el reporte los enseña en español. */
+const ESTADO_PROSPECTO: Record<string, string> = {
+  new: 'Nuevo',
+  contacted: 'Contactado',
+  qualified: 'Calificado',
+  disqualified: 'Descalificado',
+  converted: 'Convertido',
+}
+
+const PRIORIDAD_TICKET: Record<string, string> = {
+  low: 'Baja',
+  normal: 'Normal',
+  high: 'Alta',
+  urgent: 'Urgente',
+}
+
 export interface ColumnaReporte {
   key: string
   label: string
@@ -32,7 +48,7 @@ async function sourceSalesByDay(
     group by 1 order by 1`
   return {
     columnas: [
-      { key: 'dia', label: 'Dia' },
+      { key: 'dia', label: 'Día' },
       { key: 'total', label: 'Total (RD$)', numeric: true },
     ],
     filas: filas.map((r) => ({ dia: r.dia, total: Number(r.total) })),
@@ -99,7 +115,7 @@ async function sourceOverdueInvoices(
     columnas: [
       { key: 'customer', label: 'Cliente' },
       { key: 'total', label: 'Pendiente (RD$)', numeric: true },
-      { key: 'dias', label: 'Dias vencida', numeric: true },
+      { key: 'dias', label: 'Días vencida', numeric: true },
     ],
     filas: filas.map((r) => ({
       customer: r.customer,
@@ -114,13 +130,14 @@ async function sourceLeadsByStatus(
   tenantId: string,
 ): Promise<ResultadoReporte> {
   const filas = await tx<{ status: string; n: string }[]>`
-    select status, count(*)::text as n from public.leads where tenant_id = ${tenantId} group by status order by status`
+    select status, count(*)::text as n from public.leads where tenant_id = ${tenantId} group by status
+    order by array_position(array['new', 'contacted', 'qualified', 'converted', 'disqualified'], status), status`
   return {
     columnas: [
       { key: 'status', label: 'Estado' },
-      { key: 'n', label: 'Leads', numeric: true },
+      { key: 'n', label: 'Prospectos', numeric: true },
     ],
-    filas: filas.map((r) => ({ status: r.status, n: Number(r.n) })),
+    filas: filas.map((r) => ({ status: ESTADO_PROSPECTO[r.status] ?? r.status, n: Number(r.n) })),
   }
 }
 
@@ -129,22 +146,23 @@ async function sourceTicketsByPriority(
   tenantId: string,
 ): Promise<ResultadoReporte> {
   const filas = await tx<{ priority: string; n: string }[]>`
-    select priority, count(*)::text as n from public.tickets where tenant_id = ${tenantId} group by priority order by priority`
+    select priority, count(*)::text as n from public.tickets where tenant_id = ${tenantId} group by priority
+    order by array_position(array['urgent', 'high', 'normal', 'low'], priority), priority`
   return {
     columnas: [
       { key: 'priority', label: 'Prioridad' },
       { key: 'n', label: 'Tickets', numeric: true },
     ],
-    filas: filas.map((r) => ({ priority: r.priority, n: Number(r.n) })),
+    filas: filas.map((r) => ({ priority: PRIORIDAD_TICKET[r.priority] ?? r.priority, n: Number(r.n) })),
   }
 }
 
 export const FUENTE_LABEL: Record<FuenteReporte, string> = {
-  sales_by_day: 'Ventas por dia',
-  top_products: 'Productos mas vendidos',
+  sales_by_day: 'Ventas por día',
+  top_products: 'Productos más vendidos',
   overdue_invoices: 'Facturas vencidas',
-  leads_by_status: 'Leads por estado',
-  tickets_by_priority: 'Tickets por prioridad',
+  leads_by_status: 'Prospectos por estado',
+  tickets_by_priority: 'Tickets de soporte por prioridad',
 }
 
 export async function ejecutarReporte(

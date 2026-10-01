@@ -41,7 +41,7 @@ function revalidar(): void {
 
 export async function registrarSecuencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigirAlguna(ctx, PUERTAS_NCF)
   if (!permiso.ok) return permiso
 
@@ -51,17 +51,17 @@ export async function registrarSecuencia(fd: FormData): Promise<ActionResult> {
   const vence = String(fd.get('expiresOn') ?? '')
   const ref = String(fd.get('authRef') ?? '').trim() || null
 
-  if (!TIPOS.includes(tipo)) return { ok: false, error: 'Tipo de comprobante no valido.' }
+  if (!TIPOS.includes(tipo)) return { ok: false, error: 'Tipo de comprobante no válido.' }
   if (!desde || !hasta || hasta < desde) {
     return { ok: false, error: 'El rango debe ir de menor a mayor.' }
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(vence)) {
-    return { ok: false, error: 'Indica la fecha de vencimiento de la autorizacion.' }
+    return { ok: false, error: 'Indica la fecha de vencimiento de la autorización.' }
   }
   // Se compara el DIA en RD: la autorizacion vale hasta el final de su
   // ultimo dia, no hasta el mediodia del servidor.
   if (vence < fechaFiscal(new Date())) {
-    return { ok: false, error: 'Esa autorizacion ya vencio: no se puede emitir con ella.' }
+    return { ok: false, error: 'Esa autorización ya venció: no se puede emitir con ella.' }
   }
 
   try {
@@ -91,7 +91,7 @@ export async function registrarSecuencia(fd: FormData): Promise<ActionResult> {
  */
 export async function ajustarSecuencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigirAlguna(ctx, PUERTAS_NCF)
   if (!permiso.ok) return permiso
 
@@ -105,7 +105,7 @@ export async function ajustarSecuencia(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'Elige que quieres cambiar.' }
   }
   if (motivo.length < 4) {
-    return { ok: false, error: 'Escribe el motivo del cambio: queda en la bitacora.' }
+    return { ok: false, error: 'Escribe el motivo del cambio: queda en la bitácora.' }
   }
   if (accion === 'vencimiento' && !/^\d{4}-\d{2}-\d{2}$/.test(vence)) {
     return { ok: false, error: 'Indica la fecha de vencimiento correcta.' }

@@ -22,6 +22,7 @@ import { Shell } from '@/components/Shell'
 import { crearBomForm } from './actions'
 import { ESTADO_BOM } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
+import { cantidad } from '@/lib/cantidad'
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Lista de materiales · REGB ERP' }
@@ -30,6 +31,7 @@ interface BomRow {
   id: string
   sku: string
   product_name: string
+  unit: string
   version: number
   status: string
   output_qty: string
@@ -55,7 +57,7 @@ export default async function BomPage({ searchParams }: { searchParams: Promise<
 
   const { boms, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const b = await tx<BomRow[]>`
-      select bm.id, p.sku, p.name as product_name, bm.version, bm.status, bm.output_qty::text,
+      select bm.id, p.sku, p.name as product_name, p.unit, bm.version, bm.status, bm.output_qty::text,
              (select count(*) from public.bom_lines l where l.bom_id = bm.id)::text as lineas
       from public.bill_of_materials bm
       join public.products p on p.id = bm.product_id
@@ -63,7 +65,7 @@ export default async function BomPage({ searchParams }: { searchParams: Promise<
       order by p.name, bm.version desc`
     const p = await tx<ProductoOption[]>`
       select id, sku, name from public.products
-      where tenant_id = ${ctx.tenantId} and active order by name limit 300`
+      where tenant_id = ${ctx.tenantId} and active and tracks_stock order by name limit 300`
     return { boms: b, productos: p }
   })
 
@@ -77,26 +79,31 @@ export default async function BomPage({ searchParams }: { searchParams: Promise<
         <PageHeader
           icon="account_tree"
           title="Lista de materiales"
-          description="Costeo multinivel real -un componente puede tener su propia receta-, versiones y sustitutos."
+          description="La receta de lo que se fabrica: qué componentes lleva y cuánto de cada uno. Un componente puede tener su propia receta, y el costo se suma por todos los niveles."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="BOM activos" value={String(activos)} />
-          <StatCard label="Total" value={String(boms.length)} />
+          <StatCard label="Recetas activas" value={String(activos)} hint="las que usa producción" />
+          <StatCard
+            label="Borradores"
+            value={String(boms.filter((b) => b.status === 'draft').length)}
+            hint="por revisar y activar"
+          />
+          <StatCard label="Total" value={String(boms.length)} hint="con todas sus versiones" />
         </section>
 
         {boms.length === 0 ? (
           <EmptyState
             icon="account_tree"
-            title="Todavia no hay ningun BOM"
-            description="Crea el primero abajo."
+            title="Todavía no hay ninguna lista de materiales"
+            description="Crea la primera abajo: eliges el producto que fabricas y después le agregas sus componentes con la cantidad de cada uno."
           />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Producto</TH>
-                <TH numeric>Version</TH>
+                <TH numeric>Versión</TH>
                 <TH numeric>Produce</TH>
                 <TH numeric>Componentes</TH>
                 <TH>Estado</TH>
@@ -114,7 +121,7 @@ export default async function BomPage({ searchParams }: { searchParams: Promise<
                     <span className="tabular">v{b.version}</span>
                   </TD>
                   <TD numeric>
-                    <span className="tabular">{b.output_qty}</span>
+                    <span className="tabular">{cantidad(b.output_qty, b.unit)}</span>
                   </TD>
                   <TD numeric>
                     <span className="tabular">{b.lineas}</span>
@@ -131,7 +138,7 @@ export default async function BomPage({ searchParams }: { searchParams: Promise<
         {puedeGestionar && (
           <Card>
             <CardHeader>
-              <CardTitle>Nuevo BOM</CardTitle>
+              <CardTitle>Nueva lista de materiales</CardTitle>
             </CardHeader>
             <CardBody>
               <form action={crearBomForm} className="flex flex-wrap items-end gap-3">

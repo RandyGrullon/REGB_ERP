@@ -43,6 +43,7 @@ interface OrderHead {
   customer_id: string
   customer_name: string
   customer_terms: number
+  notes: string | null
   warehouse_id: string
   warehouse_name: string
   subtotal: string
@@ -95,7 +96,7 @@ export default async function PedidoDetallePage({
       const [h] = await tx<OrderHead[]>`
       select so.id, so.number, so.status, so.order_date::text,
              so.customer_id, c.name as customer_name, c.payment_terms as customer_terms,
-             so.warehouse_id, w.name as warehouse_name,
+             so.notes, so.warehouse_id, w.name as warehouse_name,
              so.subtotal::text, so.discount::text, so.tax::text, so.total::text
       from public.sales_orders so
       join public.customers c on c.id = so.customer_id
@@ -223,8 +224,8 @@ export default async function PedidoDetallePage({
             <div className="flex flex-wrap items-center gap-2">
               <Badge tone={e.tone}>{e.label}</Badge>
               {backorder && (
-                <Badge tone="warning" title="Hay lineas sin existencia suficiente">
-                  con backorder
+                <Badge tone="warning" title="Hay líneas sin existencia suficiente">
+                  falta mercancía
                 </Badge>
               )}
               <span className="text-xs text-[var(--color-text-muted)]">
@@ -238,6 +239,14 @@ export default async function PedidoDetallePage({
               >
                 Ficha del cliente
               </a>
+              {/* La nota del pedido (quién recoge, cuándo se entrega): es lo
+                  primero que busca el almacén. */}
+              {head.notes && (
+                <span className="basis-full text-xs text-[var(--color-text-secondary)]">
+                  <Icon name="sticky_note_2" size={14} className="mr-1 inline align-[-2px]" />
+                  {head.notes}
+                </span>
+              )}
             </div>
           }
           actions={
@@ -293,26 +302,26 @@ export default async function PedidoDetallePage({
                 {campos}
                 <input type="hidden" name="creditOverride" value="1" />
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Motivo de la excepcion (queda escrito con tu nombre)
+                  Motivo de la excepción (queda escrito con tu nombre)
                   <textarea
                     name="overrideReason"
                     required
                     minLength={4}
                     rows={2}
-                    placeholder="Ej.: cliente de 10 anos, paga el viernes con cheque"
+                    placeholder="Ej.: cliente de 10 años, paga el viernes con cheque"
                     className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 py-2 text-sm text-[var(--color-text-primary)]"
                   />
                 </label>
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] transition-colors hover:bg-[var(--color-brand-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="verified_user" size={18} />
-                  Confirmar con excepcion
+                  Confirmar con excepción
                 </BotonEnvio>
               </form>
             )}
             {bloqueado && puedeConfirmar && !puedeAutorizar && (
               <p className="text-xs text-[var(--color-text-muted)]">
                 Para confirmarlo hace falta que el dueño, o quien autoriza crédito, lo apruebe con
-                una excepcion.
+                una excepción.
               </p>
             )}
           </EstadoDeCredito>
@@ -537,9 +546,9 @@ export default async function PedidoDetallePage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                El precio sale de la lista de precios del cliente (segun la cantidad); si no tiene
-                lista, del catálogo, que es el que ves entre parentesis. Al confirmar se aparta lo
-                que haya; lo que falte queda en backorder y se entrega cuando entre mercancia.
+                El precio sale de la lista de precios del cliente (según la cantidad); si no tiene
+                lista, del catálogo, que es el que ves entre paréntesis. Al confirmar se aparta lo
+                que haya; lo que falte queda pendiente y se entrega cuando entre mercancía.
               </p>
             </CardBody>
           </Card>

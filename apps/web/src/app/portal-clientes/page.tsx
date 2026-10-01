@@ -16,6 +16,7 @@ import {
   TR,
   Table,
 } from '@regb/ui'
+import { headers } from 'next/headers'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
@@ -70,6 +71,8 @@ export default async function PortalClientesPage({
   const activas = invitaciones.filter((i) => i.status === 'active').length
   const puedeGestionar = exigir(ctx, 'customer-portal', 'customer-portal.manage').ok
   const qs = ctx.demoQs
+  const h = await headers()
+  const origen = `${h.get('x-forwarded-proto') ?? 'http'}://${h.get('x-forwarded-host') ?? h.get('host') ?? ''}`
 
   return (
     <Shell {...shell} activePath="/portal-clientes">
@@ -77,7 +80,7 @@ export default async function PortalClientesPage({
         <PageHeader
           icon="open_in_new"
           title="Portal de clientes"
-          description="El cliente entra con un enlace unico, no con una contraseña que administrar. Revocar lo desactiva de inmediato."
+          description="El cliente entra con un enlace único, no con una contraseña que administrar. Revocar lo desactiva de inmediato."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -88,7 +91,7 @@ export default async function PortalClientesPage({
         {invitaciones.length === 0 ? (
           <EmptyState
             icon="open_in_new"
-            title="Todavia no hay ninguna invitacion"
+            title="Todavía no hay ninguna invitación"
             description="Crea la primera abajo."
           />
         ) : (
@@ -125,9 +128,22 @@ export default async function PortalClientesPage({
                         <summary className="cursor-pointer list-none text-xs text-[var(--color-text-link)] underline-offset-2 hover:underline">
                           Ver enlace
                         </summary>
+                        {/* El enlace completo, para copiarlo y mandárselo
+                            al cliente, y abrirlo para ver lo mismo que él. */}
                         <p className="mt-1 max-w-xs break-all text-xs text-[var(--color-text-muted)]">
-                          <Mono>/portal-cliente/{i.token}</Mono>
+                          <Mono>
+                            {origen}/portal-cliente/{i.token}
+                          </Mono>
                         </p>
+                        <a
+                          href={`/portal-cliente/${i.token}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 text-xs text-[var(--color-text-link)] hover:underline"
+                        >
+                          <Icon name="open_in_new" size={12} />
+                          Abrir como el cliente
+                        </a>
                         <form action={revocarInvitacionForm} className="mt-1">
                           <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                           <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />

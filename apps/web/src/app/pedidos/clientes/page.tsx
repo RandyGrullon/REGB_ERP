@@ -89,14 +89,14 @@ export default async function ClientesPage({
         <PageHeader
           icon="contacts"
           title="Clientes"
-          description="Los usan los pedidos, la caja y las cuentas por cobrar. Los dias de credito deciden cuando vence cada factura."
+          description="Los usan los pedidos, la caja y las cuentas por cobrar. Los días de crédito deciden cuándo vence cada factura."
           crumbs={[{ label: 'Pedidos', href: `/pedidos${qs}` }, { label: 'Clientes' }]}
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Activos" value={String(totales?.activos ?? 0)} hint="pueden comprar" />
           <StatCard
-            label="Con credito"
+            label="Con crédito"
             value={String(totales?.credito ?? 0)}
             hint="no pagan de contado"
           />
@@ -111,9 +111,9 @@ export default async function ClientesPage({
           <SearchField
             defaultValue={q}
             label="Nombre o RNC"
-            placeholder="Ferreteria, 130-11111-1…"
+            placeholder="Ferretería, 130-11111-1…"
           />
-          <label className="flex h-10 items-center gap-2 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)]">
+          <label className="flex h-10 items-center gap-2 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)]">
             <input type="checkbox" name="inactivos" value="1" defaultChecked={verInactivos} />
             Ver inactivos
           </label>
@@ -135,10 +135,10 @@ export default async function ClientesPage({
             <THead>
               <TR>
                 <TH>Cliente</TH>
-                <TH>RNC / Cedula</TH>
+                <TH>RNC / Cédula</TH>
                 <TH>Contacto</TH>
                 <TH numeric>Crédito</TH>
-                <TH numeric>Limite</TH>
+                <TH numeric>Límite</TH>
                 <TH numeric>Pedidos</TH>
                 <TH>Estado</TH>
                 {puedeGestionar && (
@@ -159,7 +159,9 @@ export default async function ClientesPage({
                       {c.name}
                     </a>
                   </TD>
-                  <TD>{c.tax_id ? <Mono>{formatTaxId(c.tax_id)}</Mono> : '—'}</TD>
+                  <TD className="whitespace-nowrap">
+                    {c.tax_id ? <Mono>{formatTaxId(c.tax_id)}</Mono> : '—'}
+                  </TD>
                   <TD>
                     <span className="text-xs">
                       {c.phone ?? '—'}
@@ -222,12 +224,12 @@ export default async function ClientesPage({
                     name="name"
                     required
                     minLength={2}
-                    placeholder="Ferreteria El Martillo SRL"
+                    placeholder="Ferretería El Martillo SRL"
                     className={inputCls}
                   />
                 </label>
                 <label className="flex w-44 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  RNC / Cedula
+                  RNC / Cédula
                   <input
                     name="taxId"
                     placeholder="130-11111-1"
@@ -239,15 +241,15 @@ export default async function ClientesPage({
                     // guion suelto en la clase es un error y el patron se
                     // ignoraba entero. Va escapado.
                     pattern="[0-9 \-]{9,13}"
-                    title="RNC de 9 digitos o cedula de 11. Opcional."
+                    title="RNC de 9 dígitos o cédula de 11. Opcional."
                     className={inputCls}
                   />
                   <span className="text-[10px] text-[var(--color-text-muted)]">
-                    Opcional. Se verifica el digito.
+                    Opcional. Se verifica el dígito.
                   </span>
                 </label>
                 <label className="flex w-36 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Telefono
+                  Teléfono
                   <input name="phone" placeholder="809-555-0101" className={inputCls} />
                 </label>
                 <label className="flex w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -260,7 +262,7 @@ export default async function ClientesPage({
                   />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Dias de crédito
+                  Días de crédito
                   <input
                     name="terms"
                     inputMode="numeric"
@@ -271,12 +273,12 @@ export default async function ClientesPage({
                 </label>
                 {puedeFijarLimite && (
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Limite de crédito
+                    Límite de crédito
                     <input
                       name="creditLimit"
                       inputMode="decimal"
-                      placeholder="Sin limite"
-                      title="Vacio = sin limite. Saldo + pedido nuevo no puede pasarlo sin una excepcion autorizada."
+                      placeholder="Sin límite"
+                      title="Vacío = sin límite. Saldo + pedido nuevo no puede pasarlo sin una excepción autorizada."
                       className={inputCls}
                     />
                   </label>
@@ -287,7 +289,7 @@ export default async function ClientesPage({
                 </BotonEnvio>
               </form>
               <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                Los dias de credito deciden el vencimiento de la factura. 0 = contado. El limite y
+                Los días de crédito deciden el vencimiento de la factura. 0 = contado. El límite y
                 los datos se corrigen después en la ficha de cada cliente.
               </p>
             </CardBody>

@@ -138,7 +138,7 @@ describe('importar existencias iniciales', () => {
     expect(aviso()).toEqual({
       tipo: 'ok',
       texto:
-        'Cargamos 3 existencias iniciales. 1 ya tenia existencia en ese almacen y la dejamos como estaba. 6 filas rechazadas: mira el detalle abajo.',
+        'Cargamos 3 existencias iniciales. 1 ya tenía existencia en ese almacén y la dejamos como estaba. 6 filas rechazadas: mira el detalle abajo.',
     })
 
     const l = await lote('existencias-sept.csv')
@@ -165,7 +165,7 @@ describe('importar existencias iniciales', () => {
     expect(porLinea.get(6)).toContain('no lleva control de existencias')
     expect(porLinea.get(7)).toContain('"NOPE-1" no existe')
     expect(porLinea.get(8)).toContain('"Bodega Fantasma"')
-    expect(porLinea.get(10)).toContain('linea 2')
+    expect(porLinea.get(10)).toContain('línea 2')
     expect(porLinea.get(11)).toContain('ambiguo')
     expect(l.inserted + omitidas.length + l.rejected).toBe(l.total_rows)
   })
@@ -209,7 +209,7 @@ describe('deshacer una carga de existencias', () => {
     await deshacerImportacion(c.fd({ batchId: l.id }))
     expect(aviso()).toEqual({
       tipo: 'error',
-      texto: 'Esa importacion es de existencias: se deshace con su propio boton.',
+      texto: 'Esa importación es de existencias: se deshace con su propio botón.',
     })
     expect((await lote('existencias-sept.csv')).undone_at).toBeNull()
   })
@@ -246,7 +246,7 @@ describe('deshacer una carga de existencias', () => {
   it('un segundo deshacer se niega', async () => {
     const l = await lote('existencias-sept.csv')
     await deshacerExistencias(c.fd({ batchId: l.id }))
-    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importacion ya estaba deshecha.' })
+    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importación ya estaba deshecha.' })
   })
 
   it('tras deshacer se puede volver a cargar; si luego se vendio, deshacer se niega entero', async () => {
@@ -310,7 +310,7 @@ describe('permisos y limites', () => {
       expect(aviso()).toEqual({
         tipo: 'error',
         texto:
-          'Todavia no hay ningun almacen activo. Crea uno en Existencias > Almacenes y vuelve a subir el archivo.',
+          'Todavía no hay ningún almacén activo. Crea uno en Existencias > Almacenes y vuelve a subir el archivo.',
       })
     } finally {
       await db()`update public.warehouses set is_active = true where tenant_id = ${c.tenantId}`

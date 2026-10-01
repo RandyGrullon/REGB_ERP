@@ -24,7 +24,7 @@ import { NIVEL_FIDELIDAD } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Fidelizacion · REGB ERP' }
+export const metadata = { title: 'Fidelización · REGB ERP' }
 
 interface ClienteFila {
   id: string
@@ -86,12 +86,12 @@ export default async function FidelizacionPage({
       <div className="space-y-5">
         <PageHeader
           icon="redeem"
-          title="Fidelizacion"
-          description="El nivel se gana con puntos de por vida -redimir un premio nunca baja de nivel a nadie-."
+          title="Fidelización"
+          description="Puntos por compra, cupones y referidos. El nivel sale de los puntos ganados de por vida: canjear un premio nunca le baja el nivel a nadie."
           actions={
             <a
               href={`/fidelizacion/cupones${qs}`}
-              className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
+              className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
             >
               <Icon name="confirmation_number" size={14} />
               Cupones
@@ -108,7 +108,7 @@ export default async function FidelizacionPage({
         {clientes.length === 0 ? (
           <EmptyState
             icon="redeem"
-            title="Todavia no hay clientes"
+            title="Todavía no hay clientes"
             description="Registra puntos abajo para empezar."
           />
         ) : (
@@ -184,7 +184,7 @@ export default async function FidelizacionPage({
                   />
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Razon
+                  Razón
                   <input
                     name="reason"
                     required

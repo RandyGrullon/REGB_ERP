@@ -68,12 +68,12 @@ export default async function NoConformidadesPage({
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/calidad">
+    <Shell {...shell} activePath="/calidad/no-conformidades">
       <div className="space-y-5">
         <PageHeader
           icon="report"
           title="No conformidades"
-          description="Una no conformidad no se cierra directo: pasa por un CAPA con causa raiz, accion correctiva y verificacion."
+          description="Cada problema de calidad encontrado: se investiga, se le busca la causa raíz y no se cierra hasta que su acción correctiva esté verificada."
           crumbs={[
             { label: 'Control de calidad', href: `/calidad${qs}` },
             { label: 'No conformidades' },
@@ -81,15 +81,20 @@ export default async function NoConformidadesPage({
         />
 
         {noConformidades.length === 0 ? (
-          <EmptyState icon="report" title="Todavia no hay ninguna no conformidad" description="" />
+          <EmptyState
+            icon="report"
+            title="Todavía no hay ninguna no conformidad"
+            description="Si una inspección falla o alguien encuentra un defecto, ábrela abajo con su severidad para darle seguimiento."
+          />
         ) : (
           <Table>
             <THead>
               <TR>
                 <TH>Descripción</TH>
+                <TH>Detectada</TH>
                 <TH>Severidad</TH>
                 <TH>Estado</TH>
-                <TH numeric>Dias abierta</TH>
+                <TH numeric>Días abierta</TH>
               </TR>
             </THead>
             <TBody>
@@ -103,6 +108,12 @@ export default async function NoConformidadesPage({
                       {nc.description}
                     </a>
                   </TD>
+                  <TD className="whitespace-nowrap">
+                    {new Date(nc.detected_at).toLocaleDateString('es-DO', {
+                      day: 'numeric',
+                      month: 'short',
+                    })}
+                  </TD>
                   <TD>
                     <Badge tone={badgeSeveridad(nc.severity)}>
                       {SEVERIDAD_NC[nc.severity] ?? nc.severity}
@@ -113,7 +124,9 @@ export default async function NoConformidadesPage({
                   </TD>
                   <TD numeric>
                     <span className="tabular">
-                      {diasAbierto(new Date(nc.detected_at), new Date())}
+                      {nc.status === 'closed' || nc.status === 'dismissed'
+                        ? '—'
+                        : diasAbierto(new Date(nc.detected_at), new Date())}
                     </span>
                   </TD>
                 </TR>
@@ -132,7 +145,7 @@ export default async function NoConformidadesPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required
@@ -148,7 +161,7 @@ export default async function NoConformidadesPage({
                   >
                     <option value="minor">Menor</option>
                     <option value="major">Mayor</option>
-                    <option value="critical">Critica</option>
+                    <option value="critical">Crítica</option>
                   </select>
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">

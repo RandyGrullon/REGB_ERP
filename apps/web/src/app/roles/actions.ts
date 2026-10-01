@@ -91,7 +91,7 @@ export async function setPermission(input: {
   demo?: DemoCtx
 }): Promise<ActionResult> {
   const ctx = await contexto(input.demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'rbac.role.edit')
   if (!permiso.ok) return permiso
@@ -101,7 +101,7 @@ export async function setPermission(input: {
   // activarian solos el dia que comprara ese modulo.
   const moduleId = input.permission.split('.')[0] ?? ''
   if (!ctx.activeModules.has(moduleId)) {
-    return { ok: false, error: `El modulo "${moduleId}" no esta activo para este cliente.` }
+    return { ok: false, error: `El módulo "${moduleId}" no está activo para este cliente.` }
   }
 
   const filas = await asUser(ctx.userId, ctx.tenantId, (tx) =>
@@ -141,7 +141,7 @@ export async function toggleModuleVisibility(input: {
   demo?: DemoCtx
 }): Promise<ActionResult> {
   const ctx = await contexto(input.demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'rbac.role.edit')
   if (!permiso.ok) return permiso
@@ -181,7 +181,7 @@ export async function setScope(input: {
   demo?: DemoCtx
 }): Promise<ActionResult> {
   const ctx = await contexto(input.demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'rbac.role.edit')
   if (!permiso.ok) return permiso
@@ -245,7 +245,7 @@ export async function createRole(input: {
   demo?: DemoCtx
 }): Promise<ActionResult & { roleId?: string | undefined }> {
   const ctx = await contexto(input.demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'rbac.role.create')
   if (!permiso.ok) return permiso
@@ -291,7 +291,7 @@ export async function createRole(input: {
 
 export async function deleteRole(input: { roleId: string; demo?: DemoCtx }): Promise<ActionResult> {
   const ctx = await contexto(input.demo)
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'rbac.role.delete')
   if (!permiso.ok) return permiso

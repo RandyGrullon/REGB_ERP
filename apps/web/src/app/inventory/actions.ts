@@ -74,16 +74,16 @@ async function resolverProducto(
   if (candidatos.length === 0) {
     return {
       ok: false,
-      error: `No encontramos ningun producto con "${t}". Escribe su codigo, su codigo de barras o parte del nombre.`,
+      error: `No encontramos ningún producto con "${t}". Escribe su código, su código de barras o parte del nombre.`,
     }
   }
-  const cuantos = candidatos.length > 5 ? 'Mas de 5' : `Hay ${candidatos.length}`
+  const cuantos = candidatos.length > 5 ? 'Más de 5' : `Hay ${candidatos.length}`
   return {
     ok: false,
     error: `${cuantos} productos que coinciden con "${t}": ${candidatos
       .slice(0, 5)
       .map((p) => `${p.sku} (${p.name})`)
-      .join(', ')}. Elige uno de la lista o escribe su codigo.`,
+      .join(', ')}. Elige uno de la lista o escribe su código.`,
   }
 }
 
@@ -95,7 +95,7 @@ async function resolverProducto(
  */
 export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.adjust')
   if (!permiso.ok) return permiso
@@ -109,7 +109,7 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
   const unitCostRaw = String(fd.get('unitCost') ?? '').trim()
   const unitCost = unitCostRaw === '' ? null : numero(unitCostRaw)
 
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén.' }
   if (!productIdCrudo && !productoTexto) return { ok: false, error: 'Elige el producto.' }
   // El id sigue sirviendo (lo manda cualquier formulario viejo); si no es
   // un uuid, se busca como codigo o nombre en vez de reventar en la base.
@@ -123,7 +123,7 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
     return { ok: false, error: 'La cantidad debe ser distinta de cero.' }
   if (reason.length < 3) return { ok: false, error: 'Indica el motivo del ajuste.' }
   if (unitCostRaw !== '' && unitCost === null) {
-    return { ok: false, error: 'El costo no es un numero valido.' }
+    return { ok: false, error: 'El costo no es un número válido.' }
   }
   // El costo solo tiene sentido cuando entra mercancia. Declararlo en una
   // salida (merma, rotura) no cambia nada: las salidas consumen el costo
@@ -200,7 +200,7 @@ export async function ajustarInventario(fd: FormData): Promise<ActionResult> {
 
 export async function crearAlmacen(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.warehouses.manage')
   if (!permiso.ok) return permiso
@@ -224,13 +224,13 @@ export async function crearAlmacen(fd: FormData): Promise<ActionResult> {
 
 export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.count')
   if (!permiso.ok) return permiso
 
   const warehouseId = String(fd.get('warehouseId') ?? '')
-  if (!warehouseId) return { ok: false, error: 'Elige un almacen.' }
+  if (!warehouseId) return { ok: false, error: 'Elige un almacén.' }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [count] = await tx<{ id: string }[]>`
@@ -253,7 +253,7 @@ export async function iniciarConteo(fd: FormData): Promise<ActionResult> {
 
 export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.count')
   if (!permiso.ok) return permiso
@@ -261,7 +261,7 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
   const lineId = String(fd.get('lineId') ?? '')
   const counted = numero(String(fd.get('counted') ?? ''))
   if (!lineId || counted === null || counted < 0) {
-    return { ok: false, error: 'La cantidad contada no es valida.' }
+    return { ok: false, error: 'La cantidad contada no es válida.' }
   }
 
   // Por `public.contar()` y no por un UPDATE: desde 0115 es la unica
@@ -289,7 +289,7 @@ export async function registrarLineaConteo(fd: FormData): Promise<ActionResult> 
  */
 export async function cerrarConteo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.count')
   if (!permiso.ok) return permiso
@@ -338,7 +338,7 @@ export async function cerrarConteo(fd: FormData): Promise<ActionResult> {
 
 export async function crearTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'inventory', 'inventory.transfer')
   if (!permiso.ok) return permiso

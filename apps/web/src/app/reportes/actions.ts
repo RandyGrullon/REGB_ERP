@@ -23,7 +23,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearReporte(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
@@ -34,9 +34,9 @@ export async function crearReporte(fd: FormData): Promise<ActionResult> {
   const limit = String(fd.get('limit') ?? '').trim()
 
   if (!name) return { ok: false, error: 'Falta el nombre del reporte.' }
-  if (!fuenteValida(sourceKey)) return { ok: false, error: 'Elige una fuente valida.' }
+  if (!fuenteValida(sourceKey)) return { ok: false, error: 'Elige una fuente válida.' }
   if (!['table', 'bar', 'line'].includes(chartType))
-    return { ok: false, error: 'Elige un tipo de grafico valido.' }
+    return { ok: false, error: 'Elige un tipo de gráfico válido.' }
 
   const params: Record<string, number> = {}
   if (days) params.days = Number(days)
@@ -56,7 +56,7 @@ export async function crearReporte(fd: FormData): Promise<ActionResult> {
 
 export async function crearDashboard(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
@@ -76,7 +76,7 @@ export async function crearDashboard(fd: FormData): Promise<ActionResult> {
 
 export async function agregarItemDashboard(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
@@ -99,7 +99,7 @@ export async function agregarItemDashboard(fd: FormData): Promise<ActionResult> 
 
 export async function crearExport(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
@@ -109,7 +109,7 @@ export async function crearExport(fd: FormData): Promise<ActionResult> {
 
   if (!reportId) return { ok: false, error: 'Elige el reporte.' }
   if (!['daily', 'weekly', 'monthly'].includes(frequency))
-    return { ok: false, error: 'Elige una frecuencia valida.' }
+    return { ok: false, error: 'Elige una frecuencia válida.' }
   if (!recipients) return { ok: false, error: 'Falta al menos un destinatario.' }
 
   const proxima = proximaEjecucion(new Date(), frequency)
@@ -129,7 +129,7 @@ export async function crearExport(fd: FormData): Promise<ActionResult> {
 /** Simula la ejecucion -registra la fecha y calcula la proxima-, no manda el correo de verdad. */
 export async function ejecutarExportAhora(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
@@ -163,13 +163,13 @@ export async function ejecutarExportAhora(fd: FormData): Promise<ActionResult> {
 
 export async function alternarExport(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bi', 'bi.manage')
   if (!permiso.ok) return permiso
 
   const exportId = String(fd.get('exportId') ?? '')
   const siguiente = String(fd.get('siguiente') ?? '')
-  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado invalido.' }
+  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado inválido.' }
 
   await asUser(
     ctx.userId,

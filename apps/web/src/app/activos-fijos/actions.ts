@@ -30,7 +30,7 @@ const num = (raw: string): number | null => {
 /** Da de alta un activo fijo. */
 export async function crearActivo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fixed-assets', 'fixed-assets.asset.create')
   if (!permiso.ok) return permiso
 
@@ -43,21 +43,21 @@ export async function crearActivo(fd: FormData): Promise<ActionResult> {
   const usefulLifeMonths = Number.parseInt(String(fd.get('usefulLifeMonths') ?? ''), 10)
   const depreciationMethod = String(fd.get('depreciationMethod') ?? 'straight_line')
 
-  if (code.length < 1) return { ok: false, error: 'Escribe el codigo del activo.' }
+  if (code.length < 1) return { ok: false, error: 'Escribe el código del activo.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre del activo.' }
-  if (!acquisitionDate) return { ok: false, error: 'Falta la fecha de adquisicion.' }
+  if (!acquisitionDate) return { ok: false, error: 'Falta la fecha de adquisición.' }
   if (acquisitionCost === null || acquisitionCost <= 0) {
-    return { ok: false, error: 'El costo de adquisicion debe ser mayor que cero.' }
+    return { ok: false, error: 'El costo de adquisición debe ser mayor que cero.' }
   }
   if (salvageValue < 0) return { ok: false, error: 'El valor de rescate no puede ser negativo.' }
   if (salvageValue > acquisitionCost) {
     return { ok: false, error: 'El valor de rescate no puede ser mayor que el costo.' }
   }
   if (!Number.isInteger(usefulLifeMonths) || usefulLifeMonths <= 0) {
-    return { ok: false, error: 'La vida util debe ser un numero de meses mayor que cero.' }
+    return { ok: false, error: 'La vida útil debe ser un número de meses mayor que cero.' }
   }
   if (!['straight_line', 'declining_balance'].includes(depreciationMethod)) {
-    return { ok: false, error: 'Metodo de depreciacion no valido.' }
+    return { ok: false, error: 'Método de depreciación no válido.' }
   }
 
   try {
@@ -76,7 +76,7 @@ export async function crearActivo(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya existe un activo con ese codigo.' }
+      return { ok: false, error: 'Ya existe un activo con ese código.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -88,7 +88,7 @@ export async function crearActivo(fd: FormData): Promise<ActionResult> {
 /** Corre la depreciacion del periodo para todos los activos activos del tenant. */
 export async function correrDepreciacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fixed-assets', 'fixed-assets.depreciation.run')
   if (!permiso.ok) return permiso
 
@@ -118,7 +118,7 @@ export async function correrDepreciacion(fd: FormData): Promise<ActionResult> {
 /** Registra un revaluo: nunca sobreescribe el anterior. */
 export async function revaluarActivo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fixed-assets', 'fixed-assets.asset.revalue')
   if (!permiso.ok) return permiso
 
@@ -127,8 +127,8 @@ export async function revaluarActivo(fd: FormData): Promise<ActionResult> {
   const reason = String(fd.get('reason') ?? '').trim()
 
   if (!assetId) return { ok: false, error: 'Falta el activo.' }
-  if (newValue === null || newValue < 0) return { ok: false, error: 'El nuevo valor no es valido.' }
-  if (reason.length < 4) return { ok: false, error: 'Escribe el motivo del revaluo.' }
+  if (newValue === null || newValue < 0) return { ok: false, error: 'El nuevo valor no es válido.' }
+  if (reason.length < 4) return { ok: false, error: 'Escribe el motivo del revalúo.' }
 
   try {
     await asUser(
@@ -148,7 +148,7 @@ export async function revaluarActivo(fd: FormData): Promise<ActionResult> {
 /** Da de baja un activo: registra la ganancia o perdida contra su valor en libros. */
 export async function darDeBajaActivo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'fixed-assets', 'fixed-assets.asset.dispose')
   if (!permiso.ok) return permiso
 

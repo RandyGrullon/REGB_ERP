@@ -31,7 +31,7 @@ const num = (raw: string): number | null => {
 /** Da de alta una cuenta bancaria del negocio. */
 export async function crearCuenta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'treasury', 'treasury.account.create')
   if (!permiso.ok) return permiso
 
@@ -43,9 +43,9 @@ export async function crearCuenta(fd: FormData): Promise<ActionResult> {
 
   if (bankName.length < 2) return { ok: false, error: 'Escribe el nombre del banco.' }
   if (accountName.length < 2) return { ok: false, error: 'Ponle un nombre a la cuenta.' }
-  if (accountNumber.length < 3) return { ok: false, error: 'Escribe el numero de cuenta.' }
+  if (accountNumber.length < 3) return { ok: false, error: 'Escribe el número de cuenta.' }
   if (!['checking', 'savings'].includes(accountType)) {
-    return { ok: false, error: 'Tipo de cuenta no valido.' }
+    return { ok: false, error: 'Tipo de cuenta no válido.' }
   }
 
   try {
@@ -73,7 +73,7 @@ export async function crearCuenta(fd: FormData): Promise<ActionResult> {
 /** Registra un deposito o un retiro. Queda fijo: no se edita ni se borra. */
 export async function registrarMovimiento(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'treasury', 'treasury.transaction.record')
   if (!permiso.ok) return permiso
 
@@ -88,7 +88,7 @@ export async function registrarMovimiento(fd: FormData): Promise<ActionResult> {
   // transfer_in/transfer_out no se registran a mano: los crea el trigger de
   // una transferencia, para que nunca exista una mitad sin la otra.
   if (!['deposit', 'withdrawal'].includes(tipo)) {
-    return { ok: false, error: 'Un movimiento a mano solo puede ser deposito o retiro.' }
+    return { ok: false, error: 'Un movimiento a mano solo puede ser depósito o retiro.' }
   }
   if (monto === null || monto <= 0) return { ok: false, error: 'El monto debe ser mayor que cero.' }
   if (descripcion.length < 3) return { ok: false, error: 'Describe el movimiento.' }
@@ -112,7 +112,7 @@ export async function registrarMovimiento(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (res === 'sin-cuenta') return { ok: false, error: 'Esa cuenta no existe o esta inactiva.' }
+  if (res === 'sin-cuenta') return { ok: false, error: 'Esa cuenta no existe o está inactiva.' }
 
   revalidatePath('/tesoreria')
   revalidatePath(`/tesoreria/${accountId}`)
@@ -122,7 +122,7 @@ export async function registrarMovimiento(fd: FormData): Promise<ActionResult> {
 /** Mueve dinero entre dos cuentas propias. La base crea las dos mitades juntas. */
 export async function registrarTransferencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'treasury', 'treasury.transfer.create')
   if (!permiso.ok) return permiso
 
@@ -155,7 +155,7 @@ export async function registrarTransferencia(fd: FormData): Promise<ActionResult
   })
 
   if (res === 'sin-cuenta')
-    return { ok: false, error: 'Alguna de las dos cuentas no existe o esta inactiva.' }
+    return { ok: false, error: 'Alguna de las dos cuentas no existe o está inactiva.' }
 
   revalidatePath('/tesoreria')
   revalidatePath('/tesoreria/flujo')

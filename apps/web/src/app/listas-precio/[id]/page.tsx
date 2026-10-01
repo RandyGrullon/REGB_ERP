@@ -22,6 +22,9 @@ import { crearEntradaForm, quitarEntradaForm } from '../actions'
 import { ALCANCE_LISTA } from '../estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
+/** Los códigos de canal que usa el sistema, con el nombre que entiende el cliente. */
+const CANAL: Record<string, string> = { pos: 'Caja', online: 'Tienda en línea' }
+
 export const dynamic = 'force-dynamic'
 
 interface ListaHead {
@@ -123,7 +126,7 @@ export default async function ListaPrecioDetallePage({
           description={
             `${ALCANCE_LISTA[lista.scope] ?? lista.scope}` +
             (lista.cliente ? ` · ${lista.cliente}` : '') +
-            (lista.channel ? ` · canal ${lista.channel}` : '') +
+            (lista.channel ? ` · canal ${CANAL[lista.channel] ?? lista.channel}` : '') +
             ` · desde ${fecha(lista.start_date)}` +
             (lista.end_date ? ` hasta ${fecha(lista.end_date)}` : ', sin fecha de fin') +
             (lista.status === 'active' ? '' : ' · INACTIVA') +
@@ -138,7 +141,7 @@ export default async function ListaPrecioDetallePage({
         {entradas.length === 0 ? (
           <EmptyState
             icon="sell"
-            title="Todavia no hay ninguna cuota de precio"
+            title="Todavía no hay ninguna cuota de precio"
             description="Registra la primera abajo."
           />
         ) : (
@@ -151,7 +154,7 @@ export default async function ListaPrecioDetallePage({
                 <Table>
                   <THead>
                     <TR>
-                      <TH numeric>Desde cuantas unidades</TH>
+                      <TH numeric>Desde cuántas unidades</TH>
                       <TH numeric>Precio sin ITBIS</TH>
                       {puedeGestionar && (
                         <TH>
@@ -193,7 +196,7 @@ export default async function ListaPrecioDetallePage({
                 </Table>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
                   Ejemplo: pedir {Math.round(Number(cuotas[cuotas.length - 1]!.min_quantity) * 1.5)}{' '}
-                  unidades usaria RD${' '}
+                  unidades usaría RD${' '}
                   {money(
                     precioPorVolumen(
                       cuotas.map((c) => ({
@@ -231,7 +234,7 @@ export default async function ListaPrecioDetallePage({
                   </select>
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Desde cuantas unidades
+                  Desde cuántas unidades
                   <input
                     name="minQuantity"
                     defaultValue="1"

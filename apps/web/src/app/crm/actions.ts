@@ -30,7 +30,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearLead(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'crm', 'crm.manage')
   if (!permiso.ok) return permiso
 
@@ -40,9 +40,9 @@ export async function crearLead(fd: FormData): Promise<ActionResult> {
   const phone = String(fd.get('phone') ?? '').trim() || null
   const source = String(fd.get('source') ?? '') as FuenteLead
 
-  if (!name) return { ok: false, error: 'Ponle un nombre al lead.' }
+  if (!name) return { ok: false, error: 'Ponle un nombre al prospecto.' }
   if (!['referral', 'event', 'web', 'cold'].includes(source)) {
-    return { ok: false, error: 'Elige una fuente valida.' }
+    return { ok: false, error: 'Elige una fuente válida.' }
   }
 
   const score = puntuarLead({
@@ -66,7 +66,7 @@ export async function crearLead(fd: FormData): Promise<ActionResult> {
 /** Avanza el estado de un lead -new/contacted/qualified/disqualified/converted-. */
 export async function transicionarLead(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'crm', 'crm.manage')
   if (!permiso.ok) return permiso
 
@@ -77,7 +77,7 @@ export async function transicionarLead(fd: FormData): Promise<ActionResult> {
     const [lead] = await tx<{ status: EstadoLead }[]>`
       select status from public.leads where id = ${leadId} and tenant_id = ${ctx.tenantId} for update`
     if (!lead) return 'no-existe'
-    if (!transicionValidaLead(lead.status, siguiente)) return 'Esa transicion no esta permitida.'
+    if (!transicionValidaLead(lead.status, siguiente)) return 'Esa transición no está permitida.'
 
     await tx`
       update public.leads set status = ${siguiente}, updated_at = now()
@@ -92,7 +92,7 @@ export async function transicionarLead(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Ese lead no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Ese prospecto no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath(`/crm/${leadId}`)
@@ -102,7 +102,7 @@ export async function transicionarLead(fd: FormData): Promise<ActionResult> {
 
 export async function registrarActividad(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'crm', 'crm.manage')
   if (!permiso.ok) return permiso
 
@@ -111,8 +111,8 @@ export async function registrarActividad(fd: FormData): Promise<ActionResult> {
   const notes = String(fd.get('notes') ?? '').trim()
 
   if (!['call', 'email', 'meeting', 'note'].includes(type))
-    return { ok: false, error: 'Elige un tipo valido.' }
-  if (!notes) return { ok: false, error: 'Escribe que paso.' }
+    return { ok: false, error: 'Elige un tipo válido.' }
+  if (!notes) return { ok: false, error: 'Escribe qué pasó.' }
 
   await asUser(
     ctx.userId,
@@ -129,7 +129,7 @@ export async function registrarActividad(fd: FormData): Promise<ActionResult> {
 /** Reparte todos los leads nuevos sin asignar entre vendedores activos, en round-robin. */
 export async function asignarLeadsPendientes(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'crm', 'crm.manage')
   if (!permiso.ok) return permiso
 

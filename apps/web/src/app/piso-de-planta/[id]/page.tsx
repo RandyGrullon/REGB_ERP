@@ -49,11 +49,22 @@ interface ParoAbierto {
 const claseInput =
   'h-11 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]'
 const botonGrande =
-  'flex h-14 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-4 text-base font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--color-brand)] px-4 text-base font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonGrandeDanger =
-  'flex h-14 flex-1 items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-semantic-danger)] px-4 text-base font-semibold text-white hover:opacity-90'
+  'flex h-14 flex-1 items-center justify-center gap-2 rounded-full bg-[var(--color-semantic-danger)] px-4 text-base font-semibold text-white hover:opacity-90'
 const fecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+  new Date(iso).toLocaleString('es-DO', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+const horas = (desde: string, hasta: string | null) =>
+  Math.max(
+    0,
+    ((hasta ? new Date(hasta) : new Date()).getTime() - new Date(desde).getTime()) / 3_600_000,
+  )
 
 /** Terminal tactil de piso de planta (modulo 60): marcar entrada/salida, paros, y el OEE en vivo. */
 export default async function TerminalPage({
@@ -67,7 +78,7 @@ export default async function TerminalPage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'shopfloor', 'shopfloor.operate')
 
-  const { head, sesionAbierta, paroAbierto, paros } = await asUser(
+  const { head, sesionAbierta, paroAbierto, paros, sesiones } = await asUser(
     ctx.userId,
     ctx.tenantId,
     async (tx) => {
@@ -78,7 +89,7 @@ export default async function TerminalPage({
       join public.bill_of_materials bm on bm.id = po.bom_id
       join public.products p on p.id = bm.product_id
       where po.id = ${id} and po.tenant_id = ${ctx.tenantId}`
-      if (!h) return { head: null, sesionAbierta: null, paroAbierto: null, paros: [] }
+      if (!h) return { head: null, sesionAbierta: null, paroAbierto: null, paros: [], sesiones: [] }
 
       const [s] = await tx<SesionAbierta[]>`
       select id, clocked_in_at::text from public.shopfloor_sessions
@@ -90,11 +101,30 @@ export default async function TerminalPage({
       where production_order_id = ${id} and tenant_id = ${ctx.tenantId} and ended_at is null
       order by started_at desc limit 1`
 
-      const p = await tx<{ started_at: string; ended_at: string | null }[]>`
-      select started_at::text, ended_at::text from public.shopfloor_downtime
-      where production_order_id = ${id} and tenant_id = ${ctx.tenantId}`
+      const p = await tx<
+        { id: string; reason: string; started_at: string; ended_at: string | null }[]
+      >`
+      select id, reason, started_at::text, ended_at::text from public.shopfloor_downtime
+      where production_order_id = ${id} and tenant_id = ${ctx.tenantId}
+      order by started_at desc`
 
-      return { head: h, sesionAbierta: s ?? null, paroAbierto: pAbierto ?? null, paros: p }
+      const ss = await tx<
+        { id: string; clocked_in_at: string; clocked_out_at: string | null; quien: string | null }[]
+      >`
+      select s.id, s.clocked_in_at::text, s.clocked_out_at::text, up.display_name as quien
+      from public.shopfloor_sessions s
+      left join public.user_profiles up
+        on up.tenant_id = s.tenant_id and up.user_id = s.operator_id
+      where s.production_order_id = ${id} and s.tenant_id = ${ctx.tenantId}
+      order by s.clocked_in_at desc`
+
+      return {
+        head: h,
+        sesionAbierta: s ?? null,
+        paroAbierto: pAbierto ?? null,
+        paros: p,
+        sesiones: ss,
+      }
     },
   )
 
@@ -110,9 +140,16 @@ export default async function TerminalPage({
     </>
   )
 
+  // El tiempo trabajado son las sesiones marcadas en esta terminal; si
+  // nadie ha marcado todavía, desde que se liberó la orden.
   const inicio = head.released_at ? new Date(head.released_at) : null
   const fin = head.completed_at ? new Date(head.completed_at) : new Date()
-  const horasPlanificadas = inicio ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000) : 0
+  const horasPlanificadas =
+    sesiones.length > 0
+      ? sesiones.reduce((a, s) => a + horas(s.clocked_in_at, s.clocked_out_at), 0)
+      : inicio
+        ? Math.max(0, (fin.getTime() - inicio.getTime()) / 3_600_000)
+        : 0
   const horasInactivo = horasInactivoTotal(
     paros.map((p) => ({
       startedAt: new Date(p.started_at),
@@ -137,6 +174,7 @@ export default async function TerminalPage({
         <PageHeader
           icon="precision_manufacturing"
           title={`${head.sku} · ${head.product_name}`}
+          description={`Van ${Number(head.qty_completed).toLocaleString('es-DO')} de ${Number(head.qty_planned).toLocaleString('es-DO')} buenas y ${Number(head.qty_scrapped).toLocaleString('es-DO')} en merma, en ${horasPlanificadas.toLocaleString('es-DO', { maximumFractionDigits: 1 })} h trabajadas.`}
           crumbs={[
             { label: 'Piso de planta', href: `/piso-de-planta${qs}` },
             { label: 'Terminal' },
@@ -147,13 +185,26 @@ export default async function TerminalPage({
         />
 
         <section aria-label="OEE" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Disponibilidad" value={`${(disp * 100).toFixed(0)}%`} />
+          <StatCard
+            label="Disponibilidad"
+            value={`${(disp * 100).toFixed(0)}%`}
+            hint="tiempo trabajado sin paros"
+          />
           <StatCard
             label="Rendimiento"
             value={rend === null ? '—' : `${(rend * 100).toFixed(0)}%`}
+            hint="contra el ritmo ideal"
           />
-          <StatCard label="Calidad" value={`${(cal * 100).toFixed(0)}%`} />
-          <StatCard label="OEE" value={oee === null ? '—' : `${(oee * 100).toFixed(0)}%`} />
+          <StatCard
+            label="Calidad"
+            value={`${(cal * 100).toFixed(0)}%`}
+            hint="lo que salió bueno"
+          />
+          <StatCard
+            label="Eficiencia (OEE)"
+            value={oee === null ? '—' : `${(oee * 100).toFixed(0)}%`}
+            hint="las tres multiplicadas"
+          />
         </section>
 
         {!head.ideal_cycle_hours && puedeOperar && (
@@ -163,8 +214,8 @@ export default async function TerminalPage({
             </CardHeader>
             <CardBody>
               <p className="mb-3 text-xs text-[var(--color-text-muted)]">
-                Horas ideales para producir UNA unidad -sin esto, el rendimiento no se puede
-                calcular-.
+                Cuántas horas debería tomar producir una unidad a buen ritmo. Sin esto no se puede
+                calcular el rendimiento.
               </p>
               <form action={fijarCicloIdealForm} className="flex flex-wrap items-end gap-3">
                 {campos}
@@ -251,6 +302,77 @@ export default async function TerminalPage({
                       Iniciar paro
                     </BotonEnvio>
                   </form>
+                )}
+              </CardBody>
+            </Card>
+          </div>
+        )}
+
+        {(sesiones.length > 0 || paros.length > 0) && (
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Turnos marcados</CardTitle>
+              </CardHeader>
+              <CardBody>
+                {sesiones.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    Nadie ha marcado entrada en esta orden.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-[var(--color-border)]">
+                    {sesiones.map((s) => (
+                      <li
+                        key={s.id}
+                        className="flex items-center justify-between gap-3 py-2 text-sm"
+                      >
+                        <span className="text-[var(--color-text-primary)]">
+                          {s.quien ?? 'Operario'}
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            {fecha(s.clocked_in_at)}
+                          </span>
+                        </span>
+                        <span className="tabular text-[var(--color-text-secondary)]">
+                          {s.clocked_out_at
+                            ? `${horas(s.clocked_in_at, s.clocked_out_at).toLocaleString('es-DO', { maximumFractionDigits: 1 })} h`
+                            : 'Trabajando'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardBody>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Paros</CardTitle>
+              </CardHeader>
+              <CardBody>
+                {paros.length === 0 ? (
+                  <p className="text-sm text-[var(--color-text-muted)]">
+                    Esta orden no ha tenido paros.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-[var(--color-border)]">
+                    {paros.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-3 py-2 text-sm"
+                      >
+                        <span className="text-[var(--color-text-primary)]">
+                          {p.reason}
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            {fecha(p.started_at)}
+                          </span>
+                        </span>
+                        <span className="tabular text-[var(--color-text-secondary)]">
+                          {p.ended_at
+                            ? `${horas(p.started_at, p.ended_at).toLocaleString('es-DO', { maximumFractionDigits: 1 })} h`
+                            : 'Parado'}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </CardBody>
             </Card>

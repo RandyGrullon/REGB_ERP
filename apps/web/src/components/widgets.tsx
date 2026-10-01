@@ -1,4 +1,4 @@
-import { Badge, Card, CardBody, CardHeader, CardTitle, Icon, Mono } from '@regb/ui'
+import { Badge, Card, CardBody, CardHeader, CardTitle, Icon } from '@regb/ui'
 import {
   buildBudgetVsActual,
   buildCashFlowProjection,
@@ -15,6 +15,9 @@ import {
   totalAportePatronal,
 } from '@regb/operations'
 import type { TransactionSql } from 'postgres'
+import { asUser } from '@/lib/db'
+import { TIPO_DOCUMENTO } from '@/app/proveedores/estados'
+import { estadoGasto, estadoIngreso } from '@/app/presupuestos/estados'
 
 /**
  * Widgets del dashboard.
@@ -67,7 +70,10 @@ export interface DatosWidgets {
   activosValorLibros: number
   activosPorDepreciarEsteMes: number
   presupuestoAlertas: number
+  /** Solo cuentas de gasto: lo gastado contra lo presupuestado. */
   presupuestoYtd: { presupuestado: number; real: number }
+  /** Solo cuentas de ingreso: lo vendido contra la meta. */
+  ingresoYtd: { meta: number; real: number }
   centrosTop: { name: string; total: number }[]
   centrosTotal: number
   tasasHoy: { code: string; rate: number; dias: number }[]
@@ -134,6 +140,13 @@ export interface DatosWidgets {
   ecfPorRemitir: number
 }
 
+/** La fecha de hoy en RD como `YYYY-MM-DD`, sea cual sea la zona del servidor. */
+const hoyEnRD = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santo_Domingo' }).format(new Date())
+
+/** "1 día", "12 días": el plural no se deja a la suerte. */
+const dias = (n: number) => `${n} ${n === 1 ? 'día' : 'días'}`
+
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
@@ -196,6 +209,7 @@ export async function cargarDatosWidgets(
     activosPorDepreciarEsteMes: 0,
     presupuestoAlertas: 0,
     presupuestoYtd: { presupuestado: 0, real: 0 },
+    ingresoYtd: { meta: 0, real: 0 },
     centrosTop: [],
     centrosTotal: 0,
     tasasHoy: [],
@@ -418,8 +432,8 @@ export async function cargarDatosWidgets(
             and s.sold_at >= now() - interval '30 days'
           union all
           -- Prorrateado por lo ENTREGADO: line_total es de lo pedido, y en
-          -- un pedido a medias contaria como vendido lo que todavía esta
-          -- en el almacén.
+          -- un pedido a medias contaria como vendido lo que todavia esta
+          -- en el almacen.
           select l.product_id, l.qty_delivered,
                  l.line_total * (l.qty_delivered / nullif(l.qty_ordered, 0))
           from public.sales_order_lines l
@@ -653,12 +667,13 @@ export async function cargarDatosWidgets(
                  coalesce(l.amount, 0) as budgeted,
                  coalesce(r.debito, 0) as total_debit,
                  coalesce(r.credito, 0) as total_credit
-          from líneas l
+          from lineas l
           full outer join real r on r.account_id = l.account_id and r.mes = l.period_month
         )
         select c.account_id, c.month, c.budgeted::text, c.total_debit::text, c.total_credit::text, a.type
         from combinado c
-        join public.accounts a on a.id = c.account_id`
+        join public.accounts a on a.id = c.account_id
+        where a.type in ('revenue', 'expense')`
 
       const comparativo = buildBudgetVsActual(
         filas.map((f) => ({
@@ -670,10 +685,27 @@ export async function cargarDatosWidgets(
           totalCredit: Number(f.total_credit),
         })),
       )
-      vacio.presupuestoAlertas = comparativo.filter((r) => r.status !== 'ok').length
+      // Solo ingresos y gastos, como /presupuestos/[id]: Caja, Bancos, CxC o
+      // el ITBIS por pagar no se presupuestan, y al compararlos inflaban
+      // las alertas y sumaban activos con gastos en el "real".
+      // En un ingreso, pasarse de la meta es la buena noticia: la alerta es
+      // quedarse corto en un mes que ya llegó (estadoIngreso). En un gasto,
+      // la de siempre: cerca del tope, pasado o sin planear (estadoGasto).
+      const conTipo = comparativo.map((r, i) => ({ ...r, type: filas[i]!.type }))
+      vacio.presupuestoAlertas = conTipo.filter((r) =>
+        r.type === 'revenue'
+          ? estadoIngreso(r.budgeted, r.actual, r.month > mesActual).tone === 'warning'
+          : ['warning', 'danger'].includes(estadoGasto(r.budgeted, r.actual, r.status).tone),
+      ).length
+      const gastos = conTipo.filter((r) => r.type === 'expense')
+      const ingresos = conTipo.filter((r) => r.type === 'revenue')
       vacio.presupuestoYtd = {
-        presupuestado: comparativo.reduce((a, r) => a + r.budgeted, 0),
-        real: comparativo.reduce((a, r) => a + r.actual, 0),
+        presupuestado: gastos.reduce((a, r) => a + r.budgeted, 0),
+        real: gastos.reduce((a, r) => a + r.actual, 0),
+      }
+      vacio.ingresoYtd = {
+        meta: ingresos.reduce((a, r) => a + r.budgeted, 0),
+        real: ingresos.reduce((a, r) => a + r.actual, 0),
       }
     }
   }
@@ -759,9 +791,14 @@ export async function cargarDatosWidgets(
       limit 1`
     vacio.proximaNomina = p
       ? {
-          periodo: `${p.period_start.slice(0, 10)} – ${p.period_end.slice(0, 10)}`,
+          periodo: `${fechaCortaUTC(p.period_start.slice(0, 10))} al ${fechaCortaUTC(p.period_end.slice(0, 10))}`,
+          // Días de calendario en RD, no horas / 24: con la resta de antes,
+          // una nómina que se paga HOY salía "atrasada 1 día" desde el
+          // mediodía.
           diasFaltan: Math.round(
-            (new Date(`${p.pay_date.slice(0, 10)}T00:00:00`).getTime() - Date.now()) / 86_400_000,
+            (Date.parse(`${p.pay_date.slice(0, 10)}T00:00:00Z`) -
+              Date.parse(`${hoyEnRD()}T00:00:00Z`)) /
+              86_400_000,
           ),
         }
       : null
@@ -968,7 +1005,10 @@ export async function cargarDatosWidgets(
     vacio.documentosProveedorPorVencer = filas
       .filter((f) => certificadoVigente(new Date(f.expires_at!), hoy))
       .filter((f) => (new Date(f.expires_at!).getTime() - hoy.getTime()) / 86_400_000 <= 30)
-      .map((f) => ({ name: `${f.supplier_name} · ${f.doc_type}`, vence: f.expires_at! }))
+      .map((f) => ({
+        name: `${f.supplier_name} · ${TIPO_DOCUMENTO[f.doc_type] ?? f.doc_type}`,
+        vence: f.expires_at!,
+      }))
       .slice(0, 5)
   }
 
@@ -1444,7 +1484,7 @@ const WIDGETS: Record<
   },
 
   'backorder-list': {
-    titulo: 'Líneas en backorder',
+    titulo: 'Líneas pendientes por entregar',
     icono: 'pending_actions',
     render: (d) => (
       <p className="py-2">
@@ -1521,7 +1561,7 @@ const WIDGETS: Record<
           )}
           {d.catalogoIncompleto.sinCategoria > 0 && (
             <Fila
-              izq="Sin categoria"
+              izq="Sin categoría"
               der={String(d.catalogoIncompleto.sinCategoria)}
               tono="warning"
             />
@@ -1565,7 +1605,7 @@ const WIDGETS: Record<
             <Fila
               key={p.name}
               izq={p.name}
-              sub={`${p.ordenes} orden${p.ordenes === 1 ? '' : 'es'}`}
+              sub={`${p.ordenes} ${p.ordenes === 1 ? 'orden' : 'órdenes'}`}
               der={money(p.importe)}
             />
           ))}
@@ -1578,7 +1618,7 @@ const WIDGETS: Record<
     icono: 'request_page',
     render: (d) =>
       d.porPagarVencido.length === 0 ? (
-        <Vacio>Nadie te esta esperando.</Vacio>
+        <Vacio>No debes nada vencido.</Vacio>
       ) : (
         <ul>
           {d.porPagarVencido.map((v, i) => (
@@ -1609,7 +1649,7 @@ const WIDGETS: Record<
           {d.porPagarEstaSemana}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          factura{d.porPagarEstaSemana === 1 ? '' : 's'} de proveedor en los proximos 7 dias
+          factura{d.porPagarEstaSemana === 1 ? '' : 's'} de proveedor en los próximos 7 días
         </span>
       </p>
     ),
@@ -1701,10 +1741,10 @@ const WIDGETS: Record<
                 : 'text-[var(--color-text-primary)]'
             }`}
           >
-            {d.ultimoImport.hace} dias
+            {dias(d.ultimoImport.hace)}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            desde el cierre del ultimo import de {d.ultimoImport.cuenta}
+            desde el cierre del último estado importado de {d.ultimoImport.cuenta}
           </span>
         </p>
       ),
@@ -1737,7 +1777,7 @@ const WIDGETS: Record<
             {d.activosPorDepreciarEsteMes}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            activo{d.activosPorDepreciarEsteMes === 1 ? '' : 's'} sin depreciar todavia este mes
+            activo{d.activosPorDepreciarEsteMes === 1 ? '' : 's'} sin depreciar todavía este mes
           </span>
         </p>
       ),
@@ -1755,7 +1795,8 @@ const WIDGETS: Record<
             {d.presupuestoAlertas}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            cuenta-mes cerca o por encima de lo planeado
+            {d.presupuestoAlertas === 1 ? 'partida' : 'partidas'} del presupuesto (cuenta y mes) por
+            revisar: gastos cerca o por encima de lo planeado, o ingresos por debajo de la meta
           </span>
         </p>
       ),
@@ -1766,16 +1807,30 @@ const WIDGETS: Record<
     icono: 'savings',
     render: (d) => (
       <p className="py-2">
-        <span className="tabular text-lg font-semibold text-[var(--color-text-primary)]">
-          {money(d.presupuestoYtd.real)}
+        <span
+          className={`tabular text-lg font-semibold ${
+            d.presupuestoYtd.real > d.presupuestoYtd.presupuestado
+              ? 'text-[var(--color-semantic-text-warning)]'
+              : 'text-[var(--color-text-primary)]'
+          }`}
+        >
+          RD$ {money(d.presupuestoYtd.real)}
         </span>
         <span className="text-xs text-[var(--color-text-muted)]">
           {' '}
-          de {money(d.presupuestoYtd.presupuestado)}
+          de RD$ {money(d.presupuestoYtd.presupuestado)}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          real contra presupuestado
+          {d.presupuestoYtd.real > d.presupuestoYtd.presupuestado
+            ? 'gastado por encima de lo presupuestado hasta hoy'
+            : 'gastado contra lo presupuestado hasta hoy'}
         </span>
+        {d.ingresoYtd.meta > 0 && (
+          <span className="mt-2 block text-xs text-[var(--color-text-secondary)]">
+            Ingresos: <span className="tabular">RD$ {money(d.ingresoYtd.real)}</span> de una meta de{' '}
+            <span className="tabular">RD$ {money(d.ingresoYtd.meta)}</span>
+          </span>
+        )}
       </p>
     ),
   },
@@ -1874,7 +1929,7 @@ const WIDGETS: Record<
             la frase se lee como una perdida.
           */}
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            movimientos entre empresas del grupo que no son del grupo
+            ventas y compras entre las empresas del grupo, que no se cuentan dos veces
           </span>
         </p>
       ),
@@ -1940,7 +1995,7 @@ const WIDGETS: Record<
                 : 'text-[var(--color-text-primary)]'
             }`}
           >
-            {d.tasaMasVieja} dias
+            {dias(d.tasaMasVieja)}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
             desde la captura más atrasada
@@ -1950,7 +2005,7 @@ const WIDGETS: Record<
   },
 
   'payment-links-pending': {
-    titulo: 'Links de cobro pendientes',
+    titulo: 'Enlaces de cobro pendientes',
     icono: 'payments',
     render: (d) =>
       d.linksPendientes.length === 0 ? (
@@ -1976,7 +2031,7 @@ const WIDGETS: Record<
             {d.recurrentesVencidos}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            listo{d.recurrentesVencidos === 1 ? '' : 's'} para generar su link
+            listo{d.recurrentesVencidos === 1 ? '' : 's'} para generar su enlace de cobro
           </span>
         </p>
       ),
@@ -2020,15 +2075,23 @@ const WIDGETS: Record<
         <p className="py-2">
           <span
             className={`tabular text-2xl font-semibold ${
-              d.proximaNomina.diasFaltan <= 3
-                ? 'text-[var(--color-semantic-text-warning)]'
-                : 'text-[var(--color-text-primary)]'
+              d.proximaNomina.diasFaltan < 0
+                ? 'text-[var(--color-semantic-text-danger)]'
+                : d.proximaNomina.diasFaltan <= 3
+                  ? 'text-[var(--color-semantic-text-warning)]'
+                  : 'text-[var(--color-text-primary)]'
             }`}
           >
-            {d.proximaNomina.diasFaltan} dias
+            {d.proximaNomina.diasFaltan < 0
+              ? `Atrasada ${dias(-d.proximaNomina.diasFaltan)}`
+              : d.proximaNomina.diasFaltan === 0
+                ? 'Se paga hoy'
+                : `En ${dias(d.proximaNomina.diasFaltan)}`}
           </span>
           <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-            para pagar {d.proximaNomina.periodo}
+            {d.proximaNomina.diasFaltan < 0
+              ? `la del ${d.proximaNomina.periodo} sigue sin pagarse`
+              : `se paga la del ${d.proximaNomina.periodo}`}
           </span>
         </p>
       ),
@@ -2069,7 +2132,7 @@ const WIDGETS: Record<
     icono: 'schedule',
     render: (d) =>
       d.tardanzasHoy.length === 0 ? (
-        <Vacio>Nadie llego tarde hoy.</Vacio>
+        <Vacio>Nadie llegó tarde hoy.</Vacio>
       ) : (
         <ul>
           {d.tardanzasHoy.map((t, i) => (
@@ -2105,7 +2168,7 @@ const WIDGETS: Record<
     icono: 'event_busy',
     render: (d) =>
       d.fueraHoy.length === 0 ? (
-        <Vacio>Nadie del equipo esta fuera hoy.</Vacio>
+        <Vacio>Nadie del equipo está fuera hoy.</Vacio>
       ) : (
         <ul>
           {d.fueraHoy.map((f, i) => (
@@ -2235,7 +2298,7 @@ const WIDGETS: Record<
       ) : (
         <ul>
           {d.objetivosConProgreso.map((o, i) => (
-            <Fila key={i} izq={o.title} der={`${o.progreso}%`} />
+            <Fila key={i} izq={o.title} der={`${o.progreso.toLocaleString('es-DO')} %`} />
           ))}
         </ul>
       ),
@@ -2368,7 +2431,7 @@ const WIDGETS: Record<
   },
 
   'rfqs-open': {
-    titulo: 'RFQ abiertos',
+    titulo: 'Cotizaciones a proveedores abiertas',
     icono: 'compare_arrows',
     render: (d) => (
       <p className="py-2">
@@ -2391,7 +2454,7 @@ const WIDGETS: Record<
           {d.recepcionesConDiscrepancias}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.recepcionesConDiscrepancias === 0 ? 'todo coincidio' : 'llego distinto a lo esperado'}
+          {d.recepcionesConDiscrepancias === 0 ? 'todo coincidió' : 'llegó distinto a lo esperado'}
         </span>
       </p>
     ),
@@ -2578,7 +2641,7 @@ const WIDGETS: Record<
   },
 
   'crm-unassigned-leads': {
-    titulo: 'Leads sin asignar',
+    titulo: 'Prospectos sin asignar',
     icono: 'contacts',
     render: (d) => (
       <p className="py-2">
@@ -2593,7 +2656,7 @@ const WIDGETS: Record<
   },
 
   'pipeline-weighted-forecast': {
-    titulo: 'Forecast ponderado',
+    titulo: 'Pronóstico ponderado',
     icono: 'trending_up',
     render: (d) => (
       <p className="py-2">
@@ -2601,7 +2664,7 @@ const WIDGETS: Record<
           RD$ {d.forecastPonderadoPipeline.toLocaleString('es-DO', { maximumFractionDigits: 0 })}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          monto x probabilidad
+          monto × probabilidad
         </span>
       </p>
     ),
@@ -2646,7 +2709,7 @@ const WIDGETS: Record<
           {d.contratosVencenPronto}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.contratosVencenPronto === 0 ? 'nada por vencer' : 'revisar renovacion'}
+          {d.contratosVencenPronto === 0 ? 'nada por vencer' : 'revisar la renovación'}
         </span>
       </p>
     ),
@@ -2743,7 +2806,7 @@ const WIDGETS: Record<
   },
 
   'bi-scheduled-exports-due': {
-    titulo: 'Exports programados vencidos',
+    titulo: 'Exportaciones programadas vencidas',
     icono: 'schedule_send',
     render: (d) => (
       <p className="py-2">
@@ -2781,7 +2844,7 @@ const WIDGETS: Record<
           {d.entregasWebhookFallidas}
         </span>
         <span className="mt-1 block text-xs text-[var(--color-text-muted)]">
-          {d.entregasWebhookFallidas === 0 ? 'todas exitosas' : 'revisar el endpoint'}
+          {d.entregasWebhookFallidas === 0 ? 'todas exitosas' : 'revisar la dirección de destino'}
         </span>
       </p>
     ),
@@ -2981,6 +3044,38 @@ const PRIMERO = [
   'pending-orders',
 ]
 
+/**
+ * Los widgets en bloques, para que el Inicio se lea y no sea una pared.
+ *
+ * Con todos los módulos encendidos un cliente mediano tiene 80 widgets:
+ * uno detrás de otro, "Tardanzas de hoy" quedaba entre "Activos fijos" y
+ * "Cupones". Primero va "Lo de hoy" (las claves de `PRIMERO`) y después
+ * una sección por área, en el mismo orden y con los mismos nombres que el
+ * menú. La sección de cada clave la dice quien llama (del manifest que la
+ * declara): aquí no se conocen módulos.
+ */
+export function agruparWidgets(
+  claves: string[],
+  seccionDe: ReadonlyMap<string, string>,
+  ordenSecciones: readonly string[],
+): { seccion: string; claves: string[] }[] {
+  const hoy = PRIMERO.filter((k) => claves.includes(k))
+  const resto = claves.filter((k) => !PRIMERO.includes(k))
+  const porSeccion = new Map<string, string[]>()
+  for (const k of resto) {
+    const s = seccionDe.get(k) ?? 'operacion'
+    porSeccion.set(s, [...(porSeccion.get(s) ?? []), k])
+  }
+  const orden = [
+    ...ordenSecciones.filter((s) => porSeccion.has(s)),
+    ...[...porSeccion.keys()].filter((s) => !ordenSecciones.includes(s)),
+  ]
+  return [
+    ...(hoy.length > 0 ? [{ seccion: 'hoy', claves: hoy }] : []),
+    ...orden.map((s) => ({ seccion: s, claves: porSeccion.get(s)! })),
+  ]
+}
+
 /** Primero las claves de `PRIMERO`; el resto, en el orden en que llegaron. */
 export function ordenarWidgets(claves: string[]): string[] {
   const pos = (k: string) => {
@@ -2997,15 +3092,18 @@ export function ordenarWidgets(claves: string[]): string[] {
 export function Widget({ clave, datos, qs }: { clave: string; datos: DatosWidgets; qs: string }) {
   const w = WIDGETS[clave]
   if (!w) {
+    // Nunca la clave interna a la vista: el dueño no sabe qué es
+    // `stock-alerts`. La prueba de widgets falla si un módulo declara una
+    // clave sin dibujo, así que esto solo se ve si alguien se la salta.
     return (
-      <Card>
+      <Card data-widget-sin-dibujo={clave}>
         <CardHeader>
-          <CardTitle className="text-sm">
-            <Mono>{clave}</Mono>
+          <CardTitle as="h3" className="text-sm">
+            Indicador en preparación
           </CardTitle>
         </CardHeader>
         <CardBody>
-          <Badge tone="warning">sin renderizador</Badge>
+          <Badge tone="warning">Todavía no se puede mostrar</Badge>
         </CardBody>
       </Card>
     )
@@ -3013,12 +3111,88 @@ export function Widget({ clave, datos, qs }: { clave: string; datos: DatosWidget
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-sm">
+        {/* h3: el Inicio agrupa los widgets bajo un h2 por área. */}
+        <CardTitle as="h3" className="flex items-center gap-2 text-sm">
           <Icon name={w.icono} size={18} className="text-[var(--color-text-muted)]" />
           {w.titulo}
         </CardTitle>
       </CardHeader>
       <CardBody>{w.render(datos, qs)}</CardBody>
     </Card>
+  )
+}
+
+/**
+ * Un bloque de widgets que se carga SOLO, en su propia transacción.
+ *
+ * El Inicio tardaba segundos en pintar -11 s con la máquina cargada- porque
+ * los ~100 SELECT de 80 widgets corrían en serie dentro de un solo
+ * `asUser`, y hasta el último no se veía nada. Ahora cada bloque (hoy,
+ * ventas, finanzas...) es su propio componente dentro de un `<Suspense>`:
+ * la página pinta de inmediato con esqueletos, y los bloques llegan en
+ * paralelo, cada uno por su conexión del pool.
+ *
+ * Y si un bloque falla, falla ESE bloque: antes una consulta rota tumbaba
+ * el Inicio entero con un 500.
+ */
+export async function BloqueWidgets({
+  claves,
+  userId,
+  tenantId,
+  veCosto,
+  qs,
+}: {
+  claves: string[]
+  userId: string
+  tenantId: string
+  veCosto: boolean
+  qs: string
+}) {
+  let datos: DatosWidgets
+  try {
+    datos = await asUser(userId, tenantId, (tx) =>
+      cargarDatosWidgets(tx, tenantId, claves, veCosto),
+    )
+  } catch (e) {
+    console.error('[inicio] no cargó un bloque de widgets', claves, e)
+    return (
+      <Card className="sm:col-span-2 xl:col-span-3">
+        <CardBody className="flex items-start gap-3 pt-4">
+          <Icon
+            name="error"
+            size={20}
+            className="mt-0.5 shrink-0 text-[var(--color-semantic-text-warning)]"
+          />
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            No pudimos cargar estos indicadores ahora mismo. El resto del Inicio está bien; recarga
+            la página en un momento y, si sigue igual, avísale a soporte.
+          </p>
+        </CardBody>
+      </Card>
+    )
+  }
+  return (
+    <>
+      {claves.map((w) => (
+        <Widget key={w} clave={w} datos={datos} qs={qs} />
+      ))}
+    </>
+  )
+}
+
+/** Lo que se ve mientras llega un bloque: tarjetas del mismo tamaño, sin datos. */
+export function EsqueletoWidgets({ n }: { n: number }) {
+  return (
+    <>
+      {Array.from({ length: n }, (_, i) => (
+        <Card key={i} aria-hidden className="h-32 motion-safe:animate-pulse">
+          <CardBody className="space-y-3 pt-4">
+            <div className="h-3 w-2/5 rounded-full bg-[var(--color-surface-overlay)]" />
+            <div className="h-6 w-1/2 rounded-full bg-[var(--color-surface-overlay)]" />
+            <div className="h-3 w-3/4 rounded-full bg-[var(--color-surface-overlay)]" />
+          </CardBody>
+        </Card>
+      ))}
+    </>
   )
 }

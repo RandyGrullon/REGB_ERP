@@ -102,6 +102,11 @@ export default async function CentroCostoDetallePage({
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Total asignado" value={`RD$ ${money(total)}`} />
           <StatCard label="Asignaciones" value={String(asignaciones.length)} />
+          <StatCard
+            label="Último gasto"
+            value={asignaciones[0] ? fecha(asignaciones[0].allocation_date) : 'ninguno'}
+            {...(asignaciones[0] ? { hint: asignaciones[0].description } : {})}
+          />
         </section>
 
         <Card>
@@ -114,7 +119,7 @@ export default async function CentroCostoDetallePage({
                 Este centro todavía no tiene ninguna asignación.
               </p>
             ) : (
-              <Table>
+              <Table className="min-w-[640px]">
                 <THead>
                   <TR>
                     <TH>Fecha</TH>
@@ -127,7 +132,7 @@ export default async function CentroCostoDetallePage({
                 <TBody>
                   {asignaciones.map((a) => (
                     <TR key={a.id}>
-                      <TD>{fecha(a.allocation_date)}</TD>
+                      <TD className="whitespace-nowrap">{fecha(a.allocation_date)}</TD>
                       <TD className="text-[var(--color-text-primary)]">{a.description}</TD>
                       <TD>{ORIGEN_LABEL[a.source_type] ?? a.source_type}</TD>
                       <TD>{a.created_by_name ?? '—'}</TD>

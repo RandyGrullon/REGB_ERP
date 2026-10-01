@@ -38,7 +38,7 @@ export async function guardarConfiguracion(formData: FormData): Promise<ActionRe
     tenant: String(formData.get('tenant') ?? '') || undefined,
     rol: String(formData.get('rol') ?? '') || undefined,
   })
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'settings', 'settings.edit')
   if (!permiso.ok) return permiso
@@ -50,7 +50,7 @@ export async function guardarConfiguracion(formData: FormData): Promise<ActionRe
 
   if (!TIMEZONES.has(timezone)) return { ok: false, error: 'Zona horaria no soportada.' }
   if (!CURRENCIES.has(currency)) return { ok: false, error: 'Moneda no soportada.' }
-  if (!DATE_FORMATS.has(dateFormat)) return { ok: false, error: 'Formato de fecha no valido.' }
+  if (!DATE_FORMATS.has(dateFormat)) return { ok: false, error: 'Formato de fecha no válido.' }
 
   const nuevo: Prefs = { tradeName, timezone, currency, dateFormat }
 

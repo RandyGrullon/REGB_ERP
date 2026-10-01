@@ -33,7 +33,7 @@ const num = (raw: string): number | null => {
 /** Crea un BOM nuevo en borrador -la version siguiente disponible para ese producto-. */
 export async function crearBom(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bom', 'bom.manage')
   if (!permiso.ok) return permiso
 
@@ -63,7 +63,7 @@ export async function crearBom(fd: FormData): Promise<ActionResult> {
 /** Agrega una linea -principal o sustituto de otra- mientras el BOM sigue en borrador. */
 export async function agregarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bom', 'bom.manage')
   if (!permiso.ok) return permiso
 
@@ -98,13 +98,13 @@ export async function agregarLinea(fd: FormData): Promise<ActionResult> {
 /** Quita una linea -solo posible mientras el BOM sigue en borrador-. */
 export async function quitarLinea(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bom', 'bom.manage')
   if (!permiso.ok) return permiso
 
   const lineId = String(fd.get('lineId') ?? '')
   const bomId = String(fd.get('bomId') ?? '')
-  if (!lineId) return { ok: false, error: 'Falta la linea.' }
+  if (!lineId) return { ok: false, error: 'Falta la línea.' }
 
   try {
     await asUser(
@@ -125,7 +125,7 @@ export async function quitarLinea(fd: FormData): Promise<ActionResult> {
 /** Activa un BOM en borrador -retira la version activa anterior del mismo producto, si existe-. */
 export async function activarBom(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'bom', 'bom.manage')
   if (!permiso.ok) return permiso
 

@@ -74,10 +74,11 @@ export default async function NuevaInspeccionPage({
       <div className="space-y-5">
         <PageHeader
           icon="fact_check"
-          title="Nueva inspeccion"
+          title="Nueva inspección"
+          description="Elige el plan de lo que vas a revisar, marca cada criterio como aprueba o reprueba, y el resultado se calcula solo."
           crumbs={[
             { label: 'Control de calidad', href: `/calidad${qs}` },
-            { label: 'Nueva inspeccion' },
+            { label: 'Nueva inspección' },
           ]}
         />
 
@@ -88,7 +89,14 @@ export default async function NuevaInspeccionPage({
           <CardBody>
             {planes.length === 0 ? (
               <p className="text-xs text-[var(--color-text-muted)]">
-                No hay ningún plan de inspección activo -crea uno primero en Planes de inspección-.
+                No hay ningún plan de inspección activo. Crea uno primero en{' '}
+                <a
+                  href={`/calidad/planes${qs}`}
+                  className="text-[var(--color-text-link)] hover:underline"
+                >
+                  Planes de inspección
+                </a>
+                .
               </p>
             ) : (
               <form method="get" className="flex flex-wrap items-end gap-3">
@@ -126,7 +134,8 @@ export default async function NuevaInspeccionPage({
             <CardBody>
               {criterios.length === 0 ? (
                 <p className="text-xs text-[var(--color-text-muted)]">
-                  Este plan no tiene criterios todavía.
+                  Este plan no tiene criterios todavía. Agrégalos en su ficha, en Planes de
+                  inspección.
                 </p>
               ) : (
                 <form action={registrarInspeccionForm} className="space-y-4">
@@ -146,7 +155,7 @@ export default async function NuevaInspeccionPage({
                         name="productId"
                         className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                       >
-                        <option value="">Sin producto especifico</option>
+                        <option value="">Sin producto específico</option>
                         {productos.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.sku} — {p.name}
@@ -164,7 +173,7 @@ export default async function NuevaInspeccionPage({
                       >
                         <span className="flex items-center gap-2 text-sm text-[var(--color-text-primary)]">
                           {c.criterion}
-                          {c.is_critical && <Badge tone="danger">Critico</Badge>}
+                          {c.is_critical && <Badge tone="danger">Crítico</Badge>}
                         </span>
                         <fieldset className="flex gap-3 text-xs">
                           <legend className="sr-only">Resultado de {c.criterion}</legend>

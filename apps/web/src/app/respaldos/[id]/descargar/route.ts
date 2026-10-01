@@ -50,7 +50,7 @@ export async function GET(
     tenant: url.searchParams.get('tenant') ?? undefined,
     rol: url.searchParams.get('rol') ?? undefined,
   })
-  if (!ctx) return new Response('Sesion no valida', { status: 401 })
+  if (!ctx) return new Response('Sesión no válida', { status: 401 })
   if (!exigir(ctx, 'backup', 'backup.export').ok) return new Response('No existe', { status: 404 })
 
   const [backup] = await asUser(
@@ -80,7 +80,7 @@ export async function GET(
   if (noVe.length > 0) {
     return new Response(
       `Este respaldo trae ${noVe.map(nombreDeModulo).join(', ')}, y tu rol no lo ve completo. ` +
-        'Pidele el archivo a quien si lo ve.',
+        'Pídele el archivo a quien sí lo ve.',
       { status: 403 },
     )
   }
@@ -103,7 +103,7 @@ export async function GET(
     const suma = (porTabla.get(tabla) ?? []).reduce((s, p) => s + p.filas, 0)
     if (suma !== filas) {
       return new Response(
-        `El respaldo esta incompleto: ${tabla} dice ${filas} filas y trae ${suma}.`,
+        `El respaldo está incompleto: ${tabla} dice ${filas} filas y trae ${suma}.`,
         {
           status: 500,
         },

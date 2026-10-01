@@ -1,16 +1,4 @@
-import {
-  Badge,
-  EmptyState,
-  Mono,
-  PageHeader,
-  StatCard,
-  TBody,
-  TD,
-  TH,
-  THead,
-  TR,
-  Table,
-} from '@regb/ui'
+import { Badge, EmptyState, PageHeader, StatCard, TBody, TD, TH, THead, TR, Table } from '@regb/ui'
 import { diasAbierto } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, type DemoParams } from '@/lib/module-page'
@@ -36,7 +24,15 @@ interface NcRow {
   detected_at: string
 }
 
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-DO', { dateStyle: 'medium' })
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
+
+const tonoEstadoNc = (s: string): 'warning' | 'info' | 'neutral' => {
+  if (s === 'open') return 'warning'
+  if (s === 'investigating') return 'warning'
+  if (s === 'capa_created') return 'info'
+  return 'neutral'
+}
 
 const badgeResultado = (r: string): 'success' | 'danger' | 'warning' => {
   if (r === 'passed') return 'success'
@@ -98,12 +94,12 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
         <PageHeader
           icon="verified"
           title="Control de calidad"
-          description="Un criterio critico reprobado siempre reprueba la inspeccion entera; uno menor la deja condicional. Una no conformidad no se cierra sin pasar por un CAPA verificado."
+          description="Se inspecciona lo que entra y lo que se fabrica contra un plan. Un criterio crítico que falla reprueba la inspección entera; uno menor la deja condicional. Cada problema encontrado se sigue hasta cerrar su acción correctiva."
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <a
                 href={`/calidad/planes${qs}`}
-                className="flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
+                className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]"
               >
                 Planes de inspección
               </a>
@@ -118,25 +114,30 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Planes activos" value={String(planesActivos)} />
+          <StatCard label="Planes activos" value={String(planesActivos)} hint="qué se revisa" />
           <StatCard
-            label="Tasa de aprobacion"
+            label="Aprobación"
             value={tasaAprobacion === null ? '—' : `${tasaAprobacion.toFixed(0)}%`}
+            hint="de las inspecciones"
           />
-          <StatCard label="No conformidades abiertas" value={String(noConformidades.length)} />
-          <StatCard label="CAPA abiertos" value={String(capasAbiertos)} />
+          <StatCard
+            label="No conformidades abiertas"
+            value={String(noConformidades.length)}
+            hint="problemas por resolver"
+          />
+          <StatCard label="Acciones correctivas" value={String(capasAbiertos)} hint="abiertas" />
         </section>
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
               Inspecciones recientes
             </h2>
             {inspecciones.length === 0 ? (
               <EmptyState
                 icon="fact_check"
-                title="Todavia no hay ninguna inspeccion"
-                description=""
+                title="Todavía no hay ninguna inspección"
+                description="Cuando llegue mercancía o termine una tanda, inspecciónala con Nueva inspección: el resultado queda aquí."
               />
             ) : (
               <Table>
@@ -168,8 +169,8 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
                           {RESULTADO_INSPECCION[i.result] ?? i.result}
                         </Badge>
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">
-                        <Mono>{fecha(i.performed_at)}</Mono>
+                      <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                        {fecha(i.performed_at)}
                       </TD>
                     </TR>
                   ))}
@@ -178,7 +179,7 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
             )}
           </div>
 
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
               No conformidades abiertas
             </h2>
@@ -186,7 +187,7 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
               <EmptyState
                 icon="report"
                 title="No hay ninguna no conformidad abierta"
-                description=""
+                description="Si una inspección falla o alguien encuentra un problema, se abre una no conformidad para investigarla y corregirla."
               />
             ) : (
               <Table>
@@ -195,7 +196,7 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
                     <TH>Descripción</TH>
                     <TH>Severidad</TH>
                     <TH>Estado</TH>
-                    <TH numeric>Dias</TH>
+                    <TH numeric>Días</TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -215,7 +216,9 @@ export default async function CalidadPage({ searchParams }: { searchParams: Prom
                         </Badge>
                       </TD>
                       <TD>
-                        <Badge tone="neutral">{ESTADO_NC[nc.status] ?? nc.status}</Badge>
+                        <Badge tone={tonoEstadoNc(nc.status)}>
+                          {ESTADO_NC[nc.status] ?? nc.status}
+                        </Badge>
                       </TD>
                       <TD numeric>
                         <span className="tabular">

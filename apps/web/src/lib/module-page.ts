@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { cache } from 'react'
 import { notFound, redirect } from 'next/navigation'
 import { can, type Role } from '@regb/permissions'
 import { TOURS } from '@regb/core'
@@ -62,7 +63,23 @@ interface Resolved {
   demo: boolean
 }
 
-async function resolve(params: DemoParams): Promise<Resolved | null> {
+/**
+ * Una sola resolución por petición. El Inicio llama a `primeraRutaVisible`
+ * y luego a `modulePage`: sin esto el bootstrap -rol, módulos, registry-
+ * corría dos veces en la pantalla que más se abre. `cache` de React solo
+ * memoriza durante el render de una petición; en una acción no guarda
+ * nada y cada llamada resuelve de nuevo.
+ */
+const resolverUnaVez = cache(
+  (tenant: string | undefined, rol: string | undefined): Promise<Resolved | null> =>
+    resolverSinCache({ tenant, rol }),
+)
+
+function resolve(params: DemoParams): Promise<Resolved | null> {
+  return resolverUnaVez(params.tenant, params.rol)
+}
+
+async function resolverSinCache(params: DemoParams): Promise<Resolved | null> {
   if (authConfigured) {
     const session = await currentSession()
     if (!session?.tenantId) return null
@@ -304,7 +321,7 @@ async function buildSearchIndex(r: Resolved): Promise<SearchEntry[]> {
     { type: 'accion', label: 'Crear un rol o cambiar permisos', path: '/roles', need: 'rbac' },
     { type: 'accion', label: 'Agregar una empresa (RNC)', path: '/empresas', need: 'orgs' },
     { type: 'accion', label: 'Abrir una sucursal', path: '/sucursales', need: 'branches' },
-    { type: 'accion', label: 'Activar un modulo nuevo', path: '/marketplace', need: 'marketplace' },
+    { type: 'accion', label: 'Activar un módulo nuevo', path: '/marketplace', need: 'marketplace' },
     { type: 'accion', label: 'Importar productos desde CSV', path: '/importar', need: 'imports' },
     { type: 'accion', label: 'Crear un respaldo de mis datos', path: '/respaldos', need: 'backup' },
   ]
@@ -318,13 +335,13 @@ async function buildSearchIndex(r: Resolved): Promise<SearchEntry[]> {
     { type: 'ayuda', label: 'Primeros pasos en REGB', path: '/tutorial', keywords: 'tour ayuda' },
     {
       type: 'ayuda',
-      label: 'Como ocultar modulos a un rol',
+      label: 'Cómo ocultar módulos a un rol',
       path: '/tutorial',
       keywords: 'permisos',
     },
     {
       type: 'ayuda',
-      label: 'Como funciona el marketplace',
+      label: 'Cómo funciona el marketplace',
       path: '/tutorial',
       keywords: 'precios',
     },
@@ -380,7 +397,7 @@ const SIN_ESCRITURA = new Set(['readonly', 'suspended', 'archived'])
 const esLectura = (accion: string): boolean => /(^|\.)(view|export)(\.|$)/.test(accion)
 
 export const MENSAJE_SOLO_LECTURA =
-  'Tu cuenta esta en solo lectura por un pago pendiente con REGB. Puedes consultar y exportar todo; para volver a registrar, ponte al dia y se reactiva sola al pagar.'
+  'Tu cuenta está en solo lectura por un pago pendiente con REGB. Puedes consultar y exportar todo; para volver a registrar, ponte al día y se reactiva sola al pagar.'
 
 /** Para server actions: devuelve null en vez de redirigir. */
 export async function actionCtx(demo?: DemoParams): Promise<ModulePageCtx | null> {

@@ -1,5 +1,7 @@
+import { Logo } from '@regb/ui'
 import { LoginForm } from '@/components/LoginForm'
 import { authConfigured } from '@/lib/supabase'
+import { rutaInterna } from '@/lib/ruta-interna'
 
 export const metadata = { title: 'Entrar · REGB ERP' }
 
@@ -14,8 +16,10 @@ export default async function LoginPage({
     <main className="grid min-h-screen place-items-center bg-[var(--color-surface-deepest)] p-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-[var(--radius-lg)] bg-[var(--color-brand)] text-2xl">
-            🛰️
+          {/* `decorative`: el h1 de abajo ya dice "REGB ERP"; el lector no lo
+              anuncia dos veces. */}
+          <div className="mb-3 flex justify-center">
+            <Logo size={56} decorative />
           </div>
           <h1 className="text-xl font-bold text-[var(--color-text-primary)]">REGB ERP</h1>
           <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
@@ -24,7 +28,7 @@ export default async function LoginPage({
         </div>
 
         {authConfigured ? (
-          <LoginForm nextPath={params.siguiente ?? '/'} initialError={params.error} />
+          <LoginForm nextPath={rutaInterna(params.siguiente)} initialError={params.error} />
         ) : (
           <div className="rounded-[var(--radius-lg)] border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-4">
             <p className="text-sm font-medium text-[var(--color-semantic-text-warning)]">

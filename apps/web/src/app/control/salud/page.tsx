@@ -286,7 +286,7 @@ export default async function SaludPage() {
               <THead>
                 <TR>
                   <TH>Cliente</TH>
-                  <TH>Quien</TH>
+                  <TH>Quién</TH>
                   <TH>Desde</TH>
                   <TH>Razón</TH>
                 </TR>

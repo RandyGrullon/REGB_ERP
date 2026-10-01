@@ -21,6 +21,7 @@ import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { registrarActividadForm, transicionarLeadForm } from '../actions'
 import { ESTADO_LEAD, FUENTE_LEAD, TIPO_ACTIVIDAD } from '../estados'
+import { ETAPA_OPORTUNIDAD } from '../../pipeline/estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
@@ -37,6 +38,13 @@ interface LeadHead {
   assignee_name: string | null
 }
 
+interface OportunidadRow {
+  id: string
+  name: string
+  amount: string
+  stage: string
+}
+
 interface ActividadRow {
   id: string
   type: string
@@ -45,11 +53,15 @@ interface ActividadRow {
 }
 
 const fecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' })
+  new Date(iso).toLocaleString('es-DO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/Santo_Domingo',
+  })
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
 const botonSecundarioClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
+  'flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]'
 
 /** Detalle de un lead (modulo 29): su maquina de estados y su linea de tiempo. */
 export default async function LeadDetallePage({
@@ -63,22 +75,33 @@ export default async function LeadDetallePage({
   const sp = await searchParams
   const { ctx, shell } = await modulePage(sp, 'crm')
 
-  const { head, actividades } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
-    const [h] = await tx<LeadHead[]>`
+  const { head, actividades, oportunidades } = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    async (tx) => {
+      const [h] = await tx<LeadHead[]>`
       select l.id, l.name, l.company, l.email, l.phone, l.source, l.score::text, l.status,
              up.display_name as assignee_name
       from public.leads l
       left join public.user_profiles up on up.user_id = l.assigned_to and up.tenant_id = l.tenant_id
       where l.id = ${id} and l.tenant_id = ${ctx.tenantId}`
-    if (!h) return { head: null, actividades: [] }
+      if (!h) return { head: null, actividades: [], oportunidades: [] }
 
-    const a = await tx<ActividadRow[]>`
+      const a = await tx<ActividadRow[]>`
       select id, type, notes, occurred_at::text from public.lead_activities
       where lead_id = ${id} and tenant_id = ${ctx.tenantId}
       order by occurred_at desc`
 
-    return { head: h, actividades: a }
-  })
+      // Lo que salió de este lead: el vendedor lo busca aquí, no en el embudo.
+      // Sin el módulo de oportunidades, la RLS la deja vacía.
+      const o = await tx<OportunidadRow[]>`
+      select id, name, amount::text, stage from public.opportunities
+      where lead_id = ${id} and tenant_id = ${ctx.tenantId}
+      order by created_at desc`
+
+      return { head: h, actividades: a, oportunidades: o }
+    },
+  )
 
   if (!head) notFound()
 
@@ -98,7 +121,7 @@ export default async function LeadDetallePage({
         <PageHeader
           icon="contacts"
           title={head.name}
-          crumbs={[{ label: 'CRM / Leads', href: `/crm${qs}` }, { label: head.name }]}
+          crumbs={[{ label: 'CRM y prospectos', href: `/crm${qs}` }, { label: head.name }]}
           actions={
             <div className="flex items-center gap-2">
               <Badge tone="neutral">{ESTADO_LEAD[head.status] ?? head.status}</Badge>
@@ -113,9 +136,65 @@ export default async function LeadDetallePage({
           <StatCard label="Asignado a" value={head.assignee_name ?? 'Sin asignar'} />
         </section>
 
-        <p className="text-xs text-[var(--color-text-muted)]">
-          {head.email ?? 'Sin correo'} · {head.phone ?? 'Sin teléfono'}
+        {/* Correo y teléfono a un toque: es lo que el vendedor viene a buscar. */}
+        <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
+          {head.email ? (
+            <a
+              href={`mailto:${head.email}`}
+              className="inline-flex items-center gap-1 text-[var(--color-text-link)] hover:underline"
+            >
+              <Icon name="mail" size={16} />
+              {head.email}
+            </a>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">Sin correo</span>
+          )}
+          {head.phone ? (
+            <a
+              href={`tel:${head.phone.replace(/[^\d+]/g, '')}`}
+              className="inline-flex items-center gap-1 text-[var(--color-text-link)] hover:underline"
+            >
+              <Icon name="call" size={16} />
+              {head.phone}
+            </a>
+          ) : (
+            <span className="text-[var(--color-text-muted)]">Sin teléfono</span>
+          )}
         </p>
+
+        {oportunidades.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Oportunidades de este prospecto</CardTitle>
+            </CardHeader>
+            <CardBody>
+              <ul className="divide-y divide-[var(--color-border)]">
+                {oportunidades.map((o) => (
+                  <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                    <a
+                      href={`/pipeline/${o.id}${qs}`}
+                      className="text-sm text-[var(--color-text-link)] hover:underline"
+                    >
+                      {o.name}
+                    </a>
+                    <span className="flex items-center gap-2 text-sm">
+                      <span className="tabular text-[var(--color-text-primary)]">
+                        RD$ {Number(o.amount).toLocaleString('es-DO', { minimumFractionDigits: 2 })}
+                      </span>
+                      <Badge
+                        tone={
+                          o.stage === 'won' ? 'success' : o.stage === 'lost' ? 'danger' : 'neutral'
+                        }
+                      >
+                        {ETAPA_OPORTUNIDAD[o.stage] ?? o.stage}
+                      </Badge>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </CardBody>
+          </Card>
+        )}
 
         {puedeGestionar && head.status !== 'converted' && head.status !== 'disqualified' && (
           <div className="flex flex-wrap gap-2">
@@ -203,7 +282,7 @@ export default async function LeadDetallePage({
                   >
                     <option value="call">Llamada</option>
                     <option value="email">Correo</option>
-                    <option value="meeting">Reunion</option>
+                    <option value="meeting">Reunión</option>
                     <option value="note">Nota</option>
                   </select>
                 </label>

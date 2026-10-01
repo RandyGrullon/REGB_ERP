@@ -20,7 +20,7 @@ import { defineModule } from '@regb/module-registry'
 export default defineModule({
   id: 'payroll',
   name: 'Nómina',
-  description: 'Calculo con TSS, AFP, ARS e ISR; prestaciones, regalia y volantes.',
+  description: 'Cálculo con TSS, AFP, ARS e ISR; prestaciones, regalía y volantes.',
   icon: 'group',
   category: 'advanced',
   version: '0.1.0',
@@ -46,9 +46,9 @@ export default defineModule({
   ],
 
   routes: [
-    { path: '/payroll', label: 'Nominas', perm: 'payroll.view' },
+    { path: '/payroll', label: 'Períodos', perm: 'payroll.view' },
     { path: '/payroll/run', label: 'Procesar', perm: 'payroll.run' },
-    { path: '/payroll/reports', label: 'TSS y reportes', perm: 'payroll.export' },
+    { path: '/payroll/reports', label: 'Volantes', perm: 'payroll.export' },
   ],
 
   dashboardWidgets: ['payroll-next-run', 'payroll-cost'],

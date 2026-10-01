@@ -82,7 +82,7 @@ export default async function TutorialPage({
           <StatCard
             label="Disponibles"
             value={String(tours.length)}
-            hint="segun tus modulos activos"
+            hint="según tus módulos activos"
           />
         </section>
 
@@ -202,7 +202,7 @@ export default async function TutorialPage({
                               {step > 0 && (
                                 <form action={retrocederPaso}>
                                   {campos(tour, step)}
-                                  <BotonEnvio className={btnSec}>Atras</BotonEnvio>
+                                  <BotonEnvio className={btnSec}>Atrás</BotonEnvio>
                                 </form>
                               )}
                               <form action={avanzarPaso}>

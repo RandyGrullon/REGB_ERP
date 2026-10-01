@@ -56,12 +56,12 @@ export type TipoIdentificacion = '1' | '2' | '3'
  */
 export const TIPOS_ANULACION: Record<string, string> = {
   '1': 'Deterioro de factura preimpresa',
-  '2': 'Errores de impresion (factura preimpresa)',
-  '3': 'Impresion defectuosa',
-  '4': 'Correccion de la informacion',
+  '2': 'Errores de impresión (factura preimpresa)',
+  '3': 'Impresión defectuosa',
+  '4': 'Corrección de la información',
   '5': 'Cambio de productos',
-  '6': 'Devolucion de productos',
-  '7': 'Omision de productos',
+  '6': 'Devolución de productos',
+  '7': 'Omisión de productos',
   '8': 'Errores en secuencia de NCF',
 }
 
@@ -225,7 +225,7 @@ export const TIPOS_GASTO_606: Record<string, string> = {
   '02': 'Gastos por trabajos, suministros y servicios',
   '03': 'Arrendamientos',
   '04': 'Gastos de activos fijos',
-  '05': 'Gastos de representacion',
+  '05': 'Gastos de representación',
   '06': 'Otras deducciones admitidas',
   '07': 'Gastos financieros',
   '08': 'Gastos extraordinarios',
@@ -244,11 +244,11 @@ export const TIPOS_GASTO_606: Record<string, string> = {
  */
 export const FORMAS_PAGO_606: Record<string, string> = {
   '01': 'Efectivo',
-  '02': 'Cheque / transferencia / deposito',
-  '03': 'Tarjeta de credito o debito',
-  '04': 'Compra a credito',
+  '02': 'Cheque / transferencia / depósito',
+  '03': 'Tarjeta de crédito o débito',
+  '04': 'Compra a crédito',
   '05': 'Permuta',
-  '06': 'Nota de credito',
+  '06': 'Nota de crédito',
   '07': 'Mixto',
 }
 
@@ -265,11 +265,11 @@ export const TIPOS_RETENCION_ISR_606: Record<string, string> = {
   '02': 'Honorarios por servicios',
   '03': 'Otras rentas',
   '04': 'Otras rentas (rentas presuntas)',
-  '05': 'Intereses pagados a personas juridicas residentes',
-  '06': 'Intereses pagados a personas fisicas residentes',
-  '07': 'Retencion por proveedores del Estado',
-  '08': 'Juegos telefonicos',
-  '09': 'Retenciones subsector ganaderia de carne bovina',
+  '05': 'Intereses pagados a personas jurídicas residentes',
+  '06': 'Intereses pagados a personas físicas residentes',
+  '07': 'Retención por proveedores del Estado',
+  '08': 'Juegos telefónicos',
+  '09': 'Retenciones subsector ganadería de carne bovina',
 }
 
 export function esTipoGasto606(v: string): boolean {

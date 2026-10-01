@@ -25,7 +25,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearCanal(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ecommerce', 'ecommerce.manage')
   if (!permiso.ok) return permiso
 
@@ -35,7 +35,7 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
 
   if (!name) return { ok: false, error: 'Falta el nombre del canal.' }
   if (!['shopify', 'woocommerce', 'tiendanube'].includes(platform))
-    return { ok: false, error: 'Elige una plataforma valida.' }
+    return { ok: false, error: 'Elige una plataforma válida.' }
 
   await asUser(
     ctx.userId,
@@ -51,7 +51,7 @@ export async function crearCanal(fd: FormData): Promise<ActionResult> {
 
 export async function vincularProducto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ecommerce', 'ecommerce.manage')
   if (!permiso.ok) return permiso
 
@@ -78,7 +78,7 @@ export async function vincularProducto(fd: FormData): Promise<ActionResult> {
 /** Re-sincronizar solo registra la fecha -no hay una llamada real al canal externo-. */
 export async function sincronizarVinculo(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ecommerce', 'ecommerce.manage')
   if (!permiso.ok) return permiso
 
@@ -99,7 +99,7 @@ export async function sincronizarVinculo(fd: FormData): Promise<ActionResult> {
 /** Registra un pedido tal cual llegaria por un webhook real -una linea, total = cantidad x precio unitario-. */
 export async function simularPedidoEntrante(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ecommerce', 'ecommerce.manage')
   if (!permiso.ok) return permiso
 
@@ -113,7 +113,7 @@ export async function simularPedidoEntrante(fd: FormData): Promise<ActionResult>
   const unitPrice = Number(fd.get('unitPrice') ?? '')
 
   if (!channelId) return { ok: false, error: 'Elige el canal.' }
-  if (!externalOrderId) return { ok: false, error: 'Falta el numero de pedido externo.' }
+  if (!externalOrderId) return { ok: false, error: 'Falta el número de pedido externo.' }
   if (!customerName) return { ok: false, error: 'Falta el nombre del cliente.' }
   if (!externalSku) return { ok: false, error: 'Falta el SKU externo.' }
   if (!Number.isFinite(quantity) || quantity <= 0)
@@ -145,7 +145,7 @@ export async function simularPedidoEntrante(fd: FormData): Promise<ActionResult>
 /** Avanza el estado del pedido -recibido a importado o cancelado, ambos terminales-. */
 export async function transicionarPedido(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ecommerce', 'ecommerce.manage')
   if (!permiso.ok) return permiso
 
@@ -156,7 +156,7 @@ export async function transicionarPedido(fd: FormData): Promise<ActionResult> {
     const [p] = await tx<{ status: EstadoPedidoCanal }[]>`
       select status from public.channel_orders where id = ${orderId} and tenant_id = ${ctx.tenantId} for update`
     if (!p) return 'no-existe'
-    if (!transicionValidaPedidoCanal(p.status, siguiente)) return 'Ese pedido ya se resolvio.'
+    if (!transicionValidaPedidoCanal(p.status, siguiente)) return 'Ese pedido ya se resolvió.'
 
     await tx`
       update public.channel_orders set status = ${siguiente}, resolved_at = now()

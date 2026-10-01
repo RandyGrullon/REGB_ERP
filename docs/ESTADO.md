@@ -4,7 +4,7 @@
 > repo que dice en qué punto está REGB ERP. El resto dice qué se va a
 > construir (`PROYECTO-REGB-ERP.md`) y en qué orden (`FASES-DE-DESARROLLO.md`).
 
-**Última verificación: 23 de septiembre de 2026**, contra el repo y no de
+**Última verificación: 30 de septiembre de 2026**, contra el repo y no de
 memoria, con la puerta `gate:f0` completa en verde. Cada número de abajo
 dice cómo volver a comprobarlo.
 
@@ -42,18 +42,20 @@ tampoco hace falta para una PYME.
 | | Valor | Cómo comprobarlo |
 |---|---:|---|
 | Módulos construidos | **80**: todos los del plan base | `ls modules`, y compararlo con el catálogo de `FASES` |
-| Migraciones | **134** (hasta la 0135; la 0126 no existe) | `ls supabase/migrations` |
-| Pruebas de base de datos | **1,342** en 96 archivos | `pnpm gate:f0` |
-| Pruebas de la web (acciones reales y estáticas) | **319** en 38 archivos | `pnpm gate:f0` |
-| Pruebas de lógica pura | **1,653** en los paquetes | `pnpm gate:f0` |
-| Pantallas web | **179** | `find apps/web/src/app -name page.tsx` |
-| Rutas registradas | **159**, sin colisión | `pnpm audit:manifests` |
+| Migraciones | **154** (hasta la 0175; la 0126 no existe) | `ls supabase/migrations` |
+| Pruebas de base de datos | **1,344** en 96 archivos | `pnpm gate:f0` |
+| Pruebas de la web (acciones reales y estáticas) | **493** en 65 archivos | `pnpm gate:f0` |
+| Pruebas de lógica pura | **1,669** en los paquetes | `pnpm gate:f0` |
+| Pantallas web | **182**, revisadas una por una con fotos (ronda 4) | `find apps/web/src/app -name page.tsx`; `node scripts/revision-pantallas.mjs` |
+| Rutas registradas | **161**, sin colisión | `pnpm audit:manifests` |
 | Módulos con captura real en el marketplace | **79** de 80 | `pnpm capturas:marketplace` |
-| Pantallas móvil | **11** | `apps/mobile/app` |
+| Pantallas móvil | **11** | `apps/mobile/app` (sin contar los `_layout`) |
 
 La puerta `pnpm gate:f0` (typecheck + lint + pruebas + 4 auditorías) está
-**en verde**: 3,314 pruebas. Las 134 migraciones aplican en orden desde una
-base vacía, y la semilla de la demo también.
+**en verde**: 3,506 pruebas. Las 154 migraciones aplican en orden desde una
+base vacía, y la semilla de la demo (con sus cinco archivos por área) también,
+de forma idempotente. El inicio de sesión real se probó de punta a punta
+contra Supabase en local; falta aplicarlo al proyecto ([`SUPABASE.md`](SUPABASE.md)).
 
 ---
 
@@ -177,7 +179,7 @@ Los seis hallazgos de la ronda 1 (FK sin guarda, respaldo incompleto,
 |---|---|---|
 | **El e-CF no emite**: la firma existe, pero nada arma ni envía un e-CF desde una venta o factura | **alto** | Obligatorio para pequeños y micro desde el 15 nov 2026. `modules/e-invoice.md`, [`defi-v1.md`](defi-v1.md) |
 | Un Admin (o un gerente con `*.create`) puede crear un rol con `*` y dárselo a **otra** cuenta; solo el Owner está protegido | medio | `modules/users.md` |
-| El despachador de eventos no corre solo: sin cron no salen asientos automáticos, automatizaciones ni webhooks | medio | Configurar Vercel Cron, `pg_cron` o `pnpm despachar`. [`defi-v1.md`](defi-v1.md) §4.9 |
+| El despachador de eventos necesita su cron cada minuto | medio | Ya está en `apps/web/vercel.json`, pero Vercel Hobby solo permite crons diarios: Vercel Pro o un cron externo. [`SUPABASE.md`](SUPABASE.md) |
 | Sin asiento automático todavía: costo de venta a crédito, recepciones, devoluciones, nómina, depreciación | medio | `modules/accounting.md`, ADR 0001 |
 | Nómina: horas extra, aportes patronales, archivo SUIR e IR-3 | medio | `modules/payroll.md` |
 | Reglas DGII y TSS "por confirmar" (campo 15 del 606, fecha del 608, B04 en el 607, recargo de horas extra, artículos del Código de Trabajo) | medio | Fichas de `ar`, `taxes`, `payroll` |
@@ -185,7 +187,6 @@ Los seis hallazgos de la ronda 1 (FK sin guarda, respaldo incompleto,
 | `e-invoice` está despublicado pero se cobra en la distribuidora | decisión | `modules/invoice-capture.md` |
 | `rls.role_id()` (0109) convierte el claim sin `nullif` y puede reventar en conexiones de dueño que ya tuvieron claims | bajo | Lo esquiva la 0130; la función sigue igual |
 | La caja no usa la lista de precios asignada al cliente (los pedidos sí) | bajo | Decisión deliberada: la caja cobra lo que muestra. `modules/sales-orders.md` |
-| La app no lleva tildes fuera del catálogo del marketplace | bajo | Pasada de texto en pantallas y manifiestos |
 | Tours de pedidos, cobrar y respaldos no mencionan lo nuevo | bajo | `packages/core/src/tours.ts` |
 | Facturas marcadas vencidas antes de la 0128 | bajo | Revisarlas a mano: la 0128 no las mueve |
 | Un tenant de prueba con asientos no se puede borrar | bajo | Son inmutables incluso en cascada. El script de limpieza no lo contempla. |
@@ -196,19 +197,19 @@ Los seis hallazgos de la ronda 1 (FK sin guarda, respaldo incompleto,
 
 Por prioridad, según el plan Q4:
 
-1. **Dejar Supabase de producción listo** siguiendo el checklist de
-   [`defi-v1.md`](defi-v1.md) §4.21 (pooler, SMTP propio para
-   invitaciones, hook de token, `pg_cron` para la bitácora y el
-   despachador, PITR).
+1. **Conectar el proyecto de Supabase de prueba**: pegar los
+   7 bloques de `pnpm db:sql-para-editor` en el SQL Editor y hacer los
+   ajustes del panel de [`SUPABASE.md`](SUPABASE.md) (hook, URLs, SMTP).
+   Después, producción aparte con PITR.
 2. **Plan de e-CF** antes del 15 nov: certificado del cliente y set de
    pruebas de la DGII, o proveedor autorizado en paralelo.
 3. **Desplegar el Cliente #1** en el mostrador: hardware POS, NCF B01/B02,
    crédito a 15 y 30 días, validación del 607. Pasos en `PRIMER-CLIENTE.md`.
 4. **Conectar credenciales**: Stripe/Azul, certificado DGII.
 5. **Probar el móvil en un teléfono de verdad** y la impresora térmica.
-6. Ronda 3 de código, en este orden: escalada de Admin a otra cuenta,
-   asientos de nómina y costo a crédito, horas extra y SUIR, pasada de
-   tildes en la app.
+6. Siguiente ronda de código: formularios que no se vacían al fallar,
+   escalada de Admin a otra cuenta, asientos de nómina y costo a crédito,
+   horarios por empleado, horas extra y SUIR.
 
 La regla del plan: ante la duda entre construir un módulo más y que lo que
 el cliente ya usa sea impecable, **gana lo segundo**.

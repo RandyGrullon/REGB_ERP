@@ -19,6 +19,7 @@ import {
 import { diasPedidoCanalPendiente } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import {
   crearCanalForm,
@@ -31,7 +32,7 @@ import { ESTADO_PEDIDO_CANAL, PLATAFORMA_CANAL } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'E-commerce sync · REGB ERP' }
+export const metadata = { title: 'Tienda en línea · REGB ERP' }
 
 interface CanalFila {
   id: string
@@ -115,25 +116,25 @@ export default async function EcommercePage({
       <div className="space-y-5">
         <PageHeader
           icon="storefront"
-          title="E-commerce sync"
-          description="Un pedido entrante se registra tal cual llega -su total nunca se recalcula, ya lo calculo el canal externo-."
+          title="Tienda en línea"
+          description="Los pedidos que entran por tu tienda web. Llegan con el total que calculó la tienda, y los importas como pedido de venta después de revisarlos."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Canales" value={String(canales.length)} />
           <StatCard label="Pedidos por importar" value={String(porImportar)} />
-          <StatCard label="Vinculos de catalogo" value={String(vinculos.length)} />
+          <StatCard label="Vínculos de catálogo" value={String(vinculos.length)} />
         </section>
 
         <Card>
           <CardHeader>
-            <CardTitle>Canales conectados</CardTitle>
+            <CardTitle>Canales</CardTitle>
           </CardHeader>
           <CardBody>
             {canales.length === 0 ? (
               <EmptyState
                 icon="storefront"
-                title="Todavia no hay ningun canal"
+                title="Todavía no hay ningún canal"
                 description="Conecta el primero abajo."
               />
             ) : (
@@ -211,7 +212,7 @@ export default async function EcommercePage({
             {pedidos.length === 0 ? (
               <EmptyState
                 icon="shopping_bag"
-                title="Todavia no ha llegado ningun pedido"
+                title="Todavía no ha llegado ningún pedido"
                 description="Simula el primero abajo."
               />
             ) : (
@@ -222,7 +223,7 @@ export default async function EcommercePage({
                     <TH>Canal</TH>
                     <TH>Cliente</TH>
                     <TH numeric>Total</TH>
-                    <TH>Dias</TH>
+                    <TH>Días</TH>
                     <TH>Estado</TH>
                     <TH>
                       <span className="sr-only">Acción</span>
@@ -378,13 +379,13 @@ export default async function EcommercePage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Vinculos de catálogo</CardTitle>
+            <CardTitle>Vínculos de catálogo</CardTitle>
           </CardHeader>
           <CardBody>
             {vinculos.length === 0 ? (
               <EmptyState
                 icon="inventory_2"
-                title="Todavia no hay ningun producto vinculado"
+                title="Todavía no hay ningún producto vinculado"
                 description="Vincula el primero abajo."
               />
             ) : (
@@ -409,7 +410,7 @@ export default async function EcommercePage({
                         <Mono>{v.external_sku}</Mono>
                       </TD>
                       <TD className="text-[var(--color-text-muted)]">
-                        {v.synced_at ? new Date(v.synced_at).toLocaleString('es-DO') : 'Nunca'}
+                        {v.synced_at ? fechaHoraRD(v.synced_at) : 'Nunca'}
                       </TD>
                       <TD>
                         {puedeGestionar && (

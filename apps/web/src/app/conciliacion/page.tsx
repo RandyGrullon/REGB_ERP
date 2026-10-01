@@ -53,9 +53,11 @@ export default async function ConciliacionPage({
       select imp.id, a.bank_name, a.account_name,
              imp.period_start::text, imp.period_end::text, imp.statement_balance::text,
              imp.created_at::text,
-             (select count(*) from public.bank_statement_lines l where l.import_id = imp.id)::text as total,
              (select count(*) from public.bank_statement_lines l
-                where l.import_id = imp.id and l.match_status = 'pending')::text as pendientes
+                where l.tenant_id = imp.tenant_id and l.import_id = imp.id)::text as total,
+             (select count(*) from public.bank_statement_lines l
+                where l.tenant_id = imp.tenant_id and l.import_id = imp.id
+                  and l.match_status = 'pending')::text as pendientes
       from public.bank_statement_imports imp
       join public.bank_accounts a on a.id = imp.bank_account_id
       where imp.tenant_id = ${ctx.tenantId}
@@ -88,14 +90,14 @@ export default async function ConciliacionPage({
       <div className="space-y-5">
         <PageHeader
           icon="compare_arrows"
-          title="Conciliacion bancaria"
-          description="Importa el estado de cuenta del banco y concilialo contra lo que ya registraste en tesoreria. El sistema sugiere, tu confirmas."
+          title="Conciliación bancaria"
+          description="Importa el estado de cuenta del banco y concílialo contra lo que ya registraste en tesorería. El sistema sugiere, tú confirmas."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <StatCard label="Imports registrados" value={String(imports.length)} />
+          <StatCard label="Estados importados" value={String(imports.length)} />
           <StatCard
-            label="Lineas pendientes"
+            label="Líneas pendientes"
             value={String(totalPendientes)}
             hint="sin conciliar en total"
           />
@@ -108,11 +110,11 @@ export default async function ConciliacionPage({
         {imports.length === 0 ? (
           <EmptyState
             icon="compare_arrows"
-            title="Todavia no se ha importado ningun estado de cuenta"
-            description="Pega las lineas del estado abajo. Necesitas al menos una cuenta bancaria activa en tesoreria."
+            title="Todavía no se ha importado ningún estado de cuenta"
+            description="Pega las líneas del estado abajo. Necesitas al menos una cuenta bancaria activa en tesorería."
           />
         ) : (
-          <Table>
+          <Table className="min-w-[760px]">
             <THead>
               <TR>
                 <TH>Cuenta</TH>
@@ -137,7 +139,7 @@ export default async function ConciliacionPage({
                       {i.bank_name}
                     </span>
                   </TD>
-                  <TD>
+                  <TD className="whitespace-nowrap">
                     {fecha(i.period_start)} – {fecha(i.period_end)}
                   </TD>
                   <TD numeric>
@@ -150,10 +152,10 @@ export default async function ConciliacionPage({
                     {Number(i.pendientes) > 0 ? (
                       <Badge tone="warning">{i.pendientes}</Badge>
                     ) : (
-                      <Badge tone="success">al día</Badge>
+                      <Badge tone="success">Al día</Badge>
                     )}
                   </TD>
-                  <TD>{fecha(i.created_at)}</TD>
+                  <TD className="whitespace-nowrap">{fecha(i.created_at)}</TD>
                 </TR>
               ))}
             </TBody>
@@ -200,14 +202,14 @@ export default async function ConciliacionPage({
                   </label>
                 </div>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Lineas del estado -una por renglon: fecha,descripcion,monto- (positivo entro,
-                  negativo salio)
+                  Líneas del estado: una por renglón, como fecha,descripción,monto (positivo si
+                  entró, negativo si salió)
                   <textarea
                     name="lines"
                     required
                     rows={6}
                     placeholder={
-                      '2026-09-01,Deposito de cliente,5000\n2026-09-03,Pago a suplidor,-1200'
+                      '2026-09-01,Depósito de cliente,5000\n2026-09-03,Pago a suplidor,-1200'
                     }
                     className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 py-2 font-mono text-xs text-[var(--color-text-primary)]"
                   />
@@ -224,7 +226,8 @@ export default async function ConciliacionPage({
         {cuentas.length === 0 && (
           <Card>
             <CardBody className="pt-4 text-sm text-[var(--color-text-secondary)]">
-              Necesitas al menos una cuenta bancaria activa en tesoreria para importar un estado.{' '}
+              Necesitas al menos una cuenta bancaria activa en tesorería para importar un estado.{' '}
+
               <a href={`/tesoreria${qs}`} className="text-[var(--color-text-link)] hover:underline">
                 Registra la primera
               </a>

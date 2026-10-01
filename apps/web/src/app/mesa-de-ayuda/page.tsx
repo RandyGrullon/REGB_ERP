@@ -19,6 +19,7 @@ import {
 import { slaVigente } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
+import { fechaHoraRD } from '@/lib/fechas-rd'
 import { Shell } from '@/components/Shell'
 import { crearTicketForm } from './actions'
 import { ESTADO_TICKET, PRIORIDAD_TICKET } from './estados'
@@ -85,18 +86,18 @@ export default async function MesaDeAyudaPage({
         <PageHeader
           icon="support_agent"
           title="Mesa de ayuda"
-          description="Un ticket resuelto se puede reabrir si el problema sigue. Uno cerrado es terminal de verdad."
+          description="Lo que reportan tus clientes y el plazo para responderles. Un ticket resuelto se puede reabrir si el problema sigue; uno cerrado ya no."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Abiertos" value={String(abiertos)} />
-          <StatCard label="Con SLA vencido" value={String(vencidos)} />
+          <StatCard label="Fuera de plazo" value={String(vencidos)} />
         </section>
 
         {tickets.length === 0 ? (
           <EmptyState
             icon="support_agent"
-            title="Todavia no hay ningun ticket"
+            title="Todavía no hay ningún ticket"
             description="Crea el primero abajo."
           />
         ) : (
@@ -106,7 +107,7 @@ export default async function MesaDeAyudaPage({
                 <TH>Asunto</TH>
                 <TH>Cliente</TH>
                 <TH>Prioridad</TH>
-                <TH>SLA</TH>
+                <TH>Responder antes de</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
@@ -141,7 +142,7 @@ export default async function MesaDeAyudaPage({
                               : 'text-[var(--color-text-muted)]'
                           }
                         >
-                          {vencido ? 'Vencido' : new Date(t.sla_due_at).toLocaleString('es-DO')}
+                          {vencido ? 'Vencido' : fechaHoraRD(t.sla_due_at)}
                         </span>
                       ) : (
                         <Mono>—</Mono>
@@ -204,7 +205,7 @@ export default async function MesaDeAyudaPage({
                   </select>
                 </label>
                 <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input
                     name="description"
                     required

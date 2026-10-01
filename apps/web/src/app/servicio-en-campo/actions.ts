@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { motivoNoCierre, transicionValidaOrden, type EstadoOrdenServicio } from '@regb/operations'
+import { transicionValidaOrden, type EstadoOrdenServicio } from '@regb/operations'
+import { motivoParaNoCerrar } from './estados'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
@@ -29,9 +30,51 @@ const numero = (raw: string): number | null => {
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * El técnico solo toca SUS órdenes. Quien gestiona el módulo (el
+ * despachador, el dueño) puede trabajar cualquiera; quien solo ejecuta,
+ * la que tiene asignada. Antes cualquier técnico podía marcar pasos o
+ * cerrar la orden de otro con solo tener el enlace.
+ */
+async function puedeTocarOrden(
+  ctx: NonNullable<Awaited<ReturnType<typeof actionCtx>>>,
+  orderId: string,
+): Promise<ActionResult> {
+  if (exigir(ctx, 'field-service', 'field-service.manage').ok) return { ok: true }
+  const [o] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<{ technician_id: string | null }[]>`
+      select technician_id from public.service_orders
+      where id = ${orderId} and tenant_id = ${ctx.tenantId}`,
+  )
+  if (!o) return { ok: false, error: 'Esa orden no existe.' }
+  if (o.technician_id !== ctx.userId) {
+    return { ok: false, error: 'Esa orden está asignada a otro técnico.' }
+  }
+  return { ok: true }
+}
+
+/** Solo se asigna a alguien que trabaja en este negocio y tiene su acceso activo. */
+async function esMiembroActivo(
+  ctx: NonNullable<Awaited<ReturnType<typeof actionCtx>>>,
+  userId: string,
+): Promise<boolean> {
+  const [m] = await asUser(
+    ctx.userId,
+    ctx.tenantId,
+    (tx) => tx<{ ok: boolean }[]>`
+      select exists (
+        select 1 from public.memberships
+        where tenant_id = ${ctx.tenantId} and user_id = ${userId}::uuid and is_active
+      ) as ok`,
+  )
+  return m?.ok === true
+}
+
 export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'field-service', 'field-service.manage')
   if (!permiso.ok) return permiso
 
@@ -40,9 +83,13 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
   const direccion = String(fd.get('address') ?? '').trim()
   const prioridad = String(fd.get('priority') ?? 'normal')
   const agendada = String(fd.get('scheduledAt') ?? '').trim()
+  const tecnico = String(fd.get('technicianId') ?? '').trim()
 
   if (!customerId) return { ok: false, error: 'Elige el cliente.' }
-  if (descripcion === '') return { ok: false, error: 'Escribe que hay que hacer.' }
+  if (descripcion === '') return { ok: false, error: 'Escribe qué hay que hacer.' }
+  if (tecnico !== '' && !(await esMiembroActivo(ctx, tecnico))) {
+    return { ok: false, error: 'Ese técnico no tiene acceso activo en este negocio.' }
+  }
 
   await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     // El codigo se arma con el consecutivo del tenant, no con un global:
@@ -51,11 +98,12 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
       select (count(*) + 1)::text as n from public.service_orders where tenant_id = ${ctx.tenantId}`
     await tx`
       insert into public.service_orders
-        (tenant_id, code, customer_id, description, address, priority, scheduled_at, status, created_by)
+        (tenant_id, code, customer_id, description, address, priority, scheduled_at, status,
+         technician_id, created_by)
       values (${ctx.tenantId}, ${`OS-${n?.n ?? '1'}`}, ${customerId}, ${descripcion},
               ${direccion || null}, ${prioridad},
               ${agendada === '' ? null : new Date(agendada).toISOString()},
-              ${agendada === '' ? 'draft' : 'scheduled'}, ${ctx.userId})`
+              ${agendada === '' ? 'draft' : 'scheduled'}, ${tecnico || null}, ${ctx.userId})`
   })
 
   revalidatePath('/servicio-en-campo')
@@ -64,7 +112,7 @@ export async function crearOrden(fd: FormData): Promise<ActionResult> {
 
 export async function agregarPaso(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'field-service', 'field-service.manage')
   if (!permiso.ok) return permiso
 
@@ -95,13 +143,15 @@ export async function agregarPaso(fd: FormData): Promise<ActionResult> {
  */
 export async function alternarPaso(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'field-service', 'field-service.execute')
   if (!permiso.ok) return permiso
 
   const itemId = String(fd.get('itemId') ?? '')
   const orderId = String(fd.get('orderId') ?? '')
   if (!itemId) return { ok: false, error: 'Falta el paso.' }
+  const propia = await puedeTocarOrden(ctx, orderId)
+  if (!propia.ok) return propia
 
   await asUser(
     ctx.userId,
@@ -110,7 +160,7 @@ export async function alternarPaso(fd: FormData): Promise<ActionResult> {
     update public.service_checklist_items
     set done = not done,
         done_at = case when done then null else now() end
-    where id = ${itemId} and tenant_id = ${ctx.tenantId}`,
+    where id = ${itemId} and tenant_id = ${ctx.tenantId} and order_id = ${orderId}`,
   )
 
   revalidatePath(`/servicio-en-campo/${orderId}`)
@@ -119,7 +169,7 @@ export async function alternarPaso(fd: FormData): Promise<ActionResult> {
 
 export async function registrarRepuesto(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'field-service', 'field-service.execute')
   if (!permiso.ok) return permiso
 
@@ -134,6 +184,8 @@ export async function registrarRepuesto(fd: FormData): Promise<ActionResult> {
   if (qty === null || qty <= 0)
     return { ok: false, error: 'La cantidad tiene que ser mayor que cero.' }
   if (costo === null || costo < 0) return { ok: false, error: 'El costo no puede ser negativo.' }
+  const propia = await puedeTocarOrden(ctx, orderId)
+  if (!propia.ok) return propia
 
   await asUser(
     ctx.userId,
@@ -149,7 +201,7 @@ export async function registrarRepuesto(fd: FormData): Promise<ActionResult> {
 
 export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'field-service', 'field-service.execute')
   if (!permiso.ok) return permiso
 
@@ -158,20 +210,22 @@ export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
   const firmadoPor = String(fd.get('signedBy') ?? '').trim()
 
   if (!orderId) return { ok: false, error: 'Falta la orden.' }
+  const propia = await puedeTocarOrden(ctx, orderId)
+  if (!propia.ok) return propia
 
   const error = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [orden] = await tx<{ status: EstadoOrdenServicio }[]>`
       select status from public.service_orders where id = ${orderId} and tenant_id = ${ctx.tenantId}`
     if (!orden) return 'Esa orden no existe.'
     if (!transicionValidaOrden(orden.status, siguiente)) {
-      return 'Esa orden no puede pasar a ese estado desde donde esta.'
+      return 'Esa orden no puede pasar a ese estado desde donde está.'
     }
 
     if (siguiente === 'done') {
       const pasos = await tx<{ required: boolean; done: boolean }[]>`
         select required, done from public.service_checklist_items
         where tenant_id = ${ctx.tenantId} and order_id = ${orderId}`
-      const motivo = motivoNoCierre(pasos, firmadoPor === '' ? null : firmadoPor)
+      const motivo = motivoParaNoCerrar(pasos, firmadoPor === '' ? null : firmadoPor)
       if (motivo !== null) return motivo
 
       await tx`
@@ -195,7 +249,43 @@ export async function transicionarOrden(fd: FormData): Promise<ActionResult> {
   return error === null ? { ok: true } : { ok: false, error }
 }
 
+/** Quién va. Solo quien gestiona el módulo reparte las órdenes. */
+export async function asignarTecnico(fd: FormData): Promise<ActionResult> {
+  const ctx = await actionCtx(demoDe(fd))
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
+  const permiso = exigir(ctx, 'field-service', 'field-service.manage')
+  if (!permiso.ok) return permiso
+
+  const orderId = String(fd.get('orderId') ?? '')
+  const tecnico = String(fd.get('technicianId') ?? '').trim()
+  if (!orderId) return { ok: false, error: 'Falta la orden.' }
+  if (tecnico !== '' && !(await esMiembroActivo(ctx, tecnico))) {
+    return { ok: false, error: 'Ese técnico no tiene acceso activo en este negocio.' }
+  }
+
+  const error = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const [o] = await tx<{ status: string }[]>`
+      select status from public.service_orders where id = ${orderId} and tenant_id = ${ctx.tenantId}`
+    if (!o) return 'Esa orden no existe.'
+    if (o.status === 'done' || o.status === 'cancelled') {
+      return 'Una orden terminada o cancelada ya no cambia de técnico.'
+    }
+    await tx`
+      update public.service_orders set technician_id = ${tecnico || null}, updated_at = now()
+      where id = ${orderId} and tenant_id = ${ctx.tenantId}`
+    return null
+  })
+
+  revalidatePath('/servicio-en-campo')
+  revalidatePath(`/servicio-en-campo/${orderId}`)
+  return error === null ? { ok: true } : { ok: false, error }
+}
+
 // ── Versiones para <form action> ────────────────────────────────────────
+export async function asignarTecnicoForm(fd: FormData): Promise<void> {
+  await anotarAviso(await asignarTecnico(fd), 'asignarTecnico')
+}
+
 export async function crearOrdenForm(fd: FormData): Promise<void> {
   await anotarAviso(await crearOrden(fd), 'crearOrden')
 }

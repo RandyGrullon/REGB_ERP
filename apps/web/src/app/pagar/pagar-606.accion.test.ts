@@ -124,7 +124,7 @@ describe('Factura de proveedor completa -> 606 TXT con cada retencion en su colu
       }),
     )
     expect(r.ok).toBe(false)
-    if (!r.ok) expect(r.error).toMatch(/tipo es la retencion de ISR/)
+    if (!r.ok) expect(r.error).toMatch(/tipo es la retención de ISR/)
   })
 
   it('con NCF y sin tipo de gasto no entra: el 606 no la podria declarar', async () => {

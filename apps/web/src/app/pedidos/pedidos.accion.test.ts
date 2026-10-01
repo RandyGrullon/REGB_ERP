@@ -120,7 +120,7 @@ describe('Cancelar un pedido', () => {
     const r = await cancelarPedido(c.fd({ orderId: ped }, 'Vendedor'))
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error).toMatch(/nota de credito/)
+    expect(r.error).toMatch(/nota de crédito/)
     expect(await estado(ped)).toBe('delivered')
   })
 
@@ -254,7 +254,7 @@ describe('Ficha del cliente', () => {
     expect(r.ok).toBe(false)
     if (r.ok) return
     // Dice quien lo decide, sin el nombre interno del permiso.
-    expect(r.error).toMatch(/limites de credito/)
+    expect(r.error).toMatch(/límites de crédito/)
     expect(r.error).not.toMatch(/ar\.credit/)
     const [f] = await db()<{ credit_limit: string | null }[]>`
       select credit_limit::text from public.customers where id = ${cli}`

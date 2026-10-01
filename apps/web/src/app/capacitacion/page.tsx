@@ -31,7 +31,7 @@ import { ESTADO_INSCRIPCION } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Capacitacion · REGB ERP' }
+export const metadata = { title: 'Capacitación · REGB ERP' }
 
 interface EmpleadoOption {
   id: string
@@ -138,7 +138,7 @@ export default async function CapacitacionPage({
       <div className="space-y-5">
         <PageHeader
           icon="school"
-          title="Capacitacion"
+          title="Capacitación"
           description="Cursos, inscripciones y competencias. Cada curso tiene su propia nota mínima para aprobar."
         />
 
@@ -153,7 +153,11 @@ export default async function CapacitacionPage({
           </CardHeader>
           <CardBody className="space-y-3">
             {inscripciones.length === 0 ? (
-              <EmptyState icon="school" title="Todavia no hay ninguna inscripcion" description="" />
+              <EmptyState
+                icon="school"
+                title="Todavía no hay ninguna inscripción"
+                description="Inscribe a un empleado en un curso abajo. Cuando termine, registras su nota: si pasa el mínimo del curso, le emites el certificado."
+              />
             ) : (
               <Table>
                 <THead>
@@ -187,9 +191,9 @@ export default async function CapacitacionPage({
                         {i.tiene_certificado ? (
                           <Badge tone="success">Emitido</Badge>
                         ) : i.status === 'completed' ? (
-                          '—'
+                          <span className="text-xs text-[var(--color-text-muted)]">Por emitir</span>
                         ) : (
-                          'N/A'
+                          <span className="text-[var(--color-text-muted)]">—</span>
                         )}
                       </TD>
                       {puedeInscripciones && (
@@ -283,11 +287,11 @@ export default async function CapacitacionPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Titulo
+                  Título
                   <input name="title" required className={claseInput} />
                 </label>
                 <label className="flex min-w-44 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input name="description" className={claseInput} />
                 </label>
                 <label className="flex w-24 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -324,8 +328,8 @@ export default async function CapacitacionPage({
             {niveles.length === 0 ? (
               <EmptyState
                 icon="workspace_premium"
-                title="Todavia no hay ninguna competencia evaluada"
-                description=""
+                title="Todavía no hay ninguna competencia evaluada"
+                description="Una competencia es una habilidad que el negocio necesita (atención al cliente, manejo de caja). Evalúa del 1 al 5 a cada empleado y verás dónde hace falta capacitar."
               />
             ) : (
               <Table>

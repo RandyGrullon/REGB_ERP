@@ -36,7 +36,7 @@ import { EnlaceNuevoDueno, EnlaceUnaVez } from './EnlaceDueno'
  * avisa antes, para que un RNC mal escrito no se descubra al enviar.
  */
 
-const PASOS = ['Cliente', 'Módulos', 'Operacion', 'Dueño', 'Revisar'] as const
+const PASOS = ['Cliente', 'Módulos', 'Operación', 'Dueño', 'Revisar'] as const
 
 const CAMPO =
   'h-11 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-muted)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] aria-[invalid=true]:border-[var(--color-semantic-danger)]'
@@ -47,7 +47,7 @@ const ERROR = 'text-xs text-[var(--color-semantic-text-danger)]'
 const TIER_TEXTO: Record<Tier, { titulo: string; detalle: string }> = {
   pyme: { titulo: 'Pyme', detalle: 'Colmado, tienda, taller: una o dos sucursales.' },
   mediano: { titulo: 'Mediano', detalle: 'Distribuidora o cadena pequeña, varias sucursales.' },
-  grande: { titulo: 'Grande', detalle: 'Grupo con varias empresas. Unico con módulos enterprise.' },
+  grande: { titulo: 'Grande', detalle: 'Grupo con varias empresas. Único con módulos enterprise.' },
 }
 
 const CATEGORIA: Record<string, string> = {
@@ -104,13 +104,13 @@ function erroresDelPaso(paso: number, d: Datos): Partial<Record<keyof Datos, str
       e.razonSocial = 'La razón social necesita al menos 3 letras.'
     if (!isValidTaxId(d.rnc)) {
       e.rnc =
-        'Ese RNC no pasa el digito verificador (9 digitos empresa, 11 cedula). Un RNC malo hace rebotar el 607.'
+        'Ese RNC no pasa el dígito verificador (9 dígitos empresa, 11 cédula). Un RNC malo hace rebotar el 607.'
     }
     const s = d.slug.trim()
     if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(s) || s.length < 3 || s.length > 40) {
       e.slug = 'Solo minusculas, números y guiones, de 3 a 40 letras.'
     } else if (RESERVADOS.has(s)) {
-      e.slug = 'Ese identificador esta reservado para una pantalla de REGB.'
+      e.slug = 'Ese identificador está reservado para una pantalla de REGB.'
     }
     if (d.tier === '') e.tier = 'Elige el plan.'
   }
@@ -348,7 +348,7 @@ export function AltaClienteForm({
                 {...campo('razonSocial')}
                 value={d.razonSocial}
                 onChange={(e) => poner('razonSocial', e.target.value)}
-                placeholder="Electronica del Cibao SRL"
+                placeholder="Electrónica del Cibao SRL"
                 autoComplete="off"
                 className={CAMPO}
               />
@@ -370,7 +370,7 @@ export function AltaClienteForm({
             </div>
             <div className="flex flex-col gap-1">
               <label htmlFor={`${idBase}-rnc`} className={ETIQUETA}>
-                RNC o cedula
+                RNC o cédula
               </label>
               <input
                 {...campo('rnc')}
@@ -395,7 +395,7 @@ export function AltaClienteForm({
               />
               {errorDe('rnc') ?? (
                 <p className={AYUDA}>
-                  Sale impreso en cada comprobante y en el 607. Se valida el digito verificador.
+                  Sale impreso en cada comprobante y en el 607. Se valida el dígito verificador.
                 </p>
               )}
             </div>
@@ -518,7 +518,7 @@ export function AltaClienteForm({
         {paso === 2 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <p className="text-sm text-[var(--color-text-secondary)] sm:col-span-2">
-              La empresa principal se crea con la razon social y el RNC del paso 1: es la que sale
+              La empresa principal se crea con la razón social y el RNC del paso 1: es la que sale
               en cada comprobante. Aquí van la primera sucursal y el almacén del que descuenta la
               caja.
             </p>
@@ -551,7 +551,7 @@ export function AltaClienteForm({
         {paso === 3 && (
           <div className="grid gap-4 sm:grid-cols-2">
             <p className="text-sm text-[var(--color-text-secondary)] sm:col-span-2">
-              Entra con el rol Owner. La invitacion sirve una sola vez y vence en 7 dias; hasta que
+              Entra con el rol Owner. La invitación sirve una sola vez y vence en 7 días; hasta que
               la acepte con ese correo, no ve nada.
             </p>
             <div className="flex flex-col gap-1">
@@ -646,7 +646,7 @@ export function AltaClienteForm({
             onClick={() => setPaso((p) => Math.max(0, p - 1))}
             icon={<Icon name="arrow_back" size={16} />}
           >
-            Atras
+            Atrás
           </Button>
           {paso < PASOS.length - 1 ? (
             <Button type="submit" icon={<Icon name="arrow_forward" size={16} />}>
@@ -684,7 +684,7 @@ function Resultado({
     estado.resultado === 'creado'
       ? 'Cliente dado de alta'
       : estado.resultado === 'completado'
-        ? 'Ya existia: completamos lo que le faltaba'
+        ? 'Ya existía: completamos lo que le faltaba'
         : 'Ya estaba dado de alta: no cambiamos nada'
 
   return (
@@ -725,14 +725,14 @@ function Resultado({
                 size={16}
                 className="mt-0.5 text-[var(--color-semantic-text-success)]"
               />
-              Modulos activos: {estado.modulosActivados.map(nombre).join(', ')}
+              Módulos activos: {estado.modulosActivados.map(nombre).join(', ')}
             </li>
           )}
         </ul>
       )}
 
       <section
-        aria-label="Invitacion al dueño"
+        aria-label="Invitación al dueño"
         className="space-y-2 border-t border-[var(--color-border)] pt-4"
       >
         <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">El dueño</h3>
@@ -745,7 +745,7 @@ function Resultado({
             <p className="text-sm text-[var(--color-text-secondary)]">
               {modoDemo
                 ? 'Modo demostración: no hay servidor de correo y nadie puede aceptar una invitación aquí. El enlace es el mismo que recibiria el dueño.'
-                : 'Desde REGB Control no sale el correo: la funcion de correo trabaja con la sesión de alguien del cliente, y todavía no hay nadie. Compartele este enlace al dueño por el canal que uses con el.'}
+                : 'Desde REGB Control no sale el correo: la función de correo trabaja con la sesión de alguien del cliente, y todavía no hay nadie. Compártele este enlace al dueño por el canal que uses con el.'}
             </p>
             <EnlaceUnaVez
               enlace={estado.dueno.enlace}
@@ -757,7 +757,7 @@ function Resultado({
         {estado.dueno.estado === 'pendiente' && (
           <>
             <p className="text-sm text-[var(--color-text-secondary)]">
-              {estado.dueno.correo} ya tenia una invitacion pendiente. Por seguridad el enlace no se
+              {estado.dueno.correo} ya tenía una invitación pendiente. Por seguridad el enlace no se
               guarda: si lo perdiste, genera uno nuevo (el anterior deja de servir).
             </p>
             <EnlaceNuevoDueno clienteId={estado.clienteId} nombre={estado.slug} />
@@ -765,7 +765,7 @@ function Resultado({
         )}
         {estado.dueno.estado === 'ya_miembro' && (
           <p className="text-sm text-[var(--color-text-secondary)]">
-            {estado.dueno.correo} ya esta dentro del equipo del cliente.
+            {estado.dueno.correo} ya está dentro del equipo del cliente.
           </p>
         )}
       </section>

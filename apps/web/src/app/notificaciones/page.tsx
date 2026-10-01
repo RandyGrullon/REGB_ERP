@@ -60,12 +60,12 @@ export default async function NotificacionesPage({
         <PageHeader
           icon="notifications"
           title="Notificaciones"
-          description="Avisos del sistema y de cada modulo. Los que van a todo el equipo llevan su etiqueta; marcarlos como leidos solo los apaga para ti."
+          description="Avisos del sistema y de cada módulo. Los que van a todo el equipo llevan su etiqueta; marcarlos como leídos solo los apaga para ti."
           meta={
             sinLeer > 0 ? (
               <Badge tone="danger">{sinLeer} sin leer</Badge>
             ) : (
-              <Badge tone="success">Todo leido</Badge>
+              <Badge tone="success">Todo leído</Badge>
             )
           }
           actions={
@@ -75,7 +75,7 @@ export default async function NotificacionesPage({
                 <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                 <BotonEnvio className="flex h-10 items-center gap-1.5 rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 text-sm text-[var(--color-text-primary)] transition-colors hover:bg-[var(--color-surface-overlay)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]">
                   <Icon name="done_all" size={18} />
-                  Marcar todas leidas
+                  Marcar todas leídas
                 </BotonEnvio>
               </form>
             ) : undefined
@@ -85,8 +85,8 @@ export default async function NotificacionesPage({
         {notices.length === 0 ? (
           <EmptyState
             icon="notifications_off"
-            title="Nada por aqui"
-            description="Cuando un modulo tenga algo que decirte — una prueba por vencer, un pedido aprobado — aparecera en esta lista."
+            title="Nada por aquí"
+            description="Cuando un módulo tenga algo que decirte — una prueba por vencer, un pedido aprobado — aparecerá en está lista."
           />
         ) : (
           <ul className="space-y-2">
@@ -136,10 +136,10 @@ export default async function NotificacionesPage({
                       <input type="hidden" name="rol" value={ctx.demoQs ? ctx.roleName : ''} />
                       <input type="hidden" name="id" value={n.id} />
                       <BotonEnvio
-                        aria-label={`Marcar como leida: ${n.title}`}
+                        aria-label={`Marcar como leída: ${n.title}`}
                         className="shrink-0 rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-overlay)]"
                       >
-                        Leida
+                        Leída
                       </BotonEnvio>
                     </form>
                   )}

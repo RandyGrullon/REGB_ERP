@@ -31,6 +31,7 @@ interface PlanRow {
   product_name: string | null
   active: boolean
   criterios: string
+  inspecciones: string
 }
 
 interface ProductoOption {
@@ -47,7 +48,8 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
   const { planes, productos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const p = await tx<PlanRow[]>`
       select ip.id, ip.name, ip.scope, pr.name as product_name, ip.active,
-             (select count(*) from public.inspection_plan_criteria c where c.plan_id = ip.id)::text as criterios
+             (select count(*) from public.inspection_plan_criteria c where c.plan_id = ip.id)::text as criterios,
+             (select count(*) from public.inspections i where i.plan_id = ip.id)::text as inspecciones
       from public.inspection_plans ip
       left join public.products pr on pr.id = ip.product_id
       where ip.tenant_id = ${ctx.tenantId}
@@ -62,20 +64,20 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/calidad">
+    <Shell {...shell} activePath="/calidad/planes">
       <div className="space-y-5">
         <PageHeader
           icon="checklist"
-          title="Planes de inspeccion"
-          description="Que revisar y con que criterios -un criterio marcado como critico reprueba la inspeccion entera si falla-."
+          title="Planes de inspección"
+          description="Qué se revisa en cada inspección y con qué criterios. Un criterio marcado como crítico reprueba la inspección entera si falla."
           crumbs={[{ label: 'Control de calidad', href: `/calidad${qs}` }, { label: 'Planes' }]}
         />
 
         {planes.length === 0 ? (
           <EmptyState
             icon="checklist"
-            title="Todavia no hay ningun plan"
-            description="Crea el primero abajo."
+            title="Todavía no hay ningún plan"
+            description="Crea el primero abajo (por ejemplo, «Recepción de cemento») y después agrégale sus criterios."
           />
         ) : (
           <Table>
@@ -85,6 +87,7 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
                 <TH>Alcance</TH>
                 <TH>Producto</TH>
                 <TH numeric>Criterios</TH>
+                <TH numeric>Inspecciones</TH>
                 <TH>Estado</TH>
               </TR>
             </THead>
@@ -103,6 +106,9 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
                   <TD className="text-[var(--color-text-muted)]">{p.product_name ?? 'General'}</TD>
                   <TD numeric>
                     <span className="tabular">{p.criterios}</span>
+                  </TD>
+                  <TD numeric>
+                    <span className="tabular">{p.inspecciones}</span>
                   </TD>
                   <TD>
                     <Badge tone={p.active ? 'success' : 'neutral'}>
@@ -151,7 +157,7 @@ export default async function PlanesPage({ searchParams }: { searchParams: Promi
                     name="productId"
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   >
-                    <option value="">General -cualquier producto-</option>
+                    <option value="">General (cualquier producto)</option>
                     {productos.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.sku} — {p.name}

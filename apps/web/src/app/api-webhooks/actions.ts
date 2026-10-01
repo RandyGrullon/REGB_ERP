@@ -29,7 +29,7 @@ export type CrearLlaveResult = { ok: true; key: string } | { ok: false; error: s
 /** Devuelve la llave COMPLETA una sola vez -de aqui en adelante solo se guarda su hash-. */
 export async function crearLlave(_prevState: unknown, fd: FormData): Promise<CrearLlaveResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'api-webhooks', 'api-webhooks.manage')
   if (!permiso.ok) return permiso
 
@@ -58,7 +58,7 @@ export async function crearLlave(_prevState: unknown, fd: FormData): Promise<Cre
 
 export async function revocarLlave(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'api-webhooks', 'api-webhooks.manage')
   if (!permiso.ok) return permiso
 
@@ -78,26 +78,32 @@ export async function revocarLlave(fd: FormData): Promise<ActionResult> {
 
 export async function crearEndpoint(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'api-webhooks', 'api-webhooks.manage')
   if (!permiso.ok) return permiso
 
   const url = String(fd.get('url') ?? '').trim()
-  const eventTypesRaw = String(fd.get('eventTypes') ?? '').trim()
-  const eventTypes = eventTypesRaw
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
+  // Llegan de una lista de selección múltiple (un valor por evento); se
+  // aceptan también separados por coma, como antes.
+  const eventTypes = [
+    ...new Set(
+      fd
+        .getAll('eventTypes')
+        .flatMap((v) => String(v).split(','))
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ]
 
-  if (!url) return { ok: false, error: 'Falta la URL del endpoint.' }
+  if (!url) return { ok: false, error: 'Falta la dirección (URL) a la que se avisa.' }
   try {
     new URL(url)
   } catch {
-    return { ok: false, error: 'Esa URL no es valida.' }
+    return { ok: false, error: 'Esa URL no es válida.' }
   }
   if (eventTypes.length === 0) return { ok: false, error: 'Elige al menos un tipo de evento.' }
   if (!eventTypes.every(tipoEventoValido))
-    return { ok: false, error: 'Cada tipo de evento debe seguir modulo.entidad.accion.' }
+    return { ok: false, error: 'Elige los eventos de la lista.' }
 
   const secret = randomBytes(24).toString('hex')
 
@@ -115,13 +121,13 @@ export async function crearEndpoint(fd: FormData): Promise<ActionResult> {
 
 export async function alternarEndpoint(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'api-webhooks', 'api-webhooks.manage')
   if (!permiso.ok) return permiso
 
   const endpointId = String(fd.get('endpointId') ?? '')
   const siguiente = String(fd.get('siguiente') ?? '')
-  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado invalido.' }
+  if (!['active', 'paused'].includes(siguiente)) return { ok: false, error: 'Estado inválido.' }
 
   await asUser(
     ctx.userId,
@@ -137,7 +143,7 @@ export async function alternarEndpoint(fd: FormData): Promise<ActionResult> {
 /** Emite un evento de prueba real y hace una llamada HTTP real al endpoint -no simulada-. */
 export async function enviarPrueba(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'api-webhooks', 'api-webhooks.manage')
   if (!permiso.ok) return permiso
 
@@ -155,7 +161,7 @@ export async function enviarPrueba(fd: FormData): Promise<ActionResult> {
     return { endpoint: e, eventId: ev!.id }
   })
 
-  if (!endpoint || !eventId) return { ok: false, error: 'Ese endpoint no existe.' }
+  if (!endpoint || !eventId) return { ok: false, error: 'Ese destino de aviso no existe.' }
 
   const payload = JSON.stringify({
     type: 'api-webhooks.webhook.tested',

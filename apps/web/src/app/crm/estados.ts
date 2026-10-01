@@ -12,13 +12,13 @@ export const FUENTE_LEAD: Record<string, string> = {
   referral: 'Referido',
   event: 'Evento',
   web: 'Sitio web',
-  cold: 'Frio',
+  cold: 'Frío',
 }
 
 /** Etiquetas del tipo de actividad. */
 export const TIPO_ACTIVIDAD: Record<string, string> = {
   call: 'Llamada',
   email: 'Correo',
-  meeting: 'Reunion',
+  meeting: 'Reunión',
   note: 'Nota',
 }

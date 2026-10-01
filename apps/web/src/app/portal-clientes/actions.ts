@@ -25,7 +25,7 @@ function demoDe(fd: FormData): DemoParams {
 
 export async function crearInvitacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'customer-portal', 'customer-portal.manage')
   if (!permiso.ok) return permiso
 
@@ -52,7 +52,7 @@ export async function crearInvitacion(fd: FormData): Promise<ActionResult> {
 /** Revoca una invitacion -deja de funcionar de inmediato, es terminal-. */
 export async function revocarInvitacion(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'customer-portal', 'customer-portal.manage')
   if (!permiso.ok) return permiso
 
@@ -63,7 +63,7 @@ export async function revocarInvitacion(fd: FormData): Promise<ActionResult> {
       select status from public.portal_invites where id = ${inviteId} and tenant_id = ${ctx.tenantId} for update`
     if (!inv) return 'no-existe'
     if (!transicionValidaInvitacion(inv.status, 'revoked'))
-      return 'Esa invitacion ya esta revocada.'
+      return 'Esa invitación ya está revocada.'
 
     await tx`
       update public.portal_invites set status = 'revoked', revoked_at = now()
@@ -76,7 +76,7 @@ export async function revocarInvitacion(fd: FormData): Promise<ActionResult> {
     return 'ok'
   })
 
-  if (resultado === 'no-existe') return { ok: false, error: 'Esa invitacion no existe.' }
+  if (resultado === 'no-existe') return { ok: false, error: 'Esa invitación no existe.' }
   if (resultado !== 'ok') return { ok: false, error: resultado }
 
   revalidatePath('/portal-clientes')

@@ -35,14 +35,40 @@ function demoDe(fd: FormData) {
  */
 const CODIGOS_CON_MENSAJE = new Set(['22023', '23505', '42501', '55000', '28000'])
 
+/**
+ * Los mensajes de 0123 se escribieron sin tildes y con el estado en inglés
+ * ("ya no esta pendiente (accepted)"). Se corrigen al mostrarlos, sin tocar
+ * las funciones de la base, que usan también otras pantallas y pruebas.
+ */
+const ARREGLOS: [RegExp, string][] = [
+  [/\binvitacion\b/g, 'invitación'],
+  [/\bInvitacion\b/g, 'Invitación'],
+  [/\besta pendiente\b/g, 'está pendiente'],
+  [/\bya esta en\b/g, 'ya está en'],
+  [/\bno esta activo\b/g, 'no está activo'],
+  [/\bCambiale\b/g, 'Cámbiale'],
+  [/\bReenviala\b/g, 'Reenvíala'],
+  [/\brevocala\b/g, 'revócala'],
+  [/\bRevisalo\b/g, 'Revísalo'],
+  [/\bvalido\b/g, 'válido'],
+  [/\bdias\b/g, 'días'],
+  [/\bvencio\b/g, 'venció'],
+  [/\bmodulo\b/g, 'módulo'],
+  [/\bSesion\b/g, 'Sesión'],
+  [/\(accepted\)/g, '(ya la aceptaron)'],
+  [/\(revoked\)/g, '(la revocaron)'],
+  [/\(expired\)/g, '(venció)'],
+]
+const conTildes = (m: string) => ARREGLOS.reduce((t, [re, r]) => t.replace(re, r), m)
+
 function mensajeDeBase(e: unknown, generico: string): string {
   const err = e as { code?: string; message?: string; constraint_name?: string }
   // Dos invitaciones al mismo correo a la vez: la segunda la frena el
   // indice unico, no la funcion, y su texto es de Postgres.
   if (err?.constraint_name === 'user_invitations_una_pendiente') {
-    return 'Ya hay una invitacion pendiente para ese correo. Reenviala o revocala.'
+    return 'Ya hay una invitación pendiente para ese correo. Reenvíala o revócala.'
   }
-  if (err?.code && CODIGOS_CON_MENSAJE.has(err.code) && err.message) return err.message
+  if (err?.code && CODIGOS_CON_MENSAJE.has(err.code) && err.message) return conTildes(err.message)
   console.error('[usuarios]', e)
   return generico
 }
@@ -99,7 +125,7 @@ export async function invitarMiembro(
   formData: FormData,
 ): Promise<ResultadoInvitacion> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'users', 'users.create')
   if (!permiso.ok) return permiso
@@ -114,7 +140,7 @@ export async function invitarMiembro(
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
     return {
       ok: false,
-      error: 'Ese correo no es valido. Revisalo: debe verse como juana@tuempresa.do.',
+      error: 'Ese correo no es válido. Revísalo: debe verse como juana@tuempresa.do.',
     }
   }
   if (!UUID.test(roleId)) return { ok: false, error: 'Elige un rol.' }
@@ -130,7 +156,7 @@ export async function invitarMiembro(
   } catch (e) {
     return {
       ok: false,
-      error: mensajeDeBase(e, 'No pudimos crear la invitacion. Intenta de nuevo.'),
+      error: mensajeDeBase(e, 'No pudimos crear la invitación. Intenta de nuevo.'),
     }
   }
 
@@ -148,13 +174,13 @@ export async function reenviarInvitacion(
   formData: FormData,
 ): Promise<ResultadoInvitacion> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'users', 'users.create')
   if (!permiso.ok) return permiso
 
   const invitationId = String(formData.get('invitationId') ?? '')
-  if (!UUID.test(invitationId)) return { ok: false, error: 'Falta la invitacion.' }
+  if (!UUID.test(invitationId)) return { ok: false, error: 'Falta la invitación.' }
 
   let nueva: { token: string; email: string }
   try {
@@ -169,7 +195,7 @@ export async function reenviarInvitacion(
   } catch (e) {
     return {
       ok: false,
-      error: mensajeDeBase(e, 'No pudimos reenviar la invitacion. Intenta de nuevo.'),
+      error: mensajeDeBase(e, 'No pudimos reenviar la invitación. Intenta de nuevo.'),
     }
   }
 
@@ -184,13 +210,13 @@ export async function reenviarInvitacion(
 
 export async function revocarInvitacion(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'users', 'users.create')
   if (!permiso.ok) return permiso
 
   const invitationId = String(formData.get('invitationId') ?? '')
-  if (!UUID.test(invitationId)) return { ok: false, error: 'Falta la invitacion.' }
+  if (!UUID.test(invitationId)) return { ok: false, error: 'Falta la invitación.' }
 
   try {
     await asUser(
@@ -201,7 +227,7 @@ export async function revocarInvitacion(formData: FormData): Promise<ActionResul
   } catch (e) {
     return {
       ok: false,
-      error: mensajeDeBase(e, 'No pudimos revocar la invitacion. Intenta de nuevo.'),
+      error: mensajeDeBase(e, 'No pudimos revocar la invitación. Intenta de nuevo.'),
     }
   }
 
@@ -215,7 +241,7 @@ export async function revocarInvitacion(formData: FormData): Promise<ActionResul
 
 export async function cambiarRolMiembro(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'users', 'users.edit')
   if (!permiso.ok) return permiso
@@ -237,7 +263,7 @@ export async function cambiarRolMiembro(formData: FormData): Promise<ActionResul
 
 export async function alternarActivo(formData: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(formData))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
 
   const permiso = exigir(ctx, 'users', 'users.edit')
   if (!permiso.ok) return permiso
@@ -264,7 +290,7 @@ export async function alternarActivo(formData: FormData): Promise<ActionResult> 
     return m
   })
 
-  if (!fila) return { ok: false, error: 'Esa persona no esta en tu equipo.' }
+  if (!fila) return { ok: false, error: 'Esa persona no está en tu equipo.' }
 
   revalidatePath('/usuarios')
   return { ok: true }
@@ -281,6 +307,6 @@ export async function revocarInvitacionForm(fd: FormData): Promise<void> {
   await anotarAviso(
     await revocarInvitacion(fd),
     'revocarInvitacion',
-    'Listo, revocamos la invitacion. Su enlace ya no sirve.',
+    'Listo, revocamos la invitación. Su enlace ya no sirve.',
   )
 }

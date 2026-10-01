@@ -106,7 +106,10 @@ export interface FilaBitacora {
   entidad: string
   entidadId: string | null
   accion: string
+  /** Nombre del perfil. null = sin perfil o hecho por el sistema. */
   usuario: string | null
+  /** Hubo una persona detrás (user_id), aunque no tenga perfil. */
+  conUsuario: boolean
   antes: unknown
   despues: unknown
 }
@@ -135,7 +138,8 @@ export async function cargarBitacoraGlobal(f: FiltrosBitacora): Promise<{
   const filas = await sql<FilaBitacora[]>`
     select l.at::text, t.legal_name as tenant, t.slug as "tenantSlug",
            l.module_id as modulo, l.entity as entidad, l.entity_id::text as "entidadId",
-           l.action as accion, coalesce(up.display_name, l.user_id::text) as usuario,
+           l.action as accion, up.display_name as usuario,
+           (l.user_id is not null) as "conUsuario",
            l.before as antes, l.after as despues
     from audit.log l
     left join regb.tenants t on t.id = l.tenant_id

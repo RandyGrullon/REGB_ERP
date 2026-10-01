@@ -6,6 +6,7 @@ import {
   CardTitle,
   EmptyState,
   Icon,
+  Mono,
   PageHeader,
   StatCard,
   TBody,
@@ -24,7 +25,7 @@ import { ESTADO_CONTEO } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Conteos ciclicos · REGB ERP' }
+export const metadata = { title: 'Conteos cíclicos · REGB ERP' }
 
 interface AlmacenOption {
   id: string
@@ -105,22 +106,37 @@ export default async function ConteosCiclicosPage({
   const puedeGestionar = exigir(ctx, 'stock-counts', 'stock-counts.manage').ok
   const qs = ctx.demoQs
 
-  const fecha = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('es-DO') : 'Nunca')
+  const fecha = (iso: string | null) =>
+    iso
+      ? new Date(iso).toLocaleDateString('es-DO', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : 'Nunca'
 
   return (
     <Shell {...shell} activePath="/conteos-ciclicos">
       <div className="space-y-5">
         <PageHeader
           icon="checklist"
-          title="Conteos ciclicos"
-          description="Clasificacion ABC real, conteo ciego -quien cuenta no ve el numero del sistema-, y el ajuste espera aprobacion antes de tocar el inventario."
+          title="Conteos cíclicos"
+          description="Se cuenta más seguido lo que más vale (clasificación ABC). Quien cuenta no ve el número del sistema, y el ajuste espera aprobación antes de tocar el inventario."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Productos programados" value={String(programacion.length)} />
-          <StatCard label="Vencidos para contar" value={String(vencidos)} />
-          <StatCard label="Esperando aprobacion" value={String(pendientesAprobacion)} />
-          <StatCard label="Conteos totales" value={String(conteos.length)} />
+          <StatCard
+            label="Productos programados"
+            value={String(programacion.length)}
+            hint="con su frecuencia"
+          />
+          <StatCard label="Toca contarlos" value={String(vencidos)} hint="pasó su fecha" />
+          <StatCard
+            label="Esperando aprobación"
+            value={String(pendientesAprobacion)}
+            hint="antes de ajustar"
+          />
+          <StatCard label="Conteos" value={String(conteos.length)} hint="los últimos 30" />
         </section>
 
         <Card>
@@ -131,8 +147,8 @@ export default async function ConteosCiclicosPage({
             {programacion.length === 0 ? (
               <EmptyState
                 icon="checklist"
-                title="Todavia no hay clasificacion ABC"
-                description="Calculala abajo a partir del valor actual en inventario."
+                title="Todavía no hay clasificación ABC"
+                description="Calcúlala abajo a partir del valor actual en inventario."
               />
             ) : (
               <Table>
@@ -154,19 +170,30 @@ export default async function ConteosCiclicosPage({
                     return (
                       <TR key={p.product_id}>
                         <TD className="text-[var(--color-text-primary)]">
-                          {p.sku} — {p.name}
+                          <Mono>{p.sku}</Mono> {p.name}
                         </TD>
                         <TD>
-                          <Badge tone={badgeAbc(p.abc_class)}>{p.abc_class}</Badge>
+                          <Badge
+                            tone={badgeAbc(p.abc_class)}
+                            title={
+                              p.abc_class === 'A'
+                                ? 'Clase A: el grupo que concentra la mayor parte del valor'
+                                : p.abc_class === 'B'
+                                  ? 'Clase B: valor intermedio'
+                                  : 'Clase C: mucho producto, poco valor'
+                            }
+                          >
+                            Clase {p.abc_class}
+                          </Badge>
                         </TD>
                         <TD numeric>
-                          <span className="tabular">cada {p.frequency_days} dias</span>
+                          <span className="tabular">cada {p.frequency_days} días</span>
                         </TD>
                         <TD>
                           {fecha(p.last_counted_at)}
                           {vencido && (
                             <Badge tone="warning" className="ml-1">
-                              Vencido
+                              Toca contar
                             </Badge>
                           )}
                         </TD>
@@ -185,11 +212,11 @@ export default async function ConteosCiclicosPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full border border-[var(--color-border)] px-3 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
                   <Icon name="refresh" size={14} />
-                  Recalcular clasificacion ABC
+                  Recalcular clasificación ABC
                 </BotonEnvio>
                 <p className="mt-2 text-xs text-[var(--color-text-muted)]">
-                  Usa el valor actual en inventario (costo promedio × existencia) de cada producto,
-                  no el historial de ventas -esa integracion es un paso futuro-.
+                  Ordena los productos por su valor en inventario (costo promedio × existencia): los
+                  que suman la mayor parte del valor quedan en A y se cuentan más seguido.
                 </p>
               </form>
             )}
@@ -202,7 +229,11 @@ export default async function ConteosCiclicosPage({
           </CardHeader>
           <CardBody className="p-0">
             {conteos.length === 0 ? (
-              <EmptyState icon="checklist" title="Todavia no hay ningun conteo" description="" />
+              <EmptyState
+                icon="checklist"
+                title="Todavía no hay ningún conteo"
+                description="Inicia uno abajo: se crea con los productos del almacén y quien cuenta anota lo que encuentra en el estante, sin ver lo que dice el sistema."
+              />
             ) : (
               <Table>
                 <THead>
@@ -211,6 +242,9 @@ export default async function ConteosCiclicosPage({
                     <TH numeric>Productos</TH>
                     <TH>Estado</TH>
                     <TH>Iniciado</TH>
+                    <TH>
+                      <span className="sr-only">Abrir</span>
+                    </TH>
                   </TR>
                 </THead>
                 <TBody>
@@ -233,6 +267,18 @@ export default async function ConteosCiclicosPage({
                         </Badge>
                       </TD>
                       <TD>{fecha(c.started_at)}</TD>
+                      <TD>
+                        <a
+                          href={`/conteos-ciclicos/${c.id}${qs}`}
+                          className="text-xs text-[var(--color-text-link)] hover:underline"
+                        >
+                          {c.status === 'counting'
+                            ? 'Seguir contando'
+                            : c.status === 'pending_approval'
+                              ? 'Revisar y aprobar'
+                              : 'Ver'}
+                        </a>
+                      </TD>
                     </TR>
                   ))}
                 </TBody>
@@ -251,7 +297,7 @@ export default async function ConteosCiclicosPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-52 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Almacen
+                  Almacén
                   <select
                     name="warehouseId"
                     required

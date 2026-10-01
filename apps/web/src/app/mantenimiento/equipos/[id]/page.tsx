@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
   Icon,
-  Mono,
   PageHeader,
   StatCard,
   TBody,
@@ -50,8 +49,17 @@ interface OrdenRow {
 const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const botonClase =
-  'flex h-9 items-center gap-1.5 rounded-[var(--radius-md)] bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
-const fecha = (iso: string) => new Date(iso).toLocaleDateString('es-DO', { dateStyle: 'medium' })
+  'flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]'
+const fecha = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric' })
+/** Fecha sin hora (last_service_at es `date`): en UTC para que no salga un día antes. */
+const dia = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 const badgeEstado = (s: string): 'success' | 'warning' | 'neutral' => {
   if (s === 'completed') return 'success'
   if (s === 'open' || s === 'in_progress') return 'warning'
@@ -118,25 +126,40 @@ export default async function EquipoDetallePage({
     fechaLimite,
     new Date(),
   )
+  const proximoPorUso =
+    head.maintenance_interval_usage !== null
+      ? Number(head.last_service_usage ?? 0) + Number(head.maintenance_interval_usage)
+      : null
+  const porUso = proximoPorUso !== null && Number(head.usage_hours) >= proximoPorUso
+  const cada = [
+    head.maintenance_interval_usage !== null
+      ? `cada ${Number(head.maintenance_interval_usage).toLocaleString('es-DO')} h de uso`
+      : null,
+    head.maintenance_interval_days !== null ? `cada ${head.maintenance_interval_days} días` : null,
+  ].filter(Boolean)
 
   return (
-    <Shell {...shell} activePath="/mantenimiento">
+    <Shell {...shell} activePath="/mantenimiento/equipos">
       <div className="space-y-5">
         <PageHeader
           icon="precision_manufacturing"
           title={`${head.code} · ${head.name}`}
+          description={[
+            head.location ?? 'Sin ubicación',
+            cada.length > 0 ? `servicio ${cada.join(' o ')}` : 'sin intervalo de servicio',
+          ].join(' · ')}
           crumbs={[
-            { label: 'Mantenimiento', href: `/mantenimiento${qs}` },
+            { label: 'Mantenimiento de equipos', href: `/mantenimiento${qs}` },
             { label: 'Equipos', href: `/mantenimiento/equipos${qs}` },
             { label: head.code },
           ]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge tone={head.status === 'active' ? 'success' : 'neutral'}>
                 {ESTADO_EQUIPO[head.status] ?? head.status}
               </Badge>
               {vencido ? (
-                <Badge tone="danger">Mantenimiento vencido</Badge>
+                <Badge tone="danger">Le toca servicio</Badge>
               ) : (
                 <Badge tone="success">Al día</Badge>
               )}
@@ -146,14 +169,52 @@ export default async function EquipoDetallePage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatCard
-            label="Uso acumulado"
-            value={Number(head.usage_hours).toLocaleString('es-DO')}
+            label="Horas de uso"
+            value={`${Number(head.usage_hours).toLocaleString('es-DO')} h`}
+            hint="lectura acumulada"
           />
           <StatCard
-            label="Ultimo servicio"
-            value={head.last_service_at ? fecha(head.last_service_at) : 'Nunca'}
+            label="Último servicio"
+            value={head.last_service_at ? dia(head.last_service_at) : 'Nunca'}
+            hint={
+              head.last_service_usage !== null
+                ? `a las ${Number(head.last_service_usage).toLocaleString('es-DO')} h`
+                : undefined
+            }
           />
-          <StatCard label="MTBF" value={mtbf === null ? '—' : `${mtbf.toFixed(1)} días`} />
+          <StatCard
+            label="Próximo servicio"
+            value={
+              vencido
+                ? 'Ya le toca'
+                : fechaLimite
+                  ? fechaLimite.toLocaleDateString('es-DO', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                      timeZone: 'UTC',
+                    })
+                  : proximoPorUso !== null
+                    ? `${proximoPorUso.toLocaleString('es-DO')} h`
+                    : '—'
+            }
+            hint={
+              vencido
+                ? porUso && proximoPorUso !== null
+                  ? `tocaba a las ${proximoPorUso.toLocaleString('es-DO')} h y lleva ${Number(head.usage_hours).toLocaleString('es-DO')} h`
+                  : fechaLimite
+                    ? `tocaba el ${fechaLimite.toLocaleDateString('es-DO', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}`
+                    : undefined
+                : fechaLimite && proximoPorUso !== null
+                  ? `o a las ${proximoPorUso.toLocaleString('es-DO')} h, lo que llegue primero`
+                  : undefined
+            }
+          />
+          <StatCard
+            label="Tiempo entre averías"
+            value={mtbf === null ? '—' : `${mtbf.toFixed(1)} días`}
+            hint={mtbf === null ? 'hacen falta dos averías' : 'promedio entre fallas'}
+          />
         </section>
 
         <Table>
@@ -187,8 +248,8 @@ export default async function EquipoDetallePage({
                   <TD>
                     <Badge tone={badgeEstado(o.status)}>{ESTADO_ORDEN[o.status] ?? o.status}</Badge>
                   </TD>
-                  <TD className="text-[var(--color-text-muted)]">
-                    <Mono>{fecha(o.opened_at)}</Mono>
+                  <TD className="whitespace-nowrap text-[var(--color-text-muted)]">
+                    {fecha(o.opened_at)}
                   </TD>
                 </TR>
               ))
@@ -222,7 +283,7 @@ export default async function EquipoDetallePage({
                     </select>
                   </label>
                   <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Descripcion
+                    Descripción
                     <input name="description" required className={claseInput} />
                   </label>
                   <BotonEnvio className={botonClase}>
@@ -241,7 +302,7 @@ export default async function EquipoDetallePage({
                 <form action={registrarServicioForm} className="flex flex-wrap items-end gap-3">
                   {campos}
                   <label className="flex w-40 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                    Lectura de uso actual
+                    Horas que marca hoy
                     <input
                       name="usageAtService"
                       required

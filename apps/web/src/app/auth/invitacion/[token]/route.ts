@@ -14,8 +14,10 @@ import { esMotivoAceptar } from '@/app/usuarios/invitacion'
  *     (`verifyOtp`). Asi el invitado nuevo entra sin clave: el correo ES su
  *     prueba de identidad. Requiere la plantilla "Invite user" descrita en
  *     docs/modules/users.md.
- *  2. Sin sesion, al login -y de vuelta aqui-. El token va en la RUTA
- *     porque el middleware solo conserva el path en `siguiente`.
+ *  2. Sin sesion, a /auth/invitacion/<token>/entrar: ahi se le manda el
+ *     correo de la invitacion (Edge Function, 0143) o entra con su cuenta
+ *     por el login -y de vuelta aqui-. El token va en la RUTA porque el
+ *     middleware solo conserva el path en `siguiente`.
  *  3. Con sesion, `aceptar_invitacion(token)` con el token de ESA persona:
  *     la base compara el hash, el vencimiento y que su correo sea el
  *     invitado, y crea la membresia con SU user_id. Despues se refresca la
@@ -52,14 +54,8 @@ export async function GET(
     const { error } = await supabase.auth.verifyOtp({ type: tipo, token_hash: tokenHash })
     if (error) {
       // El enlace del correo ya se uso o caduco. La invitacion puede seguir
-      // viva: que entre por el login y vuelva aqui.
-      const login = new URL('/login', origin)
-      login.searchParams.set('siguiente', `/auth/invitacion/${token}`)
-      login.searchParams.set(
-        'error',
-        'El enlace del correo ya se uso o caduco. Entra con tu correo y abre la invitacion otra vez.',
-      )
-      return NextResponse.redirect(login)
+      // viva: que pida otro correo (o entre con su cuenta) y vuelva aqui.
+      return NextResponse.redirect(`${origin}/auth/invitacion/${token}/entrar?aviso=enlace_usado`)
     }
   }
 
@@ -67,9 +63,11 @@ export async function GET(
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    const login = new URL('/login', origin)
-    login.searchParams.set('siguiente', `/auth/invitacion/${token}`)
-    return NextResponse.redirect(login)
+    // Sin sesion NO se manda al login: el invitado nuevo (el dueño que sale
+    // del alta) no tiene cuenta ni puede crearsela -registro cerrado- y ahi
+    // se quedaba sin salida. En /entrar se le ofrece el correo de la
+    // invitacion, y tambien entrar con su cuenta si ya tiene una.
+    return NextResponse.redirect(`${origin}/auth/invitacion/${token}/entrar`)
   }
 
   const { data, error } = await supabase.rpc('aceptar_invitacion', { p_token: token })

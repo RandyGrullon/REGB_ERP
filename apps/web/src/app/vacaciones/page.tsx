@@ -59,7 +59,7 @@ const fechaCorta = (iso: string) => {
   })
 }
 
-/** Vacaciones & Permisos (modulo 64): saldo calculado, solicitud y aprobacion. */
+/** Vacaciones y permisos (modulo 64): saldo calculado, solicitud y aprobacion. */
 export default async function VacacionesPage({
   searchParams,
 }: {
@@ -98,11 +98,18 @@ export default async function VacacionesPage({
 
   const tomadoPorId = new Map(tomadoPorEmpleado.map((t) => [t.employee_id, Number(t.dias)]))
   const hoy = new Date()
-  const saldos = empleados.map((e) => ({
-    id: e.id,
-    name: e.name,
-    saldo: saldoVacaciones(new Date(`${e.hire_date}T00:00:00`), hoy, tomadoPorId.get(e.id) ?? 0),
-  }))
+  const saldos = empleados.map((e) => {
+    const [y, m, d] = e.hire_date.slice(0, 10).split('-').map(Number)
+    const aniversario = new Date(y! + 1, m! - 1, d!)
+    return {
+      id: e.id,
+      name: e.name,
+      tomado: tomadoPorId.get(e.id) ?? 0,
+      saldo: saldoVacaciones(new Date(`${e.hire_date}T00:00:00`), hoy, tomadoPorId.get(e.id) ?? 0),
+      // Antes del primer año no hay días (art. 177): se dice desde cuándo.
+      ganaEl: aniversario > hoy ? aniversario : null,
+    }
+  })
 
   const pendientes = solicitudes.filter((s) => s.status === 'pending')
   const puedeSolicitar = exigir(ctx, 'time-off', 'time-off.request').ok
@@ -117,7 +124,7 @@ export default async function VacacionesPage({
       <div className="space-y-5">
         <PageHeader
           icon="beach_access"
-          title="Vacaciones & Permisos"
+          title="Vacaciones y permisos"
           description="El saldo sale de la fecha de ingreso (Código de Trabajo, art. 177): 14 días laborables por año de servicio, 18 a partir del quinto. Unas vacaciones que no caben en el saldo no se pueden pedir ni aprobar."
           actions={
             puedeAprobar && (
@@ -145,14 +152,23 @@ export default async function VacacionesPage({
             {saldos.length === 0 ? (
               <EmptyState
                 icon="beach_access"
-                title="Todavia no hay empleados activos"
-                description=""
+                title="Todavía no hay empleados activos"
+                description="El saldo sale de la fecha de ingreso de cada empleado. Regístralos en Empleados y aquí verás cuántos días le tocan a cada uno."
+                action={
+                  <a
+                    href={`/empleados${qs}`}
+                    className="flex h-10 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-4 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                  >
+                    Ir a Empleados
+                  </a>
+                }
               />
             ) : (
               <Table>
                 <THead>
                   <TR>
                     <TH>Empleado</TH>
+                    <TH numeric>Ya tomados</TH>
                     <TH numeric>Días disponibles</TH>
                   </TR>
                 </THead>
@@ -161,7 +177,22 @@ export default async function VacacionesPage({
                     <TR key={s.id}>
                       <TD className="text-[var(--color-text-primary)]">{s.name}</TD>
                       <TD numeric>
-                        <span className="tabular">{s.saldo}</span>
+                        <span className="tabular">{s.tomado}</span>
+                      </TD>
+                      <TD numeric>
+                        <span className="tabular font-semibold text-[var(--color-text-primary)]">
+                          {s.saldo}
+                        </span>
+                        {s.ganaEl && s.saldo === 0 && (
+                          <span className="block text-xs text-[var(--color-text-muted)]">
+                            gana 14 el{' '}
+                            {s.ganaEl.toLocaleDateString('es-DO', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        )}
                       </TD>
                     </TR>
                   ))}
@@ -171,11 +202,12 @@ export default async function VacacionesPage({
           </CardBody>
         </Card>
 
+        <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">Solicitudes</h2>
         {solicitudes.length === 0 ? (
           <EmptyState
             icon="event_note"
-            title="Todavia no hay ninguna solicitud"
-            description="Registra la primera abajo."
+            title="Todavía no hay ninguna solicitud"
+            description="Aquí salen las vacaciones y permisos que pide el equipo, con su estado. Los empleados las piden desde su portal; también puedes registrar una abajo."
           />
         ) : (
           <Table>
@@ -198,9 +230,16 @@ export default async function VacacionesPage({
               {solicitudes.map((s) => (
                 <TR key={s.id}>
                   <TD className="text-[var(--color-text-primary)]">{s.employee_name}</TD>
-                  <TD>{TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}</TD>
-                  <TD>{fechaCorta(s.start_date)}</TD>
-                  <TD>{fechaCorta(s.end_date)}</TD>
+                  <TD>
+                    {TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}
+                    {s.reason && (
+                      <span className="block text-xs text-[var(--color-text-muted)]">
+                        {s.reason}
+                      </span>
+                    )}
+                  </TD>
+                  <TD className="whitespace-nowrap">{fechaCorta(s.start_date)}</TD>
+                  <TD className="whitespace-nowrap">{fechaCorta(s.end_date)}</TD>
                   <TD numeric>
                     <span className="tabular">{s.business_days}</span>
                   </TD>

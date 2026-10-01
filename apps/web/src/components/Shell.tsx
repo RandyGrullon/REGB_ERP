@@ -7,18 +7,13 @@ import { Aviso } from './Aviso'
 import { Navegacion } from './Navegacion'
 import { TemaToggle } from './TemaToggle'
 import type { Aviso as AvisoDato } from '@/lib/aviso-comun'
+import { TITULO_SECCION } from '@/lib/secciones'
 import { GuiaFlotante, type PasoGuia } from '@/components/GuiaFlotante'
 import {
-  Badge,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   cn,
   EmptyState,
   Icon,
   Sidebar,
-  StatCard,
   TopBar,
   type SidebarGroup,
   type SidebarModule,
@@ -75,38 +70,16 @@ export interface ShellProps {
    * aqui desde el tutorial. Lo calcula `modulePage`, no la pagina.
    */
   guia?: PasoGuia | undefined
-  /** Contenido de la pagina. Sin children, pinta el resumen del registry. */
+  /** Contenido de la página. Sin children, un estado vacío que explica qué hacer. */
   children?: React.ReactNode
   data: ShellData
 }
 
-/**
- * Titulo de cada seccion del sidebar.
- *
- * Las secciones son de USO, no de precio: cada modulo declara la suya en su
- * manifest (`navSection`) y el registry ya las devuelve ordenadas. Antes se
- * agrupaba por categoria comercial y eso dejaba Auditoria y Respaldos por
- * encima del punto de venta.
- *
- * `inicio` va sin encabezado a proposito: son una o dos entradas sueltas y
- * un titulo encima solo mete ruido.
- */
-const GROUP_TITLES: Record<string, string> = {
-  inicio: '',
-  // Areas de negocio: las mismas del marketplace, para que un modulo se
-  // busque en el mismo sitio en los dos lugares.
-  ventas: 'Ventas y clientes',
-  inventario: 'Inventario y compras',
-  finanzas: 'Finanzas e impuestos',
-  rrhh: 'Recursos humanos',
-  produccion: 'Producción',
-  proyectos: 'Proyectos y servicios',
-  industria: 'Tu industria',
-  // Lo que no es de un area: BI, copiloto, chat, automatizaciones, API.
-  operacion: 'Herramientas',
-  administracion: 'Administración',
-  datos: 'Datos',
-  ayuda: 'Ayuda',
+/** Para decirlo en español: `desktop` no es una palabra que el cajero use. */
+const PLATAFORMA: Record<ShellProps['activePlatform'], string> = {
+  web: 'la web',
+  desktop: 'la aplicación de escritorio',
+  mobile: 'el móvil',
 }
 
 const TIER_LABEL: Record<string, string> = {
@@ -141,7 +114,7 @@ export function Shell({
   const groups: SidebarGroup[] = []
   for (const mod of data.sidebar) {
     const seccion = mod.navSection ?? 'operacion'
-    const title = GROUP_TITLES[seccion] ?? seccion
+    const title = TITULO_SECCION[seccion] ?? seccion
     let g = groups.find((x) => x.key === seccion)
     if (!g) {
       g = { key: seccion, title, modules: [] }
@@ -264,14 +237,14 @@ export function Shell({
             >
               <Icon name="notifications" size={20} filled={(data.unread ?? 0) > 0} />
               {(data.unread ?? 0) > 0 && (
-                <span className="tabular absolute right-1 top-1 min-w-4 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1 text-center text-[10px] font-bold text-white">
+                <span className="tabular absolute right-1 top-1 min-w-4 rounded-[var(--radius-full)] bg-[var(--color-semantic-danger)] px-1 text-center text-[10px] font-bold text-[var(--color-text-on-brand)]">
                   {data.unread}
                 </span>
               )}
             </a>
             <button
               type="button"
-              aria-label="Abrir navegacion"
+              aria-label="Abrir el menú"
               aria-expanded={menuAbierto}
               onClick={() => setMenuAbierto((v) => !v)}
               className="grid h-11 w-11 shrink-0 place-items-center rounded-[var(--radius-md)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)] md:hidden"
@@ -335,7 +308,7 @@ export function Shell({
           <div className="fixed inset-0 top-14 z-40 flex md:hidden">
             <button
               type="button"
-              aria-label="Cerrar navegacion"
+              aria-label="Cerrar el menú"
               onClick={() => setMenuAbierto(false)}
               className="absolute inset-0 bg-black/60"
             />
@@ -354,141 +327,20 @@ export function Shell({
         )}
 
         <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children ? (
-            children
-          ) : data.sidebar.length === 0 ? (
-            <EmptyState
-              icon="lock"
-              title="Aqui no hay nada para ti todavia"
-              description={`El rol "${data.roleName}" no tiene ningún módulo visible en ${activePlatform}. Cambia de rol arriba para verlo desde otra silla.`}
-            />
-          ) : (
-            <>
-              <div className="flex flex-wrap items-baseline gap-2">
-                <h1 className="text-xl font-bold text-[var(--color-text-primary)]">
-                  Buenos dias, {data.user.name.split(' ')[0]}
-                </h1>
-                <Badge tone={data.tenant.status === 'active' ? 'success' : 'warning'}>
-                  {TIER_LABEL[data.tenant.tier] ?? data.tenant.tier}
-                </Badge>
-              </div>
-              <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                Estas viendo REGB como <strong>{data.roleName}</strong> en{' '}
-                <strong>{activePlatform}</strong>.
-              </p>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                <StatCard
-                  label="Modulos activos"
-                  value={String(data.activeModules.length)}
-                  hint="licenciados y encendidos"
-                />
-                <StatCard
-                  label="Visibles para ti"
-                  value={String(data.sidebar.length)}
-                  hint="segun tu rol"
-                />
-                <StatCard
-                  label="Rutas registradas"
-                  value={String(data.routeCount)}
-                  hint="con permiso en servidor"
-                />
-                <StatCard
-                  label="No disponibles"
-                  value={String(data.unavailable.length)}
-                  hint="y por que"
-                />
-              </div>
-
-              <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Que resolvio el registry</CardTitle>
-                  </CardHeader>
-                  <CardBody className="space-y-2">
-                    {data.sidebar.map((m) => (
-                      <div
-                        key={m.moduleId}
-                        className="flex items-center gap-2 rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2"
-                      >
-                        <span className="flex-1 text-sm text-[var(--color-text-primary)]">
-                          {m.label}
-                        </span>
-                        {m.isTrial && <Badge tone="brand">prueba · {m.trialDaysLeft}d</Badge>}
-                        {m.degraded && <Badge tone="warning">degradado</Badge>}
-                        <Badge tone="neutral" dot={false}>
-                          {m.routes.length} rutas
-                        </Badge>
-                      </div>
-                    ))}
-                  </CardBody>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Que NO se cargo, y por que</CardTitle>
-                  </CardHeader>
-                  <CardBody>
-                    {data.unavailable.length === 0 ? (
-                      <p className="py-6 text-center text-sm text-[var(--color-text-muted)]">
-                        Todo lo licenciado pudo cargarse.
-                      </p>
-                    ) : (
-                      <ul className="space-y-2">
-                        {data.unavailable.map((u) => (
-                          <li
-                            key={u.moduleId}
-                            className="rounded-[var(--radius-md)] bg-[var(--color-surface-overlay)] px-3 py-2"
-                          >
-                            <p className="font-[family-name:var(--font-mono)] text-xs text-[var(--color-semantic-text-warning)]">
-                              {u.moduleId}
-                            </p>
-                            <p className="mt-0.5 text-xs text-[var(--color-text-secondary)]">
-                              {u.reason}
-                            </p>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </CardBody>
-                </Card>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <a
-                  href={`/marketplace${qs}`}
-                  className={cn(
-                    'flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4',
-                    'bg-[var(--color-brand)] text-sm font-medium text-[var(--color-text-on-brand)]',
-                    'transition-colors duration-100 hover:bg-[var(--color-brand-hover)]',
-                    'focus-visible:outline-2 focus-visible:outline-offset-2',
-                    'focus-visible:outline-[var(--color-brand-bright)]',
-                  )}
-                >
-                  Ver el marketplace
-                </a>
-                <a
-                  href={`/roles${qs}`}
-                  className={cn(
-                    'flex h-11 items-center gap-2 rounded-[var(--radius-md)] px-4',
-                    'bg-[var(--color-surface-raised)] text-sm font-medium text-[var(--color-text-primary)]',
-                    'transition-colors duration-100 hover:bg-[var(--color-surface-overlay)]',
-                    'focus-visible:outline-2 focus-visible:outline-offset-2',
-                    'focus-visible:outline-[var(--color-brand-bright)]',
-                  )}
-                >
-                  Roles y permisos
-                </a>
-              </div>
-
-              <p className="mt-6 text-xs text-[var(--color-text-muted)]">
-                Nada de esto esta cableado en el codigo: sale de{' '}
-                <code className="font-[family-name:var(--font-mono)]">regb.tenant_modules</code> y
-                del rol, resuelto por{' '}
-                <code className="font-[family-name:var(--font-mono)]">@regb/module-registry</code>.
-              </p>
-            </>
-          )}
+          {children ??
+            (data.sidebar.length === 0 ? (
+              <EmptyState
+                icon="lock"
+                title="Aquí no hay nada para ti todavía"
+                description={`El rol «${data.roleName}» no tiene ningún módulo visible en ${PLATAFORMA[activePlatform]}. Pídele al dueño de la cuenta que te dé acceso desde Roles y permisos.`}
+              />
+            ) : (
+              <EmptyState
+                icon="menu_open"
+                title="Elige una opción del menú"
+                description="Todo lo que tu rol puede abrir está en el menú de la izquierda."
+              />
+            ))}
         </main>
       </div>
     </div>

@@ -76,6 +76,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
       month: 'short',
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'America/Santo_Domingo',
     })
 
   return (
@@ -84,7 +85,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
         <PageHeader
           icon="schedule"
           title="Turnos de caja"
-          description="Cada ticket pertenece a un turno. Al cerrar se cuenta el efectivo y se compara con lo que deberia haber."
+          description="Cada ticket pertenece a un turno. Al cerrar se cuenta el efectivo y se compara con lo que debería haber."
           crumbs={[{ label: 'Caja', href: `/pos${qs}` }, { label: 'Turnos' }]}
         />
 
@@ -113,6 +114,10 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                     <Icon name="visibility" size={16} />
                     Ver lo esperado
                   </summary>
+                  {/* Cerrada, la tarjeta no puede quedar muda: dice qué guarda. */}
+                  <p className="mt-2 text-xs text-[var(--color-text-muted)] group-open:hidden">
+                    Lo que debería haber en la gaveta. Ábrelo después de contar, no antes.
+                  </p>
                   <p className="tabular mt-2 text-2xl font-bold text-[var(--color-text-primary)]">
                     RD$ {money(Number(abierto.esperado_ahora))}
                   </p>
@@ -141,7 +146,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                     Notas (opcional)
                     <input
                       name="notes"
-                      placeholder="Faltaron 50 del vuelto de la manana"
+                      placeholder="Faltaron 50 del vuelto de la mañana"
                       className="h-10 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-3 text-sm text-[var(--color-text-primary)]"
                     />
                   </label>
@@ -151,7 +156,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
                   </BotonEnvio>
                   <p className="w-full text-xs text-[var(--color-text-muted)]">
                     Cuenta los billetes ANTES de mirar lo esperado: si primero ves la cifra, ya no
-                    estas contando, estas confirmando.
+                    estás contando, estás confirmando.
                   </p>
                 </form>
               ) : (
@@ -166,7 +171,7 @@ export default async function TurnosPage({ searchParams }: { searchParams: Promi
         {shifts.length === 0 ? (
           <EmptyState
             icon="schedule"
-            title="Todavia no hay turnos"
+            title="Todavía no hay turnos"
             description="Abre el primero desde la caja para empezar a vender."
           />
         ) : (

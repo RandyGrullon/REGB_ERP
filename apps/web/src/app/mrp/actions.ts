@@ -1,11 +1,11 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { explotarNecesidadesMrp, necesidadNeta, type NodoExplosionMrp } from '@regb/operations'
+import { explotarNecesidadesMrp, necesidadNeta } from '@regb/operations'
 import { asUser } from '@/lib/db'
 import { anotarAviso } from '@/lib/aviso'
 import { actionCtx, exigir, type ActionResult, type DemoParams } from '@/lib/module-page'
-import type postgres from 'postgres'
+import { resolverNodoMrp } from './explosion'
 
 /**
  * Acciones de planificacion MRP (modulo 57, F8.5/S52).
@@ -25,6 +25,11 @@ function demoDe(fd: FormData): DemoParams {
   }
 }
 
+/** Los dos casos en que no se corre nada; se comparan contra el resultado de la transacción. */
+const SIN_RECETA =
+  'Ese producto no tiene una receta activa en Lista de materiales: no hay nada que planificar.'
+const SIN_COMPONENTES = 'Esa receta no tiene componentes.'
+
 const num = (raw: string): number | null => {
   const t = raw.trim().replace(/,/g, '')
   if (t === '') return null
@@ -32,43 +37,10 @@ const num = (raw: string): number | null => {
   return Number.isFinite(n) ? n : null
 }
 
-async function resolverNodoMrp(
-  tx: postgres.TransactionSql,
-  tenantId: string,
-  productId: string,
-  cantidadNecesaria: number,
-  profundidad: number,
-): Promise<NodoExplosionMrp> {
-  if (profundidad >= 10) return { productId, cantidadNecesaria, esComprado: true }
-
-  const [bom] = await tx<{ id: string; output_qty: string }[]>`
-    select id, output_qty::text from public.bill_of_materials
-    where tenant_id = ${tenantId} and product_id = ${productId} and status = 'active'`
-  if (!bom) return { productId, cantidadNecesaria, esComprado: true }
-
-  const lineas = await tx<{ component_product_id: string; quantity_per_unit: string }[]>`
-    select component_product_id, quantity_per_unit::text from public.bom_lines
-    where bom_id = ${bom.id} and tenant_id = ${tenantId} and is_substitute_for is null`
-  if (lineas.length === 0) return { productId, cantidadNecesaria, esComprado: true }
-
-  const subComponentes = await Promise.all(
-    lineas.map((l) =>
-      resolverNodoMrp(
-        tx,
-        tenantId,
-        l.component_product_id,
-        (Number(l.quantity_per_unit) / Number(bom.output_qty)) * cantidadNecesaria,
-        profundidad + 1,
-      ),
-    ),
-  )
-  return { productId, cantidadNecesaria, esComprado: false, subComponentes }
-}
-
 /** Corre MRP para producir `targetQty` de un producto terminado con BOM activo. */
 export async function correrMrp(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'mrp', 'mrp.run')
   if (!permiso.ok) return permiso
 
@@ -83,11 +55,11 @@ export async function correrMrp(fd: FormData): Promise<ActionResult> {
   const resultado = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const nodo = await resolverNodoMrp(tx, ctx.tenantId, productId, targetQty, 0)
     if (nodo.esComprado || !nodo.subComponentes) {
-      return 'Ese producto no tiene un BOM activo -no hay nada que explotar-.'
+      return SIN_RECETA
     }
 
     const necesidades = explotarNecesidadesMrp(nodo.subComponentes)
-    if (necesidades.length === 0) return 'Ese BOM no tiene componentes.'
+    if (necesidades.length === 0) return SIN_COMPONENTES
 
     const [run] = await tx<{ id: string }[]>`
       insert into public.mrp_runs (tenant_id, target_product_id, target_qty, created_by, notes)
@@ -113,10 +85,7 @@ export async function correrMrp(fd: FormData): Promise<ActionResult> {
     return runId
   })
 
-  if (
-    resultado === 'Ese producto no tiene un BOM activo -no hay nada que explotar-.' ||
-    resultado === 'Ese BOM no tiene componentes.'
-  ) {
+  if (resultado === SIN_RECETA || resultado === SIN_COMPONENTES) {
     return { ok: false, error: resultado }
   }
 
@@ -127,7 +96,7 @@ export async function correrMrp(fd: FormData): Promise<ActionResult> {
 /** Acepta una sugerencia: si es "producir", crea la orden en borrador; si es "comprar", solo queda registrada. */
 export async function aceptarSugerencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'mrp', 'mrp.resolve')
   if (!permiso.ok) return permiso
 
@@ -146,7 +115,7 @@ export async function aceptarSugerencia(fd: FormData): Promise<ActionResult> {
 
     let productionOrderId: string | null = null
     if (sug.action === 'produce') {
-      if (!warehouseId) return 'Elige el almacen para crear la orden de produccion.'
+      if (!warehouseId) return 'Elige el almacén para crear la orden de producción.'
       const [bom] = await tx<{ id: string }[]>`
         select id from public.bill_of_materials
         where tenant_id = ${ctx.tenantId} and product_id = ${sug.product_id} and status = 'active'`
@@ -180,7 +149,7 @@ export async function aceptarSugerencia(fd: FormData): Promise<ActionResult> {
 /** Descarta una sugerencia -no crea nada-. */
 export async function descartarSugerencia(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'mrp', 'mrp.resolve')
   if (!permiso.ok) return permiso
 

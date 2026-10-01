@@ -69,13 +69,13 @@ function leerDatosFiscales(fd: FormData): DatosFiscales | { error: string } {
       .toUpperCase() || null
 
   if (expenseType !== null && !esTipoGasto606(expenseType)) {
-    return { error: 'El tipo de gasto va del 01 al 11 (clasificacion del 606).' }
+    return { error: 'El tipo de gasto va del 01 al 11 (clasificación del 606).' }
   }
   if (services < 0) return { error: 'La parte de servicios no puede ser negativa.' }
   if (isrRetained < 0) return { error: 'El ISR retenido no puede ser negativo.' }
   if (isrRetained > 0 && (isrType === null || !TIPOS_RETENCION_ISR_606[isrType])) {
     return {
-      error: 'Di de que tipo es la retencion de ISR (01-09): sin eso el 606 no la puede declarar.',
+      error: 'Di de qué tipo es la retención de ISR (01-09): sin eso el 606 no la puede declarar.',
     }
   }
   if (modifiedNcf !== null && !NCF_PROVEEDOR.test(modifiedNcf)) {
@@ -93,7 +93,7 @@ function leerDatosFiscales(fd: FormData): DatosFiscales | { error: string } {
 /** Registra la factura que el proveedor ya nos entrego. */
 export async function registrarFactura(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ap', 'ap.invoice.create')
   if (!permiso.ok) return permiso
 
@@ -118,18 +118,18 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
 
   if (!supplierId) return { ok: false, error: 'Elige el proveedor.' }
   if (supplierInvoiceNumber.length < 1) {
-    return { ok: false, error: 'Escribe el numero de la factura del proveedor.' }
+    return { ok: false, error: 'Escribe el número de la factura del proveedor.' }
   }
   if (supplierNcf !== null && !NCF_PROVEEDOR.test(supplierNcf)) {
     return { ok: false, error: 'El NCF del proveedor no tiene forma de NCF (ej. B0100001234).' }
   }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaEmision)) {
-    return { ok: false, error: 'La fecha de emision no es valida.' }
+    return { ok: false, error: 'La fecha de emisión no es válida.' }
   }
   if (fechaEmision > fechaFiscal(new Date())) {
-    return { ok: false, error: 'La factura no puede ser de una fecha que todavia no llega.' }
+    return { ok: false, error: 'La factura no puede ser de una fecha que todavía no llega.' }
   }
-  if (subtotal === null || subtotal < 0) return { ok: false, error: 'El subtotal no es valido.' }
+  if (subtotal === null || subtotal < 0) return { ok: false, error: 'El subtotal no es válido.' }
   if (tax < 0) return { ok: false, error: 'El ITBIS no puede ser negativo.' }
   if (itbisRetenido < 0) return { ok: false, error: 'El ITBIS retenido no puede ser negativo.' }
   if ('error' in fiscales) return { ok: false, error: fiscales.error }
@@ -137,11 +137,11 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
     return {
       ok: false,
       error:
-        'Elige el tipo de gasto: con NCF, la compra va al 606 y la DGII pide su clasificacion.',
+        'Elige el tipo de gasto: con NCF, la compra va al 606 y la DGII pide su clasificación.',
     }
   }
   if (itbisRetenido > tax) {
-    return { ok: false, error: 'No se puede retener mas ITBIS del que trae la factura.' }
+    return { ok: false, error: 'No se puede retener más ITBIS del que trae la factura.' }
   }
   if (fiscales.isrRetained > subtotal) {
     return { ok: false, error: 'El ISR retenido no puede pasar del subtotal.' }
@@ -153,7 +153,7 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
   const total = subtotal + tax
   const retencion = itbisRetenido + fiscales.isrRetained
   if (retencion > total) {
-    return { ok: false, error: 'La retencion no puede ser mayor que el total de la factura.' }
+    return { ok: false, error: 'La retención no puede ser mayor que el total de la factura.' }
   }
 
   try {
@@ -188,7 +188,7 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Error inesperado'
     if (msg.includes('duplicate key')) {
-      return { ok: false, error: 'Ya registraste una factura con ese numero para ese proveedor.' }
+      return { ok: false, error: 'Ya registraste una factura con ese número para ese proveedor.' }
     }
     return { ok: false, error: msg.replace(/^.*ERROR:\s*/, '') }
   }
@@ -208,7 +208,7 @@ export async function registrarFactura(fd: FormData): Promise<ActionResult> {
  */
 export async function clasificarFactura(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ap', 'ap.invoice.create')
   if (!permiso.ok) return permiso
 
@@ -242,7 +242,7 @@ export async function clasificarFactura(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'no-existe') return { ok: false, error: 'Esa factura no existe.' }
-  if (res === 'anulada') return { ok: false, error: 'Esa factura esta anulada: no va al 606.' }
+  if (res === 'anulada') return { ok: false, error: 'Esa factura está anulada: no va al 606.' }
   if (res === 'servicios') {
     return { ok: false, error: 'La parte de servicios no puede pasar del subtotal.' }
   }
@@ -261,7 +261,7 @@ export async function clasificarFactura(fd: FormData): Promise<ActionResult> {
 /** Registra un pago. Rechaza pagar de mas: un sobrepago silencioso deja la cuenta cuadrando con dinero que no existe. */
 export async function registrarPago(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ap', 'ap.payment.record')
   if (!permiso.ok) return permiso
 
@@ -273,7 +273,7 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
   if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
   if (monto === null || monto <= 0) return { ok: false, error: 'El monto debe ser positivo.' }
   if (!['cash', 'card', 'transfer', 'check'].includes(metodo)) {
-    return { ok: false, error: 'Forma de pago no valida.' }
+    return { ok: false, error: 'Forma de pago no válida.' }
   }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -327,7 +327,7 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'no-existe') return { ok: false, error: 'Esa factura no existe.' }
-  if (res === 'anulada') return { ok: false, error: 'Esa factura esta anulada.' }
+  if (res === 'anulada') return { ok: false, error: 'Esa factura está anulada.' }
   if (res !== 'ok') return { ok: false, error: res }
 
   revalidatePath('/pagar')
@@ -338,14 +338,14 @@ export async function registrarPago(fd: FormData): Promise<ActionResult> {
 /** Anula la factura. Solo si no tiene pagos: si ya se le pago algo, no se anula -se corrige con un ajuste-. */
 export async function anularFactura(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ap', 'ap.invoice.void')
   if (!permiso.ok) return permiso
 
   const invoiceId = String(fd.get('invoiceId') ?? '')
   const motivo = String(fd.get('reason') ?? '').trim()
   if (!invoiceId) return { ok: false, error: 'Faltan datos.' }
-  if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulacion.' }
+  if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulación.' }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [pagado] = await tx<{ n: string }[]>`
@@ -374,7 +374,7 @@ export async function anularFactura(fd: FormData): Promise<ActionResult> {
 /** Marca vencidas las que pasaron su fecha. Idempotente. */
 export async function marcarVencidas(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'ap', 'ap.view')
   if (!permiso.ok) return permiso
 

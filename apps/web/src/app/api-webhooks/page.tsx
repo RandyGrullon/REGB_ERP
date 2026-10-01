@@ -19,6 +19,8 @@ import {
 import { asUser } from '@/lib/db'
 import { modulePage, exigir, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
+import { nombreEvento } from '@/lib/eventos'
+import { eventosDisponibles } from '@/lib/eventos-disponibles'
 import {
   alternarEndpointForm,
   crearEndpointForm,
@@ -30,7 +32,7 @@ import { ESTADO_ENDPOINT, ESTADO_LLAVE, SCOPE_LABEL } from './estados'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'API & Webhooks · REGB ERP' }
+export const metadata = { title: 'API y webhooks · REGB ERP' }
 
 interface LlaveFila {
   id: string
@@ -55,6 +57,7 @@ interface EntregaFila {
   status_code: number | null
   success: boolean
   attempted_at: string
+  event_type: string
 }
 
 /** API & Webhooks (modulo 89): la llave se ve completa una sola vez; el webhook SI hace una llamada HTTP real. */
@@ -74,9 +77,11 @@ export default async function ApiWebhooksPage({
       select id, url, event_types, status from public.webhook_endpoints
       where tenant_id = ${ctx.tenantId} order by created_at desc`
     const d = await tx<EntregaFila[]>`
-      select wd.id, we.url, wd.status_code, wd.success, wd.attempted_at::text
+      select wd.id, we.url, wd.status_code, wd.success, wd.attempted_at::text,
+             eo.type as event_type
       from public.webhook_deliveries wd
       join public.webhook_endpoints we on we.id = wd.endpoint_id
+      join public.event_outbox eo on eo.id = wd.event_id
       where wd.tenant_id = ${ctx.tenantId}
       order by wd.attempted_at desc
       limit 20`
@@ -87,19 +92,28 @@ export default async function ApiWebhooksPage({
   const entregasFallidas = entregas.filter((d) => !d.success).length
   const puedeGestionar = exigir(ctx, 'api-webhooks', 'api-webhooks.manage').ok
   const qs = ctx.demoQs
+  const eventos = eventosDisponibles(shell.data.activeModules)
+  const cuando = (iso: string) =>
+    new Date(iso).toLocaleString('es-DO', {
+      day: 'numeric',
+      month: 'short',
+      hour: 'numeric',
+      minute: '2-digit',
+      timeZone: 'America/Santo_Domingo',
+    })
 
   return (
     <Shell {...shell} activePath="/api-webhooks">
       <div className="space-y-5">
         <PageHeader
           icon="webhook"
-          title="API & Webhooks"
-          description="La llave se muestra completa una sola vez. Los webhooks SI hacen una llamada HTTP real -a la URL que tu configuraste-."
+          title="API y webhooks"
+          description="Conecta REGB con otros sistemas: llaves para que otro programa lea o escriba tus datos, y avisos automáticos (webhooks) a la dirección que tú digas cuando pasa algo en el negocio. Cada llave se muestra completa una sola vez."
         />
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Llaves activas" value={String(llavesActivas)} />
-          <StatCard label="Endpoints" value={String(endpoints.length)} />
+          <StatCard label="Destinos de aviso" value={String(endpoints.length)} />
           <StatCard label="Entregas fallidas (recientes)" value={String(entregasFallidas)} />
         </section>
 
@@ -111,7 +125,7 @@ export default async function ApiWebhooksPage({
             {llaves.length === 0 ? (
               <EmptyState
                 icon="key"
-                title="Todavia no hay ninguna llave"
+                title="Todavía no hay ninguna llave"
                 description="Crea la primera abajo."
               />
             ) : (
@@ -121,7 +135,7 @@ export default async function ApiWebhooksPage({
                     <TH>Nombre</TH>
                     <TH>Prefijo</TH>
                     <TH>Permisos</TH>
-                    <TH numeric>Limite/min</TH>
+                    <TH numeric>Límite por minuto</TH>
                     <TH>Estado</TH>
                     <TH>
                       <span className="sr-only">Acción</span>
@@ -152,7 +166,10 @@ export default async function ApiWebhooksPage({
                             <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                             <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                             <input type="hidden" name="keyId" value={k.id} />
-                            <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)]">
+                            <BotonEnvio
+                              aria-label={`Revocar la llave ${k.name}`}
+                              className="flex h-11 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-semantic-text-danger)] hover:bg-[var(--color-surface-raised)] md:h-8"
+                            >
                               Revocar
                             </BotonEnvio>
                           </form>
@@ -174,21 +191,21 @@ export default async function ApiWebhooksPage({
 
         <Card>
           <CardHeader>
-            <CardTitle>Webhooks salientes</CardTitle>
+            <CardTitle>Avisos a otros sistemas (webhooks)</CardTitle>
           </CardHeader>
           <CardBody>
             {endpoints.length === 0 ? (
               <EmptyState
                 icon="webhook"
-                title="Todavia no hay ningun endpoint"
-                description="Crea el primero abajo."
+                title="Todavía no avisas a ningún sistema"
+                description="Escribe abajo la dirección de tu otro sistema y elige qué eventos le llegan: por ejemplo, un ticket resuelto o un pedido confirmado."
               />
             ) : (
               <Table>
                 <THead>
                   <TR>
-                    <TH>URL</TH>
-                    <TH>Eventos</TH>
+                    <TH>Dirección</TH>
+                    <TH>Le avisamos cuando</TH>
                     <TH>Estado</TH>
                     <TH>
                       <span className="sr-only">Acción</span>
@@ -201,7 +218,13 @@ export default async function ApiWebhooksPage({
                       <TD className="text-[var(--color-text-primary)]">
                         <Mono>{e.url}</Mono>
                       </TD>
-                      <TD className="text-[var(--color-text-muted)]">{e.event_types.join(', ')}</TD>
+                      <TD className="text-[var(--color-text-secondary)]">
+                        {e.event_types.map((t) => (
+                          <span key={t} title={t} className="block text-xs">
+                            {nombreEvento(t)}
+                          </span>
+                        ))}
+                      </TD>
                       <TD>
                         <Badge tone={e.status === 'active' ? 'success' : 'neutral'}>
                           {ESTADO_ENDPOINT[e.status] ?? e.status}
@@ -214,7 +237,7 @@ export default async function ApiWebhooksPage({
                               <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                               <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                               <input type="hidden" name="endpointId" value={e.id} />
-                              <BotonEnvio className="flex h-7 items-center gap-1 rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-11 items-center gap-1 rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] md:h-8">
                                 <Icon name="send" size={12} />
                                 Probar
                               </BotonEnvio>
@@ -228,7 +251,7 @@ export default async function ApiWebhooksPage({
                                 name="siguiente"
                                 value={e.status === 'active' ? 'paused' : 'active'}
                               />
-                              <BotonEnvio className="flex h-7 items-center rounded-full border border-[var(--color-border)] px-2 text-xs font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)]">
+                              <BotonEnvio className="flex h-11 items-center rounded-full border border-[var(--color-border)] px-3 text-xs font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-raised)] md:h-8">
                                 {e.status === 'active' ? 'Pausar' : 'Reanudar'}
                               </BotonEnvio>
                             </form>
@@ -246,7 +269,7 @@ export default async function ApiWebhooksPage({
                 <input type="hidden" name="tenant" value={qs ? ctx.tenantSlug : ''} />
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  URL
+                  Dirección (URL) de tu sistema
                   <input
                     name="url"
                     required
@@ -254,14 +277,25 @@ export default async function ApiWebhooksPage({
                     className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                   />
                 </label>
-                <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Tipos de evento (separados por coma)
-                  <input
+                <label className="flex min-w-64 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
+                  Avisar cuando (mantén Ctrl para elegir varios)
+                  <select
                     name="eventTypes"
                     required
-                    placeholder="crm.lead.qualified, helpdesk.ticket.resolved"
-                    className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
-                  />
+                    multiple
+                    size={8}
+                    className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 py-1 text-xs text-[var(--color-text-primary)]"
+                  >
+                    {eventos.map((g) => (
+                      <optgroup key={g.modulo} label={g.modulo}>
+                        {g.eventos.map((ev) => (
+                          <option key={ev.tipo} value={ev.tipo}>
+                            {ev.nombre}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />
@@ -279,7 +313,8 @@ export default async function ApiWebhooksPage({
           <CardBody>
             {entregas.length === 0 ? (
               <p className="text-xs text-[var(--color-text-muted)]">
-                Todavía no se ha entregado ningún webhook.
+                Todavía no se ha enviado ningún aviso. Cuando pase uno de los eventos que elegiste,
+                aquí verás si llegó bien a tu sistema.
               </p>
             ) : (
               <ul className="divide-y divide-[var(--color-border)]">
@@ -287,14 +322,15 @@ export default async function ApiWebhooksPage({
                   <li key={d.id} className="flex items-center justify-between gap-3 py-2">
                     <div>
                       <p className="text-sm text-[var(--color-text-primary)]">
-                        <Mono>{d.url}</Mono>
+                        {nombreEvento(d.event_type)}
                       </p>
                       <p className="text-xs text-[var(--color-text-muted)]">
-                        {new Date(d.attempted_at).toLocaleString('es-DO')}
+                        <Mono>{d.url}</Mono> · {cuando(d.attempted_at)}
                       </p>
                     </div>
                     <Badge tone={d.success ? 'success' : 'danger'}>
-                      {d.status_code ?? 'Sin respuesta'}
+                      {d.success ? 'Entregado' : 'Falló'}
+                      {d.status_code ? ` (${d.status_code})` : ' (sin respuesta)'}
                     </Badge>
                   </li>
                 ))}
@@ -309,9 +345,9 @@ export default async function ApiWebhooksPage({
           </CardHeader>
           <CardBody>
             <p className="text-xs text-[var(--color-text-muted)]">
-              El limite por minuto se guarda como configuracion -esta version todavía no expone un
-              endpoint REST real que lo aplique contra trafico entrante-. Los webhooks salientes SI
-              hacen una llamada HTTP real a la URL configurada.
+              Los avisos (webhooks) sí salen de verdad hacia la dirección que configuraste. Lo que
+              todavía no existe es la entrada: el límite por minuto de cada llave se guarda, pero
+              aún no hay un servicio público de REGB que otro programa pueda llamar con esa llave.
             </p>
           </CardBody>
         </Card>

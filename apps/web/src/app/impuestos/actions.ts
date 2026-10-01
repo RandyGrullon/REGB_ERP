@@ -33,7 +33,7 @@ const limpioError = (e: unknown): string =>
 /** Da de alta una tasa (ITBIS general, reducida, exento, ISC, propina). */
 export async function crearTasa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.rate.manage')
   if (!permiso.ok) return permiso
 
@@ -43,7 +43,7 @@ export async function crearTasa(fd: FormData): Promise<ActionResult> {
   const rate = porcentajeAFraccion(String(fd.get('rate') ?? ''))
   const isDefault = fd.get('isDefault') !== null
 
-  if (code.length < 1) return { ok: false, error: 'Escribe el codigo de la tasa.' }
+  if (code.length < 1) return { ok: false, error: 'Escribe el código de la tasa.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre de la tasa.' }
   if (rate === null) {
     return { ok: false, error: 'La tasa va en porcentaje, entre 0 y 100: escribe 18 para el 18%.' }
@@ -66,7 +66,7 @@ export async function crearTasa(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = limpioError(e)
     if (msg.includes('duplicate key'))
-      return { ok: false, error: 'Ya existe una tasa con ese codigo.' }
+      return { ok: false, error: 'Ya existe una tasa con ese código.' }
     return { ok: false, error: msg }
   }
 
@@ -82,7 +82,7 @@ export async function crearTasa(fd: FormData): Promise<ActionResult> {
  */
 export async function alternarTasa(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.rate.manage')
   if (!permiso.ok) return permiso
 
@@ -116,7 +116,7 @@ export async function alternarTasa(fd: FormData): Promise<ActionResult> {
  */
 export async function sembrarTasas(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.rate.manage')
   if (!permiso.ok) return permiso
 
@@ -144,7 +144,7 @@ export async function sembrarTasas(fd: FormData): Promise<ActionResult> {
 /** Da de alta una regla de retencion. */
 export async function crearRegla(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.rule.manage')
   if (!permiso.ok) return permiso
 
@@ -155,19 +155,19 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
   const rate = porcentajeAFraccion(String(fd.get('rate') ?? ''))
   const dgiiIsrType = String(fd.get('dgiiIsrType') ?? '').trim()
 
-  if (code.length < 1) return { ok: false, error: 'Escribe el codigo de la regla.' }
+  if (code.length < 1) return { ok: false, error: 'Escribe el código de la regla.' }
   if (name.length < 2) return { ok: false, error: 'Escribe el nombre de la regla.' }
   if (tax !== 'itbis' && tax !== 'isr') return { ok: false, error: 'Elige ITBIS o ISR.' }
   if (rate === null) {
     return {
       ok: false,
-      error: 'La retencion va en porcentaje, entre 0 y 100: escribe 10 para el 10%.',
+      error: 'La retención va en porcentaje, entre 0 y 100: escribe 10 para el 10%.',
     }
   }
   if (tax === 'isr' && dgiiIsrType === '') {
     return {
       ok: false,
-      error: 'Una retencion de ISR necesita su codigo de la DGII: sin el, el 606 rebota.',
+      error: 'Una retención de ISR necesita su código de la DGII: sin el, el 606 rebota.',
     }
   }
 
@@ -189,7 +189,7 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
   } catch (e) {
     const msg = limpioError(e)
     if (msg.includes('duplicate key'))
-      return { ok: false, error: 'Ya existe una regla con ese codigo.' }
+      return { ok: false, error: 'Ya existe una regla con ese código.' }
     return { ok: false, error: msg }
   }
 
@@ -201,7 +201,7 @@ export async function crearRegla(fd: FormData): Promise<ActionResult> {
 /** Enciende o apaga una regla. Igual que con las tasas, no se borra. */
 export async function alternarRegla(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'taxes', 'taxes.rule.manage')
   if (!permiso.ok) return permiso
 

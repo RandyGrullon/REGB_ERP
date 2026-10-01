@@ -93,7 +93,7 @@
 
 | Falta | Qué hacer mientras | Fuente |
 |---|---|---|
-| Supabase de producción con login real (hoy corre en modo demostración) | Sección 4 de este documento | [`ESTADO.md`](ESTADO.md), [`PRIMER-CLIENTE.md`](PRIMER-CLIENTE.md) §1 |
+| Supabase de producción con login real (el código está listo y probado contra Supabase en local el 30 sep 2026; falta aplicarlo al proyecto: [`SUPABASE.md`](SUPABASE.md)) | Sección 4 de este documento | [`ESTADO.md`](ESTADO.md), [`PRIMER-CLIENTE.md`](PRIMER-CLIENTE.md) §1 |
 | e-CF (obligatorio desde el 15 nov 2026) | Serie B hasta el corte; plan de e-CF firmado con el cliente | [`modules/e-invoice.md`](modules/e-invoice.md) |
 | Certificado digital de **persona física** del cliente (Ley 126-02) | Que lo tramite ya: lo necesita con REGB o con cualquier proveedor | [`DGII-ECF-INVESTIGACION.md`](DGII-ECF-INVESTIGACION.md) §2.2 |
 | Invitar usuarios: ✅ resuelto en código (0123); el correo sale cuando se configure el SMTP propio | Mientras tanto la pantalla da el enlace para copiarlo | [`modules/users.md`](modules/users.md) |
@@ -451,17 +451,17 @@ El error `prepared statement "…" does not exist` (o `already exists`) es la se
 | Qué | Por qué en este código | Cómo verificarlo |
 |---|---|---|
 | **Registrar el hook:** Authentication → Hooks → *Customize Access Token (JWT) Claims* → Postgres → esquema **`rls`**, función **`custom_access_token_hook`** (no `auth.`) | Sin el hook el token no trae `tenant_id` y el usuario no ve nada (falla cerrado, [0008](../supabase/migrations/0008_auth_token_hook.sql)). Y sin `role_id`, `rls.has_perm()` **deja pasar** ([`PERMISOS-Y-RLS.md`](PERMISOS-Y-RLS.md) §4) | Entrar y abrir `/perfil`: rol y permisos visibles. En SQL: `select rls.custom_access_token_hook(jsonb_build_object('user_id', '<uuid>', 'claims', '{}'::jsonb));` tiene que devolver `tenant_id` y `role_id` |
-| En [`config.toml`](../supabase/config.toml) falta el registro local. **→ tarea `regb-db`**: agregar `[auth.hook.custom_access_token]` con `enabled = true` y `uri = "pg-functions://postgres/rls/custom_access_token_hook"` | Con `supabase start`, hoy los tokens locales salen sin tenant | — |
-| **Registro cerrado** ("Allow new users to sign up" apagado) y **confirmación de correo** encendida | `enable_signup = false`: nadie se registra solo, el alta la hace REGB Control | Intentar registrarse desde `/login`: tiene que fallar |
+| En [`config.toml`](../supabase/config.toml) ya está registrado (`[auth.hook.custom_access_token]`, ronda 4) | Con `supabase start` los tokens locales salen con `tenant_id` y `role_id` | `/perfil` en la instancia local |
+| **Registro cerrado** ("Allow new users to sign up" apagado), con el proveedor **Email encendido**, y **confirmación de correo** encendida | `[auth] enable_signup = false`: nadie se registra solo, el alta la hace REGB Control. Ojo: `[auth.email] enable_signup = false` apaga el inicio por correo entero | Intentar registrarse desde `/login`: tiene que fallar |
 | **SMTP propio** (el diagrama de §2.1 nombra Resend), con SPF, DKIM y DMARC en tu dominio. Después, subir el límite de correos por hora | El SMTP por defecto manda **2 correos por hora** y solo a miembros del equipo (doc de Supabase, *auth-smtp*). Hoy los usuarios se crean con "Invite user" del dashboard, y el enlace mágico de `/login` también manda correo | Invitar a una dirección de prueba externa y ver que llega, sin caer en spam |
-| **Site URL** `https://<tu dominio>` y **Redirect URLs** exactas: `https://<tu dominio>/auth/callback`, las de staging y `regb://auth` para el móvil. Sin comodines en prod | `config.toml` trae `localhost:3000` y `regb://auth`. La ruta `/auth/callback` existe ([`modules/auth.md`](modules/auth.md)) | Un enlace mágico que vuelve al dominio correcto |
+| **Site URL** `https://<tu dominio>` y **Redirect URLs** exactas: `https://<tu dominio>/auth/callback`, las de staging y `regb://auth` para el móvil. Sin comodines en prod | `config.toml` trae `localhost:3100` (la app local) y `regb://auth`. La ruta `/auth/callback` existe ([`modules/auth.md`](modules/auth.md)) | Un enlace mágico que vuelve al dominio correcto |
 | **JWT de 1 hora** (`jwt_expiry = 3600`) y rotación de refresh | El hook se evalúa al emitir el token: desactivar un cajero o suspender un tenant **tarda hasta una hora** en cortarle. Díselo al cliente | Desactivar un usuario de prueba y cronometrar |
 | **MFA (TOTP)** habilitado | §10.3 lo exige para Owner, Admin, Contador y REGB Control, y §7.4 para impersonar. **Hoy no hay pantalla para enrolarlo** ([`modules/auth.md`](modules/auth.md)) | Hueco abierto: **→ tarea `regb-web`** antes de que exista un segundo usuario de REGB Control |
 | **Rate limits:** revisar los que trae por defecto | Inicio de sesión 30 cada 5 min, refresco de token 150 cada 5 min, verificaciones 30 cada 5 min, MFA 15 por minuto (doc de Supabase). Una distribuidora con 20 personas detrás de una sola IP pública queda dentro, pero conviene saberlo | Authentication → Rate Limits |
 | **Plantillas en español** con tu marca: confirmar correo, invitación, enlace mágico, cambio de correo, recuperar contraseña | Van al cliente final; en inglés parecen phishing | Recibir cada una en staging |
 | **Un correo, un tenant** | El hook toma la primera membresía con `limit 1` y sin orden: una persona en dos clientes entra a uno indefinido ([`modules/auth.md`](modules/auth.md)). Te afecta a ti y a los contadores externos | Regla de operación hasta que haya selector de tenant |
 
-**Crear un usuario hoy, mientras la invitación no funciona** (es un dato, no DDL: va en una transacción y queda en la bitácora):
+**La invitación ya funciona** (Edge Function `invitar-usuario`, probada contra Supabase en local; requiere el SMTP propio). El camino manual de abajo queda solo como respaldo (es un dato, no DDL: va en una transacción y queda en la bitácora):
 
 1. Authentication → Users → *Invite user* con su correo (requiere el SMTP propio).
 2. Comprobar que el rol es **del mismo tenant**, porque `memberships.role_id` no tiene guarda de cliente:
@@ -613,14 +613,14 @@ Se podrían disparar con `pg_cron` + `pg_net`, pero el secreto quedaría escrito
 
 ### 4.17 Edge Functions y endpoints públicos
 
-**Hoy no hay ninguna** (`supabase/functions/` no existe). El documento maestro (§2.2 y §10.3) pone precios y firma fiscal en Edge Functions; en el código viven en el servidor de Next. El principio "servidor manda" se cumple igual: es servidor, no cliente. Decide un sitio y documéntalo.
+**Hay una: `invitar-usuario`** (invitaciones por correo; se despliega con `--no-verify-jwt` y lee las claves `sb_secret_` que inyecta Supabase; ver [`SUPABASE.md`](SUPABASE.md)). El documento maestro (§2.2 y §10.3) pone precios y firma fiscal en Edge Functions; en el código viven en el servidor de Next. El principio "servidor manda" se cumple igual: es servidor, no cliente. Decide un sitio y documéntalo.
 
 | Necesidad | Dónde vive hoy | Recomendación |
 |---|---|---|
 | Recepción, aprobación y autenticación e-CF | [`/api/ecf/[token]/[servicio]`](../apps/web/src/app/api/ecf/%5Btoken%5D/%5Bservicio%5D/route.ts), en Next | Quedarse en Next, con dominio propio. El tenant sale del token de 128 bits de la URL, nunca del RNC del XML. Una URL base por entorno |
 | Despachador del bus de eventos | `/api/eventos/despachar` | Programador cada pocos minutos (§4.9) |
 | Webhooks salientes (`api-webhooks`) | Next | Tiempos de espera y reintentos |
-| Invitaciones por correo | **No existe** ([`modules/users.md`](modules/users.md)) | Necesita la `service_role` (API de admin de Auth): server action con `SUPABASE_SERVICE_ROLE_KEY` sin `NEXT_PUBLIC_`, o una Edge Function `invitar` |
+| Invitaciones por correo | Edge Function `invitar-usuario` ([`modules/users.md`](modules/users.md)) | La clave secreta la pone Supabase en la función; no va en ningún archivo de la app |
 | Webhooks de pasarela (Azul o Stripe) | **No existe** | Verificar la firma; idempotencia por `external_id` (`regb.record_payment` ya deduplica) |
 
 Si se crean Edge Functions: secretos por proyecto con `supabase secrets set --env-file <archivo del entorno> --project-ref <ref>`, y `verify_jwt = false` **solo** en las que llama un tercero (DGII, pasarela), que traen su propia validación.

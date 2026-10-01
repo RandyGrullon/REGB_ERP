@@ -15,7 +15,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'api-webhooks',
-  name: 'API & Webhooks',
+  name: 'API y webhooks',
   description: 'API REST/GraphQL por tenant, keys, rate limit, webhooks salientes.',
   icon: 'webhook',
   category: 'advanced',

@@ -98,7 +98,7 @@ export async function calcularNomina(
   }
   const params = parametrosDesdeFila(fila)
   const fraccionPeriodo = fraccionDeMes(inicio, fin)
-  if (fraccionPeriodo <= 0) throw new ErrorNomina('El periodo no tiene ningun dia que pagar.')
+  if (fraccionPeriodo <= 0) throw new ErrorNomina('El período no tiene ningún día que pagar.')
 
   const empleados = await tx<
     {
@@ -152,7 +152,7 @@ export async function calcularNomina(
     limit 1`
   if (cruce) {
     throw new ErrorNomina(
-      `${cruce.nombre} ya cobro dias de este periodo en la nomina del ${cruce.desde} al ${cruce.hasta}. Un dia se paga una sola vez: corrige las fechas del periodo.`,
+      `${cruce.nombre} ya cobró días de este período en la nómina del ${cruce.desde} al ${cruce.hasta}. Un día se paga una sola vez: corrige las fechas del período.`,
     )
   }
 
@@ -223,7 +223,7 @@ export async function calcularNomina(
     })
     if (fijo > antes.netSalary) {
       throw new ErrorNomina(
-        `Los pagos de prestamo ya asignados a ${nombre} en este periodo (${fijo.toFixed(2)}) superan su neto (${antes.netSalary.toFixed(2)}).`,
+        `Los pagos de préstamo ya asignados a ${nombre} en este período (${fijo.toFixed(2)}) superan su neto (${antes.netSalary.toFixed(2)}).`,
       )
     }
 

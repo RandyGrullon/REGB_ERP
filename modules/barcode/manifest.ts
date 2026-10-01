@@ -16,7 +16,7 @@ import { defineModule } from '@regb/module-registry'
  */
 export default defineModule({
   id: 'barcode',
-  name: 'Códigos de barra & RFID',
+  name: 'Códigos de barra',
   description: 'Generacion, etiquetas y escaneo con la camara del celular.',
   icon: 'qr_code_scanner',
   category: 'standard',
@@ -36,7 +36,7 @@ export default defineModule({
   permissions: ['barcode.view', 'barcode.generate', 'barcode.scan'],
 
   routes: [
-    { path: '/codigos-barra', label: 'Codigos de barra', perm: 'barcode.view' },
+    { path: '/codigos-barra', label: 'Por producto', perm: 'barcode.view' },
     { path: '/codigos-barra/etiquetas', label: 'Etiquetas', perm: 'barcode.view' },
     { path: '/codigos-barra/escaneo', label: 'Escaneo', perm: 'barcode.scan' },
   ],

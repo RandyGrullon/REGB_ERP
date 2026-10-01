@@ -77,8 +77,8 @@ export default async function GeocercasPage({
         {geocercas.length === 0 ? (
           <EmptyState
             icon="fence"
-            title="Todavia no hay ninguna geocerca configurada"
-            description="Sin una geocerca, el marcaje de esa sucursal siempre queda como manual, sin validar la posicion."
+            title="Todavía no hay ninguna geocerca configurada"
+            description="Sin una geocerca, el marcaje de esa sucursal siempre queda como manual, sin validar la posición."
           />
         ) : (
           <Table>

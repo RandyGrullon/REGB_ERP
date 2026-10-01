@@ -5,7 +5,7 @@ import { modulePage, type DemoParams } from '@/lib/module-page'
 import { PrintButton } from '@/components/PrintButton'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Cotizacion' }
+export const metadata = { title: 'Cotización' }
 
 /**
  * La cotizacion lista para imprimir (o guardar en PDF y mandarla por
@@ -112,9 +112,9 @@ export default async function CotizacionImprimirPage({
           href={`/cotizaciones-venta/${id}${ctx.demoQs}`}
           className="text-sm text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
         >
-          Volver a la cotizacion
+          Volver a la cotización
         </a>
-        <PrintButton label="Imprimir cotizacion" />
+        <PrintButton label="Imprimir cotización" />
       </div>
 
       <article className="mx-auto max-w-[210mm] bg-white p-8 text-[12px] leading-snug text-black">
@@ -126,13 +126,13 @@ export default async function CotizacionImprimirPage({
             {h.company_phone && <p>Tel. {h.company_phone}</p>}
           </div>
           <div className="text-right">
-            <p className="text-[15px] font-bold uppercase">Cotizacion</p>
+            <p className="text-[15px] font-bold uppercase">Cotización</p>
             <p className="font-bold">
               {h.quote_number}
-              {h.version > 1 ? ` (version ${h.version})` : ''}
+              {h.version > 1 ? ` (versión ${h.version})` : ''}
             </p>
             <p>Fecha: {fecha(h.created_at)}</p>
-            {h.valid_until && <p>Valida hasta: {fecha(h.valid_until)}</p>}
+            {h.valid_until && <p>Válida hasta: {fecha(h.valid_until)}</p>}
           </div>
         </header>
 
@@ -146,7 +146,7 @@ export default async function CotizacionImprimirPage({
           <div>
             <p className="font-bold">Cliente</p>
             <p>{h.customer_name ?? '—'}</p>
-            {h.customer_tax_id && <p>RNC/Cedula: {formatTaxId(h.customer_tax_id)}</p>}
+            {h.customer_tax_id && <p>RNC/Cédula: {formatTaxId(h.customer_tax_id)}</p>}
             {h.customer_address && <p>{h.customer_address}</p>}
             {h.customer_phone && <p>Tel. {h.customer_phone}</p>}
           </div>
@@ -218,7 +218,7 @@ export default async function CotizacionImprimirPage({
         </dl>
 
         <p className="mt-8 text-[11px]">
-          Precios en pesos dominicanos. Esta cotizacion no es un comprobante fiscal: la factura con
+          Precios en pesos dominicanos. Esta cotización no es un comprobante fiscal: la factura con
           su NCF se emite al entregar la mercancía.
         </p>
       </article>

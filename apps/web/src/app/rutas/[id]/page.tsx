@@ -40,7 +40,11 @@ interface RutaHead {
   status: string
   route_date: string
   driver_name: string | null
+  driver_phone: string | null
   vehicle_plate: string | null
+  notes: string | null
+  started_at: string | null
+  completed_at: string | null
 }
 
 interface ParadaRow {
@@ -50,6 +54,10 @@ interface ParadaRow {
   customer_name: string | null
   status: string
   recipient_name: string | null
+  delivery_notes: string | null
+  delivered_at: string | null
+  customer_phone: string | null
+  order_number: string | null
 }
 
 interface ClienteOption {
@@ -75,16 +83,20 @@ export default async function RutaDetallePage({
   const { head, paradas, clientes } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
     const [h] = await tx<RutaHead[]>`
       select dr.id, dr.status, dr.route_date::text, (e.first_name || ' ' || e.last_name) as driver_name,
-             dr.vehicle_plate
+             e.phone as driver_phone, dr.vehicle_plate, dr.notes, dr.started_at::text,
+             dr.completed_at::text
       from public.delivery_routes dr
       left join public.employees e on e.id = dr.driver_id
       where dr.id = ${id} and dr.tenant_id = ${ctx.tenantId}`
     if (!h) return { head: null, paradas: [], clientes: [] }
 
     const p = await tx<ParadaRow[]>`
-      select s.id, s.sequence, s.address, c.name as customer_name, s.status, s.recipient_name
+      select s.id, s.sequence, s.address, c.name as customer_name, s.status, s.recipient_name,
+             s.delivery_notes, s.delivered_at::text, c.phone as customer_phone,
+             so.number as order_number
       from public.route_stops s
       left join public.customers c on c.id = s.customer_id
+      left join public.sales_orders so on so.id = s.sales_order_id
       where s.route_id = ${id} and s.tenant_id = ${ctx.tenantId}
       order by s.sequence`
 
@@ -116,19 +128,37 @@ export default async function RutaDetallePage({
   const estadosParadas = paradas.map((p) => ({ status: p.status as EstadoParadaOp }))
   const tasaExito = tasaEntregaExitosa(estadosParadas)
   const completa = rutaCompleta(estadosParadas)
+  // `route_date` es fecha sin hora: en UTC para que no salga un día antes.
+  const diaRuta = new Date(head.route_date).toLocaleDateString('es-DO', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'UTC',
+  })
+  const hora = (iso: string) =>
+    new Date(iso).toLocaleTimeString('es-DO', { hour: 'numeric', minute: '2-digit' })
+  const pendientes = paradas.filter((p) => p.status === 'pending').length
 
   return (
     <Shell {...shell} activePath="/rutas">
       <div className="space-y-5">
         <PageHeader
           icon="route"
-          title={`Ruta del ${head.route_date}`}
-          description={
-            [head.driver_name, head.vehicle_plate].filter(Boolean).join(' · ') || 'Sin asignar'
-          }
-          crumbs={[{ label: 'Rutas', href: `/rutas${qs}` }, { label: head.route_date }]}
+          title={`Ruta del ${diaRuta}`}
+          description={[
+            head.driver_name
+              ? `Chofer: ${head.driver_name}${head.driver_phone ? ` (${head.driver_phone})` : ''}`
+              : 'Sin chofer asignado',
+            head.vehicle_plate ? `vehículo ${head.vehicle_plate}` : null,
+            head.started_at ? `salió a las ${hora(head.started_at)}` : null,
+            head.completed_at ? `terminó a las ${hora(head.completed_at)}` : null,
+            head.notes,
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          crumbs={[{ label: 'Rutas de reparto', href: `/rutas${qs}` }, { label: diaRuta }]}
           actions={
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge
                 tone={
                   head.status === 'completed'
@@ -176,7 +206,12 @@ export default async function RutaDetallePage({
         {paradas.length > 0 && (
           <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
             <StatCard label="Paradas" value={String(paradas.length)} />
-            <StatCard label="Tasa de entrega exitosa" value={`${Math.round(tasaExito * 100)}%`} />
+            <StatCard label="Por entregar" value={String(pendientes)} />
+            <StatCard
+              label="Entregas logradas"
+              value={`${Math.round(tasaExito * 100)}%`}
+              hint="de las ya visitadas"
+            />
           </section>
         )}
 
@@ -188,21 +223,37 @@ export default async function RutaDetallePage({
               <TH>Dirección</TH>
               <TH>Estado</TH>
               <TH>Prueba de entrega</TH>
-              {enProgreso && puedeEntregar && (
-                <TH>
-                  <span className="sr-only">Acción</span>
-                </TH>
-              )}
+              {enProgreso && puedeEntregar && <TH>Registrar entrega</TH>}
             </TR>
           </THead>
           <TBody>
+            {paradas.length === 0 && (
+              <TR>
+                <TD colSpan={6} className="py-6 text-center text-[var(--color-text-muted)]">
+                  {enPlanificacion
+                    ? 'Esta ruta todavía no tiene paradas. Agrégalas abajo en el orden en que se van a visitar.'
+                    : 'Esta ruta no tuvo paradas.'}
+                </TD>
+              </TR>
+            )}
             {paradas.map((p) => (
               <TR key={p.id}>
                 <TD numeric>
                   <span className="tabular">{p.sequence}</span>
                 </TD>
-                <TD>{p.customer_name ?? '—'}</TD>
-                <TD className="max-w-56 truncate">{p.address}</TD>
+                <TD className="text-[var(--color-text-primary)]">
+                  {p.customer_name ?? 'Sin cliente'}
+                  {(p.customer_phone || p.order_number) && (
+                    <span className="block text-xs text-[var(--color-text-muted)]">
+                      {[p.order_number ? `pedido ${p.order_number}` : null, p.customer_phone]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
+                </TD>
+                <TD className="max-w-64">
+                  <span className="line-clamp-2">{p.address}</span>
+                </TD>
                 <TD>
                   <Badge
                     tone={
@@ -216,9 +267,18 @@ export default async function RutaDetallePage({
                     {ESTADO_PARADA[p.status] ?? p.status}
                   </Badge>
                 </TD>
-                <TD>{p.recipient_name ?? '—'}</TD>
+                <TD>
+                  {p.recipient_name ?? '—'}
+                  {(p.delivered_at || p.delivery_notes) && (
+                    <span className="block text-xs text-[var(--color-text-muted)]">
+                      {[p.delivered_at ? hora(p.delivered_at) : null, p.delivery_notes]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </span>
+                  )}
+                </TD>
                 {enProgreso && puedeEntregar && (
-                  <TD>
+                  <TD className="min-w-52">
                     {p.status === 'pending' && (
                       <form
                         action={resolverParadaForm}
@@ -228,9 +288,9 @@ export default async function RutaDetallePage({
                         <input type="hidden" name="stopId" value={p.id} />
                         <input
                           name="recipientName"
-                          placeholder="Quien recibio"
-                          aria-label={`Quien recibio la parada ${p.sequence}`}
-                          className="h-8 w-32 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                          placeholder="Quién recibió"
+                          aria-label={`Quién recibió la parada ${p.sequence}`}
+                          className="h-8 w-full rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                         />
                         <BotonEnvio
                           name="siguiente"
@@ -275,8 +335,13 @@ export default async function RutaDetallePage({
                   </select>
                 </label>
                 <label className="flex min-w-52 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Direccion
-                  <input name="address" required className={claseInput} />
+                  Dirección
+                  <input
+                    name="address"
+                    required
+                    placeholder="Av. Duarte 214, Villa Consuelo"
+                    className={claseInput}
+                  />
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="add" size={14} />

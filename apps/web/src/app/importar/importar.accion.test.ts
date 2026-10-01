@@ -109,7 +109,7 @@ describe('importar un CSV de RD con 1,234 y SKU repetidos', () => {
     expect(aviso()).toEqual({
       tipo: 'ok',
       texto:
-        'Importamos 2 productos nuevos. 1 ya existia y lo dejamos como estaba. 2 filas rechazadas: mira el detalle abajo.',
+        'Importamos 2 productos nuevos. 1 ya existía y lo dejamos como estaba. 2 filas rechazadas: mira el detalle abajo.',
     })
 
     const l = await lote('ferreteria-sept.csv')
@@ -131,7 +131,7 @@ describe('importar un CSV de RD con 1,234 y SKU repetidos', () => {
       {
         row: 3,
         column: 'sku',
-        message: 'El codigo "EXIST-1" ya existia: lo dejamos como estaba.',
+        message: 'El código "EXIST-1" ya existía: lo dejamos como estaba.',
         kind: 'skipped',
       },
     ])
@@ -165,7 +165,7 @@ describe('importar un CSV de RD con 1,234 y SKU repetidos', () => {
     expect(aviso()).toEqual({
       tipo: 'error',
       texto:
-        'No entro ningun producto nuevo. 3 ya existian y los dejamos como estaban. 2 filas rechazadas: mira el detalle abajo.',
+        'No entró ningún producto nuevo. 3 ya existían y los dejamos como estaban. 2 filas rechazadas: mira el detalle abajo.',
     })
     const l2 = await lote('ferreteria-sept.csv', 1)
     expect(l2.inserted).toBe(0)
@@ -193,7 +193,7 @@ describe('deshacer sigue siendo exacto', () => {
     await deshacerImportacion(c.fd({ batchId: l2.id }))
     expect(aviso()).toEqual({
       tipo: 'ok',
-      texto: 'Deshicimos la importacion: borramos 0 productos.',
+      texto: 'Deshicimos la importación: borramos 0 productos.',
     })
     // INV-1 y BAT-1 son del PRIMER lote; EXIST-1 no es de ninguno.
     expect((await productos()).map((p) => p.sku)).toEqual([
@@ -210,7 +210,7 @@ describe('deshacer sigue siendo exacto', () => {
     await deshacerImportacion(c.fd({ batchId: l.id }))
     expect(aviso()).toEqual({
       tipo: 'ok',
-      texto: 'Deshicimos la importacion: borramos 2 productos.',
+      texto: 'Deshicimos la importación: borramos 2 productos.',
     })
     const ps = await productos()
     expect(ps.map((p) => p.sku)).toEqual(['EXIST-1', 'PEND-1', 'USADO-1'])
@@ -227,7 +227,7 @@ describe('deshacer sigue siendo exacto', () => {
   it('emite imports.batch.undone una vez por lote, y un segundo deshacer se niega', async () => {
     const l = await lote('ferreteria-sept.csv')
     await deshacerImportacion(c.fd({ batchId: l.id }))
-    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importacion ya estaba deshecha.' })
+    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importación ya estaba deshecha.' })
 
     const l2 = await lote('ferreteria-sept.csv', 1)
     expect(await eventos('imports.batch.undone')).toEqual([
@@ -256,7 +256,7 @@ describe('deshacer sigue siendo exacto', () => {
 
   it('un id que no es de un lote se niega sin error de servidor', async () => {
     await deshacerImportacion(c.fd({ batchId: 'no-es-un-uuid' }))
-    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importacion no existe.' })
+    expect(aviso()).toEqual({ tipo: 'error', texto: 'Esa importación no existe.' })
   })
 })
 

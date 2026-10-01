@@ -23,13 +23,14 @@ import { generarCodigosFaltantesForm } from './actions'
 import { BotonEnvio } from '@/components/BotonEnvio'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Codigos de barra · REGB ERP' }
+export const metadata = { title: 'Códigos de barra · REGB ERP' }
 
 interface ProductoRow {
   id: string
   sku: string
   name: string
   barcode: string | null
+  tracks_stock: boolean
 }
 
 /** Codigos de barra & RFID (modulo 52): EAN-13 real, etiquetas, escaneo. */
@@ -41,16 +42,19 @@ export default async function CodigosBarraPage({
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'barcode')
 
-  const productos = await asUser(
-    ctx.userId,
-    ctx.tenantId,
-    (tx) => tx<ProductoRow[]>`
-      select id, sku, name, barcode from public.products
+  const { productos, escaneos } = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+    const p = await tx<ProductoRow[]>`
+      select id, sku, name, barcode, tracks_stock from public.products
       where tenant_id = ${ctx.tenantId} and active
-      order by (barcode is null) desc, name`,
-  )
+      order by tracks_stock desc, (barcode is null) desc, name`
+    const [e] = await tx<{ n: string }[]>`
+      select count(*)::text as n from public.barcode_scans
+      where tenant_id = ${ctx.tenantId} and scanned_at > now() - interval '30 days'`
+    return { productos: p, escaneos: Number(e?.n ?? 0) }
+  })
 
-  const sinCodigo = productos.filter((p) => !p.barcode).length
+  // Un servicio (envío, instalación) no se escanea ni lleva etiqueta.
+  const sinCodigo = productos.filter((p) => p.tracks_stock && !p.barcode).length
   const puedeGenerar = exigir(ctx, 'barcode', 'barcode.generate').ok
   const qs = ctx.demoQs
 
@@ -59,8 +63,8 @@ export default async function CodigosBarraPage({
       <div className="space-y-5">
         <PageHeader
           icon="qr_code_scanner"
-          title="Codigos de barra"
-          description="EAN-13 real -digito verificador calculado, no un numero inventado-, etiquetas para imprimir y escaneo con la camara del celular."
+          title="Códigos de barra"
+          description="Cada producto con su código EAN-13 (con dígito verificador, como lo lee cualquier lector), etiquetas para imprimir y escaneo con la cámara del celular."
           actions={
             <div className="flex gap-2">
               <a
@@ -83,7 +87,12 @@ export default async function CodigosBarraPage({
 
         <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-3">
           <StatCard label="Productos activos" value={String(productos.length)} />
-          <StatCard label="Sin codigo de barras" value={String(sinCodigo)} />
+          <StatCard
+            label="Sin código de barras"
+            value={String(sinCodigo)}
+            hint={sinCodigo > 0 ? 'genéralos abajo' : 'todos listos'}
+          />
+          <StatCard label="Escaneos" value={String(escaneos)} hint="últimos 30 días" />
         </section>
 
         <Card>
@@ -92,12 +101,16 @@ export default async function CodigosBarraPage({
           </CardHeader>
           <CardBody className="p-0">
             {productos.length === 0 ? (
-              <EmptyState icon="qr_code_scanner" title="No hay productos activos" description="" />
+              <EmptyState
+                icon="qr_code_scanner"
+                title="No hay productos activos"
+                description="Los códigos de barra se asignan a los productos del catálogo. Crea o reactiva uno en Catálogo."
+              />
             ) : (
               <Table>
                 <THead>
                   <TR>
-                    <TH>SKU</TH>
+                    <TH>Código</TH>
                     <TH>Producto</TH>
                     <TH>Código de barras</TH>
                   </TR>
@@ -112,8 +125,12 @@ export default async function CodigosBarraPage({
                       <TD>
                         {p.barcode ? (
                           <Mono>{p.barcode}</Mono>
-                        ) : (
+                        ) : p.tracks_stock ? (
                           <Badge tone="warning">Sin código</Badge>
+                        ) : (
+                          <Badge tone="neutral" dot={false} title="Un servicio no se escanea">
+                            Servicio
+                          </Badge>
                         )}
                       </TD>
                     </TR>
@@ -130,7 +147,7 @@ export default async function CodigosBarraPage({
                 <input type="hidden" name="rol" value={qs ? ctx.roleName : ''} />
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                   <Icon name="auto_awesome" size={14} />
-                  Generar codigos faltantes ({sinCodigo})
+                  Generar códigos faltantes ({sinCodigo})
                 </BotonEnvio>
               </form>
             )}

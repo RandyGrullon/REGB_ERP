@@ -41,8 +41,11 @@ interface VehiculoHead {
   brand: string
   model: string
   status: string
+  year: number | null
+  vin: string | null
   odometer_km: string
   driver_name: string | null
+  driver_phone: string | null
 }
 
 interface DocumentoRow {
@@ -86,6 +89,21 @@ const claseInput =
   'h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]'
 const money = (n: number) =>
   n.toLocaleString('es-DO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+/** Fechas sin hora (`date`): en UTC para que no salgan un día antes. */
+const dia = (iso: string) =>
+  new Date(iso).toLocaleDateString('es-DO', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+const vacio = (colSpan: number, texto: string) => (
+  <TR>
+    <TD colSpan={colSpan} className="py-4 text-center text-[var(--color-text-muted)]">
+      {texto}
+    </TD>
+  </TR>
+)
 
 /** Detalle de un vehiculo (modulo 54): documentos, combustible, mantenimiento, multas. */
 export default async function VehiculoDetallePage({
@@ -104,8 +122,9 @@ export default async function VehiculoDetallePage({
     ctx.tenantId,
     async (tx) => {
       const [h] = await tx<VehiculoHead[]>`
-        select veh.id, veh.plate, veh.brand, veh.model, veh.status, veh.odometer_km::text,
-               (e.first_name || ' ' || e.last_name) as driver_name
+        select veh.id, veh.plate, veh.brand, veh.model, veh.status, veh.year, veh.vin,
+               veh.odometer_km::text,
+               (e.first_name || ' ' || e.last_name) as driver_name, e.phone as driver_phone
         from public.vehicles veh
         left join public.employees e on e.id = veh.assigned_driver_id
         where veh.id = ${id} and veh.tenant_id = ${ctx.tenantId}`
@@ -166,34 +185,42 @@ export default async function VehiculoDetallePage({
     )
 
   const enTaller = head.status === 'maintenance' // registry:allow — estado del vehiculo, no el modulo
+  const gastoCombustible = combustible.reduce((a, c) => a + Number(c.cost), 0)
+  const gastoTaller = mantenimiento.reduce((a, m) => a + Number(m.cost), 0)
 
   return (
     <Shell {...shell} activePath="/flota">
       <div className="space-y-5">
         <PageHeader
           icon="local_shipping"
-          title={`${head.plate} · ${head.brand} ${head.model}`}
-          description={
-            head.driver_name ? `Conductor: ${head.driver_name}` : 'Sin conductor asignado'
-          }
-          crumbs={[{ label: 'Flota', href: `/flota${qs}` }, { label: head.plate }]}
+          title={`${head.plate} · ${head.brand} ${head.model}${head.year ? ` ${head.year}` : ''}`}
+          description={[
+            head.driver_name
+              ? `Chofer: ${head.driver_name}${head.driver_phone ? ` (${head.driver_phone})` : ''}`
+              : 'Sin chofer asignado',
+            `combustible RD$ ${money(gastoCombustible)}`,
+            `taller RD$ ${money(gastoTaller)}`,
+          ].join(' · ')}
+          crumbs={[{ label: 'Flota de vehículos', href: `/flota${qs}` }, { label: head.plate }]}
           meta={
             <div className="flex items-center gap-2">
               <Badge tone={head.status === 'active' ? 'success' : enTaller ? 'warning' : 'neutral'}>
-                {' '}
                 {ESTADO_VEHICULO[head.status] ?? head.status}
               </Badge>
               <span className="text-xs text-[var(--color-text-muted)]">
                 {Number(head.odometer_km).toLocaleString('es-DO')} km
               </span>
-              {proximoVencido && <Badge tone="danger">Mantenimiento vencido</Badge>}
+              {proximoVencido && <Badge tone="danger">Le toca servicio</Badge>}
+              {head.vin && (
+                <span className="text-xs text-[var(--color-text-muted)]">Chasis {head.vin}</span>
+              )}
             </div>
           }
         />
 
         <Card>
           <CardHeader>
-            <CardTitle>Documentos</CardTitle>
+            <CardTitle>Papeles</CardTitle>
           </CardHeader>
           <CardBody className="p-0">
             <Table>
@@ -205,6 +232,11 @@ export default async function VehiculoDetallePage({
                 </TR>
               </THead>
               <TBody>
+                {documentos.length === 0 &&
+                  vacio(
+                    3,
+                    'Sin papeles registrados. Anota el vencimiento del seguro, la licencia y la inspección.',
+                  )}
                 {documentos.map((d) => {
                   const vence = new Date(d.expiry_date)
                   const vigente = documentoVehiculoVigente(vence, ahora)
@@ -214,7 +246,7 @@ export default async function VehiculoDetallePage({
                       <TD className="text-[var(--color-text-primary)]">
                         {TIPO_DOCUMENTO[d.doc_type] ?? d.doc_type}
                       </TD>
-                      <TD>{d.expiry_date}</TD>
+                      <TD className="whitespace-nowrap">{dia(d.expiry_date)}</TD>
                       <TD>
                         {!vigente ? (
                           <Badge tone="danger">Vencido</Badge>
@@ -240,7 +272,7 @@ export default async function VehiculoDetallePage({
                   <select name="docType" required className={claseInput}>
                     <option value="license">Licencia</option>
                     <option value="insurance">Seguro</option>
-                    <option value="inspection">Inspeccion</option>
+                    <option value="inspection">Inspección</option>
                   </select>
                 </label>
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -272,6 +304,7 @@ export default async function VehiculoDetallePage({
                 </TR>
               </THead>
               <TBody>
+                {combustible.length === 0 && vacio(5, 'Todavía no se ha registrado combustible.')}
                 {[...combustible].reverse().map((c, i, arr) => {
                   const anterior = arr[i + 1]
                   const rendimiento = anterior
@@ -282,21 +315,35 @@ export default async function VehiculoDetallePage({
                     : null
                   return (
                     <TR key={c.id}>
-                      <TD>{new Date(c.filled_at).toLocaleDateString('es-DO')}</TD>
-                      <TD numeric>
-                        <span className="tabular">{c.liters}</span>
-                      </TD>
-                      <TD numeric>
-                        <span className="tabular">RD$ {money(Number(c.cost))}</span>
+                      <TD className="whitespace-nowrap">
+                        {new Date(c.filled_at).toLocaleDateString('es-DO', {
+                          day: 'numeric',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
                       </TD>
                       <TD numeric>
                         <span className="tabular">
-                          {Number(c.odometer_km).toLocaleString('es-DO')}
+                          {Number(c.liters).toLocaleString('es-DO', { maximumFractionDigits: 2 })}
                         </span>
                       </TD>
                       <TD numeric>
-                        {rendimiento !== null && (
-                          <span className="tabular">{rendimiento.toFixed(1)} km/gal</span>
+                        <span className="tabular whitespace-nowrap">
+                          RD$ {money(Number(c.cost))}
+                        </span>
+                      </TD>
+                      <TD numeric>
+                        <span className="tabular">
+                          {Number(c.odometer_km).toLocaleString('es-DO')} km
+                        </span>
+                      </TD>
+                      <TD numeric>
+                        {rendimiento !== null ? (
+                          <span className="tabular">{rendimiento.toFixed(1)} km/L</span>
+                        ) : (
+                          <span className="text-xs text-[var(--color-text-muted)]">
+                            primera carga
+                          </span>
                         )}
                       </TD>
                     </TR>
@@ -311,7 +358,7 @@ export default async function VehiculoDetallePage({
               >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Conductor
+                  Chofer
                   <select name="driverId" className={claseInput}>
                     <option value="">Sin especificar</option>
                     {empleados.map((e) => (
@@ -373,17 +420,26 @@ export default async function VehiculoDetallePage({
                 </TR>
               </THead>
               <TBody>
+                {mantenimiento.length === 0 &&
+                  vacio(5, 'Todavía no se ha registrado ningún servicio de taller.')}
                 {mantenimiento.map((m) => (
                   <TR key={m.id}>
-                    <TD>{m.service_date}</TD>
+                    <TD className="whitespace-nowrap">{dia(m.service_date)}</TD>
                     <TD>{m.type === 'preventive' ? 'Preventivo' : 'Correctivo'}</TD>
-                    <TD className="max-w-56 truncate">{m.description}</TD>
+                    <TD className="max-w-72">
+                      <span className="line-clamp-2">{m.description}</span>
+                      {m.next_due_km && (
+                        <span className="block text-xs text-[var(--color-text-muted)]">
+                          próximo a los {Number(m.next_due_km).toLocaleString('es-DO')} km
+                        </span>
+                      )}
+                    </TD>
                     <TD numeric>
-                      <span className="tabular">RD$ {money(Number(m.cost))}</span>
+                      <span className="tabular whitespace-nowrap">RD$ {money(Number(m.cost))}</span>
                     </TD>
                     <TD numeric>
                       <span className="tabular">
-                        {Number(m.odometer_km).toLocaleString('es-DO')}
+                        {Number(m.odometer_km).toLocaleString('es-DO')} km
                       </span>
                     </TD>
                   </TR>
@@ -404,7 +460,7 @@ export default async function VehiculoDetallePage({
                   </select>
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Descripcion
+                  Descripción
                   <input name="description" required className={claseInput} />
                 </label>
                 <label className="flex w-28 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
@@ -421,7 +477,7 @@ export default async function VehiculoDetallePage({
                   />
                 </label>
                 <label className="flex w-32 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Próximo a km
+                  Próximo servicio (km)
                   <input name="nextDueKm" inputMode="decimal" className={`tabular ${claseInput}`} />
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
@@ -453,12 +509,17 @@ export default async function VehiculoDetallePage({
                 </TR>
               </THead>
               <TBody>
+                {multas.length === 0 && vacio(5, 'Este vehículo no tiene multas registradas.')}
                 {multas.map((m) => (
                   <TR key={m.id}>
-                    <TD>{m.fine_date}</TD>
-                    <TD className="max-w-48 truncate">{m.reason}</TD>
+                    <TD className="whitespace-nowrap">{dia(m.fine_date)}</TD>
+                    <TD className="max-w-72">
+                      <span className="line-clamp-2">{m.reason}</span>
+                    </TD>
                     <TD numeric>
-                      <span className="tabular">RD$ {money(Number(m.amount))}</span>
+                      <span className="tabular whitespace-nowrap">
+                        RD$ {money(Number(m.amount))}
+                      </span>
                     </TD>
                     <TD>
                       <Badge
@@ -493,7 +554,7 @@ export default async function VehiculoDetallePage({
                                 <input type="hidden" name="fineId" value={m.id} />
                                 <input type="hidden" name="siguiente" value="disputed" />
                                 <BotonEnvio className="rounded-full border border-[var(--color-border)] px-2 py-1 text-xs text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-raised)]">
-                                  Disputar
+                                  Impugnar
                                 </BotonEnvio>
                               </form>
                             </>
@@ -532,7 +593,7 @@ export default async function VehiculoDetallePage({
               >
                 {campos}
                 <label className="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Conductor
+                  Chofer
                   <select name="driverId" className={claseInput}>
                     <option value="">Sin especificar</option>
                     {empleados.map((e) => (
@@ -552,7 +613,7 @@ export default async function VehiculoDetallePage({
                   />
                 </label>
                 <label className="flex min-w-40 flex-1 flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-                  Razon
+                  Razón
                   <input name="reason" required className={claseInput} />
                 </label>
                 <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-medium text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">

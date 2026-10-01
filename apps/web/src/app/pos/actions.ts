@@ -44,13 +44,13 @@ const num = (raw: string): number | null => {
 
 export async function abrirTurno(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pos', 'pos.shift.open')
   if (!permiso.ok) return permiso
 
   const warehouseId = String(fd.get('warehouseId') ?? '')
   const fondo = num(String(fd.get('openingFloat') ?? '0')) ?? 0
-  if (!warehouseId) return { ok: false, error: 'Elige el almacen de la caja.' }
+  if (!warehouseId) return { ok: false, error: 'Elige el almacén de la caja.' }
   if (fondo < 0) return { ok: false, error: 'El fondo no puede ser negativo.' }
 
   const res = await asUser(ctx.userId, ctx.tenantId, async (tx) => {
@@ -66,7 +66,7 @@ export async function abrirTurno(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'ya-abierto') {
-    return { ok: false, error: 'Ya hay un turno abierto en esa caja. Cierralo primero.' }
+    return { ok: false, error: 'Ya hay un turno abierto en esa caja. Ciérralo primero.' }
   }
 
   revalidatePath('/pos')
@@ -81,7 +81,7 @@ export async function abrirTurno(fd: FormData): Promise<ActionResult> {
  */
 export async function cerrarTurno(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pos', 'pos.shift.close')
   if (!permiso.ok) return permiso
 
@@ -126,7 +126,7 @@ export async function cerrarTurno(fd: FormData): Promise<ActionResult> {
   })
 
   if (res === 'no-existe') return { ok: false, error: 'Ese turno no existe.' }
-  if (res === 'ya-cerrado') return { ok: false, error: 'Ese turno ya esta cerrado.' }
+  if (res === 'ya-cerrado') return { ok: false, error: 'Ese turno ya está cerrado.' }
 
   revalidatePath('/pos')
   revalidatePath('/pos/shifts')
@@ -154,7 +154,7 @@ export type ResultadoCobro =
  */
 export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pos', 'pos.sell')
   if (!permiso.ok) return permiso
 
@@ -172,7 +172,7 @@ export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
   const soldAtRaw = String(fd.get('soldAt') ?? '').trim()
   const soldAt = soldAtRaw !== '' && !Number.isNaN(Date.parse(soldAtRaw)) ? soldAtRaw : null
   if (clientRef !== null && !/^[0-9a-f-]{36}$/i.test(clientRef)) {
-    return { ok: false, error: 'La referencia de la venta no es valida.' }
+    return { ok: false, error: 'La referencia de la venta no es válida.' }
   }
 
   let carrito: { productId: string; qty: number; discountPct: number }[]
@@ -185,10 +185,10 @@ export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
   }
 
   if (!Array.isArray(carrito) || carrito.length === 0) {
-    return { ok: false, error: 'El carrito esta vacio.' }
+    return { ok: false, error: 'El carrito está vacío.' }
   }
   if (!Array.isArray(pagos) || pagos.length === 0) {
-    return { ok: false, error: 'Indica como se paga.' }
+    return { ok: false, error: 'Indica cómo se paga.' }
   }
   if (carrito.some((l) => l.discountPct > 0)) {
     const pd = exigir(ctx, 'pos', 'pos.discount')
@@ -375,9 +375,9 @@ export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
   // trabajo. Devolver ok deja que la caja borre la venta de su cola.
   if (typeof res === 'string' && res.startsWith('duplicada:')) return { ok: true }
   if (res === 'sin-turno') return { ok: false, error: 'Ese turno no existe.' }
-  if (res === 'turno-cerrado') return { ok: false, error: 'El turno ya se cerro.' }
+  if (res === 'turno-cerrado') return { ok: false, error: 'El turno ya se cerró.' }
   if (res === 'producto-invalido') {
-    return { ok: false, error: 'Hay un producto que ya no esta disponible.' }
+    return { ok: false, error: 'Hay un producto que ya no está disponible.' }
   }
   if (res !== 'ok') return { ok: false, error: res }
 
@@ -392,7 +392,7 @@ export async function cobrarVenta(fd: FormData): Promise<ResultadoCobro> {
  */
 export async function anularVenta(fd: FormData): Promise<ActionResult> {
   const ctx = await actionCtx(demoDe(fd))
-  if (!ctx) return { ok: false, error: 'Sesion no valida.' }
+  if (!ctx) return { ok: false, error: 'Sesión no válida.' }
   const permiso = exigir(ctx, 'pos', 'pos.void')
   if (!permiso.ok) return permiso
 
@@ -403,7 +403,7 @@ export async function anularVenta(fd: FormData): Promise<ActionResult> {
   // porque "codigo 6" a secas no le dice nada a nadie.
   const codigo = String(fd.get('voidType') ?? '').trim()
   if (!saleId) return { ok: false, error: 'Faltan datos.' }
-  if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulacion.' }
+  if (motivo.length < 4) return { ok: false, error: 'Escribe el motivo de la anulación.' }
   if (!esMotivoDgii(codigo)) {
     return {
       ok: false,

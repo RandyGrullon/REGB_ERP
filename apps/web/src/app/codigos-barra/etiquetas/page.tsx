@@ -1,7 +1,7 @@
 import { Card, CardBody, EmptyState, PageHeader } from '@regb/ui'
 import { patronBarrasEan13 } from '@regb/operations'
 import { asUser } from '@/lib/db'
-import { modulePage, type DemoParams } from '@/lib/module-page'
+import { exigir, modulePage, type DemoParams } from '@/lib/module-page'
 import { Shell } from '@/components/Shell'
 import { PrintButton } from '@/components/PrintButton'
 
@@ -29,8 +29,11 @@ function CodigoBarras({ codigo }: { codigo: string }) {
   return (
     <svg
       viewBox={`0 0 ${ancho} ${alto}`}
-      width={ancho}
+      // Ancho fluido con tope: en el teléfono caben dos por fila sin salirse.
+      width="100%"
       height={alto}
+      preserveAspectRatio="none"
+      style={{ maxWidth: ancho }}
       role="img"
       aria-label={`Código de barras ${codigo}`}
     >
@@ -61,6 +64,8 @@ export default async function EtiquetasPage({
 }) {
   const params = await searchParams
   const { ctx, shell } = await modulePage(params, 'barcode')
+  // Sin `products.price.view` la etiqueta sale sin precio (solo nombre y código).
+  const vePrecio = exigir(ctx, 'products', 'products.price.view').ok
 
   const productos = await asUser(
     ctx.userId,
@@ -74,15 +79,15 @@ export default async function EtiquetasPage({
   const qs = ctx.demoQs
 
   return (
-    <Shell {...shell} activePath="/codigos-barra">
+    <Shell {...shell} activePath="/codigos-barra/etiquetas">
       <div className="space-y-5 print:space-y-0">
         <div className="print:hidden">
           <PageHeader
             icon="sell"
             title="Etiquetas"
-            description="Una etiqueta por producto, lista para imprimir."
+            description="Una etiqueta por producto con su nombre, su código y su precio, lista para imprimir en hoja carta."
             crumbs={[
-              { label: 'Codigos de barra', href: `/codigos-barra${qs}` },
+              { label: 'Códigos de barra', href: `/codigos-barra${qs}` },
               { label: 'Etiquetas' },
             ]}
             actions={<PrintButton label="Imprimir etiquetas" />}
@@ -94,8 +99,16 @@ export default async function EtiquetasPage({
             <CardBody className="print:hidden">
               <EmptyState
                 icon="sell"
-                title="Ningun producto tiene codigo de barras todavia"
-                description="Generalos primero desde Codigos de barra."
+                title="Ningún producto tiene código de barras todavía"
+                description="Las etiquetas salen de los productos que ya tienen su código. Genéralos primero en Códigos de barra y vuelve aquí para imprimirlas."
+                action={
+                  <a
+                    href={`/codigos-barra${qs}`}
+                    className="inline-flex h-11 items-center gap-2 rounded-full bg-[var(--color-brand)] px-5 text-sm font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]"
+                  >
+                    Ir a Códigos de barra
+                  </a>
+                }
               />
             </CardBody>
           </Card>
@@ -106,14 +119,16 @@ export default async function EtiquetasPage({
                 key={p.id}
                 className="flex flex-col items-center gap-1 rounded-[var(--radius-md)] border border-[var(--color-border)] p-3 text-center print:break-inside-avoid print:border-black"
               >
-                <p className="text-xs font-medium text-[var(--color-text-primary)]">{p.name}</p>
+                <p className="text-xs font-semibold text-[var(--color-text-primary)]">{p.name}</p>
                 <CodigoBarras codigo={p.barcode} />
                 <p className="font-mono text-[10px] tracking-widest text-[var(--color-text-muted)]">
                   {p.barcode}
                 </p>
-                <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                  RD$ {money(Number(p.price))}
-                </p>
+                {vePrecio && (
+                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">
+                    RD$ {money(Number(p.price))}
+                  </p>
+                )}
               </div>
             ))}
           </div>

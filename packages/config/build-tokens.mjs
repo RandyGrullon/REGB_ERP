@@ -18,6 +18,9 @@ const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 function colorVars(theme) {
   const out = []
   for (const [group, entries] of Object.entries(tokens.color)) {
+    // Un `$comment` a nivel de grupo es un texto: recorrerlo daba una
+    // variable por letra (`--color-$comment-0: undefined`).
+    if (group.startsWith('$')) continue
     for (const [name, val] of Object.entries(entries)) {
       if (name.startsWith('$')) continue // notas para humanos, no tokens
       const suffix = name === 'default' ? '' : `-${kebab(name)}`
@@ -28,6 +31,7 @@ function colorVars(theme) {
 }
 
 const scaleVars = Object.entries(tokens.font.scale)
+  .filter(([name]) => !name.startsWith('$'))
   .flatMap(([name, s]) => {
     const k = kebab(name)
     const rows = [
@@ -40,8 +44,11 @@ const scaleVars = Object.entries(tokens.font.scale)
   })
   .join('\n')
 
+// Las claves `$...` son notas para humanos: como variable CSS salian
+// `--radius-$comment: ...`, invalidas, y cada build avisaba 770 veces.
 const flat = (prefix, obj, unit = '') =>
   Object.entries(obj)
+    .filter(([k]) => !k.startsWith('$'))
     .map(([k, v]) => `  --${prefix}-${kebab(k)}: ${typeof v === 'number' ? v + unit : v};`)
     .join('\n')
 

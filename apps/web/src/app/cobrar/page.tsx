@@ -220,7 +220,7 @@ export default async function CobrarPage({
         <PageHeader
           icon="request_quote"
           title="Cuentas por cobrar"
-          description="Quien te debe, cuanto y desde cuando. El saldo se calcula de total menos cobrado: nunca se guarda a mano."
+          description="Quién te debe, cuánto y desde cuándo. El saldo se calcula de total menos cobrado: nunca se guarda a mano."
           actions={
             <>
               <a href={`/cobrar/cartera${qs}`} className={enlaceCls}>
@@ -315,7 +315,7 @@ export default async function CobrarPage({
                         className="h-9 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                       >
                         <option value="">
-                          {o.tax_id && !rncMalo ? 'Automatico (B01)' : 'Automatico'}
+                          {o.tax_id && !rncMalo ? 'Automático (B01)' : 'Automático'}
                         </option>
                         <option value="B01">Crédito fiscal (B01)</option>
                         <option value="B02">Consumo (B02)</option>
@@ -329,7 +329,7 @@ export default async function CobrarPage({
                     </div>
                     {rncMalo && (
                       <p className="text-xs text-[var(--color-semantic-text-danger)]">
-                        El RNC {formatTaxId(o.tax_id!)} no es valido: corrigelo en la ficha del
+                        El RNC {formatTaxId(o.tax_id!)} no es válido: corrígelo en la ficha del
                         cliente para emitir B01, o elige Consumo (B02) si es consumidor final.
                       </p>
                     )}
@@ -345,13 +345,13 @@ export default async function CobrarPage({
                               name="overrideReason"
                               required
                               minLength={4}
-                              placeholder="Motivo de la excepcion"
-                              aria-label={`Motivo de la excepcion de crédito para ${o.number}`}
+                              placeholder="Motivo de la excepción"
+                              aria-label={`Motivo de la excepción de crédito para ${o.number}`}
                               className="h-9 min-w-56 flex-1 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
                             />
                             <BotonEnvio className="flex h-9 items-center gap-1.5 rounded-full bg-[var(--color-brand)] px-3 text-xs font-semibold text-[var(--color-text-on-brand)] hover:bg-[var(--color-brand-hover)]">
                               <Icon name="verified_user" size={16} />
-                              Facturar con excepcion
+                              Facturar con excepción
                             </BotonEnvio>
                           </div>
                         ) : (
@@ -393,7 +393,7 @@ export default async function CobrarPage({
             description={
               hayFiltros
                 ? 'Prueba con otro número o cliente.'
-                : 'Entrega un pedido y facturalo desde aquí para empezar a llevar la cartera.'
+                : 'Entrega un pedido y factúralo desde aquí para empezar a llevar la cartera.'
             }
           />
         ) : (
@@ -423,22 +423,36 @@ export default async function CobrarPage({
                 return (
                   <TR key={f.id} className={f.status === 'void' ? 'opacity-50' : ''}>
                     <TD>
-                      <a
-                        href={`/cobrar/${f.id}${qs}`}
-                        className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
-                      >
-                        <Mono>{f.number}</Mono>
-                      </a>
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <a
+                          href={`/cobrar/${f.id}${qs}`}
+                          className="font-medium text-[var(--color-text-link)] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                        >
+                          <Mono>{f.number}</Mono>
+                        </a>
+                        {f.status !== 'void' && (
+                          <a
+                            href={`/cobrar/${f.id}/imprimir${qs}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label={`Imprimir ${f.number}`}
+                            title="Imprimir la factura"
+                            className="grid h-7 w-7 place-items-center rounded-full text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-brand-bright)]"
+                          >
+                            <Icon name="print" size={14} />
+                          </a>
+                        )}
+                      </span>
                     </TD>
                     <TD className="font-medium text-[var(--color-text-primary)]">
                       {f.customer_name}
                     </TD>
-                    <TD>{fecha(f.issue_date)}</TD>
-                    <TD>
+                    <TD className="whitespace-nowrap">{fecha(f.issue_date)}</TD>
+                    <TD className="whitespace-nowrap">
                       {fecha(f.due_date)}
                       {dias > 0 && saldo > 0 && f.status !== 'void' && (
                         <span className="block text-[10px] text-[var(--color-semantic-text-danger)]">
-                          {dias} dias de atraso
+                          {dias} días de atraso
                         </span>
                       )}
                     </TD>
@@ -503,7 +517,7 @@ export default async function CobrarPage({
                               <form
                                 action={aplicarCargoPorMoraForm}
                                 className="flex items-center gap-1"
-                                title={`${dias} días de atraso — el monto lo decides tu, no hay calculo automático`}
+                                title={`${dias} días de atraso — el monto lo decides tú, no hay cálculo automático`}
                               >
                                 <input
                                   type="hidden"
@@ -545,7 +559,7 @@ export default async function CobrarPage({
             <CardBody className="space-y-2">
               <p className="text-xs text-[var(--color-text-muted)]">
                 Un cliente marcado aquí nunca genera cargo por mora, aunque pague tarde. Es una
-                decision fija: no cambia sola por como pague.
+                decisión fija: no cambia sola por cómo pague.
               </p>
               <ul className="divide-y divide-[var(--color-border)]">
                 {clientesExentos.map((c) => (
@@ -553,7 +567,7 @@ export default async function CobrarPage({
                     <span className="text-sm text-[var(--color-text-primary)]">
                       {c.name}
                       <span className="ml-2 text-xs text-[var(--color-text-muted)]">
-                        {c.payment_terms} dias de credito
+                        {c.payment_terms} días de crédito
                       </span>
                     </span>
                     <form action={alternarExentoMoraForm}>

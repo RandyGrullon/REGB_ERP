@@ -1,6 +1,6 @@
 /** Etiquetas de estado de proyectos y tareas. */
 export const ESTADO_PROYECTO: Record<string, string> = {
-  planning: 'Planificacion',
+  planning: 'Planificación',
   active: 'Activo',
   on_hold: 'Pausado',
   completed: 'Completado',
