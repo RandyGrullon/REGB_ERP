@@ -79,11 +79,14 @@ export async function crearEntrada(fd: FormData): Promise<ActionResult> {
       select basis, rate::text from public.commission_plans where id = ${planId} and tenant_id = ${ctx.tenantId}`
     if (!plan) return 'Ese plan no existe.'
 
-    const [orden] = await tx<{ total: string }[]>`
-      select total::text from public.sales_orders where id = ${salesOrderId} and tenant_id = ${ctx.tenantId}`
+    // La base es lo vendido SIN ITBIS: el ITBIS es de la DGII, no venta del
+    // vendedor. Con el total se le pagaba un 18% de mas, y "Mis comisiones"
+    // rotula la columna "Vendido sin ITBIS".
+    const [orden] = await tx<{ subtotal: string }[]>`
+      select subtotal::text from public.sales_orders where id = ${salesOrderId} and tenant_id = ${ctx.tenantId}`
     if (!orden) return 'Esa orden de venta no existe.'
 
-    const baseAmount = Number(orden.total)
+    const baseAmount = Number(orden.subtotal)
     const commissionAmount = calcularComision(baseAmount, Number(plan.rate), plan.basis)
 
     await tx`

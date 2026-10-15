@@ -45,7 +45,7 @@ interface PlanOption {
 interface OrdenOption {
   id: string
   number: string
-  total: string
+  subtotal: string
 }
 
 interface VendedorOption {
@@ -91,7 +91,7 @@ export default async function ComisionesPage({
       const p = await tx<PlanOption[]>`
       select id, name from public.commission_plans where tenant_id = ${ctx.tenantId} and active order by name`
       const o = await tx<OrdenOption[]>`
-      select id, number, total::text from public.sales_orders
+      select id, number, subtotal::text from public.sales_orders
       where tenant_id = ${ctx.tenantId} order by order_date desc limit 100`
       const v = await tx<VendedorOption[]>`
       select user_id as id, display_name as name from public.user_profiles
@@ -268,7 +268,7 @@ export default async function ComisionesPage({
                   <select name="salesOrderId" required className={claseInput}>
                     {ordenes.map((o) => (
                       <option key={o.id} value={o.id}>
-                        {o.number} — RD$ {money(Number(o.total))}
+                        {o.number} — RD$ {money(Number(o.subtotal))} sin ITBIS
                       </option>
                     ))}
                   </select>
