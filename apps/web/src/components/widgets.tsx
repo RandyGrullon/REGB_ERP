@@ -35,7 +35,7 @@ import { estadoGasto, estadoIngreso } from '@/app/presupuestos/estados'
  */
 
 export interface DatosWidgets {
-  stockBajo: { name: string; sku: string; qty: number; punto: number }[]
+  stockBajo: { name: string; sku: string; almacen: string; qty: number; punto: number }[]
   /** null = este rol no puede ver el costo. Cero seria mentira. */
   valorInventario: number | null
   /** Lo proximo que hay que presentarle a la DGII. null = nada pendiente. */
@@ -277,17 +277,28 @@ export async function cargarDatosWidgets(
   }
 
   if (pidieron('stock-alerts', 'inventory-value')) {
+    // El punto de reorden es del producto, la existencia es por almacén: el
+    // mismo producto sale una vez por cada almacén que esté bajo, y sin decir
+    // cuál la lista enseñaba "Cemento gris 42.5 kg" dos veces.
     vacio.stockBajo = (
-      await tx<{ name: string; sku: string; qty: string; punto: string }[]>`
-        select p.name, p.sku, s.qty_on_hand::text as qty, p.reorder_point::text as punto
+      await tx<{ name: string; sku: string; almacen: string; qty: string; punto: string }[]>`
+        select p.name, p.sku, w.name as almacen, s.qty_on_hand::text as qty,
+               p.reorder_point::text as punto
         from public.stock_levels s
         join public.products p on p.id = s.product_id
+        join public.warehouses w on w.id = s.warehouse_id
         where s.tenant_id = ${tenantId}
           and p.reorder_point > 0
           and s.qty_on_hand <= p.reorder_point
         order by s.qty_on_hand - p.reorder_point
         limit 5`
-    ).map((r) => ({ name: r.name, sku: r.sku, qty: Number(r.qty), punto: Number(r.punto) }))
+    ).map((r) => ({
+      name: r.name,
+      sku: r.sku,
+      almacen: r.almacen,
+      qty: Number(r.qty),
+      punto: Number(r.punto),
+    }))
 
     // Por `public.existencias()` y no por `stock_levels` directo: desde
     // 0109 `authenticated` NO tiene SELECT sobre `avg_cost` -es el margen
@@ -1396,9 +1407,9 @@ const WIDGETS: Record<
         <ul>
           {d.stockBajo.map((p) => (
             <Fila
-              key={p.sku}
+              key={`${p.sku}-${p.almacen}`}
               izq={p.name}
-              sub={p.sku}
+              sub={`${p.sku} · ${p.almacen}`}
               der={`${p.qty} / ${p.punto}`}
               tono={p.qty <= 0 ? 'danger' : 'warning'}
             />
