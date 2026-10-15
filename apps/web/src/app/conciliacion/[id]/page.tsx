@@ -205,7 +205,7 @@ export default async function ImportConciliacionPage({
                   const emparejar = (
                     <>
                       {l.match_status === 'matched' && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <span className="text-xs text-[var(--color-text-secondary)]">
                             {l.matched_description}
                             {l.matched_date && ` · ${fecha(l.matched_date)}`}
@@ -235,14 +235,19 @@ export default async function ImportConciliacionPage({
                       )}
                       {l.match_status === 'pending' && puedeConfirmar && (
                         <div className="flex flex-wrap items-center gap-2">
-                          <form action={confirmarMatchForm} className="flex items-center gap-1">
+                          {/* En el teléfono el select va a todo lo ancho y el botón
+                              debajo: lado a lado no caben y la tabla cortaba el botón. */}
+                          <form
+                            action={confirmarMatchForm}
+                            className="flex w-full flex-wrap items-center gap-1 md:w-auto md:flex-nowrap"
+                          >
                             {campos}
                             <input type="hidden" name="lineId" value={l.id} />
                             <select
                               name="transactionId"
                               defaultValue={sugerido ?? ''}
                               aria-label={`Movimiento para emparejar con ${l.description}`}
-                              className="h-8 max-w-56 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)]"
+                              className="h-8 w-full min-w-0 rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-surface-input)] px-2 text-xs text-[var(--color-text-primary)] md:w-auto md:max-w-56"
                             >
                               <option value="" disabled>
                                 Elige un movimiento

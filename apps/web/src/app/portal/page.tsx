@@ -381,7 +381,9 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                       <TR>
                         <TH>Tipo</TH>
                         <TH>Fechas</TH>
-                        <TH numeric>Días</TH>
+                        <TH numeric className="hidden sm:table-cell">
+                          Días
+                        </TH>
                         <TH>Estado</TH>
                       </TR>
                     </THead>
@@ -389,12 +391,25 @@ export default async function PortalPage({ searchParams }: { searchParams: Promi
                       {solicitudes.map((s) => (
                         <TR key={s.id}>
                           <TD>{TIPO_AUSENCIA[s.leave_type] ?? s.leave_type}</TD>
-                          <TD className="whitespace-nowrap">
-                            {s.start_date === s.end_date
-                              ? fechaCorta(s.start_date)
-                              : `${fechaCorta(s.start_date)} – ${fechaCorta(s.end_date)}`}
+                          {/* El rango parte después del guion y los días van debajo:
+                              en cuatro columnas de una línea no cabía a 390 px y
+                              cortaba el estado. */}
+                          <TD>
+                            {s.start_date === s.end_date ? (
+                              <span className="whitespace-nowrap">{fechaCorta(s.start_date)}</span>
+                            ) : (
+                              <>
+                                <span className="whitespace-nowrap">
+                                  {fechaCorta(s.start_date)} –
+                                </span>{' '}
+                                <span className="whitespace-nowrap">{fechaCorta(s.end_date)}</span>
+                              </>
+                            )}
+                            <span className="block text-xs text-[var(--color-text-muted)] sm:hidden">
+                              {s.business_days} {s.business_days === 1 ? 'día' : 'días'}
+                            </span>
                           </TD>
-                          <TD numeric>
+                          <TD numeric className="hidden sm:table-cell">
                             <span className="tabular">{s.business_days}</span>
                           </TD>
                           <TD>

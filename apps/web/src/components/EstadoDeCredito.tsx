@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Children, type ReactNode } from 'react'
 import { Icon } from '@regb/ui'
 
 /**
@@ -40,6 +40,10 @@ export function EstadoDeCredito({
 }) {
   const bloqueado = !s.allowed
   const atrasado = s.oldestOverdueDays > 0
+  // El pedido pasa `{bloqueado && ...}{bloqueado && ...}`: con el credito al
+  // dia llega `[false, false]`, que es verdadero, y se pintaba una franja
+  // vacia con su borde. Children.toArray descarta false, null y undefined.
+  const hayContenido = Children.toArray(children).length > 0
 
   return (
     <section
@@ -112,7 +116,7 @@ export function EstadoDeCredito({
         </dl>
       )}
 
-      {children && (
+      {hayContenido && (
         <div className="mt-3 border-t border-[var(--color-border)] pt-3">{children}</div>
       )}
     </section>

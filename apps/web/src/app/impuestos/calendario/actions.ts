@@ -61,15 +61,22 @@ export async function registrarInformativo(fd: FormData): Promise<ActionResult> 
   if (!vence) return { ok: false, error: 'No se pudo calcular el vencimiento de ese período.' }
 
   try {
-    await asUser(
-      ctx.userId,
-      ctx.tenantId,
-      (tx) => tx`
-        insert into public.tax_filings
-          (tenant_id, form, period, due_date, status, filed_at, filed_by)
-        values (${ctx.tenantId}, ${form}, ${period}, ${isoLocal(vence)}, 'filed', now(), ${ctx.userId})
-        on conflict (tenant_id, form, period) do nothing`,
-    )
+    await asUser(ctx.userId, ctx.tenantId, async (tx) => {
+      // Anotarlo dos veces no es un error: ya estaba presentado.
+      const [ya] = await tx<{ id: string }[]>`
+        select id from public.tax_filings
+        where tenant_id = ${ctx.tenantId} and form = ${form} and period = ${period}`
+      if (ya) return
+
+      // Por `registrar_declaracion()` y no por un INSERT: desde la 0116 el
+      // insert directo sobre tax_filings esta revocado y la funcion es la
+      // unica puerta -la que mira `taxes.filing.close`-. Un informativo no
+      // lleva montos propios: van en cero.
+      await tx`
+        select public.registrar_declaracion(
+          ${form}, ${period}, ${isoLocal(vence)}::date,
+          0, 0, 0, 0, 0, 0, 0, null, null)`
+    })
   } catch (e) {
     return { ok: false, error: limpioError(e) }
   }

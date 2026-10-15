@@ -300,6 +300,42 @@ const CAMPO: Record<string, string> = {
   type: 'tipo',
   unit_cost: 'costo unitario',
   user_id: 'usuario',
+  // Las que salían a medio traducir en /auditoria sin filtros (grabación
+  // de la demo, 15 oct 2026): "match estado", "decidido by"...
+  assigned_to: 'asignado a',
+  body: 'texto',
+  concept: 'concepto',
+  counted_qty: 'cantidad contada',
+  criterion: 'criterio',
+  decided_by: 'decidido por',
+  dispatched_at: 'despachado el',
+  disposed_amount: 'monto de la baja',
+  disposed_at: 'dado de baja el',
+  disposed_reason: 'motivo de la baja',
+  done: 'hecho',
+  done_at: 'hecho el',
+  goals: 'metas',
+  label: 'etiqueta',
+  last_accessed_at: 'último acceso el',
+  late_fee_exempt: 'exento de mora',
+  manager_id: 'encargado',
+  match_status: 'estado de conciliación',
+  matched_transaction_id: 'movimiento emparejado',
+  plan_name: 'plan',
+  price_list_id: 'lista de precios',
+  probability: 'probabilidad',
+  qualification_status: 'calificación',
+  sales_order_id: 'pedido',
+  scheduled_at: 'programado el',
+  signed_by: 'firmado por',
+  stage: 'etapa',
+  statement_balance: 'saldo del estado de cuenta',
+  tax_params: 'tasas de la nómina',
+  terms: 'condiciones',
+  tracks_lots: 'lleva lotes',
+  unlabeled_amount: 'monto sin empresa',
+  unlabeled_entries: 'asientos sin empresa',
+  unlabeled_included: 'sin empresa sumados a la principal',
 }
 
 const legible = (s: string) => s.replace(/_/g, ' ')
@@ -383,6 +419,18 @@ const PALABRA: Record<string, string> = {
   uploaded: 'subido',
   scanned: 'escaneado',
   used: 'usado',
+  // Para las columnas futuras del mismo molde ("reviewed_by", "counted_at").
+  by: 'por',
+  accessed: 'acceso',
+  counted: 'contado',
+  dispatched: 'despachado',
+  disposed: 'dado de baja',
+  done: 'hecho',
+  list: 'lista',
+  manager: 'encargado',
+  matched: 'emparejado',
+  reviewed: 'revisado',
+  scheduled: 'programado',
 }
 
 function campoLegible(c: string): string {
@@ -447,6 +495,13 @@ const ESTADO: Record<string, string> = {
   readonly: 'solo lectura',
   with_discrepancies: 'con diferencias',
   pending_approval: 'por aprobar',
+  disposed: 'dado de baja',
+  done: 'hecho',
+  ignored: 'ignorado',
+  matched: 'conciliado',
+  negotiation: 'en negociación',
+  processed: 'procesado',
+  superseded: 'sustituido',
 }
 
 /** Otro registro al que apunta el cambio: el id no le dice nada a nadie. */
