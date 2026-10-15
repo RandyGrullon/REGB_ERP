@@ -258,16 +258,19 @@ export async function bootstrap({
   if (!role) return null
 
   // ── A partir de aqui, TODO pasa por RLS ──────────────────────────────
-  const tenantModules = await asUser(
-    userId,
-    tenant.id,
-    (tx) => tx<
+  const { tenantModules, perfil } = await asUser(userId, tenant.id, async (tx) => {
+    const modulos = await tx<
       { module_id: string; status: string; enabled: boolean; trial_ends_at: string | null }[]
     >`
       select module_id, status, enabled, trial_ends_at
       from regb.tenant_modules
-      where tenant_id = ${tenant.id}`,
-  )
+      where tenant_id = ${tenant.id}`
+    // `users` es core: el perfil propio siempre se ve.
+    const [p] = await tx<{ display_name: string }[]>`
+      select display_name from public.user_profiles
+      where tenant_id = ${tenant.id} and user_id = ${userId}`
+    return { tenantModules: modulos, perfil: p }
+  })
 
   const roleObj: Role = {
     id: role.id,
@@ -289,8 +292,11 @@ export async function bootstrap({
     platform,
   })
 
+  // El nombre del perfil, con sus tildes. Sacarlo del correo -como se hacia-
+  // ponia "Maria Rosario" arriba y "María Rosario" en las tablas. El del
+  // correo queda solo para quien todavia no tiene perfil.
   const nombre = (email.split('@')[0] ?? 'usuario').replace(/[._-]/g, ' ')
-  const display = nombre.replace(/\b\w/g, (c) => c.toUpperCase())
+  const display = perfil?.display_name.trim() || nombre.replace(/\b\w/g, (c) => c.toUpperCase())
 
   return {
     tenant: { id: tenant.id, name: tenant.legal_name, tier: tenant.tier, status: tenant.status },
