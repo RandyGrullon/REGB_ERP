@@ -426,7 +426,9 @@ function Cifra({
       <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
         {etiqueta}
       </dt>
-      <dd className="tabular flex items-baseline gap-1 whitespace-nowrap">
+      {/* En el teléfono va en media columna: el "+US$ 22.42" baja de línea en
+          vez de cortarse. Cada pedazo sigue sin partirse por dentro. */}
+      <dd className="tabular flex flex-wrap items-baseline gap-x-1 whitespace-nowrap md:flex-nowrap">
         <span
           className={cn(
             'text-lg font-bold tracking-tight',

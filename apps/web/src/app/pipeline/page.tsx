@@ -78,9 +78,18 @@ export default async function PipelinePage({
           description="Las ventas grandes en camino, etapa por etapa. El pronóstico pondera cada monto por su probabilidad: no cuenta lo abierto como si ya estuviera ganado."
         />
 
-        <section aria-label="Resumen" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {/* En el teléfono el pronóstico ocupa la fila entera: un monto de siete
+            cifras no cabe en media tarjeta. `dense` sube "Ganadas" al hueco. */}
+        <section
+          aria-label="Resumen"
+          className="grid grid-flow-row-dense grid-cols-2 gap-3 lg:grid-cols-4"
+        >
           <StatCard label="Oportunidades abiertas" value={String(abiertas.length)} />
-          <StatCard label="Pronóstico ponderado" value={`RD$ ${money(forecast)}`} />
+          <StatCard
+            label="Pronóstico ponderado"
+            value={`RD$ ${money(forecast)}`}
+            className="col-span-2 lg:col-span-1"
+          />
           <StatCard label="Ganadas" value={String(ganadas.length)} />
         </section>
 
