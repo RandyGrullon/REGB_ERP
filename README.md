@@ -30,15 +30,15 @@
 ## Míralo en 27 segundos
 
 <p align="center">
-  <a href="docs/video/regb-erp-horizontal.mp4">
+  <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/regb-erp-horizontal.mp4">
     <img src="docs/readme/presentacion.webp" alt="Presentación de REGB ERP: la caja, la contabilidad que se hace sola, los reportes de la DGII y la app en el celular" width="100%">
   </a>
 </p>
 
 <p align="center">
-  <sub>La vista previa corre sola y sin sonido. El video completo, con música, se descarga en MP4:</sub><br>
-  <a href="docs/video/regb-erp-horizontal.mp4"><b>Horizontal 1920×1080</b></a> ·
-  <a href="docs/video/regb-erp-vertical.mp4"><b>Vertical 1080×1920</b></a>
+  <sub>La vista previa corre sola y sin sonido. El video completo, con música, se abre en el navegador:</sub><br>
+  <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/regb-erp-horizontal.mp4"><b>Horizontal 1920×1080</b></a> ·
+  <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/regb-erp-vertical.mp4"><b>Vertical 1080×1920</b></a>
   <sub>para Reels, TikTok y Stories</sub>
 </p>
 
@@ -46,77 +46,77 @@ Todo lo que se ve es la app real, en modo demo y con datos ficticios.
 
 ## La serie por área
 
-Diez videos de unos 24 segundos, uno por cada área del negocio. Toca el póster para bajar el MP4.
+Diez videos de unos 24 segundos, uno por cada área del negocio. Toca el póster y el video se abre en el navegador, con sonido.
 
 <table>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/caja/regb-caja-horizontal.mp4"><img src="docs/readme/poster-caja.jpg" alt="Video: Punto de venta" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/caja/regb-caja-horizontal.mp4"><img src="docs/readme/poster-caja.jpg" alt="Video: Punto de venta" width="100%"></a>
       <br><b>Punto de venta</b> · La caja de tu negocio.
       <br><sub>Escaneas, cobras y cada venta sale con su NCF. Al cerrar el turno cuentas la gaveta antes de ver lo esperado.</sub>
-      <br><sub><a href="docs/video/serie/caja/regb-caja-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/caja/regb-caja-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/caja/regb-caja-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/caja/regb-caja-vertical.mp4">Vertical</a></sub>
     </td>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/ventas-credito/regb-ventas-credito-horizontal.mp4"><img src="docs/readme/poster-ventas-credito.jpg" alt="Video: Ventas a crédito" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/ventas-credito/regb-ventas-credito-horizontal.mp4"><img src="docs/readme/poster-ventas-credito.jpg" alt="Video: Ventas a crédito" width="100%"></a>
       <br><b>Ventas a crédito</b> · Vende a crédito, y cobra.
       <br><sub>La cotización aprobada se vuelve pedido, el límite de crédito se respeta solo y el cliente ve su factura pagada en su portal.</sub>
-      <br><sub><a href="docs/video/serie/ventas-credito/regb-ventas-credito-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/ventas-credito/regb-ventas-credito-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/ventas-credito/regb-ventas-credito-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/ventas-credito/regb-ventas-credito-vertical.mp4">Vertical</a></sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/crm/regb-crm-horizontal.mp4"><img src="docs/readme/poster-crm.jpg" alt="Video: CRM y ventas" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/crm/regb-crm-horizontal.mp4"><img src="docs/readme/poster-crm.jpg" alt="Video: CRM y ventas" width="100%"></a>
       <br><b>CRM y ventas</b> · Del prospecto al cliente fiel.
       <br><sub>Prospectos con puntaje, un pronóstico que pondera cada etapa, puntos de fidelidad y comisiones que se aprueban antes de pagarse.</sub>
-      <br><sub><a href="docs/video/serie/crm/regb-crm-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/crm/regb-crm-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/crm/regb-crm-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/crm/regb-crm-vertical.mp4">Vertical</a></sub>
     </td>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/inventario/regb-inventario-horizontal.mp4"><img src="docs/readme/poster-inventario.jpg" alt="Video: Inventario" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/inventario/regb-inventario-horizontal.mp4"><img src="docs/readme/poster-inventario.jpg" alt="Video: Inventario" width="100%"></a>
       <br><b>Inventario</b> · Tu inventario, por almacén.
       <br><sub>Alertas de punto de reorden, transferencias que marcan lo que faltó y conteos cíclicos a ciegas que no ajustan nada sin aprobación.</sub>
-      <br><sub><a href="docs/video/serie/inventario/regb-inventario-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/inventario/regb-inventario-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/inventario/regb-inventario-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/inventario/regb-inventario-vertical.mp4">Vertical</a></sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/compras/regb-compras-horizontal.mp4"><img src="docs/readme/poster-compras.jpg" alt="Video: Compras y pagos" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/compras/regb-compras-horizontal.mp4"><img src="docs/readme/poster-compras.jpg" alt="Video: Compras y pagos" width="100%"></a>
       <br><b>Compras y pagos</b> · De la requisición al pago.
       <br><sub>Aprueba quien tiene el límite en su rol, lo recibido entra al kardex aunque llegue incompleto y la factura del proveedor se paga con su NCF.</sub>
-      <br><sub><a href="docs/video/serie/compras/regb-compras-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/compras/regb-compras-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/compras/regb-compras-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/compras/regb-compras-vertical.mp4">Vertical</a></sub>
     </td>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/contabilidad/regb-contabilidad-horizontal.mp4"><img src="docs/readme/poster-contabilidad.jpg" alt="Video: Contabilidad y tesorería" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/contabilidad/regb-contabilidad-horizontal.mp4"><img src="docs/readme/poster-contabilidad.jpg" alt="Video: Contabilidad y tesorería" width="100%"></a>
       <br><b>Contabilidad y tesorería</b> · Los asientos salen solos.
       <br><sub>Ventas, cobros, compras y pagos se contabilizan cuadrados. La conciliación sugiere y tú confirmas; el flujo de caja mira ocho semanas adelante.</sub>
-      <br><sub><a href="docs/video/serie/contabilidad/regb-contabilidad-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/contabilidad/regb-contabilidad-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/contabilidad/regb-contabilidad-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/contabilidad/regb-contabilidad-vertical.mp4">Vertical</a></sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/dgii/regb-dgii-horizontal.mp4"><img src="docs/readme/poster-dgii.jpg" alt="Video: Impuestos y DGII" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/dgii/regb-dgii-horizontal.mp4"><img src="docs/readme/poster-dgii.jpg" alt="Video: Impuestos y DGII" width="100%"></a>
       <br><b>Impuestos y DGII</b> · Tu mes con la DGII.
       <br><sub>Cuántos NCF te quedan y cuándo vencen, el 606, 607 y 608 de cada mes y el IT-1 ya calculado con tus ventas y compras.</sub>
-      <br><sub><a href="docs/video/serie/dgii/regb-dgii-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/dgii/regb-dgii-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/dgii/regb-dgii-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/dgii/regb-dgii-vertical.mp4">Vertical</a></sub>
     </td>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/personas/regb-personas-horizontal.mp4"><img src="docs/readme/poster-personas.jpg" alt="Video: Recursos humanos" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/personas/regb-personas-horizontal.mp4"><img src="docs/readme/poster-personas.jpg" alt="Video: Recursos humanos" width="100%"></a>
       <br><b>Recursos humanos</b> · Tu gente, en orden.
       <br><sub>Nómina con su TSS e ISR, el volante en el portal de cada empleado, vacaciones que aprueba RRHH y el ponche validado con geocerca.</sub>
-      <br><sub><a href="docs/video/serie/personas/regb-personas-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/personas/regb-personas-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/personas/regb-personas-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/personas/regb-personas-vertical.mp4">Vertical</a></sub>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/operacion/regb-operacion-horizontal.mp4"><img src="docs/readme/poster-operacion.jpg" alt="Video: Operación" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/operacion/regb-operacion-horizontal.mp4"><img src="docs/readme/poster-operacion.jpg" alt="Video: Operación" width="100%"></a>
       <br><b>Operación</b> · De la planta al cliente.
       <br><sub>La orden de producción saca sus componentes, la inspección reprueba lo que falla y el técnico cierra la visita desde el celular, con firma.</sub>
-      <br><sub><a href="docs/video/serie/operacion/regb-operacion-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/operacion/regb-operacion-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/operacion/regb-operacion-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/operacion/regb-operacion-vertical.mp4">Vertical</a></sub>
     </td>
     <td width="50%" valign="top">
-      <a href="docs/video/serie/plataforma/regb-plataforma-horizontal.mp4"><img src="docs/readme/poster-plataforma.jpg" alt="Video: Plataforma" width="100%"></a>
+      <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/plataforma/regb-plataforma-horizontal.mp4"><img src="docs/readme/poster-plataforma.jpg" alt="Video: Plataforma" width="100%"></a>
       <br><b>Plataforma</b> · La plataforma que lo une todo.
       <br><sub>Enciendes solo lo que usas y el simulador te dice cuánto suma a tu factura. Cada rol ve lo suyo y la bitácora guarda cada cambio.</sub>
-      <br><sub><a href="docs/video/serie/plataforma/regb-plataforma-horizontal.mp4">Horizontal</a> · <a href="docs/video/serie/plataforma/regb-plataforma-vertical.mp4">Vertical</a></sub>
+      <br><sub><a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/plataforma/regb-plataforma-horizontal.mp4">Horizontal</a> · <a href="https://cdn.jsdelivr.net/gh/RandyGrullon/REGB_ERP@main/docs/video/serie/plataforma/regb-plataforma-vertical.mp4">Vertical</a></sub>
     </td>
   </tr>
 </table>
@@ -293,7 +293,7 @@ REGB_ERP/
 
 `.claude/skills/`: `/new-module` · `/pricing-calc` · `/aurora-ui` · `/apple-design-system` · `/rls-audit` · `/tour-writer` · `/tri-platform`
 
-`graphify-out/graph.html` es el grafo de conocimiento del código. Se regenera con `graphify update`.
+`graphify update` arma en `graphify-out/` el grafo de conocimiento del código. Esa carpeta no se versiona.
 
 ---
 
